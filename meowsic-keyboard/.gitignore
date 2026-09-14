@@ -1,0 +1,9 @@
+.pio
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
+
+# tools/ writes these when the bridge module is imported for tests
+__pycache__/
+*.pyc
