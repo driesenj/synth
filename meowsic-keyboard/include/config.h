@@ -16,11 +16,23 @@
 
 static constexpr uint32_t USB_BAUD = 115200;
 
-// ---- I2C / MCP23017 ---------------------------------------------------------
-static constexpr int      PIN_SDA  = 21;
-static constexpr int      PIN_SCL  = 22;
-static constexpr uint32_t I2C_HZ   = 400000;   // needs the external 2.2k pull-ups
-static constexpr uint8_t  MCP_ADDR = 0x20;     // A2:A0 = GND
+// ---- I2C bus: MCP23017 + two MCP4725 --------------------------------------
+// All three sit on the I2C board with the bus's only 2.2k pull-up pair
+// (docs/pinout.md section 2).
+static constexpr int      PIN_SDA   = 21;
+static constexpr int      PIN_SCL   = 22;
+static constexpr uint32_t I2C_HZ    = 400000;  // needs the external 2.2k pull-ups
+static constexpr uint8_t  MCP_ADDR  = 0x20;    // A2:A0 = GND
+static constexpr uint8_t  DAC_ADDR  = 0x60;    // MCP4725 #1, CV1 - ADDR jumper open
+static constexpr uint8_t  DAC2_ADDR = 0x61;    // MCP4725 #2, CV2 - ADDR jumper closed
+
+// ---- CV out -----------------------------------------------------------------
+// 3.3 V / 4096 = 0.806 mV per code, x1.5 at the TL074 = 1.209 mV at the jack;
+// 83.33 mV per semitone at 1 V/oct -> 68.96 codes nominal. Each channel is
+// calibrated on its own with the self test's octave mode ('o') and a meter:
+// adjust until two codes 12 semitones apart differ by 1.000 V at the jack.
+static constexpr float CV_CODES_PER_SEMITONE  = 68.96f;   // CV1, TL074 A1
+static constexpr float CV2_CODES_PER_SEMITONE = 68.96f;   // CV2, TL074 A4
 
 // ---- MIDI DIN (UART2) -------------------------------------------------------
 static constexpr int PIN_MIDI_TX = 17;
@@ -41,10 +53,16 @@ static constexpr int PIN_MUXB_S0  = 32;
 static constexpr int PIN_MUXB_S1  = 33;
 static constexpr int PIN_MUXB_S2  = 4;
 
-// ---- Panic button -----------------------------------------------------------
+// ---- Panic button / CV select ----------------------------------------------
 // GPIO34 is input-only and has no internal pull-up. External 10k to 3.3 V,
 // switch to GND, so the pin is active low.
-static constexpr int PIN_PANIC = 34;
+//
+// On the finished ESP32 board this is the CV select slide switch: low = keys
+// go to channel B (CV2 / gate 2), read as a level. main.cpp still treats the
+// pin as the panic button until the looper stage lands; panic then moves to
+// a long press of the toy's STOP button (docs/pinout.md section 7).
+static constexpr int PIN_PANIC     = 34;
+static constexpr int PIN_CV_SELECT = 34;
 
 // ---- Matrix geometry --------------------------------------------------------
 static constexpr uint8_t N_COLS = 8;
@@ -58,11 +76,27 @@ static constexpr uint8_t N_POS  = N_COLS * N_ROWS;      // 48
 // Worth knowing when tracing it out: the DIP pinout runs GPB0-7 on physical
 // pins 1-8 and GPA0-7 on pins 21-28, so port B is the one nearest pin 1.
 //
-//   1 = strobes on GPA0-7, returns on GPB0-5   (design doc default)
-//   0 = strobes on GPB0-7, returns on GPA0-5   (8-way connector on port B)
-#define COLS_ON_PORT_A 0
+//   1 = strobes on GPA, returns on GPB   (design doc default, and the I2C
+//                                         board as built - which bits, below)
+//   0 = strobes on GPB, returns on GPA
+#define COLS_ON_PORT_A 1
 
 static constexpr uint8_t POS(uint8_t col, uint8_t row) { return col * N_ROWS + row; }
+
+// ---- Matrix bit order -------------------------------------------------------
+// Which bit of the strobe port carries keybed column c, and which bit of the
+// return port carries keybed row r. Keybed coordinates, position_map.cpp and
+// the injection tables are untouched; only mcp23017.h looks here. Fill in, do
+// not rewire: the self test's monitor ('m') prints the physical pair behind
+// every lit cell, so a wrong entry is visible and a one-number fix, and its
+// pin-pair mode ('p') names the pins behind a key these tables do not cover.
+//
+// As built, read off the I2C board with the monitor and confirmed key by
+// key: the eight column lines went to GPA and the six row lines to GPB,
+// neither group in order. GPB0 and GPB7 are the spare inputs. The button
+// board's seven wires join these same pins (docs/pinout.md section 5).
+static constexpr uint8_t COL_BIT[N_COLS] = {3, 4, 2, 6, 1, 5, 0, 7};
+static constexpr uint8_t ROW_BIT[N_ROWS] = {3, 2, 4, 5, 6, 1};
 
 // ---- Injection channel map --------------------------------------------------
 // The keybed side of the cut was mapped through the expander (position_map.cpp);
@@ -125,7 +159,7 @@ extern const PosMap POSITION_MAP[N_POS];
 // ---- Button identities ------------------------------------------------------
 // CC numbers the mapping sweep handed the 8 keybed-side buttons, identified by
 // injecting each and listening (docs/pinout.md, section 5), plus the 7 on the
-// button board, which scan once that board is on the expander side.
+// button board, which is on the expander side too.
 enum ButtonCC : uint8_t {
     CC_PIANO   = 20, CC_BELLS  = 21, CC_MEOW   = 22, CC_ORGAN  = 23,
     CC_BANJO   = 24, CC_MUSIC  = 25, CC_STOP   = 26, CC_CATFACE = 27,

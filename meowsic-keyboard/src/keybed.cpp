@@ -7,9 +7,6 @@
 namespace keybed
 {
 
-    static constexpr uint8_t ROW_MASK = 0x3F; // bits 6/7 of the return port are
-                                              // open, ignore them
-
     static uint8_t rawCols[N_COLS];    // this frame
     static uint8_t stableCols[N_COLS]; // accepted state
     static uint32_t lastEdgeUs[N_POS];
@@ -100,13 +97,13 @@ namespace keybed
             // Assert column c by making it the only output. The latch is 0, so
             // it drives low. Selection is by the direction register, never by
             // the port register.
-            if (!mcp::writeReg(REG_COL_IODIR, (uint8_t)~(1u << c)))
+            if (!mcp::writeReg(REG_COL_IODIR, mcp::colStrobe(c)))
                 return false;
 
             uint8_t rows;
             if (!mcp::readReg(REG_ROW_GPIO, rows))
                 return false;
-            rawCols[c] = rows & ROW_MASK;
+            rawCols[c] = mcp::packRows(rows); // keybed order from here on
         }
         if (!mcp::writeReg(REG_COL_IODIR, 0xFF))
             return false; // release the matrix

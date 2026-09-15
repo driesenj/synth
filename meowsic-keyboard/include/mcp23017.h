@@ -69,6 +69,28 @@ static_assert(REG_ROW_GPIO == REG_GPIOA, "returns should be on port A");
 
 namespace mcp {
 
+// ---------------------------------------------------------------------------
+//  Physical bit order. COL_BIT / ROW_BIT in config.h say which port bit each
+//  keybed column and row landed on. Everything above the driver works in
+//  keybed order - column c, row r, row bits 0..N_ROWS-1 - and these two are
+//  the whole translation, so a board that came out shifted, mirrored, or with
+//  a ribbon reversed is a table edit.
+// ---------------------------------------------------------------------------
+
+// The COL_IODIR value that asserts keybed column c and nothing else.
+static inline uint8_t colStrobe(uint8_t c) {
+    return (uint8_t)~(1u << COL_BIT[c]);
+}
+
+// The return port as read, repacked into keybed order: bit r = row r closed.
+// Bits the rows do not use - the spare inputs - fall away here.
+static inline uint8_t packRows(uint8_t port) {
+    uint8_t rows = 0;
+    for (uint8_t r = 0; r < N_ROWS; ++r)
+        if (port & (1u << ROW_BIT[r])) rows |= (uint8_t)(1u << r);
+    return rows;
+}
+
 // Brings up I2C and applies the open-drain-emulation register setup from
 // design doc section 9.1. Returns false if the chip does not ACK.
 bool begin();

@@ -5,7 +5,7 @@
 // sweep assumed A2 for the lowest key, a tuner on the injected notes said A3
 // (57). Range is now the toy's own, A3-C6, so MIDI and CV play in unison
 // with it. The button board's seven (cc28-34) were added by hand from the
-// injection walk; they scan once that board is on the expander side.
+// injection walk, and scan since that board moved to the expander side.
 // Index = col * 6 + row.
 
 const PosMap POSITION_MAP[N_POS] = {

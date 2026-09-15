@@ -37,11 +37,13 @@ src/
   config.h           pins, timing, MIDI settings — edit this first
   position_map.cpp   (col,row) → note/CC table — edit after the mapping sweep
   mcp23017.h/.cpp    register-level I/O expander driver
+  mcp4725.h/.cpp     register-level DAC driver, one instance per CV channel
   keybed.h/.cpp      column strobe, debounce, ghost rejection, event queue
   midi_out.h/.cpp    3-byte MIDI sender, DIN + USB sinks
   main.cpp           setup, scan loop, event dispatch, panic
-  selftest.cpp       MCP23017 bring-up diagnostic (env: selftest, not built
-                     into the firmware)
+  selftest.cpp       I²C board bring-up diagnostic: expander, both DACs,
+                     matrix monitor, CV calibration (env: selftest, not
+                     built into the firmware)
   inject.h/.cpp      the injector: one virtual key through the two 4051s,
                      shared by the firmware and every test below
   muxtest.cpp        74HCT4051 injection diagnostic (env: muxtest, needs no
@@ -146,8 +148,8 @@ pio device monitor -b 115200
 ```
 
 Four environments: `esp32dev` is the firmware, `selftest` the expander
-diagnostic in [step 1](#1-verify-the-expander) (it shares `mcp23017.cpp` with
-the firmware), `muxtest` the injection-mux diagnostic in
+diagnostic in [step 1](#1-verify-the-i²c-board) (it shares `mcp23017.cpp` and
+`mcp4725.cpp` with the firmware), `muxtest` the injection-mux diagnostic in
 [step 4](#4-verify-the-injection-muxes), `demo` the tune in
 [Demo](#demo). All of them drive the muxes through `inject.cpp`.
 `build_src_filter` keeps each one's `setup()`/`loop()` out of the others.
@@ -167,28 +169,30 @@ Copy `src/*.cpp` and `src/*.h` into a sketch folder, rename `main.cpp` to
 
 ## Bring-up
 
-### 1. Verify the expander
+### 1. Verify the I²C board
 
-Do this with **only the MCP23017 wired** — no keybed, no blob, no 12 V. USB
-alone powers the ESP32 and the expander, so the whole of this step is a bench
-test with the toy unplugged.
+Do this with **the I²C board on its four-wire cable and nothing else powered**
+— no blob, no 12 V. USB alone powers the ESP32, the MCP23017 and both MCP4725s
+(`docs/pinout.md` §2), so the whole of this step is a bench test with the toy
+unplugged. The keybed and button board can stay plugged in.
 
 ```bash
 pio run -e selftest -t upload && pio device monitor -b 115200
 ```
 
-`selftest` is a separate firmware that shares `mcp23017.cpp` with the real one,
-so a pass exercises the production driver rather than a throwaway. It runs six
-checks and prints a verdict for each:
+`selftest` is a separate firmware that shares `mcp23017.cpp` and `mcp4725.cpp`
+with the real one, so a pass exercises the production drivers rather than
+throwaways. It runs seven checks and prints a verdict for each:
 
 | # | Check | What only this catches |
 |---|---|---|
-| 1 | SDA/SCL idle level before I²C starts | A line shorted to GND, or a wedged device |
-| 2 | Address sweep 0x03–0x77 | Chip present at the wrong address — A0–A2 not grounded |
+| 1 | SDA/SCL idle level before I²C starts | A line shorted to GND, or a slave left holding SDA by a corrupted transaction — which it then clocks out, since that state survives an ESP32 reset |
+| 2 | Address sweep 0x03–0x77, expecting 0x20, 0x60 and 0x61 | A chip at the wrong address — A0–A2 not grounded, a breakout's ADDR jumper wrong. Two breakouts at one address show as "0x60 present, 0x61 absent" |
 | 3 | Write and read back all 9 config registers | The read path; registers sitting at power-on defaults |
 | 4 | Walking pattern through the unused output latch | Chip not retaining state — RESET floating or VDD dipping |
-| 5 | 2000 reads at 100 kHz, then at 400 kHz | Marginal pull-ups. An ACK test passes without them; 400 kHz does not |
+| 5 | 2000 reads per device at 100 kHz, then at 400 kHz | Marginal pull-ups. An ACK test passes without them; 400 kHz does not. Reported per device, so one dirty breakout is told apart from a weak bus |
 | 6 | Strobe all 8 columns, time a frame | A column shorted to a return; a frame that overruns `SCAN_PERIOD_MS` |
+| 7 | Each DAC's state, then four patterns through the fast-mode write | A breakout without VCC through its 10 Ω; an EEPROM that would put CV somewhere other than 0 V at power-up |
 
 Check 5 is the one worth waiting for. Clean at 100 kHz but dirty at 400 kHz is
 the specific signature of missing or too-weak pull-ups — a plain "does it ACK"
@@ -197,20 +201,35 @@ test passes on the ESP32's ~45 kΩ internals and tells you nothing.
 The banner prints which port is strobes and which is returns, so check it
 against your harness before reading anything else.
 
-Then press `m` for the live matrix monitor and **short a strobe pin to a return
-pin with a jumper wire**. That is electrically a key press, so the 8×6 grid
-should light exactly one cell:
+Then press `m` for the live matrix monitor. With nothing plugged in, **short a
+strobe pin to a return pin with a jumper wire** — electrically a key press, so
+the 8×6 grid lights exactly one cell. With the keybed and button board plugged
+in, press keys: each lit cell is named from `position_map.cpp`, which is the
+acceptance test for the button board — play must light (3,0), record (4,0),
+and samba/blues/rock/techno/disco (3..7, 2):
 
 ```
-        r0 r1 r2 r3 r4 r5      i2c errors: 0
+        r0 r1 r2 r3 r4 r5      i2c errors: 0   cv select: A (high)
     c0   .  .  .  .  .  .
     c1   .  .  .  .  .  .
-    c2   .  X  .  .  .  .    pos=13
+    c3   X  .  .  .  .  .    pos=18 cc29 play
 ```
 
 This validates the entire open-drain-emulation scan path — the part that
-actually matters — before a single keybed line is soldered. Other commands are
-`r` re-run, `d` register dump, `s` bus stress only.
+actually matters. `p` is the same monitor with the tables taken away: it
+drives each of the 16 pins low in turn and reads the other 15, so a key press
+is reported as the two chip pins it joins (`GPA3 x GPB6`) plus what
+`COLS_ON_PORT_A` / `COL_BIT` / `ROW_BIT` make of that pair. A wire that landed
+on a bit the tables do not list, or on the wrong port, is invisible to `m`
+and named by `p` — it is how those three settings are read off a new board.
+Other commands are `r` re-run, `d` register dump, `s` bus
+stress only, `l` re-run with every check at 100 kHz instead of 400 (passing
+at 100 and dying at 400 is pull-ups, cable or an SCL joint, not the chip),
+and for the analogue side: `v` steps both DACs through five
+levels (0 to 4.95 V nominal at the CV jacks) for a meter; `o` alternates each
+DAC between two codes 12 semitones apart — adjust `CV_CODES_PER_SEMITONE` /
+`CV2_CODES_PER_SEMITONE` in `config.h` until the jack moves by exactly
+1.000 V; `e` programs both EEPROMs to 0 so CV is 0 V from power-up, once.
 
 If the cell that lights is the **transpose** of the one you jumpered, the
 strobes and returns are on the opposite ports to `COLS_ON_PORT_A`. Flip the
@@ -418,7 +437,7 @@ All in `src/config.h`.
 | Constant | Default | Notes |
 |---|---|---|
 | `USB_MIDI` | `0` | `1` = raw MIDI on UART0, `0` = text log |
-| `COLS_ON_PORT_A` | `0` | `1` = strobes on GPA, returns on GPB. `0` = swapped |
+| `COLS_ON_PORT_A` | `1` | `1` = strobes on GPA, returns on GPB. `0` = swapped |
 | `I2C_HZ` | `400000` | Needs the 2.2 kΩ pull-ups. Do not push to 1 MHz — see below |
 | `SCAN_PERIOD_MS` | `2` | 500 Hz frame rate |
 | `DEBOUNCE_US` | `5000` | Guard window after each accepted edge |
@@ -461,10 +480,21 @@ this follows the harness instead of forcing a rewire:
 
 | `COLS_ON_PORT_A` | 8 strobes | 6 returns |
 |---|---|---|
-| `1` | GPA0–GPA7 | GPB0–GPB5 |
-| `0` *(current)* | GPB0–GPB7 | GPA0–GPA5 |
+| `1` *(current)* | GPA | GPB |
+| `0` | GPB | GPA |
 
-Nothing outside `mcp23017.h` names a lettered register, so the flag moves the
+Which *bit* of each port carries which column and row is a second pair of
+tables, `COL_BIT` and `ROW_BIT` in `config.h`, so a header that landed one
+strip off or a ribbon crimped backwards is also a table edit. As built the
+columns are on GPA in no particular order (`COL_BIT = {3, 4, 2, 6, 1, 5, 0,
+7}`) and the rows on six bits of GPB (`ROW_BIT = {3, 2, 4, 5, 6, 1}`), the
+other two GPB bits spare; `docs/pinout.md` §3 has it as a pin table, with the
+entries still to be confirmed marked. The self-test monitor prints the
+physical pair behind every lit cell, so a wrong entry shows up as a key that
+lights the wrong cell with the right pins named next to it; a wire the tables
+miss altogether lights nothing, which is what `p` is for.
+
+Nothing outside `mcp23017.h` names a lettered register or a physical bit, so the flag moves the
 whole scanner. `static_assert`s in that header fail the build if the two roles
 ever land on the same port.
 
@@ -553,6 +583,8 @@ simultaneous.
 |---|---|
 | `MCP23017 not responding` at boot | RESET floating; missing I²C pull-ups; A0–A2 not grounded |
 | Works on the bench, fails once the case is closed | RESET pull-up — the classic MCP23017 failure |
+| Answers the scan, then NACKs ~30 ms into traffic; back after a minute idle; `0x27` with the DACs unplugged | A0–A2 floating. They sit on the strips next to SCL/SDA and get pumped high by bus activity. Ground them at the legs |
+| `Error 263` after exactly 1 s on every DAC read, while writes ACK | A slave with no ground reference — the ESP32's I²C controller hangs on the levels it produces instead of erroring |
 | Frequent `I2C recovery` messages | Marginal pull-ups, long unshielded SDA/SCL runs, or a flaky RESET |
 | All six rows of one column read pressed | Column line shorted to a return, or a failed read leaking through (should be impossible — the driver checks status) |
 | Some keys need a hard press | Contact resistance above ~25 kΩ. Clean the membrane; do **not** add external row pull-ups |

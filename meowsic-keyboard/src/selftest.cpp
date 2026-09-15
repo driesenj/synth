@@ -7,29 +7,48 @@
 #include "inject.h"
 #include "keybed.h"
 #include "mcp23017.h"
+#include "mcp4725.h"
+
+#include "driver/periph_ctrl.h"   // periph_module_reset, the diagnosis ladder's last rung
 
 // ============================================================================
-//  Meowsic MIDI - MCP23017 bring-up self test.
+//  Meowsic MIDI - I2C board bring-up self test.
 //
 //  Built as its own environment:  pio run -e selftest -t upload
 //
-//  Shares mcp23017.cpp with the real firmware, so a pass here means the
-//  production driver talks to the chip - not merely that something ACKed.
+//  Shares mcp23017.cpp and mcp4725.cpp with the real firmware, so a pass here
+//  means the production drivers talk to the chips - not merely that something
+//  ACKed.
 //
-//  Runs with only the expander wired: no keybed, no blob, no 12 V. USB alone
-//  powers the ESP32 and the MCP23017 (README, "Power notes that matter to
-//  firmware"), so this is a bench test with the toy unplugged.
+//  Runs with the I2C board on its four-wire cable and nothing else powered:
+//  no blob, no 12 V. USB alone runs the ESP32, the MCP23017 and both MCP4725s
+//  (README, "Power notes that matter to firmware"), so this is a bench test
+//  with the toy unplugged. The keybed and button board may be plugged in;
+//  check 6 only asks that nothing is being pressed.
 //
 //  Serial monitor at 115200, single-letter commands:
 //    r  re-run the full sequence
-//    m  live matrix monitor - short a strobe pin to a return pin
+//    m  live matrix monitor - press a key, or short a strobe pin to a return
+//       pin; each lit cell is named from position_map.cpp
+//    p  pin-pair monitor - the same, assuming nothing about which port or bit
+//       a wire is on: the two chip pins a key joins are named. This is how
+//       COLS_ON_PORT_A, COL_BIT and ROW_BIT are read off a new board
+//    d  dump the configuration registers once
+//    s  bus stress test at 100 kHz and 400 kHz, all three devices
+//    l  toggle the bus clock every other check runs at, 400 <-> 100 kHz,
+//       and re-run: passing at 100 and dying at 400 is signal integrity
+//       (pull-ups, cable, an SCL joint), not the chip
+//    v  step both DACs through five levels, for a meter on CV1 / CV2
+//    o  octave test: each DAC alternates two codes 12 semitones apart, to
+//       calibrate CV_CODES_PER_SEMITONE / CV2_CODES_PER_SEMITONE
+//    e  program both DACs' EEPROM to 0, so CV is 0 V from power-up
 //
 //  Which physical port is strobes and which is returns follows
 //  COLS_ON_PORT_A in config.h; the banner prints the active mapping.
-//    d  dump the configuration registers once
-//    s  bus stress test at 100 kHz and 400 kHz
 //
-//  Mapping sweep - fills in position_map.cpp without probing the keybed:
+//  Mapping sweep - fills in position_map.cpp without probing the keybed. The
+//  shipped table is measured and hand-annotated (names, the +12 rebase, the
+//  button board's seven); only re-run this if a matrix wire has moved:
 //    n  record piano keys, lowest first, as ascending notes
 //    c  record buttons as ascending CCs
 //    w  write out the finished position_map.cpp
@@ -55,16 +74,57 @@ static const char *bin8(uint8_t v)
     return s;
 }
 
+// Clock every check other than the stress test runs at. 'l' toggles it.
+static uint32_t busHz = I2C_HZ;
+
 // ---------------------------------------------------------------------------
 //  1. Bus idle levels, before I2C is brought up.
 //
 //  Only a LOW reading is conclusive: something is holding the line down - a
-//  short to ground, or a device stuck mid-transaction. HIGH does not prove the
-//  2.2k pull-ups are present or the right value; that is what the 400 kHz
-//  stress test in step 5 is for.
+//  short to ground, or a slave left mid-byte by a corrupted transaction, which
+//  holds SDA until it sees more clocks. That state survives an ESP32 reset,
+//  so the previous run's failure would poison this one; the standard cure is
+//  applied here - nine SCL pulses with SDA released, then a STOP.
+//
+//  HIGH does not prove the 2.2k pull-ups are present or the right value; that
+//  is what the 400 kHz stress test in step 5 is for.
+//
+//  Wire.end() first: pinMode() on the bus pins detaches the I2C peripheral's
+//  output from them, and Wire.begin() on an already-started bus is a no-op on
+//  this core, so without the end() every re-run after the first would talk to
+//  nothing.
 // ---------------------------------------------------------------------------
+static bool busRecover()
+{
+    pinMode(PIN_SDA, INPUT);
+    pinMode(PIN_SCL, OUTPUT_OPEN_DRAIN);
+    digitalWrite(PIN_SCL, HIGH);
+    delayMicroseconds(5);
+
+    for (uint8_t i = 0; i < 9 && !digitalRead(PIN_SDA); ++i)
+    {
+        digitalWrite(PIN_SCL, LOW);
+        delayMicroseconds(5);
+        digitalWrite(PIN_SCL, HIGH);
+        delayMicroseconds(5);
+    }
+
+    // START then STOP, so whatever was listening sees a clean end of frame.
+    pinMode(PIN_SDA, OUTPUT_OPEN_DRAIN);
+    digitalWrite(PIN_SDA, LOW);
+    delayMicroseconds(5);
+    digitalWrite(PIN_SDA, HIGH);
+    delayMicroseconds(5);
+
+    pinMode(PIN_SDA, INPUT);
+    pinMode(PIN_SCL, INPUT);
+    delayMicroseconds(50);
+    return digitalRead(PIN_SDA) && digitalRead(PIN_SCL);
+}
+
 static void testBusIdle()
 {
+    Wire.end();
     pinMode(PIN_SDA, INPUT); // no internal pull-up - we want the bus own level
     pinMode(PIN_SCL, INPUT);
     delayMicroseconds(50);
@@ -72,28 +132,59 @@ static void testBusIdle()
     const bool sda = digitalRead(PIN_SDA);
     const bool scl = digitalRead(PIN_SCL);
 
-    p("[1] bus idle    SDA(gpio%d)=%s  SCL(gpio%d)=%s",
-      PIN_SDA, sda ? "HIGH" : "LOW", PIN_SCL, scl ? "HIGH" : "LOW");
+    p("[1] bus idle    SDA(gpio%d)=%s  SCL(gpio%d)=%s   t=%lu ms",
+      PIN_SDA, sda ? "HIGH" : "LOW", PIN_SCL, scl ? "HIGH" : "LOW", (unsigned long)millis());
 
-    if (!sda || !scl)
-        p("    FAIL  a line is stuck low: short to GND, or a wedged device");
+    if (!scl)
+    {
+        p("    FAIL  SCL held low. Nothing but the master drives SCL, so this is");
+        p("          a short to GND or a wrong link, not a stuck device.");
+    }
+    else if (!sda)
+    {
+        p("    SDA held low: a slave is stuck mid-byte. Clocking it out...");
+        if (busRecover())
+        {
+            p("    ok    released. The last run ended in a corrupted transaction that");
+            p("          left a slave holding the bus - check 5, and 'l' for 100 kHz,");
+            p("          say whether that is pull-ups / cable / an SCL joint.");
+        }
+        else
+        {
+            p("    FAIL  still low after nine clocks: a short to GND, or a device");
+            p("          with no supply clamping the line. Power-cycle and meter it.");
+        }
+    }
     else
         p("    ok    both lines released");
 }
 
+// A quick ACK probe, so the checks that need the expander can skip cleanly
+// when it has dropped off the bus instead of marching through timeouts.
+static bool mcpAnswers()
+{
+    Wire.beginTransmission(MCP_ADDR);
+    return Wire.endTransmission() == 0;
+}
+
 // ---------------------------------------------------------------------------
-//  2. Address sweep. Catches a chip that is present but at the wrong address,
-//     which means A0-A2 are not actually grounded.
+//  2. Address sweep. Three devices are expected: the expander at 0x20 and the
+//     DACs at 0x60 / 0x61. A chip answering elsewhere has its address pins
+//     wrong - A0-A2 on the MCP23017, the ADDR jumper on a breakout. Two
+//     breakouts at one address both ACK and their reads collide, so that
+//     fault looks like "0x60 present, 0x61 absent".
 // ---------------------------------------------------------------------------
+static bool haveMcp, haveDac1, haveDac2;
+
 static void testAddressScan()
 {
-    Wire.begin(PIN_SDA, PIN_SCL, I2C_HZ);
+    Wire.begin(PIN_SDA, PIN_SCL, busHz);
     Wire.setTimeOut(20);
 
     uint8_t found = 0;
-    bool atExpected = false;
+    haveMcp = haveDac1 = haveDac2 = false;
 
-    p("[2] address scan (0x03-0x77)");
+    p("[2] address scan (0x03-0x77) at %lu kHz   t=%lu ms", (unsigned long)(busHz / 1000), (unsigned long)millis());
     for (uint8_t a = 0x03; a <= 0x77; ++a)
     {
         Wire.beginTransmission(a);
@@ -101,25 +192,36 @@ static void testAddressScan()
             continue;
 
         ++found;
-        if (a == MCP_ADDR)
-            atExpected = true;
-        p("    device at 0x%02X%s", a, a == MCP_ADDR ? "  <- expected" : "");
+        const char *who = "";
+        if (a == MCP_ADDR)       { haveMcp = true;  who = "  <- MCP23017"; }
+        else if (a == DAC_ADDR)  { haveDac1 = true; who = "  <- MCP4725, CV1"; }
+        else if (a == DAC2_ADDR) { haveDac2 = true; who = "  <- MCP4725, CV2"; }
+        p("    device at 0x%02X%s", a, who);
     }
 
     if (found == 0)
     {
-        p("    FAIL  nothing on the bus. Check VDD, GND, SDA/SCL not swapped,");
-        p("          and RESET (chip pin 18) pulled to 3.3 V through 10k.");
+        p("    FAIL  nothing on the bus. Check 3V3 and GND at the board, SDA/SCL");
+        p("          not swapped, and RESET (chip pin 18) pulled to 3.3 V through 10k.");
+        return;
     }
-    else if (!atExpected)
+    if (!haveMcp)
     {
-        p("    FAIL  chip answers, but not at 0x%02X. A0-A2 (pins 15-17) are", MCP_ADDR);
-        p("          not all grounded - the offset from 0x20 is their value.");
+        p("    FAIL  no MCP23017 at 0x%02X. If something answers at 0x21-0x27, A0-A2", MCP_ADDR);
+        p("          (pins 15-17) are not all grounded - the offset is their value.");
     }
-    else
+    if (!haveDac1)
     {
-        p("    ok    %u device(s), including 0x%02X", found, MCP_ADDR);
+        p("    FAIL  no MCP4725 at 0x%02X: breakout #1 has no VCC (the 10 ohm), or its", DAC_ADDR);
+        p("          ADDR jumper is closed and it sits on top of #2 at 0x%02X.", DAC2_ADDR);
     }
+    if (!haveDac2)
+    {
+        p("    FAIL  no MCP4725 at 0x%02X: breakout #2's ADDR jumper is open (it then", DAC2_ADDR);
+        p("          sits on top of #1 at 0x%02X), or it has no VCC.", DAC_ADDR);
+    }
+    if (haveMcp && haveDac1 && haveDac2)
+        p("    ok    %u devices: expander and both DACs", found);
 }
 
 // ---------------------------------------------------------------------------
@@ -151,19 +253,25 @@ static const RegCheck REGS[] = {
 };
 static constexpr uint8_t N_REGS = sizeof(REGS) / sizeof(REGS[0]);
 
+static bool droppedOff;   // set by dumpRegs: answered, then went silent
+
 static bool dumpRegs(bool verbose)
 {
-    uint8_t bad = 0, atPor = 0;
+    uint8_t bad = 0, atPor = 0, readOk = 0, readFail = 0;
+    droppedOff = false;
 
     for (uint8_t i = 0; i < N_REGS; ++i)
     {
         uint8_t got = 0;
         if (!mcp::readReg(REGS[i].reg, got))
         {
-            p("    %s @0x%02X  READ FAILED", REGS[i].name, REGS[i].reg);
+            p("    %s @0x%02X  READ FAILED   t=%lu ms", REGS[i].name, REGS[i].reg,
+              (unsigned long)millis());
             ++bad;
+            ++readFail;
             continue;
         }
+        ++readOk;
 
         const bool ok = (got == REGS[i].want);
         if (!ok)
@@ -185,20 +293,159 @@ static bool dumpRegs(bool verbose)
         p("          or VDD dipping. This is the classic MCP23017 failure, and");
         p("          the one that only shows up once the wiring moves.");
     }
+    if (readOk && readFail)
+    {
+        droppedOff = true;
+        p("    FAIL  the chip answered %u read(s), then stopped answering at all.", readOk);
+    }
     return bad == 0;
+}
+
+// ---------------------------------------------------------------------------
+//  Why did it stop? Each rung below separates one explanation from the rest
+//  and prints what it found; read them top to bottom. Write-only probes are
+//  used wherever possible because a read that hits a stuck controller costs a
+//  full second (the driver's fallback when the hardware raises no interrupt
+//  at all - error 263 after ~1000 ms is that, not a slave timeout).
+// ---------------------------------------------------------------------------
+static bool ack(uint8_t addr)
+{
+    Wire.beginTransmission(addr);
+    return Wire.endTransmission() == 0;
+}
+
+// n probes, 10 ms apart; how many answered.
+static uint8_t flicker(uint8_t addr, uint8_t n)
+{
+    uint8_t hits = 0;
+    for (uint8_t i = 0; i < n; ++i)
+    {
+        if (ack(addr)) ++hits;
+        delay(10);
+    }
+    return hits;
+}
+
+static void diagnoseDropout()
+{
+    p("          lines, peripheral attached and idle:  SDA=%s  SCL=%s",
+      digitalRead(PIN_SDA) ? "HIGH" : "LOW", digitalRead(PIN_SCL) ? "HIGH" : "LOW");
+
+    // A. is it flickering or gone?
+    uint8_t hits = flicker(MCP_ADDR, 5);
+    p("          A  expander answers %u of 5 probes, 10 ms apart", hits);
+    if (hits == 5)
+    {
+        p("             ...so it is back already. A transient - one corrupted");
+        p("             transaction. Check 5 and 'l' will show it as 400 kHz-only.");
+        return;
+    }
+
+    // B. the rest of the bus, without reads that can stall
+    const bool w1 = haveDac1 && ack(DAC_ADDR), w2 = haveDac2 && ack(DAC2_ADDR);
+    p("          B  DAC write probes: cv1 %s, cv2 %s", w1 ? "ACK" : "no", w2 ? "ACK" : "no");
+    if (w1)
+    {
+        dac::State st;
+        const uint32_t t0 = millis();
+        const bool ok = dac::read(DAC_ADDR, st);
+        const uint32_t dt = millis() - t0;
+        p("             cv1 read: %s in %lu ms%s", ok ? "ok" : "FAILED", (unsigned long)dt,
+          (!ok && dt > 500) ? " - the controller stalled, not the slave" : "");
+    }
+
+    // C. did its address move?
+    for (uint8_t a = 0x20; a <= 0x27; ++a)
+    {
+        if (a == MCP_ADDR) continue;
+        if (ack(a))
+        {
+            p("          C  the expander answers at 0x%02X: A0-A2 (legs 15-17) are not", a);
+            p("             held at GND. Ground them at the legs.");
+            return;
+        }
+    }
+    p("          C  not at 0x21-0x27 either");
+
+    // D. does traffic to other addresses bring it back? (that is what 'r' does
+    //    before it reaches 0x20, and it worked once)
+    for (uint8_t a = 0x08; a < 0x20; ++a) ack(a);
+    hits = flicker(MCP_ADDR, 5);
+    p("          D  after 24 probes to other addresses: answers %u of 5", hits);
+    if (hits)
+    {
+        p("             traffic resynchronised it: its I2C engine had lost the");
+        p("             thread. A glitch on SCL/SDA mid-transaction does that -");
+        p("             signal integrity, not power. 'l' should pass.");
+        return;
+    }
+
+    // E. clock speed
+    Wire.setClock(100000);
+    delay(2);
+    hits = flicker(MCP_ADDR, 5);
+    Wire.setClock(busHz);
+    p("          E  at 100 kHz: answers %u of 5", hits);
+    if (hits)
+    {
+        p("             it hears the slower clock: the 400 kHz edges are what it");
+        p("             cannot follow. Pull-ups, cable, the strip next to SCL.");
+        return;
+    }
+
+    // F. time: how long until it answers by itself?
+    p("          F  probing once a second, up to 60 s...");
+    for (uint8_t sec = 1; sec <= 60; ++sec)
+    {
+        delay(1000);
+        if (ack(MCP_ADDR))
+        {
+            p("             back after %u s of near-idle. That is a slow recovery -", sec);
+            p("             something is charging back up. Meter leg 9 to leg 10 on");
+            p("             the expander right after a failure, not later.");
+            return;
+        }
+    }
+    p("             still silent after 60 s");
+
+    // G. the master
+    Wire.end();
+    pinMode(PIN_SDA, INPUT);
+    pinMode(PIN_SCL, INPUT);
+    delayMicroseconds(50);
+    p("          G  lines with the peripheral detached:  SDA=%s  SCL=%s",
+      digitalRead(PIN_SDA) ? "HIGH" : "LOW", digitalRead(PIN_SCL) ? "HIGH" : "LOW");
+    busRecover();
+    periph_module_reset(PERIPH_I2C0_MODULE);
+    Wire.begin(PIN_SDA, PIN_SCL, busHz);
+    Wire.setTimeOut(20);
+    hits = flicker(MCP_ADDR, 5);
+    p("             after bus recovery + controller reset: answers %u of 5", hits);
+    if (hits)
+        p("             the ESP32 side was stuck, not the board.");
+    else
+        p("             nothing brings it back short of a reset. Scope time.");
 }
 
 static void testRegisters()
 {
-    p("[3] register write / read-back");
+    p("[3] register write / read-back   t=%lu ms", (unsigned long)millis());
 
     if (!mcp::begin())
     {
         p("    FAIL  mcp::begin() - no ACK, or a config write was not accepted");
+        if (haveMcp)
+        {
+            p("          it answered the scan %lu ms ago and not now", (unsigned long)millis());
+            diagnoseDropout();
+        }
         return;
     }
+    Wire.setClock(busHz);   // mcp::begin() set the production 400 kHz
     if (dumpRegs(true))
         p("    ok    all %u registers hold the configured value", N_REGS);
+    else if (droppedOff)
+        diagnoseDropout();
 }
 
 // ---------------------------------------------------------------------------
@@ -214,7 +461,13 @@ static void testRetention()
     static const uint8_t PATTERN[] = {0xFF, 0xA5, 0x5A, 0x00};
     uint8_t bad = 0;
 
-    p("[4] state retention (walking pattern through port " ROW_PORT_NAME " OLAT)");
+    p("[4] state retention (walking pattern through port " ROW_PORT_NAME " OLAT)   t=%lu ms", (unsigned long)millis());
+
+    if (!mcpAnswers())
+    {
+        p("    skipped - the expander is not answering, see check 3");
+        return;
+    }
 
     for (uint8_t i = 0; i < sizeof(PATTERN); ++i)
     {
@@ -249,48 +502,118 @@ static void testRetention()
 //  rather than just pass/fail - clean at 100 k but dirty at 400 k is a pull-up
 //  problem specifically, dirty at both is wiring or power.
 // ---------------------------------------------------------------------------
-static uint16_t hammer(uint32_t hz, uint16_t n)
+struct Fails
+{
+    uint16_t mcp, dac1, dac2;
+    uint16_t total() const { return mcp + dac1 + dac2; }
+};
+
+// A device that fails GIVE_UP reads in a row is gone, not marginal, and every
+// further attempt would cost the 20 ms timeout - 2000 of them is most of a
+// minute of apparent hang. Stop asking it, count the rest as failed, and
+// remember how far it got: a device that dies after some hundreds of good
+// reads at one speed is the signature of marginal signal integrity.
+static constexpr uint16_t GIVE_UP = 3;
+
+struct Probe
+{
+    bool     ask;
+    uint16_t fails, run, diedAt;   // run = consecutive fails; diedAt = good reads before death
+};
+
+static void tally(Probe &d, bool ok, uint16_t i, uint16_t n)
+{
+    if (!d.ask)
+        return;
+    if (ok)
+    {
+        d.run = 0;
+        return;
+    }
+    ++d.fails;
+    if (++d.run == GIVE_UP)
+    {
+        d.ask = false;
+        d.diedAt = i + 1 - GIVE_UP;
+        d.fails = n;
+    }
+}
+
+static uint16_t diedMcp, diedDac1, diedDac2;   // 0 = did not die
+
+// One MCP23017 register read and one 5-byte read from each DAC per pass, so
+// every device - and the whole cable - is under the same clock.
+static Fails hammer(uint32_t hz, uint16_t n)
 {
     Wire.setClock(hz);
     delay(2);
 
-    uint16_t fails = 0;
+    Probe m = {true, 0, 0, 0}, d1 = {haveDac1, 0, 0, 0}, d2 = {haveDac2, 0, 0, 0};
     for (uint16_t i = 0; i < n; ++i)
     {
         uint8_t v;
-        if (!mcp::readReg(REG_ROW_GPIO, v))
-            ++fails;
+        dac::State st;
+        if (m.ask)  tally(m,  mcp::readReg(REG_ROW_GPIO, v), i, n);
+        if (d1.ask) tally(d1, dac::read(DAC_ADDR, st), i, n);
+        if (d2.ask) tally(d2, dac::read(DAC2_ADDR, st), i, n);
     }
-    return fails;
+    diedMcp = m.ask ? 0 : m.diedAt + 1;
+    diedDac1 = d1.ask ? 0 : d1.diedAt + 1;
+    diedDac2 = d2.ask ? 0 : d2.diedAt + 1;
+    return Fails{m.fails, d1.fails, d2.fails};
+}
+
+static void failCell(char (&out)[12], bool present, uint16_t fails, uint16_t n)
+{
+    if (!present)        snprintf(out, sizeof(out), "  n/a");
+    else if (fails == n) snprintf(out, sizeof(out), " dead");
+    else                 snprintf(out, sizeof(out), "%5u", (unsigned)fails);
+}
+
+static void failLine(const char *speed, const Fails &f, uint16_t n)
+{
+    char m[12], d1[12], d2[12];
+    failCell(m, true, f.mcp, n);
+    failCell(d1, haveDac1, f.dac1, n);
+    failCell(d2, haveDac2, f.dac2, n);
+    p("    %s  mcp %s   cv1 %s   cv2 %s  failed", speed, m, d1, d2);
+    if (diedMcp)  p("             mcp stopped answering after %u good reads", diedMcp - 1);
+    if (diedDac1) p("             cv1 stopped answering after %u good reads", diedDac1 - 1);
+    if (diedDac2) p("             cv2 stopped answering after %u good reads", diedDac2 - 1);
 }
 
 static void testBusQuality()
 {
     static constexpr uint16_t N = 2000;
+    char fastLabel[12];
+    snprintf(fastLabel, sizeof(fastLabel), "%3lu kHz", (unsigned long)(I2C_HZ / 1000));
 
-    p("[5] bus stress, %u reads at each speed", N);
+    p("[5] bus stress, %u reads per device at each speed   t=%lu ms", N, (unsigned long)millis());
 
-    const uint16_t slow = hammer(100000, N);
-    const uint16_t fast = hammer(I2C_HZ, N);
+    const Fails slow = hammer(100000, N);
+    failLine("100 kHz", slow, N);
+    const Fails fast = hammer(I2C_HZ, N);
+    failLine(fastLabel, fast, N);
 
-    p("    100 kHz  %4u / %u failed", slow, N);
-    p("    %3lu kHz  %4u / %u failed", (unsigned long)(I2C_HZ / 1000), fast, N);
-
-    if (slow == 0 && fast == 0)
+    if (slow.total() == 0 && fast.total() == 0)
         p("    ok    clean at both speeds");
-    else if (slow == 0)
+    else if (slow.total() == 0)
     {
         p("    FAIL  clean at 100 kHz, dirty at %lu kHz. That is the signature",
           (unsigned long)(I2C_HZ / 1000));
-        p("          of missing or too-weak pull-ups - this firmware needs 2.2k");
-        p("          to 3.3 V on both lines. Long unshielded runs do it too.");
+        p("          of missing or too-weak pull-ups - the bus needs its one 2.2k");
+        p("          pair to 3.3 V, on the I2C board. A long or bundled bus cable");
+        p("          does it too. One device dirty with the others clean is that");
+        p("          device's own joint: its SDA/SCL links, or VCC through the 10 ohm.");
     }
     else
     {
-        p("    FAIL  errors even at 100 kHz. Wiring, power, or RESET.");
+        p("    FAIL  errors even at 100 kHz. Wiring, power, or RESET. A device");
+        p("          marked dead stopped answering and stays silent until the bus");
+        p("          is clocked out: 'r' does that in check 1.");
     }
 
-    Wire.setClock(I2C_HZ);
+    Wire.setClock(busHz);
 }
 
 // ---------------------------------------------------------------------------
@@ -308,11 +631,17 @@ static void testStrobe()
 {
     uint8_t bad = 0;
 
-    p("[6] column strobe, keybed detached - every row must read 0");
+    p("[6] column strobe, nothing pressed - every row must read 0   t=%lu ms", (unsigned long)millis());
+
+    if (!mcpAnswers())
+    {
+        p("    skipped - the expander is not answering, see check 3");
+        return;
+    }
 
     for (uint8_t c = 0; c < N_COLS; ++c)
     {
-        const uint8_t want = (uint8_t)~(1u << c);
+        const uint8_t want = mcp::colStrobe(c);
 
         if (!mcp::writeReg(REG_COL_IODIR, want))
         {
@@ -334,11 +663,12 @@ static void testStrobe()
             ++bad;
             continue;
         }
-        if (rows & 0x3F)
+        if (mcp::packRows(rows))
         {
-            p("    col %u  GP" ROW_PORT_NAME "=%s  <- closed with nothing wired:",
+            p("    col %u  GP" ROW_PORT_NAME "=%s  <- closed with nothing pressed:",
               c, bin8(rows));
-            p("           GP" COL_PORT_NAME "%u is shorted to a return line", c);
+            p("           GP" COL_PORT_NAME "%u is shorted to a return line, or a key is held",
+              COL_BIT[c]);
             ++bad;
         }
     }
@@ -371,8 +701,8 @@ static void timeFrame()
     // Bus time only, from the bit counts above.
     static constexpr uint32_t WRITE_BITS = 27;
     static constexpr uint32_t READ_BITS = 36;
-    const uint32_t wireW = WRITE_BITS * 1000000UL / I2C_HZ;
-    const uint32_t wireR = READ_BITS * 1000000UL / I2C_HZ;
+    const uint32_t wireW = WRITE_BITS * 1000000UL / busHz;
+    const uint32_t wireR = READ_BITS * 1000000UL / busHz;
 
     uint32_t t0 = micros();
     for (uint16_t i = 0; i < N_T; ++i)
@@ -427,44 +757,247 @@ static void timeFrame()
 }
 
 // ---------------------------------------------------------------------------
-//  Live monitor. The point of this mode is that it needs no keybed: a jumper
-//  from GP<strobe port><col> to GP<return port><row> is electrically a key
-//  press, and exactly one cell should light. Raw view - no debounce, no ghost
-//  rejection - so contact bounce and shorts stay visible.
+//  7. The two MCP4725s. Read the whole state back - DAC register, power-down
+//     mode, EEPROM - then push four patterns through the fast-mode write the
+//     firmware will use per note, reading each back. The EEPROM is what the
+//     output sits at from power-up until the firmware writes the DAC; it
+//     should hold 0 so CV starts at 0 V ('e' does that).
 // ---------------------------------------------------------------------------
+static float jackVolts(uint16_t code)
+{
+    return code * 3.3f / 4096.0f * 1.5f;    // breakout x1.5 at the TL074
+}
+
+static bool testOneDac(const char *name, uint8_t addr)
+{
+    dac::State s;
+    if (!dac::read(addr, s))
+    {
+        p("    %s 0x%02X  read FAILED", name, addr);
+        return false;
+    }
+    p("    %s 0x%02X  dac %4u (pd %u)   eeprom %4u (pd %u)   %s",
+      name, addr, s.code, s.pd, s.eepromCode, s.eepromPd,
+      s.ready ? "ready" : "BUSY");
+
+    static const uint16_t PATTERN[] = {0x000, 0xA5A, 0x5A5, 0xFFF};
+    uint8_t bad = 0;
+    for (uint8_t i = 0; i < sizeof(PATTERN) / sizeof(PATTERN[0]); ++i)
+    {
+        const uint16_t code = PATTERN[i];
+        dac::State back = {};
+        if (!dac::write(addr, code) || !dac::read(addr, back) ||
+            back.code != code || back.pd != 0)
+        {
+            p("          wrote %4u  read %4u (pd %u)  <- MISMATCH",
+              code, back.code, back.pd);
+            ++bad;
+        }
+    }
+    dac::write(addr, 0);
+
+    if (s.eepromPd != 0)
+        p("          note: EEPROM says power-down - output is pulled to GND from");
+    else if (s.eepromCode != 0)
+        p("          note: EEPROM is %u - the jack sits at %.2f V from", s.eepromCode,
+          jackVolts(s.eepromCode));
+    if (s.eepromPd != 0 || s.eepromCode != 0)
+        p("          power-up until the firmware writes the DAC. 'e' programs it to 0.");
+
+    return bad == 0;
+}
+
+static void testDacs()
+{
+    p("[7] MCP4725 DACs: state, then fast-mode write and read-back   t=%lu ms", (unsigned long)millis());
+
+    if (!haveDac1 && !haveDac2)
+    {
+        p("    skipped - neither DAC answered the address scan");
+        return;
+    }
+
+    bool ok = true;
+    if (haveDac1) ok &= testOneDac("cv1", DAC_ADDR);
+    if (haveDac2) ok &= testOneDac("cv2", DAC2_ADDR);
+
+    if (ok)
+        p("    ok    %s what it is told, outputs left at 0",
+          (haveDac1 && haveDac2) ? "both DACs hold" : "the DAC present holds");
+    else
+        p("    FAIL  a DAC is not retaining writes: VCC through the 10 ohm, or its bus joints");
+}
+
+// ---------------------------------------------------------------------------
+//  Meter modes, for the analogue side. Both DACs get equivalent codes so CV1
+//  (TL074 pin 1) and CV2 (pin 14) can be compared on one meter. Volts are
+//  nominal: 3.3 V / 4096 per code at the breakout, x1.5 at the jack; the
+//  DevKit's regulator and the 1% resistors move them a little, which is what
+//  the octave mode calibrates out.
+// ---------------------------------------------------------------------------
+enum DacMode : uint8_t { DAC_OFF, DAC_STEPS, DAC_OCTAVE };
+
+static DacMode dacMode = DAC_OFF;
+static uint8_t dacStep;
+static uint32_t dacNext;
+
 static bool monitorOn = false;
+static void sweepStop();
+static void pairsStop();
+
+static void dacSet(uint16_t c1, uint16_t c2)
+{
+    if (haveDac1) dac::write(DAC_ADDR, c1);
+    if (haveDac2) dac::write(DAC2_ADDR, c2);
+}
+
+static void dacStop()
+{
+    if (dacMode == DAC_OFF)
+        return;
+    dacMode = DAC_OFF;
+    dacSet(0, 0);
+    p("DACs back to 0");
+}
+
+static void dacBegin(DacMode m)
+{
+    if (!haveDac1 && !haveDac2)
+    {
+        p("no DAC answered the address scan - run r first");
+        return;
+    }
+    monitorOn = false;
+    sweepStop();
+    pairsStop();
+    dacMode = m;
+    dacStep = 0;
+    dacNext = millis();
+
+    p("");
+    if (m == DAC_STEPS)
+    {
+        p("DAC steps, 3 s each: meter CV1 (TL074 pin 1) and CV2 (pin 14).");
+        p("Any key stops.");
+    }
+    else
+    {
+        p("Octave test, 4 s each: each DAC alternates two codes 12 semitones");
+        p("apart. The jack must move by exactly 1.000 V. Adjust");
+        p("CV_CODES_PER_SEMITONE (now %.2f) and CV2_CODES_PER_SEMITONE (%.2f)",
+          CV_CODES_PER_SEMITONE, CV2_CODES_PER_SEMITONE);
+        p("in config.h until it does; larger if the step is short. Any key stops.");
+    }
+}
+
+static void dacTick()
+{
+    if ((int32_t)(millis() - dacNext) < 0)
+        return;
+
+    if (dacMode == DAC_STEPS)
+    {
+        static const uint16_t LEVEL[] = {0, 1024, 2048, 3072, 4095};
+        const uint16_t code = LEVEL[dacStep];
+        dacSet(code, code);
+        p("  code %4u   breakout %.3f V   jack %.3f V",
+          code, code * 3.3f / 4096.0f, jackVolts(code));
+        dacStep = (dacStep + 1) % (sizeof(LEVEL) / sizeof(LEVEL[0]));
+        dacNext = millis() + 3000;
+    }
+    else
+    {
+        static constexpr uint16_t BASE = 1000;
+        const uint16_t up1 = BASE + (uint16_t)(12.0f * CV_CODES_PER_SEMITONE + 0.5f);
+        const uint16_t up2 = BASE + (uint16_t)(12.0f * CV2_CODES_PER_SEMITONE + 0.5f);
+        const bool high = dacStep & 1;
+        const uint16_t c1 = high ? up1 : BASE;
+        const uint16_t c2 = high ? up2 : BASE;
+        dacSet(c1, c2);
+        p("  %s   cv1 code %4u -> %.3f V   cv2 code %4u -> %.3f V   (nominal, at the jack)",
+          high ? "high" : "low ", c1, jackVolts(c1), c2, jackVolts(c2));
+        dacStep ^= 1;
+        dacNext = millis() + 4000;
+    }
+}
+
+static void dacProgramEeprom()
+{
+    monitorOn = false;
+    sweepStop();
+    pairsStop();
+    dacStop();
+
+    if (!haveDac1 && !haveDac2)
+    {
+        p("no DAC answered the address scan - run r first");
+        return;
+    }
+    p("programming EEPROM to 0, normal mode (one write each, ~50 ms)");
+    if (haveDac1)
+        p("  cv1 0x%02X  %s", DAC_ADDR, dac::writeEeprom(DAC_ADDR, 0) ? "ok" : "FAILED");
+    if (haveDac2)
+        p("  cv2 0x%02X  %s", DAC2_ADDR, dac::writeEeprom(DAC2_ADDR, 0) ? "ok" : "FAILED");
+}
+
+// ---------------------------------------------------------------------------
+//  Live monitor. Needs no keybed: a jumper from GP<strobe port><col> to
+//  GP<return port><row> is electrically a key press, and exactly one cell
+//  should light. With the keybed and button board plugged in, each lit cell
+//  is named from position_map.cpp - that is the acceptance test for the
+//  button board's seven joints. Raw view - no debounce, no ghost rejection -
+//  so contact bounce and shorts stay visible.
+// ---------------------------------------------------------------------------
+static const char *NOTE_NAMES[12] = {"C", "C#", "D", "D#", "E", "F",
+                                     "F#", "G", "G#", "A", "A#", "B"};
+
+static void posLabel(uint8_t pos, char *out, size_t n)
+{
+    const PosMap &m = POSITION_MAP[pos];
+    if (m.kind == K_NOTE)
+        snprintf(out, n, "note %u %s%d", m.data, NOTE_NAMES[m.data % 12],
+                 (int)(m.data / 12) - 1);
+    else if (m.kind == K_CC)
+        snprintf(out, n, "cc%u %s", m.data, ccName(m.data));
+    else
+        snprintf(out, n, "unmapped");
+}
 
 static void monitorTick()
 {
     static uint8_t shown[N_COLS];
+    static bool shownSel;
     static bool first = true;
     static uint32_t fails = 0;
 
     uint8_t now[N_COLS];
+    const bool selB = digitalRead(PIN_CV_SELECT) == LOW;
 
     for (uint8_t c = 0; c < N_COLS; ++c)
     {
         uint8_t rows;
-        if (!mcp::writeReg(REG_COL_IODIR, (uint8_t)~(1u << c)) ||
+        if (!mcp::writeReg(REG_COL_IODIR, mcp::colStrobe(c)) ||
             !mcp::readReg(REG_ROW_GPIO, rows))
         {
             ++fails;
             return; // a partial frame is worse than no frame
         }
-        now[c] = rows & 0x3F;
+        now[c] = mcp::packRows(rows);
     }
     mcp::writeReg(REG_COL_IODIR, 0xFF);
 
-    if (!first && memcmp(now, shown, sizeof(now)) == 0)
+    if (!first && memcmp(now, shown, sizeof(now)) == 0 && selB == shownSel)
         return;
     first = false;
     memcpy(shown, now, sizeof(now));
+    shownSel = selB;
 
     p("");
-    p("        r0 r1 r2 r3 r4 r5      i2c errors: %lu", (unsigned long)fails);
+    p("        r0 r1 r2 r3 r4 r5      i2c errors: %lu   cv select: %s",
+      (unsigned long)fails, selB ? "B (low)" : "A (high)");
     for (uint8_t c = 0; c < N_COLS; ++c)
     {
-        char line[72];
+        char line[128], label[32];
         int n = snprintf(line, sizeof(line), "    c%u  ", c);
         for (uint8_t r = 0; r < N_ROWS; ++r)
             n += snprintf(line + n, sizeof(line) - n, " %c ",
@@ -472,10 +1005,175 @@ static void monitorTick()
 
         for (uint8_t r = 0; r < N_ROWS; ++r)
             if (now[c] & (1u << r))
-                n += snprintf(line + n, sizeof(line) - n, "  pos=%u", POS(c, r));
+            {
+                posLabel(POS(c, r), label, sizeof(label));
+                n += snprintf(line + n, sizeof(line) - n, "  pos=%u %s  [GP"
+                              COL_PORT_NAME "%u x GP" ROW_PORT_NAME "%u]",
+                              POS(c, r), label, COL_BIT[c], ROW_BIT[r]);
+            }
 
         Serial.println(line);
     }
+}
+
+// ---------------------------------------------------------------------------
+//  Pin-pair monitor. The live monitor above trusts COLS_ON_PORT_A, COL_BIT
+//  and ROW_BIT: a wire on a bit the tables do not list, or on the wrong port
+//  altogether, never lights a cell - it is silent rather than wrong, and the
+//  first I2C board had eight such keys. This mode assumes nothing about the
+//  wiring. Each of the 16 pins is driven low in turn and the other 15 read,
+//  so a key press or a jumper shows as the two chip pins it joins, plus what
+//  the tables make of that pair. Both ports get the returns' pull-ups and
+//  inversion while it runs; mcp::configure() restores the scan setup after.
+//
+//  Pin index 0-7 is GPA0-7, 8-15 is GPB0-7.
+// ---------------------------------------------------------------------------
+static bool pairsOn = false;
+
+static constexpr uint8_t STROBE_PIN0 = COLS_ON_PORT_A ? 0 : 8;
+
+static inline char pinPort(uint8_t i) { return i < 8 ? 'A' : 'B'; }
+
+static int colOfBit(uint8_t bit)
+{
+    for (uint8_t c = 0; c < N_COLS; ++c)
+        if (COL_BIT[c] == bit)
+            return c;
+    return -1;
+}
+
+static int rowOfBit(uint8_t bit)
+{
+    for (uint8_t r = 0; r < N_ROWS; ++r)
+        if (ROW_BIT[r] == bit)
+            return r;
+    return -1;
+}
+
+static bool pairsSetup()
+{
+    // The returns' setup on both ports: input, pulled up, inverted, latch 0
+    // so a pin switched to output drives low. Latches before directions, as
+    // in mcp::configure().
+    bool ok = mcp::writeReg(REG_OLATA, 0x00);
+    ok &= mcp::writeReg(REG_OLATB, 0x00);
+    ok &= mcp::writeReg(REG_IODIRA, 0xFF);
+    ok &= mcp::writeReg(REG_IODIRB, 0xFF);
+    ok &= mcp::writeReg(REG_GPPUA, 0xFF);
+    ok &= mcp::writeReg(REG_GPPUB, 0xFF);
+    ok &= mcp::writeReg(REG_IPOLA, 0xFF);
+    ok &= mcp::writeReg(REG_IPOLB, 0xFF);
+    return ok;
+}
+
+static void pairsStop()
+{
+    if (!pairsOn)
+        return;
+    pairsOn = false;
+    // configure() never touches the strobe port's IPOL, so undo that one here
+    // or the register dump would show it inverted from now on.
+    mcp::writeReg(COLS_ON_PORT_A ? REG_IPOLA : REG_IPOLB, 0x00);
+    mcp::configure();
+    p("pin pairs off");
+}
+
+// What config.h makes of pins a and b being joined. On return a is the pin
+// on the strobe port when exactly one of them is, so the caller prints the
+// pair the way the live monitor does, strobe first.
+static void pairLabel(uint8_t &a, uint8_t &b, char *out, size_t n)
+{
+    const bool aStrobe = (a < 8) == (STROBE_PIN0 == 0);
+    const bool bStrobe = (b < 8) == (STROBE_PIN0 == 0);
+
+    if (aStrobe == bStrobe)
+    {
+        snprintf(out, n, "both on the %s port: a wire on the wrong side of the"
+                         " chip, or COLS_ON_PORT_A is wrong",
+                 aStrobe ? "strobe" : "return");
+        return;
+    }
+    if (!aStrobe)
+    {
+        const uint8_t t = a;
+        a = b;
+        b = t;
+    }
+
+    const int c = colOfBit(a & 7);
+    const int r = rowOfBit(b & 7);
+    if (c < 0 && r < 0)
+        snprintf(out, n, "GP%c%u is in no COL_BIT entry, GP%c%u in no ROW_BIT entry",
+                 pinPort(a), a & 7, pinPort(b), b & 7);
+    else if (c < 0)
+        snprintf(out, n, "GP%c%u is in no COL_BIT entry", pinPort(a), a & 7);
+    else if (r < 0)
+        snprintf(out, n, "GP%c%u is in no ROW_BIT entry", pinPort(b), b & 7);
+    else
+    {
+        char label[32];
+        posLabel(POS(c, r), label, sizeof(label));
+        snprintf(out, n, "col %d row %d  pos=%u %s", c, r, POS(c, r), label);
+    }
+}
+
+static void pairsTick()
+{
+    static uint16_t shown[16];
+    static bool first = true;
+    static uint32_t fails = 0;
+
+    uint16_t now[16]; // now[i] bit j: pin j read closed while pin i was low
+    for (uint8_t i = 0; i < 16; ++i)
+    {
+        const uint8_t iodir = (i < 8) ? REG_IODIRA : REG_IODIRB;
+        uint8_t a = 0, b = 0;
+        const bool ok = mcp::writeReg(iodir, (uint8_t)~(1u << (i & 7))) &&
+                        mcp::readReg(REG_GPIOA, a) &&
+                        mcp::readReg(REG_GPIOB, b);
+        mcp::writeReg(iodir, 0xFF); // release before the next pin, always
+        if (!ok)
+        {
+            ++fails;
+            return; // a partial frame is worse than no frame
+        }
+        // The driven pin reads as closed to itself; drop that bit.
+        now[i] = (uint16_t)((a | (b << 8)) & ~(1u << i));
+    }
+
+    // Seen from either end counts: a contact closing reads from one end a
+    // frame before the other, and a pair that only ever reads one way is a
+    // marginal contact, still worth naming. Symmetrise before comparing so
+    // that a pair is printed once, not once per end.
+    for (uint8_t i = 0; i < 16; ++i)
+        for (uint8_t j = i + 1; j < 16; ++j)
+            if (((now[i] >> j) | (now[j] >> i)) & 1)
+            {
+                now[i] |= (uint16_t)(1u << j);
+                now[j] |= (uint16_t)(1u << i);
+            }
+
+    if (!first && memcmp(now, shown, sizeof(now)) == 0)
+        return;
+    first = false;
+    memcpy(shown, now, sizeof(now));
+
+    p("");
+    p("    pin pairs closed      i2c errors: %lu", (unsigned long)fails);
+    bool any = false;
+    for (uint8_t i = 0; i < 16; ++i)
+        for (uint8_t j = i + 1; j < 16; ++j)
+        {
+            if (!((now[i] >> j) & 1))
+                continue;
+            any = true;
+            uint8_t s = i, t = j;
+            char label[96];
+            pairLabel(s, t, label, sizeof(label));
+            p("    GP%c%u x GP%c%u   %s", pinPort(s), s & 7, pinPort(t), t & 7, label);
+        }
+    if (!any)
+        p("    none");
 }
 
 
@@ -511,6 +1209,7 @@ static void sweepBegin(SweepMode mode)
 
     keybed::begin();
     monitorOn = false;
+    pairsStop();
 
     if (mode == SWEEP_NOTE)
     {
@@ -563,6 +1262,11 @@ static void sweepTick()
           sweepCount, e.pos, e.pos / N_ROWS, e.pos % N_ROWS,
           sweep == SWEEP_NOTE ? "note" : "cc", value);
     }
+}
+
+static void sweepStop()
+{
+    sweep = SWEEP_NONE;
 }
 
 static void sweepReset()
@@ -626,19 +1330,39 @@ static void sweepWrite()
 static void runAll()
 {
     p("");
-    p("=== MCP23017 self test =========================================");
-    p("    %u strobes on port " COL_PORT_NAME "0-%u, %u returns on port "
-      ROW_PORT_NAME "0-%u   (COLS_ON_PORT_A = %d)",
-      N_COLS, N_COLS - 1, N_ROWS, N_ROWS - 1, COLS_ON_PORT_A);
+    char colBits[2 * N_COLS + 1], rowBits[2 * N_ROWS + 1];
+    for (uint8_t c = 0; c < N_COLS; ++c)
+    {
+        colBits[2 * c] = (char)('0' + (COL_BIT[c] & 7));
+        colBits[2 * c + 1] = ' ';
+    }
+    colBits[2 * N_COLS] = 0;
+    for (uint8_t r = 0; r < N_ROWS; ++r)
+    {
+        rowBits[2 * r] = (char)('0' + (ROW_BIT[r] & 7));
+        rowBits[2 * r + 1] = ' ';
+    }
+    rowBits[2 * N_ROWS] = 0;
+    p("=== I2C board self test ========================================");
+    p("    columns 0-%u strobe GP" COL_PORT_NAME " bits %s  rows 0-%u return on GP"
+      ROW_PORT_NAME " bits %s (COLS_ON_PORT_A = %d)",
+      N_COLS - 1, colBits, N_ROWS - 1, rowBits, COLS_ON_PORT_A);
+    p("    expander 0x%02X, DACs 0x%02X / 0x%02X, bus %lu kHz, cv select gpio%d = %s",
+      MCP_ADDR, DAC_ADDR, DAC2_ADDR, (unsigned long)(busHz / 1000), PIN_CV_SELECT,
+      digitalRead(PIN_CV_SELECT) ? "A (high)" : "B (low)");
     testBusIdle();
     testAddressScan();
     testRegisters();
     testRetention();
     testBusQuality();
     testStrobe();
+    testDacs();
     p("================================================================");
-    p("r re-run   m live monitor   d register dump   s bus stress");
-    p("sweep:  n notes   c CCs   w write position_map.cpp   z clear");
+    p("r re-run   m live monitor   p pin pairs   d register dump   s bus stress");
+    p("l re-run with every check at %lu kHz instead",
+      (unsigned long)((busHz == I2C_HZ ? 100000 : I2C_HZ) / 1000));
+    p("DACs:   v meter steps   o octave calibration   e program EEPROM to 0");
+    p("sweep, only if a matrix wire moved:  n notes   c CCs   w write   z clear");
 }
 
 void setup()
@@ -648,9 +1372,9 @@ void setup()
     // meowing through the whole test.
     inject::begin();
 
-    // GPIO34 is deliberately left alone here. The panic button is not part of
-    // the expander, and if its 10k pull-up is not fitted yet the pin floats and
-    // would only add noise to the log.
+    // The CV select switch. Input-only pin; the 10k on the ESP32 board holds
+    // it high, so the level is meaningful and the monitor shows it live.
+    pinMode(PIN_CV_SELECT, INPUT);
 
     Serial.begin(USB_BAUD);
     delay(300); // let the host reopen the port after the reset
@@ -674,39 +1398,86 @@ void loop()
         case 'r':
             monitorOn = false;
             sweep = SWEEP_NONE;
+            pairsStop();
+            dacStop();
             runAll();
+            break;
+        case 'l':
+            monitorOn = false;
+            sweep = SWEEP_NONE;
+            pairsStop();
+            dacStop();
+            busHz = (busHz == I2C_HZ) ? 100000 : I2C_HZ;
+            runAll();
+            break;
+        case 'v':
+            dacBegin(DAC_STEPS);
+            break;
+        case 'o':
+            dacBegin(DAC_OCTAVE);
+            break;
+        case 'e':
+            dacProgramEeprom();
             break;
         case 'm':
             sweep = SWEEP_NONE;
+            pairsStop();
+            dacStop();
             monitorOn = !monitorOn;
-            p(monitorOn ? "monitor on - jumper GP" COL_PORT_NAME "<col> to GP"
-                      ROW_PORT_NAME "<row>, any key stops"
-                    : "monitor off");
+            p(monitorOn ? "monitor on - press keys, or jumper a strobe pin to a return"
+                          " pin; the physical pair is printed. Any key stops"
+                        : "monitor off");
+            break;
+        case 'p':
+            monitorOn = false;
+            sweep = SWEEP_NONE;
+            dacStop();
+            if (pairsOn)
+                pairsStop();
+            else if (pairsSetup())
+            {
+                pairsOn = true;
+                p("pin pairs on - no port roles or bit tables assumed. Press a key:");
+                p("the two chip pins it joins are named, with what COL_BIT / ROW_BIT");
+                p("make of them. Any key stops");
+            }
+            else
+                p("expander not answering - run r first");
             break;
         case 'd':
             monitorOn = false;
             sweep = SWEEP_NONE;
+            pairsStop();
+            dacStop();
             p("register dump");
             dumpRegs(true);
             break;
         case 's':
             monitorOn = false;
             sweep = SWEEP_NONE;
+            pairsStop();
+            dacStop();
             testBusQuality();
             break;
 
         case 'n':
+            dacStop();
             sweepBegin(SWEEP_NOTE);
             break;
         case 'c':
+            dacStop();
             sweepBegin(SWEEP_CC);
             break;
         case 'w':
             monitorOn = false;
+            pairsStop();
+            dacStop();
             sweepWrite();
             break;
         case 'z':
             monitorOn = false;
+            pairsStop();
+            dacStop();
             sweepReset();
             break;
         default:
@@ -715,19 +1486,25 @@ void loop()
                 monitorOn = false;
                 p("monitor off");
             }
+            pairsStop();
             if (sweep != SWEEP_NONE)
             {
                 sweep = SWEEP_NONE;
                 p("sweep stopped - w writes the table, z clears it");
             }
+            dacStop();
             break;
         }
     }
 
     if (monitorOn)
         monitorTick();
+    else if (pairsOn)
+        pairsTick();
     else if (sweep != SWEEP_NONE)
         sweepTick();
+    else if (dacMode != DAC_OFF)
+        dacTick();
 
     delay(SCAN_PERIOD_MS);
 }
