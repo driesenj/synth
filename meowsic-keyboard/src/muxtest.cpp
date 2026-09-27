@@ -42,6 +42,10 @@
 //    s     sweep every keybed position in position order, 250 ms each
 //    k     sweep the piano keys in ascending note order - the scale test
 //    v     sweep the panel buttons: press each, then play the lowest key
+//    l     hold sweep: the lowest key at ever longer closures - the shortest
+//          one that sounds is the blob's key debounce (INJECT_NOTE_HOLD_MS)
+//    r     release sweep: the lowest key twice with ever longer gaps between -
+//          the shortest that gives two notes is INJECT_NOTE_GAP_MS
 //    i     INH gating check: every channel cycled with INH high - must be silent
 //    z     stop a sweep
 //    ?     banner
@@ -153,7 +157,7 @@ static void printGrid()
 //  Non-blocking so a keypress can stop one; each step is a connect/release
 //  pair on a millis() schedule.
 // ---------------------------------------------------------------------------
-enum Sweep : uint8_t { SW_NONE, SW_POS, SW_NOTES, SW_CC, SW_INH };
+enum Sweep : uint8_t { SW_NONE, SW_POS, SW_NOTES, SW_CC, SW_INH, SW_HOLD, SW_GAP };
 
 static Sweep    sweep   = SW_NONE;
 static uint16_t swIndex = 0;
@@ -166,6 +170,19 @@ static uint8_t orderLen = 0;
 static constexpr uint32_t HOLD_MS  = 250; // a key: well above the blob's 10-20 ms poll
 static constexpr uint32_t GAP_MS   = 100;
 static constexpr uint32_t PRESS_MS = 50;  // a button: one-shot, as the firmware will do it
+
+// Timing sweeps: the blob's own limits, found by ear, for INJECT_NOTE_* in
+// config.h. The hold sweep closes one key for ever longer; the first closure
+// that sounds is the blob's key debounce. The gap sweep plays the key twice
+// with ever longer releases between; the first pair heard as two notes is
+// the release its scan needs to see. Both switch to meow first, whose
+// retrigger cuts the previous one off audibly, so a merged pair is obvious.
+static const uint8_t HOLD_STEPS[] = {10, 20, 30, 40, 50, 60, 80, 100, 150};
+static const uint8_t GAP_STEPS[]  = {5, 10, 20, 30, 40, 60, 80, 100};
+static constexpr uint32_t TIMING_HOLD_MS   = 100; // the gap sweep's closures: known good
+static constexpr uint32_t TIMING_REST_MS   = 900; // between steps, so each is heard alone
+static constexpr uint32_t TIMING_SETTLE_MS = 500; // after the meow button
+static uint8_t timingKey;
 
 static void orderNotes()
 {
@@ -183,6 +200,14 @@ static void orderButtons()
     for (uint8_t pos = 0; pos < N_POS; ++pos)
         if (POSITION_MAP[pos].kind == K_CC && POSITION_MAP[pos].data < CC_RECORD)
             order[orderLen++] = pos;
+}
+
+static uint8_t posOfCC(uint8_t cc)
+{
+    for (uint8_t pos = 0; pos < N_POS; ++pos)
+        if (POSITION_MAP[pos].kind == K_CC && POSITION_MAP[pos].data == cc)
+            return pos;
+    return 0xFF;
 }
 
 static uint8_t lowestNotePos()
@@ -234,9 +259,55 @@ static void sweepBegin(Sweep mode)
     case SW_INH:
         p("INH check: every raw channel cycled with INH high for ~3 s - the toy must stay silent");
         break;
+    case SW_HOLD:
+    case SW_GAP:
+        timingKey = lowestNotePos();
+        if (timingKey == 0xFF)
+        {
+            sweepEnd("no key in position_map.cpp to play");
+            return;
+        }
+        if (mode == SW_HOLD)
+        {
+            p("hold sweep: the lowest key closed for %u..%u ms, about a second apart.",
+              HOLD_STEPS[0], HOLD_STEPS[sizeof(HOLD_STEPS) - 1]);
+            p("Count the notes: the shortest hold that sounds, plus margin, is INJECT_NOTE_HOLD_MS");
+        }
+        else
+        {
+            p("release sweep: the lowest key twice, %u..%u ms open between, about a second per pair.",
+              GAP_STEPS[0], GAP_STEPS[sizeof(GAP_STEPS) - 1]);
+            p("The shortest gap heard as two notes, plus margin, is INJECT_NOTE_GAP_MS");
+        }
+        // Meow first, if it is in the map: a retrigger cuts the previous meow
+        // off, so one note or two is unmistakable. Phases 0-1 are the button.
+        swPhase = (posOfCC(CC_MEOW) == 0xFF) ? 2 : 0;
+        break;
     default:
         break;
     }
+}
+
+// The hold and gap sweeps share the meow prelude (phases 0-1) and the key.
+// Returns true while the prelude is still running.
+static bool timingPrelude(uint32_t now)
+{
+    if (swPhase == 0)
+    {
+        inject::selectPos(posOfCC(CC_MEOW));
+        inject::close();
+        swPhase = 1;
+        swNext  = now + PRESS_MS;
+        return true;
+    }
+    if (swPhase == 1)
+    {
+        inject::open();
+        swPhase = 2;
+        swNext  = now + TIMING_SETTLE_MS;
+        return true;
+    }
+    return false;
 }
 
 static void sweepTick()
@@ -326,6 +397,68 @@ static void sweepTick()
         break;
     }
 
+    case SW_HOLD:
+        if (timingPrelude(now))
+            break;
+        if (swIndex >= sizeof(HOLD_STEPS))
+        {
+            sweepEnd("hold sweep done");
+            return;
+        }
+        if (swPhase == 2)
+        {
+            p("  hold %3u ms", HOLD_STEPS[swIndex]);
+            inject::selectPos(timingKey);
+            inject::close();
+            swPhase = 3;
+            swNext  = now + HOLD_STEPS[swIndex];
+        }
+        else
+        {
+            inject::open();
+            ++swIndex;
+            swPhase = 2;
+            swNext  = now + TIMING_REST_MS;
+        }
+        break;
+
+    case SW_GAP:
+        if (timingPrelude(now))
+            break;
+        if (swIndex >= sizeof(GAP_STEPS))
+        {
+            sweepEnd("release sweep done");
+            return;
+        }
+        switch (swPhase)
+        {
+        case 2:
+            p("  gap %3u ms", GAP_STEPS[swIndex]);
+            inject::selectPos(timingKey);
+            inject::close();
+            swPhase = 3;
+            swNext  = now + TIMING_HOLD_MS;
+            break;
+        case 3:
+            inject::open();
+            swPhase = 4;
+            swNext  = now + GAP_STEPS[swIndex];
+            break;
+        case 4:
+            inject::selectPos(timingKey);
+            inject::close();
+            swPhase = 5;
+            swNext  = now + TIMING_HOLD_MS;
+            break;
+        default:
+            inject::open();
+            ++swIndex;
+            swPhase = 2;
+            swNext  = now + TIMING_REST_MS;
+            break;
+        }
+        break;
+
     case SW_INH:
         if (swIndex >= 2 * 64)
         {
@@ -366,6 +499,7 @@ static void banner()
     p("");
     p("raw: 0-7 mux A channel   a-h mux B channel   o connect   x open   p press 50 ms");
     p("t keybed grid   s sweep positions   k scale   v buttons   i INH check   z stop   ? this");
+    p("timing, by ear: l hold sweep (INJECT_NOTE_HOLD_MS)   r release sweep (INJECT_NOTE_GAP_MS)");
     p("================================================================");
     showState();
 }
@@ -451,6 +585,12 @@ void loop()
             break;
         case 'i':
             sweepBegin(SW_INH);
+            break;
+        case 'l':
+            sweepBegin(SW_HOLD);
+            break;
+        case 'r':
+            sweepBegin(SW_GAP);
             break;
         case 'z':
             if (sweep != SW_NONE)

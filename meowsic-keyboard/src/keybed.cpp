@@ -7,9 +7,11 @@
 namespace keybed
 {
 
-    static uint8_t rawCols[N_COLS];    // this frame
-    static uint8_t stableCols[N_COLS]; // accepted state
+    static uint8_t rawCols[N_COLS];       // this frame
+    static uint8_t stableCols[N_COLS];    // accepted state
+    static uint8_t releasingCols[N_COLS]; // held keys currently reading open
     static uint32_t lastEdgeUs[N_POS];
+    static uint32_t openSinceUs[N_POS];   // when a releasing key last went open
 
     // Event ring. Single producer (scan) and single consumer (main loop) today;
     // the looper will read from the same queue later.
@@ -45,16 +47,16 @@ namespace keybed
     void reset()
     {
         for (uint8_t c = 0; c < N_COLS; ++c)
-            stableCols[c] = 0;
+            stableCols[c] = releasingCols[c] = 0;
         qHead = qTail = 0;
     }
 
     bool begin()
     {
         for (uint8_t c = 0; c < N_COLS; ++c)
-            rawCols[c] = stableCols[c] = 0;
+            rawCols[c] = stableCols[c] = releasingCols[c] = 0;
         for (uint8_t i = 0; i < N_POS; ++i)
-            lastEdgeUs[i] = 0;
+            lastEdgeUs[i] = openSinceUs[i] = 0;
         qHead = qTail = 0;
         return mcp::begin();
     }
@@ -112,32 +114,56 @@ namespace keybed
 
         for (uint8_t c = 0; c < N_COLS; ++c)
         {
-            uint8_t changed = (uint8_t)(rawCols[c] ^ stableCols[c]);
-            while (changed)
+            for (uint8_t r = 0; r < N_ROWS; ++r)
             {
-                const uint8_t r = (uint8_t)__builtin_ctz(changed);
                 const uint8_t bit = (uint8_t)(1u << r);
                 const uint8_t pos = POS(c, r);
-                const bool closed = rawCols[c] & bit;
-                changed &= (uint8_t)~bit;
+                const bool raw = rawCols[c] & bit;
+                const bool stable = stableCols[c] & bit;
 
-                // Guard window. The edge that opened it was already emitted, so
-                // this only ever swallows contact bounce.
-                if ((uint32_t)(now - lastEdgeUs[pos]) < DEBOUNCE_US)
+                if (raw == stable)
+                {
+                    // A held key reading closed again: the open was chatter.
+                    releasingCols[c] &= (uint8_t)~bit;
                     continue;
+                }
 
-                // Do not stamp lastEdgeUs on a rejected ghost - the position is
-                // re-tested next frame, so it comes through the moment one of the
-                // other three keys is lifted.
-                if (closed && isGhost(c, r))
-                    continue;
+                if (raw)
+                {
+                    // Press: emitted on the first frame that sees it, after the
+                    // guard window. The edge that opened the window was already
+                    // emitted, so this only ever swallows contact bounce.
+                    if ((uint32_t)(now - lastEdgeUs[pos]) < DEBOUNCE_US)
+                        continue;
 
-                lastEdgeUs[pos] = now;
-                if (closed)
+                    // Do not stamp lastEdgeUs on a rejected ghost - the position
+                    // is re-tested next frame, so it comes through the moment one
+                    // of the other three keys is lifted.
+                    if (isGhost(c, r))
+                        continue;
+
+                    lastEdgeUs[pos] = now;
                     stableCols[c] |= bit;
-                else
-                    stableCols[c] &= (uint8_t)~bit;
-                push(pos, closed);
+                    push(pos, true);
+                    continue;
+                }
+
+                // Release: only once the contact has read open for RELEASE_US
+                // without a closed frame in between (config.h). Until then the
+                // key counts as held, which is what a flickering contact is.
+                if (!(releasingCols[c] & bit))
+                {
+                    releasingCols[c] |= bit;
+                    openSinceUs[pos] = now;
+                    continue;
+                }
+                if ((uint32_t)(now - openSinceUs[pos]) < RELEASE_US)
+                    continue;
+
+                releasingCols[c] &= (uint8_t)~bit;
+                lastEdgeUs[pos] = now;
+                stableCols[c] &= (uint8_t)~bit;
+                push(pos, false);
             }
         }
         return true;

@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
-"""Bridge the Meowsic's raw serial MIDI onto a virtual MIDI port.
+"""Bridge the Meowsic's raw serial MIDI to and from virtual MIDI ports.
 
 The ESP32-WROOM-32 has no native USB, so it cannot enumerate as a class-
-compliant MIDI device. With USB_MIDI 1 the firmware writes raw MIDI bytes to
-UART0 at USB_BAUD instead, and this forwards them to a MIDI port that a DAW
-can open.
+compliant MIDI device. With USB_MIDI 1 the firmware speaks raw MIDI on UART0
+at USB_BAUD instead, and this forwards it both ways: what the keyboard sends
+goes to a MIDI output port a DAW can record from (--midi), and what the DAW
+sends to a MIDI input port (--midi-in) goes to the keyboard - notes for the
+toy and the CV jacks, CCs for its buttons and settings, later MIDI clock.
 
     pip install pyserial python-rtmidi
 
-Windows has no API for creating virtual MIDI ports, so one has to exist
-already - install loopMIDI and add a port there first. Linux and macOS can
-create one on the fly with --create.
+Windows has no API for creating virtual MIDI ports, so they have to exist
+already: install loopMIDI and add TWO ports there, one per direction, e.g.
+"Meowsic out" and "Meowsic in". One port will not do - every writer on a
+loopMIDI port reaches every reader, so the keyboard's own notes would come
+straight back to it and the toy would play everything twice. Linux and
+macOS can create both on the fly with --create.
 
     python serial_midi_bridge.py --list
-    python serial_midi_bridge.py --midi loopMIDI
-    python serial_midi_bridge.py --port COM5 --midi loopMIDI --monitor
+    python serial_midi_bridge.py --midi "Meowsic out"
+    python serial_midi_bridge.py --midi "Meowsic out" --midi-in "Meowsic in" --monitor
+    python serial_midi_bridge.py --create Meowsic --monitor
 
-The serial port is exclusive: this holds it open, so stop the bridge before
-reflashing the board.
+In the DAW, "Meowsic out" is an input device (the keyboard) and "Meowsic in"
+an output device (a synth). The serial port is exclusive: this holds it open,
+so stop the bridge before reflashing the board.
 """
 
 import argparse
+import re
 import sys
 
 try:
@@ -106,9 +114,13 @@ class MidiParser:
                 self.data = []  # keep self.status for running status
 
 
+REALTIME_NAMES = {0xF8: "clock", 0xFA: "start", 0xFB: "continue", 0xFC: "stop",
+                  0xFE: "active sensing", 0xFF: "reset"}
+
+
 def describe(message):
     if len(message) == 1:
-        return "realtime 0x%02X" % message[0]
+        return "realtime %s" % REALTIME_NAMES.get(message[0], "0x%02X" % message[0])
 
     status, channel = message[0] & 0xF0, (message[0] & 0x0F) + 1
     if status in (0x90, 0x80):
@@ -119,7 +131,27 @@ def describe(message):
         return "ch%-2d %s %-4s (%3d) vel %3d" % (channel, kind, name, note, velocity)
     if status == 0xB0:
         return "ch%-2d cc %3d = %3d" % (channel, message[1], message[2])
+    if status == 0xC0:
+        return "ch%-2d program %d" % (channel, message[1])
+    if status == 0xE0:
+        return "ch%-2d bend %+d" % (channel, (message[2] << 7 | message[1]) - 8192)
     return "ch%-2d status 0x%02X %s" % (channel, status, message[1:])
+
+
+def same_port(out_name, in_name):
+    """True if the two names are one loopMIDI port seen from both ends.
+
+    loopMIDI lists each port under the same name as an input and an output,
+    and everything written to it is read back by everyone, so opening one
+    port for both directions echoes the keyboard to itself. On Windows rtmidi
+    appends the port's index to its name - "loopMIDI Port 1" as an output,
+    "loopMIDI Port 0" as an input - so a trailing number is ignored. Name
+    ports with words ("Meowsic out", "Meowsic in"), not with numbers.
+    """
+    if out_name is None or in_name is None:
+        return False
+    strip = lambda n: re.sub(r"\s+\d+$", "", n.strip())
+    return strip(out_name) == strip(in_name)
 
 
 def silence(midi_out):
@@ -188,23 +220,7 @@ def find_serial_port():
     return device
 
 
-def open_midi_out(name_fragment, create):
-    midi_out = rtmidi.MidiOut()
-    ports = midi_out.get_ports()
-
-    if create:
-        if sys.platform == "win32":
-            sys.exit("--create does not work on Windows: it has no virtual "
-                     "MIDI API. Install loopMIDI, add a port, then use --midi.")
-        midi_out.open_virtual_port(create)
-        print("midi   : created virtual port %r" % create)
-        return midi_out
-
-    if not ports:
-        sys.exit("No MIDI output ports exist.\n"
-                 "On Windows, install loopMIDI and add a port first - a DAW "
-                 "cannot be fed without one.")
-
+def match_port(ports, name_fragment, direction):
     matches = [i for i, p in enumerate(ports) if name_fragment.lower() in p.lower()]
     if not matches:
         listing = "\n".join("  %d  %s" % (i, p) for i, p in enumerate(ports))
@@ -215,15 +231,62 @@ def open_midi_out(name_fragment, create):
             hint = ("\n\nOnly the built-in Windows synth is present, so loopMIDI is "
                     "not running or has no port yet.\nOpen loopMIDI, click + to "
                     "add a port, and leave it running in the tray.")
-        sys.exit("No MIDI output matching %r. Available:\n%s%s"
-                 % (name_fragment, listing, hint))
+        sys.exit("No MIDI %s matching %r. Available:\n%s%s"
+                 % (direction, name_fragment, listing, hint))
     if len(matches) > 1:
         listing = "\n".join("  %s" % ports[i] for i in matches)
-        sys.exit("%r matches several ports:\n%s" % (name_fragment, listing))
+        sys.exit("%r matches several %s ports:\n%s" % (name_fragment, direction, listing))
+    return matches[0]
 
-    midi_out.open_port(matches[0])
-    print("midi   : %s" % ports[matches[0]])
-    return midi_out
+
+def open_midi_out(name_fragment, create):
+    """The keyboard -> DAW direction. Returns (MidiOut, port name)."""
+    midi_out = rtmidi.MidiOut()
+    ports = midi_out.get_ports()
+
+    if create:
+        if sys.platform == "win32":
+            sys.exit("--create does not work on Windows: it has no virtual "
+                     "MIDI API. Install loopMIDI, add two ports, then use "
+                     "--midi and --midi-in.")
+        midi_out.open_virtual_port(create)
+        print("midi out: created virtual port %r  (keyboard -> DAW)" % create)
+        return midi_out, create
+
+    if not ports:
+        sys.exit("No MIDI output ports exist.\n"
+                 "On Windows, install loopMIDI and add a port first - a DAW "
+                 "cannot be fed without one.")
+
+    i = match_port(ports, name_fragment, "output")
+    midi_out.open_port(i)
+    print("midi out: %s  (keyboard -> DAW)" % ports[i])
+    return midi_out, ports[i]
+
+
+def open_midi_in(name_fragment, create):
+    """The DAW -> keyboard direction. Returns (MidiIn, port name), or
+    (None, None) when no return path was asked for."""
+    if not name_fragment and not create:
+        return None, None
+
+    midi_in = rtmidi.MidiIn()
+    # The default drops timing bytes; the keyboard wants MIDI clock. SysEx
+    # and active sensing stay dropped - the firmware ignores both.
+    midi_in.ignore_types(sysex=True, timing=False, active_sense=True)
+
+    if create:
+        midi_in.open_virtual_port(create)
+        print("midi in : created virtual port %r  (DAW -> keyboard)" % create)
+        return midi_in, create
+
+    ports = midi_in.get_ports()
+    if not ports:
+        sys.exit("No MIDI input ports exist for --midi-in.")
+    i = match_port(ports, name_fragment, "input")
+    midi_in.open_port(i)
+    print("midi in : %s  (DAW -> keyboard)" % ports[i])
+    return midi_in, ports[i]
 
 
 def main():
@@ -233,9 +296,14 @@ def main():
     parser.add_argument("--baud", type=int, default=115200,
                         help="must match USB_BAUD in config.h (default: %(default)s)")
     parser.add_argument("--midi", default="loopMIDI",
-                        help="substring of the MIDI output port name (default: %(default)s)")
+                        help="substring of the MIDI output port the keyboard is sent to, "
+                             "i.e. the DAW's input (default: %(default)s)")
+    parser.add_argument("--midi-in", metavar="NAME",
+                        help="substring of the MIDI input port read and sent to the keyboard, "
+                             "i.e. the DAW's output. Must be a different port from --midi")
     parser.add_argument("--create", metavar="NAME",
-                        help="create a virtual port instead (not supported on Windows)")
+                        help="create virtual ports of this name, both directions, instead "
+                             "(not supported on Windows)")
     parser.add_argument("--monitor", action="store_true",
                         help="decode every message to stdout")
     parser.add_argument("--list", action="store_true",
@@ -249,20 +317,35 @@ def main():
             print("  %-8s %s %s" % (port.device, port.description,
                                     "<- %s" % chip if chip else ""))
         midi_ports = rtmidi.MidiOut().get_ports()
-        print("\nMIDI outputs:")
+        print("\nMIDI outputs (for --midi, the keyboard -> DAW port):")
         for i, name in enumerate(midi_ports):
             print("  %d  %s" % (i, name))
         if not midi_ports:
             print("  (none - on Windows that means loopMIDI is not running)")
+        in_ports = rtmidi.MidiIn().get_ports()
+        print("\nMIDI inputs (for --midi-in, the DAW -> keyboard port):")
+        for i, name in enumerate(in_ports):
+            print("  %d  %s" % (i, name))
+        if not in_ports:
+            print("  (none)")
         return
 
     device = args.port or find_serial_port()
-    midi_out = open_midi_out(args.midi, args.create)
+    midi_out, out_name = open_midi_out(args.midi, args.create)
+    midi_in, in_name = open_midi_in(args.midi_in, args.create)
+    if midi_in is not None and not args.create and same_port(out_name, in_name):
+        sys.exit("--midi and --midi-in resolve to the same port, %r. One loopMIDI "
+                 "port carries both directions at once, so the keyboard would hear "
+                 "its own notes back and the toy would play everything twice.\n"
+                 "Add a second port in loopMIDI and name one per direction." % out_name)
+    if midi_in is None:
+        print("midi in : none - pass --midi-in to send the DAW's output to the keyboard")
 
     try:
-        # A short timeout keeps read() from blocking so Ctrl-C stays responsive;
-        # it does not add latency, since read returns as soon as bytes arrive.
-        link = serial.Serial(device, args.baud, timeout=0.05)
+        # A short timeout keeps read() from blocking so Ctrl-C stays responsive
+        # and the return path is polled often; it adds no latency to the
+        # forward path, since read returns as soon as bytes arrive.
+        link = serial.Serial(device, args.baud, timeout=0.005)
     except serial.SerialException as exc:
         sys.exit("Could not open %s: %s\n"
                  "If PlatformIO or a serial monitor has it open, close that "
@@ -271,26 +354,41 @@ def main():
     print("bridging - Ctrl-C to stop (stop it before reflashing)\n")
 
     midi_parser = MidiParser()
-    count = 0
+    count = count_in = 0
     text = TextSpotter() if args.monitor else None
     try:
         while True:
             chunk = link.read(256)
-            if not chunk:
-                continue
-            before = midi_parser.dropped
-            for message in midi_parser.feed(chunk):
-                midi_out.send_message(message)
-                count += 1
-                if args.monitor:
-                    print(describe(message))
-            if text and midi_parser.dropped > before:
-                text.feed(chunk)
+            if chunk:
+                before = midi_parser.dropped
+                for message in midi_parser.feed(chunk):
+                    midi_out.send_message(message)
+                    count += 1
+                    if args.monitor and message[0] != 0xF8:   # 24 clocks a beat: not shown
+                        print(describe(message))
+                if text and midi_parser.dropped > before:
+                    text.feed(chunk)
+
+            # The return path: whatever the DAW sent since the last pass.
+            while midi_in is not None:
+                event = midi_in.get_message()
+                if event is None:
+                    break
+                message = event[0]
+                link.write(bytes(message))
+                count_in += 1
+                if args.monitor and message[0] != 0xF8:   # clock would drown the rest
+                    print("  <- " + describe(message))
     except KeyboardInterrupt:
-        print("\n%d messages forwarded, %d stray bytes dropped"
-              % (count, midi_parser.dropped))
+        print("\n%d messages forwarded to the DAW, %d to the keyboard, "
+              "%d stray bytes dropped" % (count, count_in, midi_parser.dropped))
     finally:
         silence(midi_out)
+        if midi_in is not None:
+            # Whatever the DAW was holding into the keyboard ends with the bridge.
+            link.write(bytes([0xB0, 123, 0, 0xB1, 123, 0]))
+            link.flush()
+            del midi_in
         link.close()
         del midi_out
 

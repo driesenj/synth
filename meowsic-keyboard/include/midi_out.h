@@ -15,4 +15,7 @@ void cc(uint8_t ch, uint8_t num, uint8_t val);
 // honouring it, so send real note-offs for anything you know is sounding.
 void allSoundOff(uint8_t ch);
 
+// One system real-time byte: clock (0xF8), start, continue, stop.
+void realtime(uint8_t b);
+
 }  // namespace midi

@@ -32,7 +32,25 @@ uint8_t rawB();
 // selectPos + close. Hold for >= 30 ms - the blob polls every 10-20 ms.
 void press(uint8_t pos);
 
-// press, wait, open. Blocking; for buttons, which are one-shot to the blob.
+// press, wait, open. Blocking; for the bring-up tools and the demo.
 void tap(uint8_t pos, uint32_t holdMs);
+
+// ---- Tap queue --------------------------------------------------------------
+// The non-blocking face of the injector, for the firmware, which has to keep
+// scanning while a tap plays out. queueTap() files a press; service(), called
+// from the loop, closes the switch for holdMs, opens it for gapMs, then takes
+// the next. One switch, so taps go out in the order they were queued; a full
+// queue drops the newest. Every press is one-shot to the blob, so this is the
+// whole of what a key does to it - there is no release to send.
+void queueTap(uint8_t pos, uint8_t holdMs, uint8_t gapMs);
+void service();
+
+// Drop everything queued and open the switch. Panic, and I2C recovery.
+void flush();
+
+// How long a tap queued now would wait before its switch closes: the rest
+// of the tap in progress plus everything queued ahead of it. The looper
+// drops toy taps that would be late by more than LOOP_TAP_LATE_MS.
+uint32_t backlogMs();
 
 }  // namespace inject

@@ -112,6 +112,24 @@ with contextlib.redirect_stdout(captured):
     spotter.feed(bytes([0x00, 0xFF, 0x1B, 0x7F]) + b"\n")
 check("binary junk not echoed", captured.getvalue(), "")
 
+# 10. The return path's monitor decodes what a DAW sends, not just notes.
+check("describe program change", bridge.describe([0xC0, 2]).strip(), "ch1  program 2")
+check("describe bend up", bridge.describe([0xE1, 0x7F, 0x7F]).strip(), "ch2  bend +8191")
+check("describe bend centre", bridge.describe([0xE0, 0x00, 0x40]).strip(), "ch1  bend +0")
+check("describe clock", bridge.describe([0xF8]), "realtime clock")
+check("describe start", bridge.describe([0xFA]), "realtime start")
+
+# The parser passes one-byte program changes through whole.
+p = P()
+check("program change parsed", list(p.feed(bytes([0xC0, 3, 0x90, 60, 100]))),
+      [[0xC0, 3], [0x90, 60, 100]])
+
+# 11. One loopMIDI port for both directions echoes the keyboard to itself.
+check("same port refused", bridge.same_port("loopMIDI Port", "loopMIDI Port "), True)
+check("same port behind rtmidi's Windows index", bridge.same_port("loopMIDI Port 1", "loopMIDI Port 0"), True)
+check("distinct ports allowed", bridge.same_port("Meowsic out", "Meowsic in"), False)
+check("no return path is not a clash", bridge.same_port("Meowsic out", None), False)
+
 print()
 print("FAILED: %s" % ", ".join(fails) if fails else "all parser tests passed")
 sys.exit(1 if fails else 0)

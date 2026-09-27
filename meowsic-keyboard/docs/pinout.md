@@ -1,10 +1,11 @@
 # Hardware pinout — v2
 
-Design reference for the v2 build: 4051 injection incl. the button board,
-two CV/gate pairs plus an AUX CV, audio out, MIDI in, clock in, base-pitch
-and tune knobs, looper LED. Built and verified so far: the muxes (`inject.cpp`, `muxtest`, `demo`),
-the mapping tables, and the I²C board (§2) with the keybed and the button
-board scanning through it. The rest is design only.
+Reference for the v2 build: 4051 injection incl. the button board, two
+CV/gate pairs plus an AUX CV, audio out, MIDI in, clock in, base-pitch and
+tune knobs, looper LED. Built and used by the firmware: everything below,
+with the as-built departures noted where they happened (the gate wires,
+the pot pins). The DIN sockets are wired but not yet proven; `systest` `m`
+and `n` are the checks for when they are.
 
 Board: ESP32 DevKit V1, 30-pin. Labels as printed on the board. _(soldered)_
 marks connections that exist today; everything else is to be wired.
@@ -18,14 +19,14 @@ marks connections that exist today; everything else is to be wired.
 | Label | GPIO | Function           | Wiring                                                                                  |
 | ----- | ---- | ------------------ | --------------------------------------------------------------------------------------- |
 | EN    | —    | reset              | on-board button                                                                         |
-| VP    | 36   | **Base pitch pot** | ADC1_CH0, input-only. 10 k lin pot between 3.3 V and GND, wiper here, 100 nF to GND     |
-| VN    | 39   | **Tune pot**       | ADC1_CH3, input-only. Same as above                                                     |
+| VP    | 36   | **Tune pot**       | ADC1_CH0, input-only. 10 k lin pot between 3.3 V and GND, wiper here, 100 nF to GND. As built the two pots are on each other's pins from the original plan; `PIN_POT_*` in config.h follow, `POT_TUNE_REVERSED` turns the tune knob the right way round |
+| VN    | 39   | **Base pitch pot** | ADC1_CH3, input-only. Same as above                                                     |
 | D34   | 34   | **CV select**      | input-only, no internal pull-up: 10 k to 3.3 V, slide switch to GND. Level: open = channel A, closed = B. Panic moved to STOP |
 | D35   | 35   | **Clock in**       | input-only. BC549 collector (transistor on the op-amp board, §7), 10 k to 3.3 V here. Falling edge = rising edge at the jack |
 | D32   | 32   | Mux B S0           | → 1 k → 4051 B pin 11                                                                   |
 | D33   | 33   | Mux B S1           | → 1 k → 4051 B pin 10                                                                   |
 | D25   | 25   | **AUX out**        | DAC1 → 100 k → TL072 B2 in+ (§6). Loop phase for now; clock/reset or automation later    |
-| D26   | 26   | **Gate 2 out**     | → 100 k → TL072 B1 in+ (§6). Digital use of DAC2                                        |
+| D26   | 26   | **Gate 1 out**     | → 100 k → the gate stage that ends at the **gate 1 jack**. Digital use of DAC2. As built the two gate wires are swapped from the original plan (D23 was gate 1); `PIN_GATE` / `PIN_GATE2` in config.h follow the jacks |
 | D27   | 27   | Mux A S0           | → 1 k → 4051 A pin 11                                                                   |
 | D14   | 14   | Mux A S1           | → 1 k → 4051 A pin 10                                                                   |
 | D12   | 12   | **leave open**     | strapping: must be low at boot (flash voltage select)                                   |
@@ -37,15 +38,15 @@ marks connections that exist today; everything else is to be wired.
 
 | Label | GPIO | Function                             | Wiring                                                                                                                      |
 | ----- | ---- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| D23   | 23   | **Gate 1 out**                       | → 100 k → TL074 A2 in+ (pin 5). 1 M from that input to GND — not 100 k, that halves the gate (§6)                          |
+| D23   | 23   | **Gate 2 out**                       | → 100 k → the gate stage that ends at the **gate 2 jack** (as built — see D26). 1 M from that input to GND — not 100 k, that halves the gate (§6) |
 | D22   | 22   | I²C SCL _(soldered)_                 | → I²C board J1 (§2). The 2.2 k pull-ups live on that board; none at this end                                               |
 | TX0   | 1    | USB-UART TX                          | on-board bridge                                                                                                             |
 | RX0   | 3    | USB-UART RX                          | on-board bridge                                                                                                             |
 | D21   | 21   | I²C SDA _(soldered)_                 | → I²C board J1 (§2). The 2.2 k pull-ups live on that board; none at this end                                               |
 | D19   | 19   | Mux INH (both 4051s)                 | → 1 k → pin 6 of both. 10 k from this GPIO to the DevKit's 3V3 pin (the mux board carries only 5 V): INH floats high during boot, so nothing is injected until firmware says so        |
-| D18   | 18   | **Looper LED, blue**                 | 100 Ω → LED. Currently _(soldered)_ to MCP23017 INTB — remove, the firmware polls                                           |
-| D5    | 5    | **Looper LED, green**                | 100 Ω → LED. Currently _(soldered)_ to MCP23017 INTA — remove. Strapping pin, but an LED to GND is fine (Lolin32 precedent) |
-| TX2   | 17   | MIDI out                             | → 10 Ω → DIN pin 5. DIN pin 4 ← 33 Ω ← 3.3 V. DIN pin 2 = GND                                                               |
+| D18   | 18   | **Looper LED, green**                | 100 Ω → LED green leg (J9.2)                                                                                                |
+| D5    | 5    | **Looper LED, blue**                 | 100 Ω → LED blue leg (J9.3). Strapping pin, but an LED to GND is fine (Lolin32 precedent)                                  |
+| TX2   | 17   | MIDI out                             | → 22 Ω → DIN pin 5. DIN pin 4 ← 47 Ω ← 3.3 V. DIN pin 2 = GND. (Spec says 10 / 33; as built, ~7 mA loop, fine)              |
 | RX2   | 16   | **MIDI in**                          | ← 4N35 collector (pin 5). 1 k to 3.3 V                                                                                      |
 | D4    | 4    | Mux B S2                             | → 1 k → 4051 B pin 9                                                                                                        |
 | D2    | 2    | **Looper LED, red**                  | 330 Ω → LED. Shares the on-board LED. Strapping pin: an LED to GND is fine                                                  |
@@ -72,13 +73,13 @@ to the star (§8); every other cable either carries that ground or none.
 | J2   | 1 D19 INH, 2 D13 A·S2, 3 D14 A·S1, 4 D27 A·S0                               | 10 k D19 → 3V3. The 1 k series resistors are on the mux board                                                       |
 | J3   | 1 D33 B·S1, 2 D32 B·S0, 3 D4 B·S2                                           |                                                                                                                     |
 | J4   | 1 D34, 2 GND                                                                | CV select slide switch, SPST to GND, read as a level. 10 k D34 → 3V3                                                |
-| J5   | 1 VN, 2 GND, 3 3V3                                                          | tune pot. 100 nF VN → GND                                                                                           |
-| J6   | 1 VP, 2 3V3, 3 GND                                                          | base pitch pot. Not J5's order, deliberately (stripboard); a swapped cable only reverses a pot. 100 nF VP → GND     |
-| J7   | 1 D35 clock in, 2 D23 gate 1, 3 D26 gate 2, 4 D25 AUX                       | to the op-amp board, signal only, no ground. 10 k D35 → 3V3; the BC549 stage is on the op-amp board                 |
+| J5   | 1 VN, 2 GND, 3 3V3                                                          | **base pitch** pot as built (the plan had tune here): **middle lug (wiper) → pin 1**, the outer lugs → 2 and 3. 100 nF VN → GND |
+| J6   | 1 VP, 2 3V3, 3 GND                                                          | **tune** pot as built (the plan had base pitch here): **middle lug → pin 1**, outer lugs → 2 and 3. The rails are in the other order from J5 (stripboard), which only reverses the knob — but the wiper on pin 2 or 3 puts it on a rail, and the knob then shorts 3V3 to GND at one end of its travel. 100 nF VP → GND |
+| J7   | 1 D35 clock in, 2 D23 gate 2, 3 D26 gate 1, 4 D25 AUX (as built)            | to the op-amp board, signal only, no ground. 10 k D35 → 3V3; the BC549 stage is on the op-amp board                 |
 | J8   | 1 D21 SDA, 2 D22 SCL, 3 3V3, 4 GND                                          | to the I²C board. No pull-ups here                                                                                  |
-| J9   | 1 GND, 2 D18 blue, 3 D5 green, 4 D2 red                                     | 100 Ω, 100 Ω, 330 Ω in series here. Pin↔colour is config.h's business; the 330 Ω stays on the red leg               |
-| J10  | 1 GND (DIN 2 + chassis lug, joined at the socket), 2 D17 (DIN 5), 3 3V3 (DIN 4) | 10 Ω in the D17 leg, 33 Ω in the 3V3 leg. Three wires; the case is plastic, nothing else grounds the shell      |
-| J11  | 1 4N35 pin 2 (DIN 5), 2 4N35 pin 1 (DIN 4)                                  | 220 Ω in the pin-1 leg; 1N4148 across 4N35 pins 1–2, cathode to pin 1; pin 4 → GND; pin 5 → D16 with 1 k → 3V3; pin 6 open |
+| J9   | 1 GND, 2 D18 green, 3 D5 blue, 4 D2 red                                     | 100 Ω, 100 Ω, 330 Ω in series here. Pin↔colour is config.h's business, except that the red leg must be the one on the 330 Ω: green and blue drop ~3 V and barely glow behind it |
+| J10  | 1 GND (DIN 2 + chassis lug, joined at the socket), 2 D17 (DIN 5), 3 3V3 (DIN 4) | 22 Ω in the D17 leg, 47 Ω in the 3V3 leg as built (spec: 10 / 33). Three wires; the case is plastic, nothing else grounds the shell |
+| J11  | 1 4N35 pin 2 (DIN 5), 2 4N35 pin 1 (DIN 4)                                  | 220 Ω in the pin-1 leg; 1N4148 across 4N35 pins 1–2, cathode to pin 1; pin 4 → GND; pin 5 → D16 with 1 k → 3V3; pin 6 → 220 k → pin 4 (turn-off, §7) |
 | —    | D15                                                                         | optional 10 k → GND, silences the ROM boot log                                                                      |
 
 ---
@@ -344,9 +345,11 @@ lights (3,0) for play, (4,0) for record, and (3..7, 2) for samba, blues,
 rock, techno, disco. The two spare GPB inputs and mux B Y6/Y7 stay free.
 
 After interception the blob only sees these buttons when the firmware injects
-them: rhythm buttons are forwarded (40 ms one-shot) so the toy's patterns keep
-working through the audio out; record and play are not forwarded — they
-become looper controls.
+them: every button press is forwarded as a 60 ms tap through the injector's
+queue (`INJECT_BUTTON_*` in config.h), so the toy's patterns keep working
+through the audio out. Record and play are forwarded too for now, so the
+toy's own recorder still works; they become looper controls when the looper
+lands.
 
 **Record-button LED**: trace its two wires, disconnect them from the blob's
 driver, and drive it from the ESP32 (§7). If it is replaced by an RGB LED, the
@@ -363,7 +366,7 @@ TL074 (DIP-14): V+ = pin 4 → +12 V (after the bead), V− = pin 11 → −12 V
 | --- | -------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A1  | 1 / 2 / 3            | CV out, ×1.5                   | in+ ← 100 k ← MCP4725 OUT, 1 nF in+ to GND. in− ← 20 k to GND, 10 k from out. out → 1 k → CV jack tip                                                                                                   |
 | A2  | 7 / 6 / 5            | Gate 1 out, ×1.5               | in+ ← 100 k ← GPIO23, **1 M** in+ to GND. in− ← 20 k to GND, 10 k from out. out → 1 k → gate 1 jack. 0 / 4.5 V                                                                                          |
-| A3  | 8 / 9 / 10           | Audio out, difference amp ×1.5 | TDA2822 pin 1 (OUT1) → 10 µF → 100 k → in−; 150 k from out to in−, 100 pF across it. TDA2822 pin 3 (OUT2) → 10 µF → 100 k → in+; 150 k from in+ to GND. out → 10 k level pot → wiper → 1 k → audio jack |
+| A3  | 8 / 9 / 10           | Audio out, difference amp ×1.5 | TDA2822 pin 1 (OUT1) → 10 µF → 100 k → in−; 150 k from out to in−, 100 pF across it. TDA2822 pin 3 (OUT2) → 10 µF → 100 k → in+; 150 k from in+ to GND. out → level pot (10 k–100 k, 100 k as built) → wiper → 1 k → audio jack |
 | A4  | 14 / 13 / 12         | CV2 out, ×1.5                  | in+ ← 100 k ← MCP4725 #2 OUT (0x61), 1 nF in+ to GND. in− ← 20 k to GND, 10 k from out. out → 1 k → CV2 jack tip                                                                                        |
 
 TL072 (DIP-8), same rails: V+ = pin 8, V− = pin 4, 100 nF each to GND.
@@ -401,6 +404,28 @@ and the firmware constants `CV_CODES_PER_SEMITONE` / `CV2_CODES_PER_SEMITONE`
 absorb the 3.3 V rail and resistor tolerances, one per channel: play two
 notes an octave apart, meter the CV, adjust until the difference is 1.000 V. Residual: the TL074's ~3 mV input offset ≈ 4 cents.
 
+**Parts, whole board** (the six stages above plus the clock-in stage of §7):
+
+| Qty | Part | Where |
+| --- | --- | --- |
+| 1 | TL074 | A1–A4 |
+| 1 | TL072 | B1–B2 |
+| 1 | BC549 | clock in |
+| 1 | 1N4148 | clock in, base clamp |
+| 8 | 100 k, 1 % | five ×1.5 inputs, both A3 inputs, clock-in base to GND |
+| 6 | 10 k, 1 % | five ×1.5 feedback, clock-in base series |
+| 5 | 20 k, 1 % | five ×1.5 feedback to GND |
+| 3 | 1 M | A2, B1, B2 input to GND |
+| 2 | 150 k, 1 % | A3 feedback, A3 in+ to GND |
+| 6 | 1 k | one in series with every jack tip except clock in |
+| 2 (+1) | 1 nF | A1, A4 in+ to GND; B2 optional |
+| 1 | 100 pF | across A3's 150 k feedback |
+| 2 | 10 µF | audio coupling; polarised is fine with + towards the TDA2822 |
+| 4 | 100 nF | each rail pin of each op-amp to GND, at the chip |
+| 1 | 10 k–100 k pot, 100 k as built | audio level. Lin is fine: the load it drives bends the taper towards log. 100 k puts ~26 k behind the jack at mid-travel, which only a long cable or a 10 k input notices, and only mid-travel |
+| 7 | 3.5 mm mono jack | CV1, CV2, gate 1, gate 2, AUX, audio out, clock in |
+| 4 | headers | power (3), CV from the I²C board (3), J7 from the ESP32 board (4), audio tap (2) |
+
 ---
 
 ## 7. Discrete blocks
@@ -420,16 +445,26 @@ pin 5 (collector) → GPIO16 with 1 k to 3.3 V; pin 6 (base) open. 1 k, not
 10 k: the load sets how hard the phototransistor saturates and so how fast it
 turns off — at 10 k it takes tens of µs against 32 µs bits; 1 k asks 3.3 mA,
 inside its CTR at ~5 mA LED current. DIN pin 2 is
-_not_ connected at the input. The 4N35 is marginal at 31.25 kbaud; if notes go
-missing, an H11L1 is the replacement (pinout differs — check).
+_not_ connected at the input. The 4N35 is marginal at 31.25 kbaud: as built
+it turned off in 32–64 µs, so every first 1 after a 0 arrived as a 0
+(`systest` `m` names this signature). Remedy in order: **220 k from pin 6
+(base) to pin 4 (emitter)**, which drains the stored base charge and usually
+brings turn-off down to a few µs; failing that an **H11L1** in its place —
+1 anode, 2 cathode (the 220 Ω and 1N4148 stay), 4 output → GPIO16 with the
+same 1 k to 3.3 V, 5 GND, 6 Vcc → 3.3 V, 3 NC; a Schmitt output, same
+polarity, fine at 3.3 V.
 
-**MIDI out** — DIN pin 4 ← 33 Ω ← 3.3 V; DIN pin 5 ← 10 Ω ← GPIO17; DIN
+**MIDI out** — DIN pin 4 ← 47 Ω ← 3.3 V; DIN pin 5 ← 22 Ω ← GPIO17 (the
+3.3 V spec's 33 / 10 Ω, rounded up: with the receiver's 220 Ω the loop runs
+~7 mA against a 5 mA design, and a shorted cable draws 70 mA rather than
+100 from the rail); DIN
 pin 2 ← GND.
 
 **Looper LED** (in the record button) — common cathode to GND; one resistor
 per colour, never a shared one: 330 Ω on red (≈ 4 mA), 100 Ω on green and on
-blue (≈ 3 mA). As wired: red on GPIO2, green on GPIO5, blue on GPIO18;
-`config.h` follows the wiring, only the 330 Ω is colour-bound. Green and blue need the
+blue (≈ 3 mA). As wired: red on GPIO2, blue on GPIO5, green on GPIO18;
+`config.h` follows the wiring, only the 330 Ω is colour-bound — a green or
+blue leg on it shows as "nothing", which is how the first wiring was caught. Green and blue need the
 smaller resistors because their forward voltage leaves only ~0.3 V of
 headroom at 3.3 V; balance the colours with PWM in firmware. For a bicolour
 LED drop blue. If green/blue stay too dim, use a common-anode LED with the
@@ -498,7 +533,7 @@ XLR 1 (GND)   ── ground bus = star; J2–J5 each have their own GND pin
 | J2 ESP32    | 5V, GND          | ESP32 board J1 → 1N5818 → DevKit VIN, GND                                                                                                       |
 | J3 muxes    | 5V, GND          | both 4051 VCC (16), GND (7, 8) — raw side, so USB never powers them                                                                             |
 | J4 blob     | 5V, GND          | the toy's battery contacts, upstream of its power switch so the switch still works as a toy mute. Never fit batteries again with this connected |
-| J5 analogue | +12A, GND, −12IN | TL074 pins 4 / — / 11, jack sleeves                                                                                                             |
+| J5 analogue | +12A, GND, −12IN | op-amp board: TL074 pins 4 / — / 11, TL072 pins 8 / — / 4, the BC549 stage, the seven jack sleeves                                              |
 
 Never daisy-chain ground between boards; the analogue ground meets the
 digital ground only through J5. Everything at 3.3 V (MCP23017, MCP4725, opto
@@ -521,7 +556,7 @@ no ground of its own, no when it already has one.
 | Looper LED                 | yes              | common cathode returns to the ground of the GPIOs driving it                                                                            |
 | MIDI out                   | yes              | DIN pin 2 and the chassis lug, joined at the socket. Plastic case, so nothing else grounds the shell                                     |
 | MIDI in                    | none             | isolated by the 4N35; the receiver never grounds the shield                                                                             |
-| Clock in                   | none, tip only   | the jack sleeve is on J5 with the other three (§9). The transistor stage grounds on the ESP32 board, its own reference                 |
+| Clock in                   | none             | the jack and the BC549 stage sit on the op-amp board, on its ground (§7); only the collector line comes over, on J7, and its 10 k pull-up references the ESP32's own 3V3 |
 | Gate 1, gate 2, AUX        | none             | the op-amp board grounds at J5 and the 1 M to GND at each input is its reference. A ground here is a second ESP32↔analogue path        |
 
 The case is plastic, so there is no panel ground: the jack sleeves meet only
@@ -564,9 +599,9 @@ cable.
 | Connector                                                                     | Pins                                                                                                                    |
 | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | XLR-3, male panel on the keyboard, female panel on the synth, plain mic cable | 1 GND, 2 +12 V, 3 −12 V                                                                                                 |
-| DIN-5 MIDI out                                                                | 2 → GND; 4 → 33 Ω → 3V3; 5 → 10 Ω → GPIO17; 1, 3 open; chassis lug → pin 2. Resistors on the ESP32 board (J10), three wires |
+| DIN-5 MIDI out                                                                | 2 → GND; 4 → 47 Ω → 3V3; 5 → 22 Ω → GPIO17; 1, 3 open; chassis lug → pin 2. Resistors on the ESP32 board (J10), three wires |
 | DIN-5 MIDI in                                                                 | 4 → 220 Ω → 4N35 pin 1; 5 → 4N35 pin 2; 1, 2, 3 and chassis lug open — the receiver never grounds the shield. Two wires |
-| 3.5 mm mono ×4                                                                | tip = signal, sleeve = GND: CV, gate, clock in, audio out                                                               |
+| 3.5 mm mono ×7, all on the op-amp board                                       | tip = signal, sleeve = GND: CV1, CV2, gate 1, gate 2, AUX, audio out, clock in                                          |
 
 DIN pin numbers are stamped on the solder side: 2 is the centre lug, 4 and 5
 flank it, 1 and 3 are the outer pair. Swapping 4 and 5 on either socket is
@@ -574,30 +609,16 @@ silent, not destructive — swap the wires back.
 
 ---
 
-## 10. `config.h` delta (not applied yet)
+## 10. `config.h` delta
 
-```c
-// unchanged: PIN_SDA/SCL, PIN_MIDI_TX/RX, PIN_MUX_*, MCP_ADDR
-// PIN_PANIC goes away: GPIO34 becomes PIN_CV_SELECT, a slide switch read as
-// a level. Panic = long press of STOP (cc26), through the scan.
+Applied: every pin above is a constant in `config.h` (`PIN_GATE`,
+`PIN_GATE2`, `PIN_AUX`, `PIN_CLOCK_IN`, `PIN_POT_BASE`, `PIN_POT_TUNE`,
+`PIN_LED_*`, `PIN_CV_SELECT`), both DAC addresses, the two
+`CV_CODES_PER_SEMITONE` constants, and `PANEL_LOGIC_GAIN` (the ×1.5 behind
+the 100 k / 1 M divider, 1.364). The button board's P14/P15 turned out to be
+existing rows, so `N_ROWS` stays 6.
 
-static constexpr int     PIN_GATE        = 23;    // channel A
-static constexpr int     PIN_GATE2       = 26;    // channel B, DAC2 used as GPIO
-static constexpr int     PIN_AUX         = 25;    // DAC1: loop phase; clock/reset or automation later
-static constexpr int     PIN_CV_SELECT   = 34;    // input-only, external 10 k; low = channel B
-static constexpr int     PIN_CLOCK_IN    = 35;    // input-only, falling edge
-static constexpr int     PIN_POT_BASE    = 36;    // ADC1_CH0
-static constexpr int     PIN_POT_TUNE    = 39;    // ADC1_CH3
-static constexpr int     PIN_LED_RED     = 2;
-static constexpr int     PIN_LED_GREEN   = 5;     // as wired on J9
-static constexpr int     PIN_LED_BLUE    = 18;
-static constexpr uint8_t DAC_ADDR        = 0x60;  // MCP4725 #1, CV1
-static constexpr uint8_t DAC2_ADDR       = 0x61;  // MCP4725 #2, CV2 (ADDR jumper closed)
-
-// N_ROWS becomes 8 only if the button board's P14/P15 turn out to be new rows.
-
-// 3.3 V / 4096 = 0.806 mV per code, x1.5 = 1.209 mV; 83.33 mV per semitone.
-// Nominal 68.96. Calibrate each channel against a meter, see section 6.
-static constexpr float   CV_CODES_PER_SEMITONE  = 68.96f;
-static constexpr float   CV2_CODES_PER_SEMITONE = 68.96f;
-```
+`PIN_PANIC` is gone: GPIO34 is read as the CV select level only, and panic
+is a long press (≥ 1 s) of the toy's STOP button, cc26, through the scan
+(§7). The switch also selects which of the two loops the keys record into
+(`docs/firmware.md` §3.2).

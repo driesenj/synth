@@ -40,4 +40,11 @@ void allSoundOff(uint8_t ch) {
     cc(ch, 123, 0);
 }
 
+void realtime(uint8_t b) {
+    Serial2.write(b);
+#if USB_MIDI
+    Serial.write(b);
+#endif
+}
+
 }  // namespace midi
