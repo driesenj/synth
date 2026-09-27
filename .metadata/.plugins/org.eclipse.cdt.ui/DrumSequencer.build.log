@@ -1,0 +1,10 @@
+19:05:51 **** Incremental Build of configuration Debug for project DrumSequencer ****
+make -j12 all 
+arm-none-eabi-size  DrumSequencer.elf 
+   text	   data	    bss	    dec	    hex	filename
+  55116	    132	  50028	 105276	  19b3c	DrumSequencer.elf
+Finished building: default.size.stdout
+ 
+
+19:05:51 Build Finished. 0 errors, 0 warnings. (took 259ms)
+

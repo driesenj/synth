@@ -1,0 +1,60 @@
+!SESSION 2026-07-24 14:25:30.097 -----------------------------------------------
+eclipse.buildId=Version 2.1.0
+java.version=21.0.9
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-07-24 14:26:00.443
+!MESSAGE Log4j2 initialized with config file C:\Users\joep\Code\drum-machine-sequencer\STM32IDE\DrumSequencer\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-07-24 14:26:03.065
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mpu.remote.serial 1 1 2026-07-24 14:26:05.015
+!MESSAGE Executed PowerShell command powershell.exe -Command "Get-CimInstance -ClassName Win32_SerialPort | Select-Object -ExpandProperty DeviceID":
+
+
+!ENTRY com.st.stm32cube.ide.mpu.remote.serial 1 1 2026-07-24 14:26:05.016
+!MESSAGE port: 
+!SESSION 2026-09-27 18:59:08.794 -----------------------------------------------
+eclipse.buildId=Version 2.1.0
+java.version=21.0.9
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-09-27 18:59:28.837
+!MESSAGE Log4j2 initialized with config file C:\Users\joep\Code\synth-git\DrumSequencer\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-09-27 18:59:32.179
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mpu.remote.serial 1 1 2026-09-27 18:59:33.288
+!MESSAGE Executed PowerShell command powershell.exe -Command "Get-CimInstance -ClassName Win32_SerialPort | Select-Object -ExpandProperty DeviceID":
+COM12
+
+
+!ENTRY com.st.stm32cube.ide.mpu.remote.serial 1 1 2026-09-27 18:59:33.289
+!MESSAGE port: COM12
+!SESSION 2026-09-27 18:59:56.259 -----------------------------------------------
+eclipse.buildId=Version 2.1.0
+java.version=21.0.9
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Framework arguments:  C:\Users\joep\Code\synth-git\DrumSequencer\.project
+Command-line arguments:  -os win32 -ws win32 -arch x86_64 C:\Users\joep\Code\synth-git\DrumSequencer\.project
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-09-27 19:00:10.580
+!MESSAGE Log4j2 initialized with config file C:\Users\joep\Code\synth-git\DrumSequencer\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-09-27 19:00:13.895
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mpu.remote.serial 1 1 2026-09-27 19:00:27.120
+!MESSAGE Executed PowerShell command powershell.exe -Command "Get-CimInstance -ClassName Win32_SerialPort | Select-Object -ExpandProperty DeviceID":
+COM12
+
+
+!ENTRY com.st.stm32cube.ide.mpu.remote.serial 1 1 2026-09-27 19:00:27.121
+!MESSAGE port: COM12
