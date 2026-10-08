@@ -1,0 +1,4429 @@
+{
+  "version": 4,
+  "name": "meowsic-opamps",
+  "description": "",
+  "notes": "",
+  "componentDefs": [
+    {
+      "id": "custom-aacde5f1-a305-421d-8a2a-27f8cc1666ce",
+      "name": "TL074",
+      "category": "generic",
+      "symbol": "custom-footprint-custom-aacde5f1-a305-421d-8a2a-27f8cc1666ce",
+      "defaultLabelPrefix": "U",
+      "width": 4,
+      "height": 7,
+      "pins": [
+        {
+          "id": "1",
+          "name": "out 1",
+          "offsetRow": 0,
+          "offsetCol": 0
+        },
+        {
+          "id": "14",
+          "name": "out 4",
+          "offsetRow": 0,
+          "offsetCol": 3
+        },
+        {
+          "id": "2",
+          "name": "neg 1",
+          "offsetRow": 1,
+          "offsetCol": 0
+        },
+        {
+          "id": "13",
+          "name": "neg 4",
+          "offsetRow": 1,
+          "offsetCol": 3
+        },
+        {
+          "id": "3",
+          "name": "pos 1",
+          "offsetRow": 2,
+          "offsetCol": 0
+        },
+        {
+          "id": "12",
+          "name": "pos 4",
+          "offsetRow": 2,
+          "offsetCol": 3
+        },
+        {
+          "id": "4",
+          "name": "VCC",
+          "offsetRow": 3,
+          "offsetCol": 0
+        },
+        {
+          "id": "11",
+          "name": "GND",
+          "offsetRow": 3,
+          "offsetCol": 3
+        },
+        {
+          "id": "5",
+          "name": "pos 2",
+          "offsetRow": 4,
+          "offsetCol": 0
+        },
+        {
+          "id": "10",
+          "name": "pos 3",
+          "offsetRow": 4,
+          "offsetCol": 3
+        },
+        {
+          "id": "6",
+          "name": "neg 2",
+          "offsetRow": 5,
+          "offsetCol": 0
+        },
+        {
+          "id": "9",
+          "name": "neg 3",
+          "offsetRow": 5,
+          "offsetCol": 3
+        },
+        {
+          "id": "7",
+          "name": "out 2",
+          "offsetRow": 6,
+          "offsetCol": 0
+        },
+        {
+          "id": "8",
+          "name": "out 3",
+          "offsetRow": 6,
+          "offsetCol": 3
+        }
+      ],
+      "bodyCells": [
+        {
+          "row": 0,
+          "col": 1
+        },
+        {
+          "row": 0,
+          "col": 2
+        },
+        {
+          "row": 1,
+          "col": 1
+        },
+        {
+          "row": 1,
+          "col": 2
+        },
+        {
+          "row": 2,
+          "col": 1
+        },
+        {
+          "row": 2,
+          "col": 2
+        },
+        {
+          "row": 3,
+          "col": 1
+        },
+        {
+          "row": 3,
+          "col": 2
+        },
+        {
+          "row": 4,
+          "col": 1
+        },
+        {
+          "row": 4,
+          "col": 2
+        },
+        {
+          "row": 5,
+          "col": 1
+        },
+        {
+          "row": 5,
+          "col": 2
+        },
+        {
+          "row": 6,
+          "col": 1
+        },
+        {
+          "row": 6,
+          "col": 2
+        }
+      ]
+    },
+    {
+      "id": "custom-c8c45b7f-07d6-48d8-af90-f0db24938e60",
+      "name": "TL072",
+      "category": "generic",
+      "symbol": "custom-footprint-custom-c8c45b7f-07d6-48d8-af90-f0db24938e60",
+      "defaultLabelPrefix": "U",
+      "width": 4,
+      "height": 4,
+      "pins": [
+        {
+          "id": "1",
+          "name": "out 1",
+          "offsetRow": 0,
+          "offsetCol": 0
+        },
+        {
+          "id": "8",
+          "name": "V+",
+          "offsetRow": 0,
+          "offsetCol": 3
+        },
+        {
+          "id": "2",
+          "name": "neg 1",
+          "offsetRow": 1,
+          "offsetCol": 0
+        },
+        {
+          "id": "7",
+          "name": "out 2",
+          "offsetRow": 1,
+          "offsetCol": 3
+        },
+        {
+          "id": "3",
+          "name": "pos 1",
+          "offsetRow": 2,
+          "offsetCol": 0
+        },
+        {
+          "id": "6",
+          "name": "neg 2",
+          "offsetRow": 2,
+          "offsetCol": 3
+        },
+        {
+          "id": "4",
+          "name": "V-",
+          "offsetRow": 3,
+          "offsetCol": 0
+        },
+        {
+          "id": "5",
+          "name": "pos 2",
+          "offsetRow": 3,
+          "offsetCol": 3
+        }
+      ],
+      "bodyCells": [
+        {
+          "row": 0,
+          "col": 1
+        },
+        {
+          "row": 0,
+          "col": 2
+        },
+        {
+          "row": 1,
+          "col": 1
+        },
+        {
+          "row": 1,
+          "col": 2
+        },
+        {
+          "row": 2,
+          "col": 1
+        },
+        {
+          "row": 2,
+          "col": 2
+        },
+        {
+          "row": 3,
+          "col": 1
+        },
+        {
+          "row": 3,
+          "col": 2
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "defId": "custom-aacde5f1-a305-421d-8a2a-27f8cc1666ce",
+      "label": "U1",
+      "schematicPos": {
+        "x": 360,
+        "y": 300
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 3,
+        "col": 10
+      },
+      "rotation": 0,
+      "footprintOverride": {
+        "width": 4,
+        "height": 7,
+        "pins": [
+          {
+            "id": "1",
+            "name": "out 1",
+            "offsetRow": 0,
+            "offsetCol": 0
+          },
+          {
+            "id": "14",
+            "name": "out 4",
+            "offsetRow": 0,
+            "offsetCol": 3
+          },
+          {
+            "id": "2",
+            "name": "neg 1",
+            "offsetRow": 1,
+            "offsetCol": 0
+          },
+          {
+            "id": "13",
+            "name": "neg 4",
+            "offsetRow": 1,
+            "offsetCol": 3
+          },
+          {
+            "id": "3",
+            "name": "pos 1",
+            "offsetRow": 2,
+            "offsetCol": 0
+          },
+          {
+            "id": "12",
+            "name": "pos 4",
+            "offsetRow": 2,
+            "offsetCol": 3
+          },
+          {
+            "id": "4",
+            "name": "V+",
+            "offsetRow": 3,
+            "offsetCol": 0
+          },
+          {
+            "id": "11",
+            "name": "V-",
+            "offsetRow": 3,
+            "offsetCol": 3
+          },
+          {
+            "id": "5",
+            "name": "pos 2",
+            "offsetRow": 4,
+            "offsetCol": 0
+          },
+          {
+            "id": "10",
+            "name": "pos 3",
+            "offsetRow": 4,
+            "offsetCol": 3
+          },
+          {
+            "id": "6",
+            "name": "neg 2",
+            "offsetRow": 5,
+            "offsetCol": 0
+          },
+          {
+            "id": "9",
+            "name": "neg 3",
+            "offsetRow": 5,
+            "offsetCol": 3
+          },
+          {
+            "id": "7",
+            "name": "out 2",
+            "offsetRow": 6,
+            "offsetCol": 0
+          },
+          {
+            "id": "8",
+            "name": "out 3",
+            "offsetRow": 6,
+            "offsetCol": 3
+          }
+        ],
+        "bodyCells": [
+          {
+            "row": 0,
+            "col": 1
+          },
+          {
+            "row": 0,
+            "col": 2
+          },
+          {
+            "row": 1,
+            "col": 1
+          },
+          {
+            "row": 1,
+            "col": 2
+          },
+          {
+            "row": 2,
+            "col": 1
+          },
+          {
+            "row": 2,
+            "col": 2
+          },
+          {
+            "row": 3,
+            "col": 1
+          },
+          {
+            "row": 3,
+            "col": 2
+          },
+          {
+            "row": 4,
+            "col": 1
+          },
+          {
+            "row": 4,
+            "col": 2
+          },
+          {
+            "row": 5,
+            "col": 1
+          },
+          {
+            "row": 5,
+            "col": 2
+          },
+          {
+            "row": 6,
+            "col": 1
+          },
+          {
+            "row": 6,
+            "col": 2
+          }
+        ]
+      },
+      "pinLabelOffsets": {
+        "8": {
+          "x": -0.6831447234274701,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": "7154f69d-a43f-4208-8405-83d9ca48e025",
+      "defId": "def-connector-3",
+      "label": "J1 - Power",
+      "schematicPos": {
+        "x": -40,
+        "y": 580
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 12,
+        "col": 12
+      },
+      "rotation": 0,
+      "labelOffset": {
+        "x": 4.422476410705542,
+        "y": -25.595577383538682
+      },
+      "footprintOverride": {
+        "width": 1,
+        "height": 3,
+        "pins": [
+          {
+            "id": "1",
+            "name": "1) GND",
+            "offsetRow": 0,
+            "offsetCol": 0
+          },
+          {
+            "id": "2",
+            "name": "2) +12V",
+            "offsetRow": 1,
+            "offsetCol": 0
+          },
+          {
+            "id": "3",
+            "name": "3) -12V",
+            "offsetRow": 2,
+            "offsetCol": 0
+          }
+        ]
+      },
+      "schematicMirrored": true
+    },
+    {
+      "id": "f0137ee5-a8ee-499a-82b2-9b450aca60f4",
+      "defId": "def-connector-2",
+      "label": "J2 - I2C",
+      "schematicPos": {
+        "x": -20,
+        "y": 300
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 10,
+        "col": 0
+      },
+      "rotation": 0,
+      "labelOffset": {
+        "x": 5.784659906177751,
+        "y": -17.15297493415052
+      },
+      "footprintOverride": {
+        "width": 1,
+        "height": 2,
+        "pins": [
+          {
+            "id": "1",
+            "name": "1) CV1",
+            "offsetRow": 0,
+            "offsetCol": 0
+          },
+          {
+            "id": "2",
+            "name": "2) CV2",
+            "offsetRow": 1,
+            "offsetCol": 0
+          }
+        ]
+      },
+      "schematicMirrored": true,
+      "pinLabelOffsets": {
+        "2": {
+          "x": -5.066742609950402,
+          "y": 9.120136697910723
+        }
+      }
+    },
+    {
+      "id": "cc494cc3-e81f-4a95-a858-4ecb2f99eaa8",
+      "defId": "def-connector-4",
+      "label": "J3 - ESP32",
+      "schematicPos": {
+        "x": 820,
+        "y": 300
+      },
+      "schematicRotation": 180,
+      "boardPos": {
+        "row": 9,
+        "col": 23
+      },
+      "rotation": 180,
+      "labelOffset": {
+        "x": 7.0491532687199765,
+        "y": -16.554740192798135
+      },
+      "footprintOverride": {
+        "width": 1,
+        "height": 4,
+        "pins": [
+          {
+            "id": "1",
+            "name": "1) CLK IN",
+            "offsetRow": 0,
+            "offsetCol": 0
+          },
+          {
+            "id": "2",
+            "name": "2) Gate 1",
+            "offsetRow": 1,
+            "offsetCol": 0
+          },
+          {
+            "id": "3",
+            "name": "3) Gate 2",
+            "offsetRow": 2,
+            "offsetCol": 0
+          },
+          {
+            "id": "4",
+            "name": "4) AUX",
+            "offsetRow": 3,
+            "offsetCol": 0
+          }
+        ]
+      },
+      "schematicMirrored": true
+    },
+    {
+      "id": "ebb0c463-3ae1-4a1e-a3bf-7bafa142019d",
+      "defId": "def-resistor",
+      "label": "R3",
+      "schematicPos": {
+        "x": 100,
+        "y": 280
+      },
+      "schematicRotation": 90,
+      "boardPos": {
+        "row": 5,
+        "col": 5
+      },
+      "rotation": 0,
+      "value": "100k",
+      "labelOffset": {
+        "x": -1.1285943820860211,
+        "y": -11.391299691488456
+      },
+      "flexibleEndPos": {
+        "row": 10,
+        "col": 5
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "100k",
+      "schematicPos": {
+        "x": 100,
+        "y": 320
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 1.0560030754458012,
+        "y": 33.69788143042018
+      },
+      "id": "46f4dc23-1ed0-4cf3-9871-593049f0b703",
+      "label": "R6",
+      "boardPos": {
+        "row": 7,
+        "col": 7
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 11,
+        "col": 7
+      },
+      "boardLabelOffset": {
+        "x": 0.6740120730049688,
+        "y": 0
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "10k",
+      "schematicPos": {
+        "x": 240,
+        "y": 240
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -1.1285943820860211,
+        "y": -11.391299691488456
+      },
+      "id": "8291f3cf-b1e6-449c-91f1-7e92081f0f68",
+      "label": "R1",
+      "boardPos": {
+        "row": 3,
+        "col": 9
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 4,
+        "col": 9
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "10k",
+      "schematicPos": {
+        "x": 240,
+        "y": 360
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 2.135688349316723,
+        "y": 32.12340272695599
+      },
+      "id": "d1236d03-e2ec-4a29-9365-c6004cd0a8a5",
+      "label": "R4",
+      "boardPos": {
+        "row": 9,
+        "col": 9
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 8,
+        "col": 9
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "20k",
+      "schematicPos": {
+        "x": 180,
+        "y": 360
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -1.47067336838208,
+        "y": 38.35932054241664
+      },
+      "id": "86939fd0-d283-41af-810f-a12786ad8025",
+      "label": "R5",
+      "boardPos": {
+        "row": 8,
+        "col": 3
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 6,
+        "col": 3
+      }
+    },
+    {
+      "defId": "def-capacitor",
+      "value": "100nF",
+      "schematicPos": {
+        "x": 240,
+        "y": 300
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -19.749222283519515,
+        "y": -17.320040739864112
+      },
+      "id": "68b5a828-5d90-4045-aa24-2ebbffa49e72",
+      "label": "C1",
+      "boardPos": {
+        "row": 6,
+        "col": 9
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 6,
+        "col": 8
+      }
+    },
+    {
+      "defId": "def-capacitor",
+      "value": "1nF",
+      "schematicPos": {
+        "x": 160,
+        "y": 340
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": 24.942498497706595,
+        "y": 18.964630063189475
+      },
+      "id": "e7062afe-9fe1-4981-928a-6dd39c91fda3",
+      "label": "C4",
+      "boardPos": {
+        "row": 6,
+        "col": 6
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 7,
+        "col": 6
+      }
+    },
+    {
+      "defId": "def-capacitor",
+      "value": "1nF",
+      "schematicPos": {
+        "x": 160,
+        "y": 260
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": 24.921616512856417,
+        "y": 23.94717514723652
+      },
+      "id": "db323084-ed24-48a8-a5c2-2d29685e4946",
+      "label": "C3",
+      "boardPos": {
+        "row": 5,
+        "col": 7
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 6,
+        "col": 7
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "20k",
+      "schematicPos": {
+        "x": 180,
+        "y": 240
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -1.9048528329921055,
+        "y": -16.24084240810828
+      },
+      "id": "14e73025-15e3-4fbd-bac4-4919be8a8f07",
+      "label": "R2",
+      "boardPos": {
+        "row": 4,
+        "col": 4
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 6,
+        "col": 4
+      }
+    },
+    {
+      "defId": "def-capacitor",
+      "value": "100nF",
+      "schematicPos": {
+        "x": 520,
+        "y": 300
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -16.774926423193108,
+        "y": -17.479552430590388
+      },
+      "id": "3f63fb70-5df0-4ece-915b-53725c9b2765",
+      "label": "C2",
+      "boardPos": {
+        "row": 6,
+        "col": 15
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 6,
+        "col": 14
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "10k",
+      "schematicPos": {
+        "x": 500,
+        "y": 360
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 2.135688349316723,
+        "y": 32.12340272695599
+      },
+      "id": "5534d1ad-620d-4436-becf-50ee997fb610",
+      "label": "R7",
+      "boardPos": {
+        "row": 8,
+        "col": 14
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 9,
+        "col": 14
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "20k",
+      "schematicPos": {
+        "x": 560,
+        "y": 360
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -1.47067336838208,
+        "y": 38.35932054241664
+      },
+      "id": "f17dcf97-864d-499b-866b-e5ce28c3c55a",
+      "label": "R8",
+      "boardPos": {
+        "row": 6,
+        "col": 20
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 8,
+        "col": 20
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "100k",
+      "schematicPos": {
+        "x": 640,
+        "y": 320
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 1.0560030754458012,
+        "y": 33.69788143042018
+      },
+      "id": "19fd35dc-9cd4-436b-882e-e2ec9f95ce27",
+      "label": "R10",
+      "boardPos": {
+        "row": 11,
+        "col": 16
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 7,
+        "col": 16
+      }
+    },
+    {
+      "id": "9896e855-3ba3-4f2d-8f7b-58951518b2b0",
+      "defId": "def-connector-2",
+      "label": "J4 - CV1 Jack",
+      "schematicPos": {
+        "x": 260,
+        "y": 120
+      },
+      "schematicRotation": 90,
+      "boardPos": {
+        "row": 12,
+        "col": 5
+      },
+      "rotation": 180,
+      "schematicMirrored": true,
+      "labelOffset": {
+        "x": 7.688213966541639,
+        "y": -11.90633432241384
+      }
+    },
+    {
+      "id": "446de5ba-aac1-4f82-9058-a792cb69fd87",
+      "defId": "def-connector-2",
+      "label": "J5 - CV2 Jack",
+      "schematicPos": {
+        "x": 260,
+        "y": 480
+      },
+      "schematicRotation": 90,
+      "boardPos": {
+        "row": 6,
+        "col": 0
+      },
+      "rotation": 180,
+      "schematicMirrored": false,
+      "labelOffset": {
+        "x": 2.5408203169966157,
+        "y": 76.29568917789987
+      }
+    },
+    {
+      "id": "03db5be2-f7d5-45fd-a293-9a2825ad49b2",
+      "defId": "def-connector-2",
+      "label": "J6 - Gate 1 Jack",
+      "schematicPos": {
+        "x": 480,
+        "y": 480
+      },
+      "schematicRotation": 270,
+      "boardPos": {
+        "row": 6,
+        "col": 23
+      },
+      "rotation": 180,
+      "schematicMirrored": true,
+      "labelOffset": {
+        "x": -2.6539111036498753,
+        "y": 76.536192720283
+      }
+    },
+    {
+      "id": "e251d652-8d90-4288-bfa8-723c61d5ddd9",
+      "defId": "def-connector-2",
+      "label": "J7 - Gate 2 Jack",
+      "schematicPos": {
+        "x": 480,
+        "y": 120
+      },
+      "schematicRotation": 270,
+      "boardPos": {
+        "row": 12,
+        "col": 18
+      },
+      "rotation": 180,
+      "labelOffset": {
+        "x": 12.266993526488932,
+        "y": -18.346160653197614
+      }
+    },
+    {
+      "id": "12454779-b5c4-4d60-9a9e-22865c49a089",
+      "defId": "def-connector-2",
+      "label": "J8 - AUDIO Jack",
+      "schematicPos": {
+        "x": 460,
+        "y": 700
+      },
+      "schematicRotation": 270,
+      "boardPos": {
+        "row": 21,
+        "col": 7
+      },
+      "rotation": 180,
+      "schematicMirrored": false,
+      "labelOffset": {
+        "x": -0.737897842247321,
+        "y": -16.581730213101082
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "10k",
+      "schematicPos": {
+        "x": 500,
+        "y": 240
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -0.5801672028906069,
+        "y": -6.364419641034118
+      },
+      "id": "756021c0-1fe6-4490-8b48-f53718ab9da4",
+      "label": "R11",
+      "boardPos": {
+        "row": 4,
+        "col": 14
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 3,
+        "col": 14
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1M",
+      "schematicPos": {
+        "x": 580,
+        "y": 340
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": -18.238095117018702,
+        "y": 29.24078199393216
+      },
+      "id": "c7efc6c7-4b3f-46fe-898f-0c047c0ead3a",
+      "label": "R9",
+      "boardPos": {
+        "row": 6,
+        "col": 17
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 7,
+        "col": 17
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "20k",
+      "schematicPos": {
+        "x": 560,
+        "y": 240
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -1.8696721317296578,
+        "y": -7.574945312604427
+      },
+      "id": "a0026107-25fa-4999-b4f2-d746d869fc15",
+      "label": "R12",
+      "boardPos": {
+        "row": 6,
+        "col": 19
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 4,
+        "col": 19
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1M",
+      "schematicPos": {
+        "x": 580,
+        "y": 260
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": -21.26440929594446,
+        "y": 36.60924169971247
+      },
+      "id": "aa9f5270-f98d-439b-a585-9b583bea8ce1",
+      "label": "R13",
+      "boardPos": {
+        "row": 5,
+        "col": 16
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 6,
+        "col": 16
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "100k",
+      "schematicPos": {
+        "x": 640,
+        "y": 280
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 1.0513363708378165,
+        "y": -13.680226508635315
+      },
+      "id": "2f65604b-4f63-4b76-bcbc-b79963f145c3",
+      "label": "R14",
+      "boardPos": {
+        "row": 10,
+        "col": 18
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 5,
+        "col": 18
+      }
+    },
+    {
+      "id": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "defId": "custom-c8c45b7f-07d6-48d8-af90-f0db24938e60",
+      "label": "U2",
+      "schematicPos": {
+        "x": 360,
+        "y": 880
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 17,
+        "col": 10
+      },
+      "rotation": 180
+    },
+    {
+      "defId": "def-resistor",
+      "value": "10k",
+      "schematicPos": {
+        "x": 260,
+        "y": 860
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -1.1285943820860211,
+        "y": -11.391299691488456
+      },
+      "id": "0714aecf-6b38-47cc-babb-79c989c21d6e",
+      "label": "R15",
+      "boardPos": {
+        "row": 20,
+        "col": 14
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 19,
+        "col": 14
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "20k",
+      "schematicPos": {
+        "x": 200,
+        "y": 860
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 10.227824301613794,
+        "y": -9.38504101943272
+      },
+      "id": "69593e08-2a42-462f-a073-1a9acaebcc70",
+      "label": "R16",
+      "boardPos": {
+        "row": 19,
+        "col": 15
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 21,
+        "col": 15
+      }
+    },
+    {
+      "defId": "def-capacitor",
+      "value": "1nF",
+      "schematicPos": {
+        "x": 120,
+        "y": 840
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": -27.05706865849288,
+        "y": 20.252316513037954
+      },
+      "id": "4ce2ef04-ea43-46df-a50d-998c699ea773",
+      "label": "C5",
+      "boardPos": {
+        "row": 18,
+        "col": 15
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 16,
+        "col": 15
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1M",
+      "schematicPos": {
+        "x": 160,
+        "y": 840
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": -18.238095117018702,
+        "y": 29.24078199393216
+      },
+      "id": "af0470de-7e97-4a8f-979f-8383c2088f1a",
+      "label": "R17",
+      "boardPos": {
+        "row": 18,
+        "col": 16
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 16,
+        "col": 16
+      }
+    },
+    {
+      "defId": "def-capacitor",
+      "value": "100nF",
+      "schematicPos": {
+        "x": 260,
+        "y": 920
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -19.749222283519515,
+        "y": -17.320040739864112
+      },
+      "id": "f8b2425f-fd59-4599-8f59-c662170cfe49",
+      "label": "C6",
+      "boardPos": {
+        "row": 17,
+        "col": 14
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 16,
+        "col": 14
+      }
+    },
+    {
+      "defId": "def-capacitor",
+      "value": "100nF",
+      "schematicPos": {
+        "x": 540,
+        "y": 860
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -19.749222283519515,
+        "y": -17.320040739864112
+      },
+      "id": "04dce6bb-404f-4a8f-853f-c4d7178779e2",
+      "label": "C7",
+      "boardPos": {
+        "row": 21,
+        "col": 9
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 20,
+        "col": 9
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1k",
+      "schematicPos": {
+        "x": 480,
+        "y": 180
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": -21.26440929594446,
+        "y": 36.60924169971247
+      },
+      "id": "e15f9d84-880f-4e23-ac08-afc2dd168bef",
+      "label": "R18",
+      "boardPos": {
+        "row": 3,
+        "col": 20
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 5,
+        "col": 20
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1k",
+      "schematicPos": {
+        "x": 260,
+        "y": 180
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": 24.577465277132433,
+        "y": 32.529986928889
+      },
+      "id": "3b3a70e2-ef7b-4641-82eb-f761288671a6",
+      "label": "R19",
+      "boardPos": {
+        "row": 3,
+        "col": 3
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 5,
+        "col": 3
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1k",
+      "schematicPos": {
+        "x": 260,
+        "y": 420
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": 32.22717734540595,
+        "y": 32.75809288908317
+      },
+      "id": "315082e4-3117-472d-a460-f1d953baa905",
+      "label": "R20",
+      "boardPos": {
+        "row": 7,
+        "col": 4
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 9,
+        "col": 4
+      },
+      "boardLabelOffset": {
+        "x": 4.300010778465975,
+        "y": 45.56022968466213
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1k",
+      "schematicPos": {
+        "x": 480,
+        "y": 420
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": -34.52844616216555,
+        "y": 28.770321010098087
+      },
+      "id": "cefa515b-66d4-46c9-bfdd-2d69c16da749",
+      "label": "R21",
+      "boardPos": {
+        "row": 7,
+        "col": 19
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 9,
+        "col": 19
+      }
+    },
+    {
+      "defId": "def-connector-2",
+      "schematicPos": {
+        "x": 280,
+        "y": 700
+      },
+      "schematicRotation": 90,
+      "schematicMirrored": true,
+      "labelOffset": {
+        "x": -1.403932201500652,
+        "y": -16.15090060632906
+      },
+      "id": "28000d97-0b07-42c5-9aaa-726e0e15c711",
+      "label": "J9 - AUX Jack",
+      "boardPos": {
+        "row": 20,
+        "col": 23
+      },
+      "rotation": 0
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1k",
+      "schematicPos": {
+        "x": 280,
+        "y": 760
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": 32.22717734540595,
+        "y": 32.75809288908317
+      },
+      "id": "00f4b403-f84c-4720-9f09-15abc06ef4fd",
+      "label": "R22",
+      "boardPos": {
+        "row": 20,
+        "col": 16
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 20,
+        "col": 20
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "100k",
+      "schematicPos": {
+        "x": 80,
+        "y": 900
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": -1.1285943820860211,
+        "y": -11.391299691488456
+      },
+      "id": "40050d8d-6498-4f30-b8cc-032c5e7faa58",
+      "label": "R23",
+      "boardPos": {
+        "row": 18,
+        "col": 22
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 9,
+        "col": 22
+      },
+      "boardLabelOffset": {
+        "x": -1.7585260477465592,
+        "y": 48.359466313030374
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "1k",
+      "schematicPos": {
+        "x": 460,
+        "y": 760
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": 32.22717734540595,
+        "y": 32.75809288908317
+      },
+      "id": "ceb5693a-6a5e-4860-abc6-36fd0f21d476",
+      "label": "R24",
+      "boardPos": {
+        "row": 22,
+        "col": 2
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 22,
+        "col": 5
+      }
+    },
+    {
+      "id": "dedaa9e1-b056-41e2-94d3-58435ea61cb8",
+      "defId": "def-connector-2",
+      "label": "J10 - Piano Speaker",
+      "schematicPos": {
+        "x": 500,
+        "y": 1080
+      },
+      "schematicRotation": 90,
+      "boardPos": {
+        "row": 17,
+        "col": 0
+      },
+      "rotation": 0,
+      "labelOffset": {
+        "x": -1.2879479448234292,
+        "y": 87.82650104540949
+      },
+      "pinLabelOffsets": {
+        "2": {
+          "x": -10.940117515287152,
+          "y": 8.508980289667786
+        }
+      }
+    },
+    {
+      "id": "ccf7c08a-be59-467b-8397-c7ac3ada9248",
+      "defId": "def-resistor",
+      "label": "R25",
+      "schematicPos": {
+        "x": 480,
+        "y": 980
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 18,
+        "col": 7
+      },
+      "rotation": 0,
+      "labelOffset": {
+        "x": -26.173540408001486,
+        "y": 31.072012597409184
+      },
+      "value": "100k",
+      "flexibleEndPos": {
+        "row": 18,
+        "col": 4
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "150k",
+      "schematicPos": {
+        "x": 680,
+        "y": 880
+      },
+      "schematicRotation": 0,
+      "labelOffset": {
+        "x": 26.05694261023234,
+        "y": 30.787603686545253
+      },
+      "id": "209c8c5f-fbd3-462d-8d3f-c327b23f4599",
+      "label": "R26",
+      "boardPos": {
+        "row": 19,
+        "col": 8
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 18,
+        "col": 8
+      }
+    },
+    {
+      "id": "9df79959-3f91-4ef1-ad63-542380281521",
+      "defId": "def-capacitor",
+      "label": "C8",
+      "schematicPos": {
+        "x": 740,
+        "y": 880
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 19,
+        "col": 9
+      },
+      "rotation": 0,
+      "value": "100pF",
+      "labelOffset": {
+        "x": 38.326392103167564,
+        "y": 19.57203509368628
+      },
+      "flexibleEndPos": {
+        "row": 18,
+        "col": 9
+      }
+    },
+    {
+      "id": "ea57b6da-720d-46a1-8914-2016518fda71",
+      "defId": "def-cap-polarized",
+      "label": "C9",
+      "schematicPos": {
+        "x": 480,
+        "y": 1020
+      },
+      "schematicRotation": 180,
+      "boardPos": {
+        "row": 18,
+        "col": 2
+      },
+      "rotation": 0,
+      "labelOffset": {
+        "x": -46.230422190174295,
+        "y": 27.871403422479148
+      },
+      "value": "10uF",
+      "flexibleEndPos": {
+        "row": 18,
+        "col": 3
+      }
+    },
+    {
+      "id": "59f6918f-6dbb-4139-99a2-9fd7f73f6933",
+      "defId": "def-cap-polarized",
+      "label": "C10",
+      "schematicPos": {
+        "x": 540,
+        "y": 1020
+      },
+      "schematicRotation": 180,
+      "boardPos": {
+        "row": 17,
+        "col": 2
+      },
+      "rotation": 0,
+      "labelOffset": {
+        "x": 45.107867620766,
+        "y": 18.754638976036972
+      },
+      "value": "10uF",
+      "flexibleEndPos": {
+        "row": 17,
+        "col": 3
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "100k",
+      "schematicPos": {
+        "x": 540,
+        "y": 980
+      },
+      "schematicRotation": 0,
+      "labelOffset": {
+        "x": 28.089907320740622,
+        "y": 32.287581190268156
+      },
+      "id": "c548ac8a-ff99-4b10-b4a0-fee3b5eadcfe",
+      "label": "R27",
+      "boardPos": {
+        "row": 17,
+        "col": 7
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 17,
+        "col": 4
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "150k",
+      "schematicPos": {
+        "x": 560,
+        "y": 920
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 26.05694261023234,
+        "y": 30.787603686545253
+      },
+      "id": "37629139-688e-4580-b874-9f8b2c278ad5",
+      "label": "R28",
+      "boardPos": {
+        "row": 16,
+        "col": 9
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 17,
+        "col": 9
+      }
+    },
+    {
+      "id": "07f63e3c-f8a3-4dd6-aff6-779a389931d1",
+      "defId": "def-npn",
+      "label": "Q1",
+      "schematicPos": {
+        "x": 800,
+        "y": 520
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 0,
+        "col": 17
+      },
+      "rotation": 180,
+      "schematicMirrored": true
+    },
+    {
+      "id": "8f9001a8-ce87-4aec-b777-9672af6f514b",
+      "defId": "def-connector-2",
+      "label": "J12 - CLK Jack",
+      "schematicPos": {
+        "x": 1040,
+        "y": 580
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 0,
+        "col": 0
+      },
+      "rotation": 180,
+      "labelOffset": {
+        "x": 2.7297029313558596,
+        "y": -28.67930649600703
+      }
+    },
+    {
+      "id": "7185971a-b278-4bc2-81a3-e49a0af0fa87",
+      "defId": "def-connector-3",
+      "label": "J11 - 10k LVL Pot",
+      "schematicPos": {
+        "x": 720,
+        "y": 780
+      },
+      "schematicRotation": 0,
+      "boardPos": {
+        "row": 21,
+        "col": 0
+      },
+      "rotation": 0,
+      "labelOffset": {
+        "x": 18.65950711295045,
+        "y": -20.667403443276953
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "10k",
+      "schematicPos": {
+        "x": 920,
+        "y": 520
+      },
+      "schematicRotation": 90,
+      "labelOffset": {
+        "x": 2.135688349316723,
+        "y": 32.12340272695599
+      },
+      "id": "46dda9ba-1d3c-4265-ad9e-18fec9d149e9",
+      "label": "R29",
+      "boardPos": {
+        "row": 1,
+        "col": 9
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 2,
+        "col": 9
+      }
+    },
+    {
+      "defId": "def-resistor",
+      "value": "100k",
+      "schematicPos": {
+        "x": 840,
+        "y": 580
+      },
+      "schematicRotation": 180,
+      "labelOffset": {
+        "x": -30.374792446095398,
+        "y": 29.23333683008741
+      },
+      "id": "8f0af64f-da33-4de4-bea3-10d3de3f6c31",
+      "label": "R30",
+      "boardPos": {
+        "row": 0,
+        "col": 14
+      },
+      "rotation": 0,
+      "flexibleEndPos": {
+        "row": 2,
+        "col": 14
+      }
+    },
+    {
+      "id": "f4bf378b-9090-4f3b-a196-955c75681398",
+      "defId": "def-diode",
+      "label": "D1",
+      "schematicPos": {
+        "x": 880,
+        "y": 560
+      },
+      "schematicRotation": 270,
+      "boardPos": {
+        "row": 0,
+        "col": 15
+      },
+      "rotation": 0,
+      "value": "1N4148",
+      "labelOffset": {
+        "x": 29.769600469331067,
+        "y": 67.91564744962125
+      },
+      "flexibleEndPos": {
+        "row": 2,
+        "col": 15
+      }
+    }
+  ],
+  "nets": [
+    {
+      "id": "f7f419af-7f14-4be1-84d5-3e5967979dcd",
+      "name": "net3",
+      "color": "#22c55e"
+    },
+    {
+      "id": "baa467a3-f75f-42a9-9587-ff32550de904",
+      "name": "net5",
+      "color": "#eab308"
+    },
+    {
+      "id": "373473cf-98f4-4239-b5fa-e557e207c34f",
+      "name": "net6",
+      "color": "#f97316"
+    },
+    {
+      "id": "36f34fe2-e0bb-4366-ad22-1c03d95d3148",
+      "name": "net7",
+      "color": "#a855f7"
+    },
+    {
+      "id": "c67f9ff9-e6e0-46ad-bdb5-605e62546bfd",
+      "name": "net8",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "428b5c45-8be3-4027-a4ec-e2b9dad8cafa",
+      "name": "net9",
+      "color": "#f43f5e"
+    },
+    {
+      "id": "b9856a5c-7e15-440e-8273-b27aea402d65",
+      "name": "net10",
+      "color": "#6366f1"
+    },
+    {
+      "id": "b1a8a0ce-f1be-4f21-ac52-04e8d4ac8fb7",
+      "name": "net11",
+      "color": "#06b6d4"
+    },
+    {
+      "id": "f273e87e-38fb-46d9-9e18-6413a05b9d78",
+      "name": "net14",
+      "color": "hsl(351, 70%, 50%)"
+    },
+    {
+      "id": "17e23dc7-db34-4f2d-9293-f23756282c08",
+      "name": "net15",
+      "color": "hsl(208, 70%, 50%)"
+    },
+    {
+      "id": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "name": "GND",
+      "color": "#001aff"
+    },
+    {
+      "id": "0cc5e242-d2f8-4311-8162-16778b24e5fa",
+      "name": "net20",
+      "color": "hsl(171, 70%, 50%)"
+    },
+    {
+      "id": "2fd630ae-3fd2-4442-b200-abb7b510de6c",
+      "name": "net21",
+      "color": "hsl(35, 70%, 50%)"
+    },
+    {
+      "id": "62532a45-88fa-4614-a516-f6f43d67e943",
+      "name": "net1",
+      "color": "#84cc16"
+    },
+    {
+      "id": "d232c9c7-26da-4b59-be6f-ebaba7a9d847",
+      "name": "net2",
+      "color": "#ec4899"
+    },
+    {
+      "id": "0106d465-9b17-4d8d-b577-849549d5e86f",
+      "name": "net4",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "8fb4338c-a2a5-4ba3-bfce-40bb3ce92539",
+      "name": "net13",
+      "color": "hsl(72, 70%, 50%)"
+    },
+    {
+      "id": "ffbea978-088a-4599-8fc5-2f75256b7ad2",
+      "name": "net12",
+      "color": "#14b8a6"
+    },
+    {
+      "id": "9d35cb84-7484-4b54-961e-95eedc2f1a58",
+      "name": "net16",
+      "color": "hsl(26, 70%, 50%)"
+    },
+    {
+      "id": "c2eae3ba-135c-47da-9467-7aac8703d605",
+      "name": "net17",
+      "color": "hsl(216, 70%, 50%)"
+    },
+    {
+      "id": "52c669fb-4e82-4615-84c4-8dd52b888a04",
+      "name": "net18",
+      "color": "hsl(226, 70%, 50%)"
+    },
+    {
+      "id": "c2127bae-5533-4461-a4ad-274eb3346463",
+      "name": "net19",
+      "color": "hsl(167, 70%, 50%)"
+    },
+    {
+      "id": "106988e1-934a-4911-94be-4ef6a31cf22d",
+      "name": "net22",
+      "color": "hsl(297, 70%, 50%)"
+    },
+    {
+      "id": "7ca74b68-a280-4d23-a697-0ceb1e94bb6f",
+      "name": "net23",
+      "color": "hsl(264, 70%, 50%)"
+    },
+    {
+      "id": "fb1b1186-a4cb-47e2-ba39-0d2acdcb4716",
+      "name": "net25",
+      "color": "hsl(181, 70%, 50%)"
+    },
+    {
+      "id": "99354136-61c3-4d92-8439-a49d777160d5",
+      "name": "net27",
+      "color": "hsl(359, 70%, 50%)"
+    },
+    {
+      "id": "9d0b5537-f692-4095-806f-216b54bb8420",
+      "name": "net28",
+      "color": "hsl(57, 70%, 50%)"
+    },
+    {
+      "id": "b0d01ed6-1443-41a3-b479-5b0c691af014",
+      "name": "net29",
+      "color": "hsl(61, 70%, 50%)"
+    },
+    {
+      "id": "a970af72-3535-4f08-9e4e-6a915a36fecf",
+      "name": "net30",
+      "color": "hsl(337, 70%, 50%)"
+    },
+    {
+      "id": "18be26ed-4588-48ed-81df-6276cb6b1c4a",
+      "name": "net24",
+      "color": "hsl(169, 70%, 50%)"
+    },
+    {
+      "id": "4a48adcd-7541-483c-9630-ea6d15d849dd",
+      "name": "net31",
+      "color": "hsl(275, 70%, 50%)"
+    },
+    {
+      "id": "c1293689-4bf3-4432-9478-c58730830705",
+      "name": "net32",
+      "color": "hsl(74, 70%, 50%)"
+    },
+    {
+      "id": "650a9fb0-e363-4bf1-ab4f-10056bca18ff",
+      "name": "net33",
+      "color": "hsl(278, 70%, 50%)"
+    },
+    {
+      "id": "c8f8731b-e33e-46f1-b1ac-55b8c48174f3",
+      "name": "net34",
+      "color": "hsl(191, 70%, 50%)"
+    },
+    {
+      "id": "5b7eede8-5ab4-4512-8d11-349931b64691",
+      "name": "net35",
+      "color": "hsl(30, 70%, 50%)"
+    },
+    {
+      "id": "78977d8a-750d-4a5c-991c-b3effc6e1624",
+      "name": "net36",
+      "color": "hsl(136, 70%, 50%)"
+    },
+    {
+      "id": "af613a54-55fb-4686-a85d-65590227d4b4",
+      "name": "net37",
+      "color": "hsl(170, 70%, 50%)"
+    },
+    {
+      "id": "0e6e0a7f-d497-47ee-9e26-db1b06879d54",
+      "name": "net38",
+      "color": "hsl(280, 70%, 50%)"
+    },
+    {
+      "id": "5917835e-e186-4d1e-8a22-57a8286779a6",
+      "name": "net39",
+      "color": "hsl(297, 70%, 50%)"
+    },
+    {
+      "id": "a6fe88fb-2b76-4f86-93f0-6d02fa41a898",
+      "name": "net40",
+      "color": "hsl(346, 70%, 50%)"
+    }
+  ],
+  "netAssignments": [
+    {
+      "netId": "428b5c45-8be3-4027-a4ec-e2b9dad8cafa",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "1"
+    },
+    {
+      "netId": "428b5c45-8be3-4027-a4ec-e2b9dad8cafa",
+      "componentId": "8291f3cf-b1e6-449c-91f1-7e92081f0f68",
+      "pinId": "1"
+    },
+    {
+      "netId": "428b5c45-8be3-4027-a4ec-e2b9dad8cafa",
+      "componentId": "3b3a70e2-ef7b-4641-82eb-f761288671a6",
+      "pinId": "1"
+    },
+    {
+      "netId": "17e23dc7-db34-4f2d-9293-f23756282c08",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "14"
+    },
+    {
+      "netId": "17e23dc7-db34-4f2d-9293-f23756282c08",
+      "componentId": "756021c0-1fe6-4490-8b48-f53718ab9da4",
+      "pinId": "2"
+    },
+    {
+      "netId": "17e23dc7-db34-4f2d-9293-f23756282c08",
+      "componentId": "e15f9d84-880f-4e23-ac08-afc2dd168bef",
+      "pinId": "1"
+    },
+    {
+      "netId": "b9856a5c-7e15-440e-8273-b27aea402d65",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "2"
+    },
+    {
+      "netId": "b9856a5c-7e15-440e-8273-b27aea402d65",
+      "componentId": "8291f3cf-b1e6-449c-91f1-7e92081f0f68",
+      "pinId": "2"
+    },
+    {
+      "netId": "b9856a5c-7e15-440e-8273-b27aea402d65",
+      "componentId": "14e73025-15e3-4fbd-bac4-4919be8a8f07",
+      "pinId": "1"
+    },
+    {
+      "netId": "8fb4338c-a2a5-4ba3-bfce-40bb3ce92539",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "13"
+    },
+    {
+      "netId": "8fb4338c-a2a5-4ba3-bfce-40bb3ce92539",
+      "componentId": "756021c0-1fe6-4490-8b48-f53718ab9da4",
+      "pinId": "1"
+    },
+    {
+      "netId": "8fb4338c-a2a5-4ba3-bfce-40bb3ce92539",
+      "componentId": "a0026107-25fa-4999-b4f2-d746d869fc15",
+      "pinId": "2"
+    },
+    {
+      "netId": "373473cf-98f4-4239-b5fa-e557e207c34f",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "3"
+    },
+    {
+      "netId": "373473cf-98f4-4239-b5fa-e557e207c34f",
+      "componentId": "ebb0c463-3ae1-4a1e-a3bf-7bafa142019d",
+      "pinId": "1"
+    },
+    {
+      "netId": "373473cf-98f4-4239-b5fa-e557e207c34f",
+      "componentId": "db323084-ed24-48a8-a5c2-2d29685e4946",
+      "pinId": "1"
+    },
+    {
+      "netId": "36f34fe2-e0bb-4366-ad22-1c03d95d3148",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "12"
+    },
+    {
+      "netId": "36f34fe2-e0bb-4366-ad22-1c03d95d3148",
+      "componentId": "aa9f5270-f98d-439b-a585-9b583bea8ce1",
+      "pinId": "1"
+    },
+    {
+      "netId": "36f34fe2-e0bb-4366-ad22-1c03d95d3148",
+      "componentId": "2f65604b-4f63-4b76-bcbc-b79963f145c3",
+      "pinId": "2"
+    },
+    {
+      "netId": "f7f419af-7f14-4be1-84d5-3e5967979dcd",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "4"
+    },
+    {
+      "netId": "f7f419af-7f14-4be1-84d5-3e5967979dcd",
+      "componentId": "7154f69d-a43f-4208-8405-83d9ca48e025",
+      "pinId": "2"
+    },
+    {
+      "netId": "f7f419af-7f14-4be1-84d5-3e5967979dcd",
+      "componentId": "68b5a828-5d90-4045-aa24-2ebbffa49e72",
+      "pinId": "1"
+    },
+    {
+      "netId": "f7f419af-7f14-4be1-84d5-3e5967979dcd",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "8"
+    },
+    {
+      "netId": "f7f419af-7f14-4be1-84d5-3e5967979dcd",
+      "componentId": "04dce6bb-404f-4a8f-853f-c4d7178779e2",
+      "pinId": "2"
+    },
+    {
+      "netId": "62532a45-88fa-4614-a516-f6f43d67e943",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "11"
+    },
+    {
+      "netId": "62532a45-88fa-4614-a516-f6f43d67e943",
+      "componentId": "7154f69d-a43f-4208-8405-83d9ca48e025",
+      "pinId": "3"
+    },
+    {
+      "netId": "62532a45-88fa-4614-a516-f6f43d67e943",
+      "componentId": "3f63fb70-5df0-4ece-915b-53725c9b2765",
+      "pinId": "2"
+    },
+    {
+      "netId": "62532a45-88fa-4614-a516-f6f43d67e943",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "4"
+    },
+    {
+      "netId": "62532a45-88fa-4614-a516-f6f43d67e943",
+      "componentId": "f8b2425f-fd59-4599-8f59-c662170cfe49",
+      "pinId": "1"
+    },
+    {
+      "netId": "c67f9ff9-e6e0-46ad-bdb5-605e62546bfd",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "5"
+    },
+    {
+      "netId": "c67f9ff9-e6e0-46ad-bdb5-605e62546bfd",
+      "componentId": "46f4dc23-1ed0-4cf3-9871-593049f0b703",
+      "pinId": "1"
+    },
+    {
+      "netId": "c67f9ff9-e6e0-46ad-bdb5-605e62546bfd",
+      "componentId": "e7062afe-9fe1-4981-928a-6dd39c91fda3",
+      "pinId": "2"
+    },
+    {
+      "netId": "baa467a3-f75f-42a9-9587-ff32550de904",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "10"
+    },
+    {
+      "netId": "baa467a3-f75f-42a9-9587-ff32550de904",
+      "componentId": "19fd35dc-9cd4-436b-882e-e2ec9f95ce27",
+      "pinId": "2"
+    },
+    {
+      "netId": "baa467a3-f75f-42a9-9587-ff32550de904",
+      "componentId": "c7efc6c7-4b3f-46fe-898f-0c047c0ead3a",
+      "pinId": "2"
+    },
+    {
+      "netId": "b1a8a0ce-f1be-4f21-ac52-04e8d4ac8fb7",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "6"
+    },
+    {
+      "netId": "b1a8a0ce-f1be-4f21-ac52-04e8d4ac8fb7",
+      "componentId": "d1236d03-e2ec-4a29-9365-c6004cd0a8a5",
+      "pinId": "2"
+    },
+    {
+      "netId": "b1a8a0ce-f1be-4f21-ac52-04e8d4ac8fb7",
+      "componentId": "86939fd0-d283-41af-810f-a12786ad8025",
+      "pinId": "1"
+    },
+    {
+      "netId": "0106d465-9b17-4d8d-b577-849549d5e86f",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "9"
+    },
+    {
+      "netId": "0106d465-9b17-4d8d-b577-849549d5e86f",
+      "componentId": "5534d1ad-620d-4436-becf-50ee997fb610",
+      "pinId": "1"
+    },
+    {
+      "netId": "0106d465-9b17-4d8d-b577-849549d5e86f",
+      "componentId": "f17dcf97-864d-499b-866b-e5ce28c3c55a",
+      "pinId": "2"
+    },
+    {
+      "netId": "f273e87e-38fb-46d9-9e18-6413a05b9d78",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "7"
+    },
+    {
+      "netId": "f273e87e-38fb-46d9-9e18-6413a05b9d78",
+      "componentId": "d1236d03-e2ec-4a29-9365-c6004cd0a8a5",
+      "pinId": "1"
+    },
+    {
+      "netId": "f273e87e-38fb-46d9-9e18-6413a05b9d78",
+      "componentId": "315082e4-3117-472d-a460-f1d953baa905",
+      "pinId": "2"
+    },
+    {
+      "netId": "d232c9c7-26da-4b59-be6f-ebaba7a9d847",
+      "componentId": "f1f4fd77-2c26-4a57-8eb4-a7bd9000ade4",
+      "pinId": "8"
+    },
+    {
+      "netId": "d232c9c7-26da-4b59-be6f-ebaba7a9d847",
+      "componentId": "5534d1ad-620d-4436-becf-50ee997fb610",
+      "pinId": "2"
+    },
+    {
+      "netId": "d232c9c7-26da-4b59-be6f-ebaba7a9d847",
+      "componentId": "cefa515b-66d4-46c9-bfdd-2d69c16da749",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "7154f69d-a43f-4208-8405-83d9ca48e025",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "86939fd0-d283-41af-810f-a12786ad8025",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "68b5a828-5d90-4045-aa24-2ebbffa49e72",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "e7062afe-9fe1-4981-928a-6dd39c91fda3",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "db323084-ed24-48a8-a5c2-2d29685e4946",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "14e73025-15e3-4fbd-bac4-4919be8a8f07",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "3f63fb70-5df0-4ece-915b-53725c9b2765",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "f17dcf97-864d-499b-866b-e5ce28c3c55a",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "9896e855-3ba3-4f2d-8f7b-58951518b2b0",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "446de5ba-aac1-4f82-9058-a792cb69fd87",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "03db5be2-f7d5-45fd-a293-9a2825ad49b2",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "e251d652-8d90-4288-bfa8-723c61d5ddd9",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "12454779-b5c4-4d60-9a9e-22865c49a089",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "c7efc6c7-4b3f-46fe-898f-0c047c0ead3a",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "a0026107-25fa-4999-b4f2-d746d869fc15",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "aa9f5270-f98d-439b-a585-9b583bea8ce1",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "69593e08-2a42-462f-a073-1a9acaebcc70",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "4ce2ef04-ea43-46df-a50d-998c699ea773",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "af0470de-7e97-4a8f-979f-8383c2088f1a",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "f8b2425f-fd59-4599-8f59-c662170cfe49",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "04dce6bb-404f-4a8f-853f-c4d7178779e2",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "28000d97-0b07-42c5-9aaa-726e0e15c711",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "37629139-688e-4580-b874-9f8b2c278ad5",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "07f63e3c-f8a3-4dd6-aff6-779a389931d1",
+      "pinId": "3"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "8f9001a8-ce87-4aec-b777-9672af6f514b",
+      "pinId": "2"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "7185971a-b278-4bc2-81a3-e49a0af0fa87",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "8f0af64f-da33-4de4-bea3-10d3de3f6c31",
+      "pinId": "1"
+    },
+    {
+      "netId": "56a054a8-a9f4-469a-be7a-3b5ec0a47143",
+      "componentId": "f4bf378b-9090-4f3b-a196-955c75681398",
+      "pinId": "1"
+    },
+    {
+      "netId": "2fd630ae-3fd2-4442-b200-abb7b510de6c",
+      "componentId": "f0137ee5-a8ee-499a-82b2-9b450aca60f4",
+      "pinId": "1"
+    },
+    {
+      "netId": "2fd630ae-3fd2-4442-b200-abb7b510de6c",
+      "componentId": "ebb0c463-3ae1-4a1e-a3bf-7bafa142019d",
+      "pinId": "2"
+    },
+    {
+      "netId": "0cc5e242-d2f8-4311-8162-16778b24e5fa",
+      "componentId": "f0137ee5-a8ee-499a-82b2-9b450aca60f4",
+      "pinId": "2"
+    },
+    {
+      "netId": "0cc5e242-d2f8-4311-8162-16778b24e5fa",
+      "componentId": "46f4dc23-1ed0-4cf3-9871-593049f0b703",
+      "pinId": "2"
+    },
+    {
+      "netId": "a6fe88fb-2b76-4f86-93f0-6d02fa41a898",
+      "componentId": "cc494cc3-e81f-4a95-a858-4ecb2f99eaa8",
+      "pinId": "1"
+    },
+    {
+      "netId": "a6fe88fb-2b76-4f86-93f0-6d02fa41a898",
+      "componentId": "07f63e3c-f8a3-4dd6-aff6-779a389931d1",
+      "pinId": "2"
+    },
+    {
+      "netId": "9d35cb84-7484-4b54-961e-95eedc2f1a58",
+      "componentId": "cc494cc3-e81f-4a95-a858-4ecb2f99eaa8",
+      "pinId": "2"
+    },
+    {
+      "netId": "9d35cb84-7484-4b54-961e-95eedc2f1a58",
+      "componentId": "19fd35dc-9cd4-436b-882e-e2ec9f95ce27",
+      "pinId": "1"
+    },
+    {
+      "netId": "ffbea978-088a-4599-8fc5-2f75256b7ad2",
+      "componentId": "cc494cc3-e81f-4a95-a858-4ecb2f99eaa8",
+      "pinId": "3"
+    },
+    {
+      "netId": "ffbea978-088a-4599-8fc5-2f75256b7ad2",
+      "componentId": "2f65604b-4f63-4b76-bcbc-b79963f145c3",
+      "pinId": "1"
+    },
+    {
+      "netId": "9d0b5537-f692-4095-806f-216b54bb8420",
+      "componentId": "cc494cc3-e81f-4a95-a858-4ecb2f99eaa8",
+      "pinId": "4"
+    },
+    {
+      "netId": "9d0b5537-f692-4095-806f-216b54bb8420",
+      "componentId": "40050d8d-6498-4f30-b8cc-032c5e7faa58",
+      "pinId": "2"
+    },
+    {
+      "netId": "c2127bae-5533-4461-a4ad-274eb3346463",
+      "componentId": "9896e855-3ba3-4f2d-8f7b-58951518b2b0",
+      "pinId": "1"
+    },
+    {
+      "netId": "c2127bae-5533-4461-a4ad-274eb3346463",
+      "componentId": "3b3a70e2-ef7b-4641-82eb-f761288671a6",
+      "pinId": "2"
+    },
+    {
+      "netId": "106988e1-934a-4911-94be-4ef6a31cf22d",
+      "componentId": "446de5ba-aac1-4f82-9058-a792cb69fd87",
+      "pinId": "1"
+    },
+    {
+      "netId": "106988e1-934a-4911-94be-4ef6a31cf22d",
+      "componentId": "315082e4-3117-472d-a460-f1d953baa905",
+      "pinId": "1"
+    },
+    {
+      "netId": "7ca74b68-a280-4d23-a697-0ceb1e94bb6f",
+      "componentId": "03db5be2-f7d5-45fd-a293-9a2825ad49b2",
+      "pinId": "1"
+    },
+    {
+      "netId": "7ca74b68-a280-4d23-a697-0ceb1e94bb6f",
+      "componentId": "cefa515b-66d4-46c9-bfdd-2d69c16da749",
+      "pinId": "1"
+    },
+    {
+      "netId": "52c669fb-4e82-4615-84c4-8dd52b888a04",
+      "componentId": "e251d652-8d90-4288-bfa8-723c61d5ddd9",
+      "pinId": "1"
+    },
+    {
+      "netId": "52c669fb-4e82-4615-84c4-8dd52b888a04",
+      "componentId": "e15f9d84-880f-4e23-ac08-afc2dd168bef",
+      "pinId": "2"
+    },
+    {
+      "netId": "b0d01ed6-1443-41a3-b479-5b0c691af014",
+      "componentId": "12454779-b5c4-4d60-9a9e-22865c49a089",
+      "pinId": "1"
+    },
+    {
+      "netId": "b0d01ed6-1443-41a3-b479-5b0c691af014",
+      "componentId": "ceb5693a-6a5e-4860-abc6-36fd0f21d476",
+      "pinId": "2"
+    },
+    {
+      "netId": "fb1b1186-a4cb-47e2-ba39-0d2acdcb4716",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "1"
+    },
+    {
+      "netId": "fb1b1186-a4cb-47e2-ba39-0d2acdcb4716",
+      "componentId": "0714aecf-6b38-47cc-babb-79c989c21d6e",
+      "pinId": "1"
+    },
+    {
+      "netId": "fb1b1186-a4cb-47e2-ba39-0d2acdcb4716",
+      "componentId": "00f4b403-f84c-4720-9f09-15abc06ef4fd",
+      "pinId": "1"
+    },
+    {
+      "netId": "c2eae3ba-135c-47da-9467-7aac8703d605",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "2"
+    },
+    {
+      "netId": "c2eae3ba-135c-47da-9467-7aac8703d605",
+      "componentId": "0714aecf-6b38-47cc-babb-79c989c21d6e",
+      "pinId": "2"
+    },
+    {
+      "netId": "c2eae3ba-135c-47da-9467-7aac8703d605",
+      "componentId": "69593e08-2a42-462f-a073-1a9acaebcc70",
+      "pinId": "1"
+    },
+    {
+      "netId": "a970af72-3535-4f08-9e4e-6a915a36fecf",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "7"
+    },
+    {
+      "netId": "a970af72-3535-4f08-9e4e-6a915a36fecf",
+      "componentId": "209c8c5f-fbd3-462d-8d3f-c327b23f4599",
+      "pinId": "1"
+    },
+    {
+      "netId": "a970af72-3535-4f08-9e4e-6a915a36fecf",
+      "componentId": "9df79959-3f91-4ef1-ad63-542380281521",
+      "pinId": "1"
+    },
+    {
+      "netId": "a970af72-3535-4f08-9e4e-6a915a36fecf",
+      "componentId": "7185971a-b278-4bc2-81a3-e49a0af0fa87",
+      "pinId": "3"
+    },
+    {
+      "netId": "99354136-61c3-4d92-8439-a49d777160d5",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "3"
+    },
+    {
+      "netId": "99354136-61c3-4d92-8439-a49d777160d5",
+      "componentId": "4ce2ef04-ea43-46df-a50d-998c699ea773",
+      "pinId": "1"
+    },
+    {
+      "netId": "99354136-61c3-4d92-8439-a49d777160d5",
+      "componentId": "af0470de-7e97-4a8f-979f-8383c2088f1a",
+      "pinId": "1"
+    },
+    {
+      "netId": "99354136-61c3-4d92-8439-a49d777160d5",
+      "componentId": "40050d8d-6498-4f30-b8cc-032c5e7faa58",
+      "pinId": "1"
+    },
+    {
+      "netId": "4a48adcd-7541-483c-9630-ea6d15d849dd",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "6"
+    },
+    {
+      "netId": "4a48adcd-7541-483c-9630-ea6d15d849dd",
+      "componentId": "ccf7c08a-be59-467b-8397-c7ac3ada9248",
+      "pinId": "1"
+    },
+    {
+      "netId": "4a48adcd-7541-483c-9630-ea6d15d849dd",
+      "componentId": "209c8c5f-fbd3-462d-8d3f-c327b23f4599",
+      "pinId": "2"
+    },
+    {
+      "netId": "4a48adcd-7541-483c-9630-ea6d15d849dd",
+      "componentId": "9df79959-3f91-4ef1-ad63-542380281521",
+      "pinId": "2"
+    },
+    {
+      "netId": "78977d8a-750d-4a5c-991c-b3effc6e1624",
+      "componentId": "9a3fb51d-90da-4d2b-9daf-037153502617",
+      "pinId": "5"
+    },
+    {
+      "netId": "78977d8a-750d-4a5c-991c-b3effc6e1624",
+      "componentId": "c548ac8a-ff99-4b10-b4a0-fee3b5eadcfe",
+      "pinId": "1"
+    },
+    {
+      "netId": "78977d8a-750d-4a5c-991c-b3effc6e1624",
+      "componentId": "37629139-688e-4580-b874-9f8b2c278ad5",
+      "pinId": "2"
+    },
+    {
+      "netId": "18be26ed-4588-48ed-81df-6276cb6b1c4a",
+      "componentId": "28000d97-0b07-42c5-9aaa-726e0e15c711",
+      "pinId": "1"
+    },
+    {
+      "netId": "18be26ed-4588-48ed-81df-6276cb6b1c4a",
+      "componentId": "00f4b403-f84c-4720-9f09-15abc06ef4fd",
+      "pinId": "2"
+    },
+    {
+      "netId": "af613a54-55fb-4686-a85d-65590227d4b4",
+      "componentId": "ceb5693a-6a5e-4860-abc6-36fd0f21d476",
+      "pinId": "1"
+    },
+    {
+      "netId": "af613a54-55fb-4686-a85d-65590227d4b4",
+      "componentId": "7185971a-b278-4bc2-81a3-e49a0af0fa87",
+      "pinId": "2"
+    },
+    {
+      "netId": "c8f8731b-e33e-46f1-b1ac-55b8c48174f3",
+      "componentId": "dedaa9e1-b056-41e2-94d3-58435ea61cb8",
+      "pinId": "1"
+    },
+    {
+      "netId": "c8f8731b-e33e-46f1-b1ac-55b8c48174f3",
+      "componentId": "59f6918f-6dbb-4139-99a2-9fd7f73f6933",
+      "pinId": "1"
+    },
+    {
+      "netId": "c1293689-4bf3-4432-9478-c58730830705",
+      "componentId": "dedaa9e1-b056-41e2-94d3-58435ea61cb8",
+      "pinId": "2"
+    },
+    {
+      "netId": "c1293689-4bf3-4432-9478-c58730830705",
+      "componentId": "ea57b6da-720d-46a1-8914-2016518fda71",
+      "pinId": "1"
+    },
+    {
+      "netId": "650a9fb0-e363-4bf1-ab4f-10056bca18ff",
+      "componentId": "ccf7c08a-be59-467b-8397-c7ac3ada9248",
+      "pinId": "2"
+    },
+    {
+      "netId": "650a9fb0-e363-4bf1-ab4f-10056bca18ff",
+      "componentId": "ea57b6da-720d-46a1-8914-2016518fda71",
+      "pinId": "2"
+    },
+    {
+      "netId": "5b7eede8-5ab4-4512-8d11-349931b64691",
+      "componentId": "59f6918f-6dbb-4139-99a2-9fd7f73f6933",
+      "pinId": "2"
+    },
+    {
+      "netId": "5b7eede8-5ab4-4512-8d11-349931b64691",
+      "componentId": "c548ac8a-ff99-4b10-b4a0-fee3b5eadcfe",
+      "pinId": "2"
+    },
+    {
+      "netId": "5917835e-e186-4d1e-8a22-57a8286779a6",
+      "componentId": "07f63e3c-f8a3-4dd6-aff6-779a389931d1",
+      "pinId": "1"
+    },
+    {
+      "netId": "5917835e-e186-4d1e-8a22-57a8286779a6",
+      "componentId": "46dda9ba-1d3c-4265-ad9e-18fec9d149e9",
+      "pinId": "2"
+    },
+    {
+      "netId": "5917835e-e186-4d1e-8a22-57a8286779a6",
+      "componentId": "8f0af64f-da33-4de4-bea3-10d3de3f6c31",
+      "pinId": "2"
+    },
+    {
+      "netId": "5917835e-e186-4d1e-8a22-57a8286779a6",
+      "componentId": "f4bf378b-9090-4f3b-a196-955c75681398",
+      "pinId": "2"
+    },
+    {
+      "netId": "0e6e0a7f-d497-47ee-9e26-db1b06879d54",
+      "componentId": "8f9001a8-ce87-4aec-b777-9672af6f514b",
+      "pinId": "1"
+    },
+    {
+      "netId": "0e6e0a7f-d497-47ee-9e26-db1b06879d54",
+      "componentId": "46dda9ba-1d3c-4265-ad9e-18fec9d149e9",
+      "pinId": "1"
+    }
+  ],
+  "schematicWires": [
+    {
+      "id": "9c180c54-8f2e-403b-a406-3f3696c37d28",
+      "start": {
+        "x": 260,
+        "y": 300
+      },
+      "end": {
+        "x": 280,
+        "y": 300
+      }
+    },
+    {
+      "id": "2cdbd69d-d81c-48cb-ab4e-bc7e4de5c6cb",
+      "start": {
+        "x": 280,
+        "y": 300
+      },
+      "end": {
+        "x": 340,
+        "y": 300
+      }
+    },
+    {
+      "id": "679865d1-5e0f-4362-bdcd-e2bf7d45fad1",
+      "start": {
+        "x": 120,
+        "y": 280
+      },
+      "end": {
+        "x": 160,
+        "y": 280
+      }
+    },
+    {
+      "id": "297e9af2-5eb3-4794-a43d-c2fb1abf5458",
+      "start": {
+        "x": 160,
+        "y": 280
+      },
+      "end": {
+        "x": 340,
+        "y": 280
+      }
+    },
+    {
+      "id": "697dba11-7747-4b4f-8da6-a2ed464f8f50",
+      "start": {
+        "x": 340,
+        "y": 320
+      },
+      "end": {
+        "x": 160,
+        "y": 320
+      }
+    },
+    {
+      "id": "21c17fe6-ea46-4bd5-a0fc-4d19516792a7",
+      "start": {
+        "x": 160,
+        "y": 320
+      },
+      "end": {
+        "x": 120,
+        "y": 320
+      }
+    },
+    {
+      "id": "1d92eee7-b736-4d64-b20d-525d9607f345",
+      "start": {
+        "x": 260,
+        "y": 240
+      },
+      "end": {
+        "x": 340,
+        "y": 240
+      }
+    },
+    {
+      "id": "6ea3cfbe-b346-4e09-8ab7-930111949579",
+      "start": {
+        "x": 340,
+        "y": 260
+      },
+      "end": {
+        "x": 220,
+        "y": 260
+      }
+    },
+    {
+      "id": "8673c4e9-a030-4eaf-a59c-5117125df631",
+      "start": {
+        "x": 220,
+        "y": 260
+      },
+      "end": {
+        "x": 220,
+        "y": 240
+      }
+    },
+    {
+      "id": "5767962e-23a8-40f7-b071-3798c319be50",
+      "start": {
+        "x": 340,
+        "y": 340
+      },
+      "end": {
+        "x": 220,
+        "y": 340
+      }
+    },
+    {
+      "id": "fa71d8a4-de67-4bf7-94a3-032e9077a709",
+      "start": {
+        "x": 220,
+        "y": 340
+      },
+      "end": {
+        "x": 220,
+        "y": 360
+      }
+    },
+    {
+      "id": "0989ce45-88e2-4f8e-b658-e3f8a7365fa8",
+      "start": {
+        "x": 340,
+        "y": 360
+      },
+      "end": {
+        "x": 260,
+        "y": 360
+      }
+    },
+    {
+      "id": "d7b008c2-6f67-4749-a1ed-66105525f337:d7530d71-4a04-43ea-8852-dc8149b22b50:end",
+      "start": {
+        "x": 220,
+        "y": 360
+      },
+      "end": {
+        "x": 200,
+        "y": 360
+      }
+    },
+    {
+      "id": "a03e4149-5220-46e4-a598-4cf1840a3f32:f211918b-f67e-4d5c-a61f-19c68f24435e:start",
+      "start": {
+        "x": 140,
+        "y": 360
+      },
+      "end": {
+        "x": 160,
+        "y": 360
+      }
+    },
+    {
+      "id": "f3f4a343-bab5-40d7-8935-79664214ada7",
+      "start": {
+        "x": 140,
+        "y": 360
+      },
+      "end": {
+        "x": 140,
+        "y": 300
+      }
+    },
+    {
+      "id": "55b236a1-1d37-402a-9a04-077015d5d90d",
+      "start": {
+        "x": 140,
+        "y": 300
+      },
+      "end": {
+        "x": 220,
+        "y": 300
+      }
+    },
+    {
+      "id": "66a62696-5ac5-4e6c-bc57-bb57a5870787",
+      "start": {
+        "x": 20,
+        "y": 320
+      },
+      "end": {
+        "x": 80,
+        "y": 320
+      }
+    },
+    {
+      "id": "fa80f0e4-1ab4-42bd-a29a-8c28e0644a8b",
+      "start": {
+        "x": 140,
+        "y": 300
+      },
+      "end": {
+        "x": 140,
+        "y": 240
+      }
+    },
+    {
+      "id": "7fd48600-e5f5-486d-9bb4-26454f1fb40f",
+      "start": {
+        "x": 140,
+        "y": 240
+      },
+      "end": {
+        "x": 160,
+        "y": 240
+      }
+    },
+    {
+      "id": "bf91b119-1522-4594-ab28-28f5a6567df4",
+      "start": {
+        "x": 220,
+        "y": 240
+      },
+      "end": {
+        "x": 200,
+        "y": 240
+      }
+    },
+    {
+      "id": "3987060a-d8e0-4b63-98cb-e8a688d18752",
+      "start": {
+        "x": 20,
+        "y": 300
+      },
+      "end": {
+        "x": 80,
+        "y": 300
+      }
+    },
+    {
+      "id": "7292db6f-1faf-4d95-951a-afa5b17a2f4c",
+      "start": {
+        "x": 80,
+        "y": 300
+      },
+      "end": {
+        "x": 80,
+        "y": 280
+      }
+    },
+    {
+      "id": "bdf785be-b1cd-4803-9ccb-f6ca4339e1cf",
+      "start": {
+        "x": 0,
+        "y": 560
+      },
+      "end": {
+        "x": 40,
+        "y": 560
+      }
+    },
+    {
+      "id": "6c28e332-26fc-4e4e-bf11-91cc4eb7fdf8",
+      "start": {
+        "x": 40,
+        "y": 560
+      },
+      "end": {
+        "x": 140,
+        "y": 560
+      }
+    },
+    {
+      "id": "b144bb59-1899-4b0d-8d62-7b5392556d64",
+      "start": {
+        "x": 140,
+        "y": 560
+      },
+      "end": {
+        "x": 140,
+        "y": 440
+      }
+    },
+    {
+      "id": "b7c5abab-3509-46bd-aa5f-088f90c6cf00",
+      "start": {
+        "x": 140,
+        "y": 440
+      },
+      "end": {
+        "x": 140,
+        "y": 360
+      }
+    },
+    {
+      "id": "83adc44b-248c-47c0-bea5-baa486cc003e",
+      "start": {
+        "x": 0,
+        "y": 580
+      },
+      "end": {
+        "x": 280,
+        "y": 580
+      }
+    },
+    {
+      "id": "16e67ae3-25b3-4958-a67b-71a85441fc2d",
+      "start": {
+        "x": 280,
+        "y": 580
+      },
+      "end": {
+        "x": 280,
+        "y": 300
+      }
+    },
+    {
+      "id": "7e28211f-722c-4275-b853-173c8e8915de",
+      "start": {
+        "x": 400,
+        "y": 300
+      },
+      "end": {
+        "x": 460,
+        "y": 300
+      }
+    },
+    {
+      "id": "caf4cd35-351e-4414-a2f0-53fd90724c5d",
+      "start": {
+        "x": 460,
+        "y": 300
+      },
+      "end": {
+        "x": 500,
+        "y": 300
+      }
+    },
+    {
+      "start": {
+        "x": 480,
+        "y": 360
+      },
+      "end": {
+        "x": 400,
+        "y": 360
+      },
+      "id": "e88d3d0b-c913-4cd9-afb3-60a96ee404b4"
+    },
+    {
+      "id": "4b1844cc-4f51-49d9-a117-42095e9edb48",
+      "start": {
+        "x": 400,
+        "y": 340
+      },
+      "end": {
+        "x": 520,
+        "y": 340
+      }
+    },
+    {
+      "id": "ec2f4a4d-5041-4fcb-afc0-d3b36c0a7c28",
+      "start": {
+        "x": 520,
+        "y": 340
+      },
+      "end": {
+        "x": 520,
+        "y": 360
+      }
+    },
+    {
+      "id": "dd263c9f-c8c7-4f35-a295-d913031ca19b",
+      "start": {
+        "x": 520,
+        "y": 360
+      },
+      "end": {
+        "x": 540,
+        "y": 360
+      }
+    },
+    {
+      "id": "bb8601f9-1137-4c81-809b-517abc00f596",
+      "start": {
+        "x": 140,
+        "y": 560
+      },
+      "end": {
+        "x": 600,
+        "y": 560
+      }
+    },
+    {
+      "id": "820e4339-7ee3-4f80-862e-626c9833fc11",
+      "start": {
+        "x": 600,
+        "y": 560
+      },
+      "end": {
+        "x": 600,
+        "y": 440
+      }
+    },
+    {
+      "id": "141c571f-8f34-4c72-a4c4-456bdcb524e3",
+      "start": {
+        "x": 600,
+        "y": 440
+      },
+      "end": {
+        "x": 600,
+        "y": 360
+      }
+    },
+    {
+      "id": "82c8683b-5eea-41da-994c-500d2740f1f8",
+      "start": {
+        "x": 600,
+        "y": 360
+      },
+      "end": {
+        "x": 580,
+        "y": 360
+      }
+    },
+    {
+      "id": "b922a7af-98bc-45f0-aded-164b345b5f53",
+      "start": {
+        "x": 600,
+        "y": 360
+      },
+      "end": {
+        "x": 600,
+        "y": 300
+      }
+    },
+    {
+      "id": "d81c153e-73f5-4cb2-8081-18a6eb9a6a5f",
+      "start": {
+        "x": 600,
+        "y": 300
+      },
+      "end": {
+        "x": 540,
+        "y": 300
+      }
+    },
+    {
+      "id": "4550d6d9-9dcf-463f-adfa-371b7df57769",
+      "start": {
+        "x": 400,
+        "y": 320
+      },
+      "end": {
+        "x": 580,
+        "y": 320
+      }
+    },
+    {
+      "id": "fdd7dbfb-1ec0-4d20-9700-37f97e277d7c",
+      "start": {
+        "x": 580,
+        "y": 320
+      },
+      "end": {
+        "x": 620,
+        "y": 320
+      }
+    },
+    {
+      "id": "c83d52ca-cc99-4924-9f26-f11eb4cb751d",
+      "start": {
+        "x": 400,
+        "y": 240
+      },
+      "end": {
+        "x": 480,
+        "y": 240
+      }
+    },
+    {
+      "id": "749f49c9-0e40-4e9d-8794-75577f478005",
+      "start": {
+        "x": 520,
+        "y": 240
+      },
+      "end": {
+        "x": 540,
+        "y": 240
+      }
+    },
+    {
+      "id": "871cddf8-db94-41aa-97f2-1a14ca6868e0",
+      "start": {
+        "x": 400,
+        "y": 260
+      },
+      "end": {
+        "x": 520,
+        "y": 260
+      }
+    },
+    {
+      "id": "bdcf87d8-6ca2-4f8a-873f-51e2d2c9818f",
+      "start": {
+        "x": 520,
+        "y": 260
+      },
+      "end": {
+        "x": 520,
+        "y": 240
+      }
+    },
+    {
+      "id": "388155fc-0abf-404e-9357-ae47cc86afbc",
+      "start": {
+        "x": 400,
+        "y": 280
+      },
+      "end": {
+        "x": 580,
+        "y": 280
+      }
+    },
+    {
+      "id": "c66b8804-6ac0-4e01-b517-cf80bf3c7aad",
+      "start": {
+        "x": 580,
+        "y": 280
+      },
+      "end": {
+        "x": 620,
+        "y": 280
+      }
+    },
+    {
+      "id": "c347c1f6-9ff1-49d0-af83-ad712a26b501",
+      "start": {
+        "x": 580,
+        "y": 240
+      },
+      "end": {
+        "x": 600,
+        "y": 240
+      }
+    },
+    {
+      "id": "816038a9-64cc-45f2-84af-50f909eb2309",
+      "start": {
+        "x": 600,
+        "y": 240
+      },
+      "end": {
+        "x": 600,
+        "y": 300
+      }
+    },
+    {
+      "id": "71194625-cdc6-4516-8811-097eda7da511",
+      "start": {
+        "x": 500,
+        "y": 160
+      },
+      "end": {
+        "x": 600,
+        "y": 160
+      }
+    },
+    {
+      "id": "78b6a5f0-f8b8-42c0-877a-25a1869c66dd",
+      "start": {
+        "x": 600,
+        "y": 160
+      },
+      "end": {
+        "x": 600,
+        "y": 240
+      }
+    },
+    {
+      "id": "72de9679-d30c-4129-86e3-f1586ba4460d",
+      "start": {
+        "x": 500,
+        "y": 440
+      },
+      "end": {
+        "x": 600,
+        "y": 440
+      }
+    },
+    {
+      "id": "8f50cf5a-93e5-44fd-a128-ff85218c9a62",
+      "start": {
+        "x": 240,
+        "y": 440
+      },
+      "end": {
+        "x": 140,
+        "y": 440
+      }
+    },
+    {
+      "id": "27a0bc47-5e9f-401a-a515-8286ff554b15",
+      "start": {
+        "x": 240,
+        "y": 160
+      },
+      "end": {
+        "x": 140,
+        "y": 160
+      }
+    },
+    {
+      "id": "808564c8-5236-4756-bd60-6da676341971",
+      "start": {
+        "x": 140,
+        "y": 160
+      },
+      "end": {
+        "x": 140,
+        "y": 240
+      }
+    },
+    {
+      "id": "09f78a74-a7c5-45e3-924f-871d148eeefc",
+      "start": {
+        "x": 660,
+        "y": 280
+      },
+      "end": {
+        "x": 780,
+        "y": 280
+      }
+    },
+    {
+      "id": "23382812-4ddb-4f96-bd75-10e86c7b29be",
+      "start": {
+        "x": 780,
+        "y": 300
+      },
+      "end": {
+        "x": 660,
+        "y": 300
+      }
+    },
+    {
+      "id": "21b710dd-c1c5-4a29-82db-469933d7e6ae",
+      "start": {
+        "x": 660,
+        "y": 300
+      },
+      "end": {
+        "x": 660,
+        "y": 320
+      }
+    },
+    {
+      "id": "5811e06a-f9ca-4703-bef5-1926f642e750",
+      "start": {
+        "x": 0,
+        "y": 600
+      },
+      "end": {
+        "x": 460,
+        "y": 600
+      }
+    },
+    {
+      "id": "9885dcf3-baab-4bcf-a35a-89996063fc22",
+      "start": {
+        "x": 460,
+        "y": 600
+      },
+      "end": {
+        "x": 460,
+        "y": 300
+      }
+    },
+    {
+      "id": "dae27d85-7d0c-4b7d-b0e3-d015234324dc",
+      "start": {
+        "x": 480,
+        "y": 400
+      },
+      "end": {
+        "x": 480,
+        "y": 360
+      }
+    },
+    {
+      "id": "3c8a6e45-f950-4060-820e-92ddfd70ca62",
+      "start": {
+        "x": 260,
+        "y": 360
+      },
+      "end": {
+        "x": 260,
+        "y": 400
+      }
+    },
+    {
+      "id": "1cc18b57-1655-4b23-b053-cb1d098278ad",
+      "start": {
+        "x": 260,
+        "y": 240
+      },
+      "end": {
+        "x": 260,
+        "y": 200
+      }
+    },
+    {
+      "id": "af45c12d-58bb-4a6a-a683-03401028ba4e",
+      "start": {
+        "x": 480,
+        "y": 200
+      },
+      "end": {
+        "x": 480,
+        "y": 240
+      }
+    },
+    {
+      "id": "d0ed874a-f6c7-4e11-b34e-6e0d174ca17a",
+      "start": {
+        "x": 280,
+        "y": 860
+      },
+      "end": {
+        "x": 340,
+        "y": 860
+      }
+    },
+    {
+      "id": "1cef1441-e692-47c6-a14b-fd176b0f829f",
+      "start": {
+        "x": 280,
+        "y": 780
+      },
+      "end": {
+        "x": 280,
+        "y": 860
+      }
+    },
+    {
+      "id": "f1013471-9daa-4d3b-8cac-b5efebd9f1c6",
+      "start": {
+        "x": 120,
+        "y": 800
+      },
+      "end": {
+        "x": 160,
+        "y": 800
+      }
+    },
+    {
+      "id": "25dcfb39-0575-4bab-83c5-6dd7dcf5147a",
+      "start": {
+        "x": 40,
+        "y": 560
+      },
+      "end": {
+        "x": 40,
+        "y": 740
+      }
+    },
+    {
+      "id": "7a3647a9-3bfd-4a4e-aee0-ae220170e192",
+      "start": {
+        "x": 40,
+        "y": 740
+      },
+      "end": {
+        "x": 40,
+        "y": 800
+      }
+    },
+    {
+      "id": "06c6a60b-aa8a-48df-9f1a-6cf93167892d",
+      "start": {
+        "x": 40,
+        "y": 800
+      },
+      "end": {
+        "x": 120,
+        "y": 800
+      }
+    },
+    {
+      "id": "14060cfc-7e7d-40b6-b300-0a6dd02c893e",
+      "start": {
+        "x": 100,
+        "y": 900
+      },
+      "end": {
+        "x": 120,
+        "y": 900
+      }
+    },
+    {
+      "id": "a9756bce-9008-4865-a9d8-c549d42f3668",
+      "start": {
+        "x": 120,
+        "y": 900
+      },
+      "end": {
+        "x": 160,
+        "y": 900
+      }
+    },
+    {
+      "id": "16933b2d-619d-4256-b8bf-90a5fb7770a8",
+      "start": {
+        "x": 160,
+        "y": 900
+      },
+      "end": {
+        "x": 340,
+        "y": 900
+      }
+    },
+    {
+      "id": "42346b36-bc80-4b0c-af2b-2108e351fe81",
+      "start": {
+        "x": 60,
+        "y": 900
+      },
+      "end": {
+        "x": -20,
+        "y": 900
+      }
+    },
+    {
+      "id": "9f354251-c4f6-40a1-a924-e1713872a510",
+      "start": {
+        "x": -20,
+        "y": 900
+      },
+      "end": {
+        "x": -20,
+        "y": 640
+      }
+    },
+    {
+      "id": "9a85a271-8dbb-42c4-ab56-0575bfbf95c3",
+      "start": {
+        "x": -20,
+        "y": 640
+      },
+      "end": {
+        "x": 700,
+        "y": 640
+      }
+    },
+    {
+      "id": "b73a8501-9b9a-4909-9e9c-49e8d329e667",
+      "start": {
+        "x": 700,
+        "y": 640
+      },
+      "end": {
+        "x": 700,
+        "y": 260
+      }
+    },
+    {
+      "id": "23349db5-4367-4bee-9dc0-acc8e3eb5250",
+      "start": {
+        "x": 700,
+        "y": 260
+      },
+      "end": {
+        "x": 780,
+        "y": 260
+      }
+    },
+    {
+      "id": "d8593717-99d5-409f-b708-78dca0a94e88",
+      "start": {
+        "x": 260,
+        "y": 740
+      },
+      "end": {
+        "x": 40,
+        "y": 740
+      }
+    },
+    {
+      "id": "1167cf3b-6a43-4deb-a0a6-470f6f045112",
+      "start": {
+        "x": 0,
+        "y": 600
+      },
+      "end": {
+        "x": 0,
+        "y": 980
+      }
+    },
+    {
+      "id": "13c8e0ca-e245-4a06-9fc9-29efba703182",
+      "start": {
+        "x": 0,
+        "y": 980
+      },
+      "end": {
+        "x": 280,
+        "y": 980
+      }
+    },
+    {
+      "id": "0f88d410-4af8-4bb8-9313-30db59f412cf",
+      "start": {
+        "x": 280,
+        "y": 980
+      },
+      "end": {
+        "x": 280,
+        "y": 920
+      }
+    },
+    {
+      "id": "816d1adb-1032-4db3-a6d0-93627d6fdea3:0f88d410-4af8-4bb8-9313-30db59f412cf:end:d",
+      "start": {
+        "x": 340,
+        "y": 920
+      },
+      "end": {
+        "x": 280,
+        "y": 920
+      }
+    },
+    {
+      "id": "783b877a-6fda-447a-827e-c0416cfce952",
+      "start": {
+        "x": 240,
+        "y": 920
+      },
+      "end": {
+        "x": 40,
+        "y": 920
+      }
+    },
+    {
+      "id": "a154f083-1de1-41d8-8ce4-1a99b6e631d2",
+      "start": {
+        "x": 40,
+        "y": 920
+      },
+      "end": {
+        "x": 40,
+        "y": 800
+      }
+    },
+    {
+      "id": "cf4a10c5-d102-4c5b-b6ae-1f1a7195c0ef",
+      "start": {
+        "x": 600,
+        "y": 560
+      },
+      "end": {
+        "x": 600,
+        "y": 600
+      }
+    },
+    {
+      "id": "424a2659-bcfc-4fa3-8a0b-7c4991c7f62d",
+      "start": {
+        "x": 600,
+        "y": 600
+      },
+      "end": {
+        "x": 600,
+        "y": 740
+      }
+    },
+    {
+      "id": "5be6214f-d9e2-44ee-b099-1c56690f0412",
+      "start": {
+        "x": 600,
+        "y": 740
+      },
+      "end": {
+        "x": 600,
+        "y": 760
+      }
+    },
+    {
+      "id": "b459334b-a4a4-4226-ac3a-f3a40e6bb7ec",
+      "start": {
+        "x": 600,
+        "y": 760
+      },
+      "end": {
+        "x": 600,
+        "y": 860
+      }
+    },
+    {
+      "id": "9658385b-6342-4c8c-8e8e-a14edca63304",
+      "start": {
+        "x": 600,
+        "y": 860
+      },
+      "end": {
+        "x": 560,
+        "y": 860
+      }
+    },
+    {
+      "id": "5452598b-9720-43d2-b4b0-ba6b1b82141b",
+      "start": {
+        "x": 280,
+        "y": 580
+      },
+      "end": {
+        "x": 400,
+        "y": 580
+      }
+    },
+    {
+      "id": "edae84fa-0f40-4bb5-8018-29c53cf1ee5b",
+      "start": {
+        "x": 400,
+        "y": 580
+      },
+      "end": {
+        "x": 400,
+        "y": 860
+      }
+    },
+    {
+      "id": "c47de5c1-9312-4296-a146-2100a3597294",
+      "start": {
+        "x": 480,
+        "y": 740
+      },
+      "end": {
+        "x": 600,
+        "y": 740
+      }
+    },
+    {
+      "id": "c1e2d0e0-8f35-4658-be29-ef86f9f077ae",
+      "start": {
+        "x": 400,
+        "y": 900
+      },
+      "end": {
+        "x": 480,
+        "y": 900
+      }
+    },
+    {
+      "id": "0b45e285-3cb6-46ed-8744-dcdcd8f7d841",
+      "start": {
+        "x": 480,
+        "y": 900
+      },
+      "end": {
+        "x": 480,
+        "y": 960
+      }
+    },
+    {
+      "id": "8e6c389f-2305-4583-8bdd-36f4a860e588:7c12b530-5021-4ffa-830f-a051708d5404:start",
+      "start": {
+        "x": 660,
+        "y": 860
+      },
+      "end": {
+        "x": 680,
+        "y": 860
+      }
+    },
+    {
+      "id": "1204d618-d688-4c4c-a8b0-d162f42ec3f5",
+      "start": {
+        "x": 480,
+        "y": 900
+      },
+      "end": {
+        "x": 680,
+        "y": 900
+      }
+    },
+    {
+      "id": "3a7d9008-740a-4db7-8f0f-3c94c4e1c1df",
+      "start": {
+        "x": 680,
+        "y": 900
+      },
+      "end": {
+        "x": 740,
+        "y": 900
+      }
+    },
+    {
+      "id": "377b4e82-2e90-44d1-8d38-48260ed8be81",
+      "start": {
+        "x": 740,
+        "y": 860
+      },
+      "end": {
+        "x": 680,
+        "y": 860
+      }
+    },
+    {
+      "id": "2abc75c8-2d64-4459-bcad-c66f99101e77",
+      "start": {
+        "x": 660,
+        "y": 860
+      },
+      "end": {
+        "x": 660,
+        "y": 880
+      }
+    },
+    {
+      "id": "d931344b-ed7b-4fe8-9cba-24d148d80981",
+      "start": {
+        "x": 500,
+        "y": 1040
+      },
+      "end": {
+        "x": 540,
+        "y": 1040
+      }
+    },
+    {
+      "id": "6216dc67-f4b0-4b6e-ab44-e9c218216481",
+      "start": {
+        "x": 400,
+        "y": 920
+      },
+      "end": {
+        "x": 540,
+        "y": 920
+      }
+    },
+    {
+      "id": "bcb3f17c-e8e4-406b-8d28-5d29983022e5",
+      "start": {
+        "x": 540,
+        "y": 920
+      },
+      "end": {
+        "x": 540,
+        "y": 960
+      }
+    },
+    {
+      "id": "13eb787f-0664-48ea-bdef-90fcb87ddf55",
+      "start": {
+        "x": 580,
+        "y": 920
+      },
+      "end": {
+        "x": 600,
+        "y": 920
+      }
+    },
+    {
+      "id": "72c837a4-3e0e-4547-8e18-d7e7fec9e575",
+      "start": {
+        "x": 600,
+        "y": 920
+      },
+      "end": {
+        "x": 600,
+        "y": 860
+      }
+    },
+    {
+      "id": "985aa8cc-2580-4f85-b502-00c1845dfca6",
+      "start": {
+        "x": 680,
+        "y": 760
+      },
+      "end": {
+        "x": 600,
+        "y": 760
+      }
+    },
+    {
+      "id": "35f2ab03-5de0-489d-95c7-ce1f12523d69",
+      "start": {
+        "x": 400,
+        "y": 880
+      },
+      "end": {
+        "x": 460,
+        "y": 880
+      }
+    },
+    {
+      "id": "1550c1b8-535c-40d7-b94f-4754ab4c198d",
+      "start": {
+        "x": 460,
+        "y": 880
+      },
+      "end": {
+        "x": 660,
+        "y": 880
+      }
+    },
+    {
+      "id": "d14a1b83-ec95-41a1-97b8-615297167cc7",
+      "start": {
+        "x": 460,
+        "y": 800
+      },
+      "end": {
+        "x": 680,
+        "y": 800
+      }
+    },
+    {
+      "id": "4dde4b8a-d55c-4610-9693-0e004011d2b0",
+      "start": {
+        "x": 460,
+        "y": 780
+      },
+      "end": {
+        "x": 680,
+        "y": 780
+      }
+    },
+    {
+      "id": "fb31e161-ee14-4b3e-859c-57080ddbeda6",
+      "start": {
+        "x": 1000,
+        "y": 580
+      },
+      "end": {
+        "x": 960,
+        "y": 580
+      }
+    },
+    {
+      "id": "aaa7a3d1-83c3-4985-a155-d3792c58595f",
+      "start": {
+        "x": 960,
+        "y": 580
+      },
+      "end": {
+        "x": 960,
+        "y": 520
+      }
+    },
+    {
+      "id": "362684ae-9165-43f5-a34c-8e5dc8c43381",
+      "start": {
+        "x": 940,
+        "y": 520
+      },
+      "end": {
+        "x": 960,
+        "y": 520
+      }
+    },
+    {
+      "id": "ecb4df7b-cfbc-4d60-b19f-4f0cb93cfbe6",
+      "start": {
+        "x": 900,
+        "y": 520
+      },
+      "end": {
+        "x": 880,
+        "y": 520
+      }
+    },
+    {
+      "id": "da26871a-28d7-4bb8-9859-5c058b84b9d8",
+      "start": {
+        "x": 880,
+        "y": 520
+      },
+      "end": {
+        "x": 840,
+        "y": 520
+      }
+    },
+    {
+      "id": "c3ee2d5e-9168-40e3-9886-cae79ff05842",
+      "start": {
+        "x": 840,
+        "y": 520
+      },
+      "end": {
+        "x": 840,
+        "y": 560
+      }
+    },
+    {
+      "id": "0af62a0c-325f-41ab-be64-9e451055ef9d",
+      "start": {
+        "x": 840,
+        "y": 600
+      },
+      "end": {
+        "x": 780,
+        "y": 600
+      }
+    },
+    {
+      "id": "f6acff41-6b1c-468f-ad0f-7210dda52f29",
+      "start": {
+        "x": 780,
+        "y": 600
+      },
+      "end": {
+        "x": 600,
+        "y": 600
+      }
+    },
+    {
+      "id": "5e6b5117-0c27-41ed-8f22-fc1834bd7484",
+      "start": {
+        "x": 840,
+        "y": 600
+      },
+      "end": {
+        "x": 880,
+        "y": 600
+      }
+    },
+    {
+      "id": "9e733dae-f9d5-45f5-8b11-7cfbe06dc805",
+      "start": {
+        "x": 780,
+        "y": 560
+      },
+      "end": {
+        "x": 780,
+        "y": 600
+      }
+    },
+    {
+      "id": "404b43b3-f8e4-4faf-b3c4-2beca9e7050c",
+      "start": {
+        "x": 780,
+        "y": 480
+      },
+      "end": {
+        "x": 780,
+        "y": 320
+      }
+    },
+    {
+      "id": "a13248ce-efc6-4064-8206-b98d50960dd8",
+      "start": {
+        "x": 880,
+        "y": 600
+      },
+      "end": {
+        "x": 1000,
+        "y": 600
+      }
+    },
+    {
+      "id": "af93387d-06a0-4eeb-9c82-b44d5356dafc",
+      "start": {
+        "x": 340,
+        "y": 880
+      },
+      "end": {
+        "x": 220,
+        "y": 880
+      }
+    },
+    {
+      "id": "db55c367-7637-44b1-bfb6-adcdd2e7fefe",
+      "start": {
+        "x": 220,
+        "y": 860
+      },
+      "end": {
+        "x": 220,
+        "y": 880
+      }
+    },
+    {
+      "id": "e9ab2a58-4b40-4553-9f21-3c5983e03524",
+      "start": {
+        "x": 120,
+        "y": 860
+      },
+      "end": {
+        "x": 120,
+        "y": 900
+      }
+    },
+    {
+      "id": "236ef0ad-e9b7-439e-9318-e361c9cca63d",
+      "start": {
+        "x": 160,
+        "y": 860
+      },
+      "end": {
+        "x": 160,
+        "y": 900
+      }
+    },
+    {
+      "id": "7990c489-cf9e-4461-8f7f-3216a63b0951:06c6a60b-aa8a-48df-9f1a-6cf93167892d:end:d",
+      "start": {
+        "x": 120,
+        "y": 820
+      },
+      "end": {
+        "x": 120,
+        "y": 800
+      }
+    },
+    {
+      "id": "9f8983f7-27b9-4b73-b5db-84b66eaacede:f1013471-9daa-4d3b-8cac-b5efebd9f1c6:end:d",
+      "start": {
+        "x": 160,
+        "y": 820
+      },
+      "end": {
+        "x": 160,
+        "y": 800
+      }
+    },
+    {
+      "id": "3eb12423-f66d-4ed6-bf15-82806af77c58",
+      "start": {
+        "x": 160,
+        "y": 800
+      },
+      "end": {
+        "x": 180,
+        "y": 800
+      }
+    },
+    {
+      "id": "73519370-7366-4533-88fa-2364829ffc27",
+      "start": {
+        "x": 180,
+        "y": 800
+      },
+      "end": {
+        "x": 180,
+        "y": 860
+      }
+    },
+    {
+      "id": "0868410b-4900-405d-a755-4f297b44ba2f",
+      "start": {
+        "x": 220,
+        "y": 860
+      },
+      "end": {
+        "x": 240,
+        "y": 860
+      }
+    },
+    {
+      "id": "359c9f95-054e-4eeb-abd4-b54e05d1a397",
+      "start": {
+        "x": 400,
+        "y": 860
+      },
+      "end": {
+        "x": 520,
+        "y": 860
+      }
+    },
+    {
+      "id": "b6f44e80-48b2-4886-bdfb-67ccc6456697",
+      "start": {
+        "x": 460,
+        "y": 800
+      },
+      "end": {
+        "x": 460,
+        "y": 880
+      }
+    }
+  ],
+  "netLabels": [],
+  "wiring": "touch",
+  "board": {
+    "rows": 24,
+    "cols": 24,
+    "cuts": [
+      {
+        "row": 5,
+        "col": 4,
+        "kind": "hole"
+      },
+      {
+        "row": 7,
+        "col": 5,
+        "kind": "hole"
+      },
+      {
+        "row": 13,
+        "col": 6,
+        "kind": "hole"
+      },
+      {
+        "row": 6,
+        "col": 8
+      },
+      {
+        "row": 6,
+        "col": 11
+      },
+      {
+        "row": 5,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 4,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 3,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 7,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 8,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 9,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 10,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 11,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 6,
+        "col": 14
+      },
+      {
+        "row": 7,
+        "col": 18,
+        "kind": "hole"
+      },
+      {
+        "row": 5,
+        "col": 19,
+        "kind": "hole"
+      },
+      {
+        "row": 13,
+        "col": 17,
+        "kind": "hole"
+      },
+      {
+        "row": 12,
+        "col": 20,
+        "kind": "hole"
+      },
+      {
+        "row": 9,
+        "col": 20,
+        "kind": "hole"
+      },
+      {
+        "row": 17,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 18,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 19,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 20,
+        "col": 12,
+        "kind": "hole"
+      },
+      {
+        "row": 20,
+        "col": 18,
+        "kind": "hole"
+      },
+      {
+        "row": 18,
+        "col": 2
+      },
+      {
+        "row": 17,
+        "col": 2
+      },
+      {
+        "row": 17,
+        "col": 6,
+        "kind": "hole"
+      },
+      {
+        "row": 18,
+        "col": 6,
+        "kind": "hole"
+      },
+      {
+        "row": 22,
+        "col": 4,
+        "kind": "hole"
+      },
+      {
+        "row": 1,
+        "col": 10,
+        "kind": "hole"
+      }
+    ],
+    "wires": [
+      {
+        "id": "a9ff9d9b-c545-42e8-b1f1-9e795b94cad8",
+        "from": {
+          "row": 6,
+          "col": 2
+        },
+        "to": {
+          "row": 12,
+          "col": 2
+        }
+      },
+      {
+        "id": "7c02a174-cc8e-4a8e-b88e-4e774bdde6d1",
+        "from": {
+          "row": 5,
+          "col": 2
+        },
+        "to": {
+          "row": 13,
+          "col": 2
+        }
+      },
+      {
+        "id": "93b96f8d-1a8d-4e25-ba53-1128669d2e0c",
+        "from": {
+          "row": 6,
+          "col": 11
+        },
+        "to": {
+          "row": 13,
+          "col": 10
+        }
+      },
+      {
+        "id": "bcbf39b1-53b1-4e29-81df-220add96ef13",
+        "from": {
+          "row": 6,
+          "col": 12
+        },
+        "to": {
+          "row": 14,
+          "col": 14
+        }
+      },
+      {
+        "id": "37e18efd-ab32-4e4b-beab-6158802dfa9d",
+        "from": {
+          "row": 6,
+          "col": 21
+        },
+        "to": {
+          "row": 12,
+          "col": 19
+        }
+      },
+      {
+        "id": "7646f891-3a82-486a-87fc-fb7129202163",
+        "from": {
+          "row": 5,
+          "col": 21
+        },
+        "to": {
+          "row": 13,
+          "col": 21
+        }
+      },
+      {
+        "id": "6295c0ee-ac18-4ccb-aad4-67a69830e434",
+        "from": {
+          "row": 12,
+          "col": 11
+        },
+        "to": {
+          "row": 16,
+          "col": 11
+        }
+      },
+      {
+        "id": "d5857877-37d5-4dcf-9f52-d3989b8375b3",
+        "from": {
+          "row": 1,
+          "col": 21
+        },
+        "to": {
+          "row": 12,
+          "col": 21
+        }
+      },
+      {
+        "id": "1f589c98-a6f0-425e-8dd6-ce3ba7fdbf4e",
+        "from": {
+          "row": 20,
+          "col": 7
+        },
+        "to": {
+          "row": 13,
+          "col": 7
+        }
+      },
+      {
+        "id": "28225ba2-f5ee-4ec2-a1d2-5e83fd96db8f",
+        "from": {
+          "row": 12,
+          "col": 8
+        },
+        "to": {
+          "row": 0,
+          "col": 8
+        }
+      },
+      {
+        "id": "3709f475-b28a-4f5a-a65f-2015b855e44c",
+        "from": {
+          "row": 12,
+          "col": 3
+        },
+        "to": {
+          "row": 21,
+          "col": 3
+        }
+      },
+      {
+        "id": "4bb2777f-60b2-4ef2-8a53-ce114eda4159",
+        "from": {
+          "row": 14,
+          "col": 21
+        },
+        "to": {
+          "row": 17,
+          "col": 21
+        }
+      },
+      {
+        "id": "736cabc9-0d85-4b66-9ade-8a0ac39f0c8e",
+        "from": {
+          "row": 19,
+          "col": 4
+        },
+        "to": {
+          "row": 23,
+          "col": 4
+        }
+      }
+    ]
+  },
+  "showValuesOnBoard": false,
+  "autoSave": true,
+  "boardEditsSinceAutoLayout": 651,
+  "boardAddsSinceAutoLayout": 58
+}

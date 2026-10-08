@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="181.9mm" height="158.5mm" viewBox="-20 -15 181.9 158.5">
+<title>Stereo mixer 28HP panel - layout</title>
+<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.5px;fill:#444}</style>
+<rect x="-20" y="-15" width="181.9" height="158.5" fill="#ffffff"/>
+<rect x="0" y="0" width="141.9" height="128.5" rx="0.6" fill="#e9eae6" stroke="#222" stroke-width="0.3"/>
+<rect x="0" y="0" width="141.9" height="10" fill="#000" opacity="0.04"/>
+<rect x="0" y="118.5" width="141.9" height="10" fill="#000" opacity="0.04"/>
+<rect x="114.80" y="14.40" width="11.40" height="14.20" rx="1.2" fill="#2a2d2b"/>
+<rect x="114.80" y="95.40" width="23.40" height="14.80" rx="1.2" fill="#2a2d2b"/>
+<line x1="86.50" y1="12.5" x2="86.50" y2="108" stroke="#666" stroke-width="0.25"/>
+<line x1="113.25" y1="12.5" x2="113.25" y2="108" stroke="#666" stroke-width="0.25"/>
+<line x1="114.75" y1="59.90" x2="139.90" y2="59.90" stroke="#666" stroke-width="0.25"/>
+<line x1="114.75" y1="74.60" x2="139.90" y2="74.60" stroke="#666" stroke-width="0.25"/>
+<circle cx="15.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="15.00" y1="23.00" x2="11.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="15.00" cy="38.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="15.00" y1="38.00" x2="11.80" y2="41.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="15.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="15.00" y1="54.00" x2="11.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="15.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="15.00" y1="69.00" x2="15.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="15.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="15.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="28.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="28.00" y1="23.00" x2="24.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="28.00" cy="38.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="28.00" y1="38.00" x2="24.80" y2="41.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="28.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="28.00" y1="54.00" x2="24.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="28.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="28.00" y1="69.00" x2="28.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="28.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="28.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="41.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="41.00" y1="23.00" x2="37.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="41.00" cy="38.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="41.00" y1="38.00" x2="37.80" y2="41.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="41.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="41.00" y1="54.00" x2="37.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="41.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="41.00" y1="69.00" x2="41.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="41.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="41.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="54.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="54.00" y1="23.00" x2="50.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="54.00" cy="38.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="54.00" y1="38.00" x2="50.80" y2="41.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="54.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="54.00" y1="54.00" x2="50.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="54.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="54.00" y1="69.00" x2="54.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="54.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="54.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="67.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="67.00" y1="23.00" x2="63.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="67.00" cy="38.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="67.00" y1="38.00" x2="63.80" y2="41.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="67.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="67.00" y1="54.00" x2="63.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="67.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="67.00" y1="69.00" x2="67.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="67.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="67.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="80.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="80.00" y1="23.00" x2="76.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="80.00" cy="38.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="80.00" y1="38.00" x2="76.80" y2="41.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="80.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="80.00" y1="54.00" x2="76.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="80.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="80.00" y1="69.00" x2="80.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="80.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="80.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="93.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="93.00" y1="23.00" x2="89.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="93.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="93.00" y1="54.00" x2="89.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="93.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="93.00" y1="69.00" x2="93.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="93.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="93.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="93.00" cy="101.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="93.00" cy="101.00" r="1.75" fill="#111"/>
+<circle cx="106.00" cy="23.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="106.00" y1="23.00" x2="102.80" y2="26.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="106.00" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="106.00" y1="54.00" x2="102.80" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="106.00" cy="69.00" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<line x1="106.00" y1="69.00" x2="106.00" y2="65.40" stroke="#333" stroke-width="1.3" stroke-linecap="round"/>
+<circle cx="106.00" cy="86.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="106.00" cy="86.00" r="1.75" fill="#111"/>
+<circle cx="106.00" cy="101.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="106.00" cy="101.00" r="1.75" fill="#111"/>
+<circle cx="120.50" cy="23.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="120.50" cy="23.00" r="1.75" fill="#111"/>
+<circle cx="132.50" cy="23.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="132.50" cy="23.00" r="1.75" fill="#111"/>
+<circle cx="120.50" cy="38.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="120.50" cy="38.00" r="1.75" fill="#111"/>
+<circle cx="132.50" cy="38.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="132.50" cy="38.00" r="1.75" fill="#111"/>
+<circle cx="126.50" cy="54.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="126.50" y1="54.00" x2="123.30" y2="57.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="120.50" cy="69.00" r="5.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="120.50" y1="69.00" x2="117.30" y2="72.85" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="132.50" cy="69.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="132.50" cy="69.00" r="1.75" fill="#111"/>
+<circle cx="126.50" cy="86.00" r="7.00" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>
+<line x1="126.50" y1="86.00" x2="122.02" y2="91.39" stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>
+<circle cx="120.50" cy="101.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="120.50" cy="101.00" r="1.75" fill="#111"/>
+<circle cx="132.50" cy="101.00" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="132.50" cy="101.00" r="1.75" fill="#111"/>
+<ellipse cx="7.50" cy="3.00" rx="2.0" ry="1.6" fill="#fff" stroke="#888" stroke-width="0.2"/>
+<ellipse cx="7.50" cy="125.50" rx="2.0" ry="1.6" fill="#fff" stroke="#888" stroke-width="0.2"/>
+<ellipse cx="134.50" cy="3.00" rx="2.0" ry="1.6" fill="#fff" stroke="#888" stroke-width="0.2"/>
+<ellipse cx="134.50" cy="125.50" rx="2.0" ry="1.6" fill="#fff" stroke="#888" stroke-width="0.2"/>
+<text x="70.95" y="8.60" font-size="3.6" text-anchor="middle" font-weight="bold" fill="#111">STEREO MIXER</text>
+<text x="15.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">1</text>
+<text x="28.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">2</text>
+<text x="41.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">3</text>
+<text x="54.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">4</text>
+<text x="67.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">5</text>
+<text x="80.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">6</text>
+<text x="93.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">7</text>
+<text x="106.00" y="15.00" font-size="2.8" text-anchor="middle" font-weight="bold" fill="#111">8</text>
+<text x="99.50" y="11.60" font-size="1.9" text-anchor="middle" font-weight="normal" fill="#111">STEREO</text>
+<text x="1.60" y="23.70" font-size="1.9" text-anchor="start" font-weight="bold" fill="#111">SEND</text>
+<text x="1.60" y="38.70" font-size="1.9" text-anchor="start" font-weight="bold" fill="#111">PAN</text>
+<text x="1.60" y="54.70" font-size="1.9" text-anchor="start" font-weight="bold" fill="#111">LEVEL</text>
+<text x="1.60" y="69.70" font-size="1.9" text-anchor="start" font-weight="bold" fill="#111">MUTE</text>
+<text x="1.60" y="86.70" font-size="1.9" text-anchor="start" font-weight="bold" fill="#111">IN / L</text>
+<text x="1.60" y="101.70" font-size="1.9" text-anchor="start" font-weight="bold" fill="#111">R</text>
+<text x="18.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<text x="31.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<text x="44.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<text x="57.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<text x="70.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<text x="83.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<text x="96.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<text x="109.20" y="66.00" font-size="1.3" text-anchor="start" font-weight="normal" fill="#333">ON</text>
+<line x1="93.00" y1="90.60" x2="93.00" y2="96.40" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.0" stroke-linecap="round"/>
+<line x1="106.00" y1="90.60" x2="106.00" y2="96.40" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.0" stroke-linecap="round"/>
+<line x1="125.10" y1="38.00" x2="127.90" y2="38.00" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.0" stroke-linecap="round"/>
+<text x="120.50" y="17.00" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#fff">SEND</text>
+<text x="132.50" y="17.00" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#111">FX IN</text>
+<text x="120.50" y="32.60" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#111">RET L</text>
+<text x="132.50" y="32.60" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#111">RET R</text>
+<text x="126.50" y="47.60" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#111">RETURN</text>
+<text x="126.50" y="63.10" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#111">DRUMS</text>
+<text x="126.50" y="78.00" font-size="2.2" text-anchor="middle" font-weight="bold" fill="#111">MASTER</text>
+<text x="120.50" y="108.60" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#fff">OUT L</text>
+<text x="132.50" y="108.60" font-size="2.0" text-anchor="middle" font-weight="bold" fill="#fff">OUT R</text>
+<text x="70.95" y="124.30" font-size="1.6" text-anchor="middle" font-weight="normal" fill="#444">mono 1-6: IN · stereo 7-8: L, R (R follows L) · lever up = on</text>
+<text x="70.95" y="136.00" font-size="2.2" text-anchor="middle" font-weight="normal" fill="#111">28HP · 141.9 × 128.5 mm · 1:1 when printed at 100 %</text>
+</svg>

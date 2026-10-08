@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100.6mm" height="158.5mm" viewBox="-20 -15 100.6 158.5">
+<title>Plaitsy 12HP panel - labels to hand-draw</title>
+<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444}</style>
+<rect x="0" y="0" width="60.6" height="128.5" fill="none" stroke="#000" stroke-width="0.25"/>
+<circle cx="12.41" cy="29.19" r="3.75" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="48.21" cy="29.19" r="3.75" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="9.87" cy="59.67" r="3.75" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="50.75" cy="59.67" r="3.75" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="9.87" cy="79.99" r="3.75" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.19" cy="79.99" r="3.75" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="50.75" cy="79.99" r="3.75" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="25.38" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="30.46" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="35.54" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="40.62" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="45.70" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="50.78" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="55.86" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="60.94" r="1.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="25.23" cy="17.76" r="2.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="35.39" cy="17.76" r="2.60" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="7.45" cy="96.01" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="17.61" cy="96.01" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="96.01" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="43.01" cy="96.01" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="53.17" cy="96.01" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="7.45" cy="111.25" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="17.61" cy="111.25" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="30.31" cy="111.25" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="43.01" cy="111.25" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<circle cx="53.17" cy="111.25" r="3.25" fill="none" stroke="#bbb" stroke-width="0.2"/>
+<text x="30.30" y="9.00" font-size="4.2" text-anchor="middle" font-weight="bold" fill="#111">PLAITSY</text>
+<text x="12.41" y="42.19" font-size="2.7" text-anchor="middle" font-weight="bold" fill="#111">FREQUENCY</text>
+<text x="48.21" y="42.19" font-size="2.7" text-anchor="middle" font-weight="bold" fill="#111">HARMONICS</text>
+<text x="9.87" y="70.17" font-size="2.7" text-anchor="middle" font-weight="bold" fill="#111">TIMBRE</text>
+<text x="50.75" y="70.17" font-size="2.7" text-anchor="middle" font-weight="bold" fill="#111">MORPH</text>
+<text x="3.67" y="75.39" font-size="3.0" text-anchor="middle" font-weight="bold" fill="#111">−</text>
+<text x="16.07" y="75.39" font-size="3.0" text-anchor="middle" font-weight="bold" fill="#111">+</text>
+<line x1="9.87" y1="72.79" x2="9.87" y2="74.99" stroke="#111" stroke-width="0.6"/>
+<text x="23.99" y="75.39" font-size="3.0" text-anchor="middle" font-weight="bold" fill="#111">−</text>
+<text x="36.39" y="75.39" font-size="3.0" text-anchor="middle" font-weight="bold" fill="#111">+</text>
+<line x1="30.19" y1="72.79" x2="30.19" y2="74.99" stroke="#111" stroke-width="0.6"/>
+<text x="44.55" y="75.39" font-size="3.0" text-anchor="middle" font-weight="bold" fill="#111">−</text>
+<text x="56.95" y="75.39" font-size="3.0" text-anchor="middle" font-weight="bold" fill="#111">+</text>
+<line x1="50.75" y1="72.79" x2="50.75" y2="74.99" stroke="#111" stroke-width="0.6"/>
+<text x="30.19" y="71.69" font-size="2.7" text-anchor="middle" font-weight="bold" fill="#111">FM</text>
+<text x="27.31" y="26.08" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">VA</text>
+<text x="33.31" y="26.08" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">SWARM</text>
+<text x="27.31" y="31.16" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">WSHP</text>
+<text x="33.31" y="31.16" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">NOISE</text>
+<text x="27.31" y="36.24" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">FM</text>
+<text x="33.31" y="36.24" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">PART</text>
+<text x="27.31" y="41.32" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">GRAIN</text>
+<text x="33.31" y="41.32" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">STRING</text>
+<text x="27.31" y="46.40" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">ADD</text>
+<text x="33.31" y="46.40" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">MODAL</text>
+<text x="27.31" y="51.48" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">WTBL</text>
+<text x="33.31" y="51.48" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">BD</text>
+<text x="27.31" y="56.56" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">CHORD</text>
+<text x="33.31" y="56.56" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">SD</text>
+<text x="27.31" y="61.64" font-size="1.7" text-anchor="end" font-weight="bold" fill="#0a7a5a">SPEECH</text>
+<text x="33.31" y="61.64" font-size="1.7" text-anchor="start" font-weight="bold" fill="#c0262d">HH</text>
+<polyline points="25.23,21.16 25.23,23.78" fill="none" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.1" stroke-linecap="round"/>
+<polyline points="35.39,21.16 35.39,23.78" fill="none" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.1" stroke-linecap="round"/>
+<text x="7.45" y="91.01" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">MODEL</text>
+<text x="17.61" y="91.01" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">TIMBRE</text>
+<text x="30.31" y="91.01" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">FM</text>
+<text x="43.01" y="91.01" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">MORPH</text>
+<text x="53.17" y="91.01" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">HARMO</text>
+<text x="7.45" y="106.25" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">TRIG</text>
+<text x="17.61" y="106.25" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">LEVEL</text>
+<text x="30.31" y="106.25" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">V/OCT</text>
+<text x="43.01" y="106.25" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">OUT</text>
+<text x="53.17" y="106.25" font-size="2.3" text-anchor="middle" font-weight="bold" fill="#111">AUX</text>
+<polyline points="9.87,84.99 9.87,87.99 17.61,87.99 17.61,88.61" fill="none" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.1" stroke-linecap="round"/>
+<polyline points="30.19,84.99 30.19,88.61" fill="none" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.1" stroke-linecap="round"/>
+<polyline points="50.75,84.99 50.75,87.99 43.01,87.99 43.01,88.61" fill="none" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.1" stroke-linecap="round"/>
+<polyline points="11.65,111.25 13.41,111.25" fill="none" stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.1" stroke-linecap="round"/>
+<rect x="37.41" y="102.65" width="21.36" height="14.6" rx="1.2" fill="none" stroke="#111" stroke-width="0.35"/>
+</svg>

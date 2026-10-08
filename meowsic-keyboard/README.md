@@ -850,8 +850,14 @@ it — unless another loop is already on the grid, or an external clock is,
 in which case it snaps to that grid); record, play or STOP closes it, to
 whole beats with quantise loop on. Record while playing overdubs — each
 pass a layer — and a long record drops the newest layer. Play stops and
-starts, on the next beat when quantised; a long play while stopped clears.
+starts, on the next beat when quantised; a long play clears, from any state,
+stopping the loop first and flashing the LED red — there is no undoing it.
 Panic and a DAW's start / stop act on both loops.
+
+A key still down when a recording closes ends with the pass: the note is as
+long as the loop, and the key is finished with. On the toy that is one tap
+at the note's start whatever its length, since the blob is one-shot — a
+sustained bass is the CV and MIDI side of it, not the cat.
 
 Quantise loop is applied at playback: the raw ticks stay, a play order is
 rebuilt on the 16th grid, and the flip lands at the next pass. A note held
@@ -942,6 +948,8 @@ clock is never stored; the tapped one is.
 | No beat on the LED | There is no tempo yet: tap ♪ three times, or send a clock. The loop's first note also sets it |
 | The loop drifts against the DAW | Two free-running clocks. Have the DAW send MIDI clock (the keyboard follows it) or follow the keyboard's clock out |
 | The toy misses notes of a dense loop | By design: one switch, 100 ms a tap; late taps are dropped for the toy so it never lags. MIDI and CV have them all. Raise `LOOP_TAP_LATE_MS` to prefer late over missing |
+| A held note sounds short on the toy, long on CV | The blob is one-shot: a press is a 60 ms tap whatever the key's length. The loop stores the real length, which CV and MIDI play |
+| The loop plays notes that were never played, and the keys stop reaching the toy | Fixed: a key held when the recording closed used to be re-closed on every lap, growing the loop by two events a pass until the sort stalled the scan. Reflash |
 | A loop's first note lands late under MIDI clock | It snapped to the clock's 16th grid, as it should; play a little ahead of the beat |
 | Keys go silent when the arp is switched off | Expected: keys already held are not re-sounded. Press them again |
 | The toy plays nothing for the keys, though the jacks and MIDI do | Toy notes are off — catface was held. Hold it again (2 blinks) |

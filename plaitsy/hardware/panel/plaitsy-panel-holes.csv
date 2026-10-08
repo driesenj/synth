@@ -1,0 +1,32 @@
+part,name,x_mm_from_left,y_mm_from_top,hole_mm
+pot,FREQUENCY,12.41,29.19,7.5
+pot,HARMONICS,48.21,29.19,7.5
+pot,TIMBRE,9.87,59.67,7.5
+pot,MORPH,50.75,59.67,7.5
+pot,TIMBRE att.,9.87,79.99,7.5
+pot,FM att.,30.19,79.99,7.5
+pot,MORPH att.,50.75,79.99,7.5
+led,LED1,30.31,25.38,3.2
+led,LED2,30.31,30.46,3.2
+led,LED3,30.31,35.54,3.2
+led,LED4,30.31,40.62,3.2
+led,LED5,30.31,45.70,3.2
+led,LED6,30.31,50.78,3.2
+led,LED7,30.31,55.86,3.2
+led,LED8,30.31,60.94,3.2
+button,left button,25.23,17.76,5.2
+button,right button,35.39,17.76,5.2
+jack,MODEL,7.45,96.01,6.5
+jack,TIMBRE,17.61,96.01,6.5
+jack,FM,30.31,96.01,6.5
+jack,MORPH,43.01,96.01,6.5
+jack,HARMO,53.17,96.01,6.5
+jack,TRIG,7.45,111.25,6.5
+jack,LEVEL,17.61,111.25,6.5
+jack,V/OCT,30.31,111.25,6.5
+jack,OUT,43.01,111.25,6.5
+jack,AUX,53.17,111.25,6.5
+mount,mounting,7.50,3.00,3.2
+mount,mounting,7.50,125.50,3.2
+mount,mounting,53.22,3.00,3.2
+mount,mounting,53.22,125.50,3.2

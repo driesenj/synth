@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100.6mm" height="158.5mm" viewBox="-20 -15 100.6 158.5">
+<title>Plaitsy 12HP panel - drill template (print at 100%)</title>
+<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444}</style>
+<rect x="0" y="0" width="60.6" height="128.5" fill="none" stroke="#000" stroke-width="0.25"/>
+<circle cx="12.41" cy="29.19" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="10.91" y1="29.19" x2="13.91" y2="29.19" stroke="#000" stroke-width="0.12"/>
+<line x1="12.41" y1="27.69" x2="12.41" y2="30.69" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="16.76" y="25.14">Ø7.5</text>
+<circle cx="48.21" cy="29.19" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="46.71" y1="29.19" x2="49.71" y2="29.19" stroke="#000" stroke-width="0.12"/>
+<line x1="48.21" y1="27.69" x2="48.21" y2="30.69" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="52.56" y="25.14">Ø7.5</text>
+<circle cx="9.87" cy="59.67" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="8.37" y1="59.67" x2="11.37" y2="59.67" stroke="#000" stroke-width="0.12"/>
+<line x1="9.87" y1="58.17" x2="9.87" y2="61.17" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="14.22" y="55.62">Ø7.5</text>
+<circle cx="50.75" cy="59.67" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="49.25" y1="59.67" x2="52.25" y2="59.67" stroke="#000" stroke-width="0.12"/>
+<line x1="50.75" y1="58.17" x2="50.75" y2="61.17" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="55.10" y="55.62">Ø7.5</text>
+<circle cx="9.87" cy="79.99" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="8.37" y1="79.99" x2="11.37" y2="79.99" stroke="#000" stroke-width="0.12"/>
+<line x1="9.87" y1="78.49" x2="9.87" y2="81.49" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="14.22" y="75.94">Ø7.5</text>
+<circle cx="30.19" cy="79.99" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.69" y1="79.99" x2="31.69" y2="79.99" stroke="#000" stroke-width="0.12"/>
+<line x1="30.19" y1="78.49" x2="30.19" y2="81.49" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="34.54" y="75.94">Ø7.5</text>
+<circle cx="50.75" cy="79.99" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="49.25" y1="79.99" x2="52.25" y2="79.99" stroke="#000" stroke-width="0.12"/>
+<line x1="50.75" y1="78.49" x2="50.75" y2="81.49" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="55.10" y="75.94">Ø7.5</text>
+<circle cx="30.31" cy="25.38" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="25.38" x2="31.81" y2="25.38" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="23.88" x2="30.31" y2="26.88" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="23.48">Ø3.2</text>
+<circle cx="30.31" cy="30.46" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="30.46" x2="31.81" y2="30.46" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="28.96" x2="30.31" y2="31.96" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="28.56">Ø3.2</text>
+<circle cx="30.31" cy="35.54" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="35.54" x2="31.81" y2="35.54" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="34.04" x2="30.31" y2="37.04" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="33.64">Ø3.2</text>
+<circle cx="30.31" cy="40.62" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="40.62" x2="31.81" y2="40.62" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="39.12" x2="30.31" y2="42.12" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="38.72">Ø3.2</text>
+<circle cx="30.31" cy="45.70" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="45.70" x2="31.81" y2="45.70" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="44.20" x2="30.31" y2="47.20" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="43.80">Ø3.2</text>
+<circle cx="30.31" cy="50.78" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="50.78" x2="31.81" y2="50.78" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="49.28" x2="30.31" y2="52.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="48.88">Ø3.2</text>
+<circle cx="30.31" cy="55.86" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="55.86" x2="31.81" y2="55.86" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="54.36" x2="30.31" y2="57.36" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="53.96">Ø3.2</text>
+<circle cx="30.31" cy="60.94" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="60.94" x2="31.81" y2="60.94" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="59.44" x2="30.31" y2="62.44" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="32.51" y="59.04">Ø3.2</text>
+<circle cx="25.23" cy="17.76" r="2.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="23.73" y1="17.76" x2="26.73" y2="17.76" stroke="#000" stroke-width="0.12"/>
+<line x1="25.23" y1="16.26" x2="25.23" y2="19.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="28.43" y="14.86">Ø5.2</text>
+<circle cx="35.39" cy="17.76" r="2.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="33.89" y1="17.76" x2="36.89" y2="17.76" stroke="#000" stroke-width="0.12"/>
+<line x1="35.39" y1="16.26" x2="35.39" y2="19.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="38.59" y="14.86">Ø5.2</text>
+<circle cx="7.45" cy="96.01" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="5.95" y1="96.01" x2="8.95" y2="96.01" stroke="#000" stroke-width="0.12"/>
+<line x1="7.45" y1="94.51" x2="7.45" y2="97.51" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="11.30" y="92.46">Ø6.5</text>
+<circle cx="17.61" cy="96.01" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="16.11" y1="96.01" x2="19.11" y2="96.01" stroke="#000" stroke-width="0.12"/>
+<line x1="17.61" y1="94.51" x2="17.61" y2="97.51" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="21.46" y="92.46">Ø6.5</text>
+<circle cx="30.31" cy="96.01" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="96.01" x2="31.81" y2="96.01" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="94.51" x2="30.31" y2="97.51" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="34.16" y="92.46">Ø6.5</text>
+<circle cx="43.01" cy="96.01" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="41.51" y1="96.01" x2="44.51" y2="96.01" stroke="#000" stroke-width="0.12"/>
+<line x1="43.01" y1="94.51" x2="43.01" y2="97.51" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="46.86" y="92.46">Ø6.5</text>
+<circle cx="53.17" cy="96.01" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="51.67" y1="96.01" x2="54.67" y2="96.01" stroke="#000" stroke-width="0.12"/>
+<line x1="53.17" y1="94.51" x2="53.17" y2="97.51" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="57.02" y="92.46">Ø6.5</text>
+<circle cx="7.45" cy="111.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="5.95" y1="111.25" x2="8.95" y2="111.25" stroke="#000" stroke-width="0.12"/>
+<line x1="7.45" y1="109.75" x2="7.45" y2="112.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="11.30" y="107.70">Ø6.5</text>
+<circle cx="17.61" cy="111.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="16.11" y1="111.25" x2="19.11" y2="111.25" stroke="#000" stroke-width="0.12"/>
+<line x1="17.61" y1="109.75" x2="17.61" y2="112.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="21.46" y="107.70">Ø6.5</text>
+<circle cx="30.31" cy="111.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.81" y1="111.25" x2="31.81" y2="111.25" stroke="#000" stroke-width="0.12"/>
+<line x1="30.31" y1="109.75" x2="30.31" y2="112.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="34.16" y="107.70">Ø6.5</text>
+<circle cx="43.01" cy="111.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="41.51" y1="111.25" x2="44.51" y2="111.25" stroke="#000" stroke-width="0.12"/>
+<line x1="43.01" y1="109.75" x2="43.01" y2="112.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="46.86" y="107.70">Ø6.5</text>
+<circle cx="53.17" cy="111.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="51.67" y1="111.25" x2="54.67" y2="111.25" stroke="#000" stroke-width="0.12"/>
+<line x1="53.17" y1="109.75" x2="53.17" y2="112.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="57.02" y="107.70">Ø6.5</text>
+<circle cx="7.50" cy="3.00" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="6.00" y1="3.00" x2="9.00" y2="3.00" stroke="#000" stroke-width="0.12"/>
+<line x1="7.50" y1="1.50" x2="7.50" y2="4.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="9.70" y="1.10">Ø3.2</text>
+<circle cx="7.50" cy="125.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="6.00" y1="125.50" x2="9.00" y2="125.50" stroke="#000" stroke-width="0.12"/>
+<line x1="7.50" y1="124.00" x2="7.50" y2="127.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="9.70" y="123.60">Ø3.2</text>
+<circle cx="53.22" cy="3.00" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="51.72" y1="3.00" x2="54.72" y2="3.00" stroke="#000" stroke-width="0.12"/>
+<line x1="53.22" y1="1.50" x2="53.22" y2="4.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="55.42" y="1.10">Ø3.2</text>
+<circle cx="53.22" cy="125.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="51.72" y1="125.50" x2="54.72" y2="125.50" stroke="#000" stroke-width="0.12"/>
+<line x1="53.22" y1="124.00" x2="53.22" y2="127.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="55.42" y="123.60">Ø3.2</text>
+<line x1="5" y1="-8" x2="55" y2="-8" stroke="#000" stroke-width="0.3"/>
+<line x1="5" y1="-9.5" x2="5" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<line x1="55" y1="-9.5" x2="55" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<text x="30" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>
+<text x="30.3" y="136.5" font-size="2" text-anchor="middle">Plaitsy 12HP panel, front view. Red circles: final hole size. Centre-punch the crosses, pilot-drill 2 mm, then step up.</text>
+</svg>

@@ -1,0 +1,4 @@
+# Board settings, so `arduino-cli compile` and `arduino-cli upload` need no flags:
+# Generic STM32H7 Series, Daisy Seed, USB CDC serial, upload over DFU
+# (STM32CubeProgrammer). Put the Seed in DFU mode (hold BOOT, tap RESET) first.
+default_fqbn: STMicroelectronics:stm32:GenH7:pnum=DAISY_SEED,upload_method=dfuMethod,xserial=generic,usb=CDCgen

@@ -1,0 +1,1996 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fractal Caves</title>
+<style>
+  :root {
+    --bg: #05070a;
+    --panel: rgba(14, 18, 24, 0.84);
+    --line: rgba(255, 255, 255, 0.09);
+    --text: #d9dee7;
+    --dim: #8b95a7;
+    --cool: #86a9d6;
+    --on: #f0b46e;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font: 12px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  body.idle, body.idle canvas { cursor: none; }
+  #panel {
+    position: fixed; top: 12px; left: 12px; width: 296px; max-height: calc(100% - 24px);
+    overflow-y: auto; padding: 10px 12px 8px;
+    background: var(--panel); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 10px;
+  }
+  #panel.hidden { display: none; }
+  h1 { font-size: 13px; margin: 0 0 4px; display: flex; justify-content: space-between; font-weight: 600; }
+  h1 span { color: var(--dim); font-weight: 400; font-variant-numeric: tabular-nums; }
+  h2 {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim);
+    margin: 12px 0 6px; font-weight: 600;
+  }
+  .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  button, select, input[type=number] {
+    font: inherit; color: var(--text); background: rgba(255, 255, 255, .06);
+    border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px;
+  }
+  select { max-width: 100%; }
+  button { cursor: pointer; }
+  button:hover { background: rgba(255, 255, 255, .12); }
+  button.on { background: rgba(240, 180, 110, .22); border-color: rgba(240, 180, 110, .55); color: #fff; }
+  input[type=number] { width: 72px; }
+  input[type=file] { max-width: 100%; color: var(--dim); }
+  input[type=range] { width: 100%; accent-color: var(--on); }
+  .row { display: flex; align-items: center; gap: 6px; margin: 5px 0; flex-wrap: wrap; }
+  .row label { display: flex; align-items: center; gap: 5px; }
+  .slider { display: grid; grid-template-columns: 96px 1fr 34px; align-items: center; gap: 6px; margin: 2px 0; }
+  .slider span:last-child { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .meters { display: grid; grid-template-columns: 34px 1fr; gap: 3px 6px; align-items: center; margin-top: 8px; color: var(--dim); }
+  .bar { height: 5px; background: rgba(255, 255, 255, .07); border-radius: 3px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--cool); }
+  .lamps { display: flex; gap: 12px; margin-top: 6px; color: var(--dim); }
+  .lamp { width: 9px; height: 9px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 4px; background: rgba(255, 255, 255, .1); }
+  #beats { display: inline-flex; gap: 4px; }
+  #beats i { width: 9px; height: 9px; border-radius: 2px; background: rgba(255, 255, 255, .1); }
+  #beats i.on { background: var(--on); }
+  .note { color: var(--dim); }
+  .opt { display: none; }
+  .opt.show { display: block; }
+  audio { width: 100%; height: 30px; margin-top: 4px; }
+  footer { margin-top: 10px; color: var(--dim); font-size: 10.5px; line-height: 1.5; }
+  #err {
+    position: fixed; right: 12px; bottom: 12px; max-width: 70ch; max-height: 60%; overflow: auto;
+    white-space: pre-wrap; display: none; padding: 10px; border-radius: 8px;
+    background: rgba(70, 0, 0, .9); color: #fdd; font: 11px/1.4 ui-monospace, Consolas, monospace;
+  }
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); opacity: 0;
+    transition: opacity .3s; pointer-events: none; padding: 7px 12px; border-radius: 8px;
+    background: rgba(14, 18, 24, .9); border: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div id="panel">
+  <h1>Fractal caves <span id="fps"></span></h1>
+
+  <h2>Sound</h2>
+  <div class="seg" id="src">
+    <button data-v="input">Audio input</button>
+    <button data-v="file">File</button>
+    <button data-v="test">Test pattern</button>
+    <button data-v="off">Off</button>
+  </div>
+  <div class="opt" id="opt-input">
+    <div class="row"><select id="device"><option value="">Default input</option></select></div>
+    <div class="row"><label><input type="checkbox" id="kick2"> Kick on input 2</label></div>
+  </div>
+  <div class="opt" id="opt-file">
+    <div class="row"><input type="file" id="file" accept="audio/*"></div>
+    <audio id="player" controls loop></audio>
+  </div>
+  <div class="opt" id="opt-test">
+    <div class="row"><label><input type="checkbox" id="testMon"> Play through speakers</label></div>
+  </div>
+  <div class="meters">
+    <span>bass</span><div class="bar"><i id="m-bass"></i></div>
+    <span>mid</span><div class="bar"><i id="m-mid"></i></div>
+    <span>high</span><div class="bar"><i id="m-high"></i></div>
+  </div>
+  <div class="lamps">
+    <span><i class="lamp" id="l-kick"></i>kick</span>
+    <span><i class="lamp" id="l-snap"></i>snare/hat</span>
+    <span><i class="lamp" id="l-note"></i>note</span>
+  </div>
+
+  <h2>Clock</h2>
+  <div class="row"><button id="serial">Connect Meowsic (USB)</button><span id="clockSrc" class="note"></span></div>
+  <div class="row">
+    <label>BPM <input type="number" id="bpm" min="40" max="300" step="0.1"></label>
+    <button id="tap" title="T">Tap</button>
+    <button id="bar1" title="Space">Bar 1</button>
+  </div>
+  <div class="row"><span id="beats"><i></i><i></i><i></i><i></i></span><span id="barNo" class="note"></span></div>
+
+  <h2>Scene</h2>
+  <div class="seg" id="scene"></div>
+  <div class="row"><span class="note">Motion</span><span class="seg" id="motion"><button data-v="zoom">Zoom</button><button data-v="wander">Wander</button></span></div>
+  <div class="row"><label><input type="checkbox" id="flow"> Endless growth: each form grows out of the last</label></div>
+
+  <h2>Look</h2>
+  <div id="sliders"></div>
+  <div class="row"><label><input type="checkbox" id="autoQ"> Lower quality when slow</label></div>
+
+  <footer>H hide panel · F fullscreen · Space bar 1 · T tap · 1–3 scene · N next scene</footer>
+</div>
+
+<div id="err"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ============================================================== utilities ===
+
+const $ = id => document.getElementById(id);
+const clamp = (x, a, b) => x < a ? a : x > b ? b : x;
+const mix = (a, b, t) => a + (b - a) * t;
+const fract = x => x - Math.floor(x);
+// exponential approach with time constant tau (seconds), frame-rate independent
+const smooth = (cur, target, tau, dt) => cur + (target - cur) * (1 - Math.exp(-dt / tau));
+// envelope follower: separate attack and release times
+const follow = (cur, x, att, rel, dt) => smooth(cur, x, x > cur ? att : rel, dt);
+
+const v3 = {
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  mul: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+  madd: (a, b, s) => [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  len: a => Math.hypot(a[0], a[1], a[2]),
+  norm: a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
+  lerp: (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t],
+};
+
+// two unit vectors perpendicular to n and to each other
+function basis(n) {
+  const a = Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const b1 = v3.norm(v3.cross(n, a));
+  return [b1, v3.cross(n, b1)];
+}
+
+function randomUnit() {
+  const z = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, r = Math.sqrt(1 - z * z);
+  return [r * Math.cos(a), r * Math.sin(a), z];
+}
+
+// R = Rz(c) * Ry(b) * Rx(a), column-major like GLSL's mat3
+function rotMat(a, b, c) {
+  const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cc = Math.cos(c), sc = Math.sin(c);
+  return [
+    cc * cb, sc * cb, -sb,
+    cc * sb * sa - sc * ca, sc * sb * sa + cc * ca, cb * sa,
+    cc * sb * ca + sc * sa, sc * sb * ca - cc * sa, cb * ca,
+  ];
+}
+
+function halton(i, b) {
+  let f = 1, r = 0;
+  for (; i > 0; i = Math.floor(i / b)) { f /= b; r += f * (i % b); }
+  return r;
+}
+
+function hsv(h, s, v) {
+  const f = n => { const k = (n + h * 6) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+  return [f(5), f(3), f(1)];
+}
+
+let toastTimer = 0;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.style.opacity = 1;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = 0; }, 4000);
+}
+
+function showErr(msg) {
+  const el = $('err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+window.addEventListener('error', e => showErr(e.message));
+window.addEventListener('unhandledrejection', e => showErr(String(e.reason && e.reason.message || e.reason)));
+
+// =============================================================== settings ===
+
+const SLIDERS = [
+  // key, label, min, max, step, default
+  ['quality',  'Quality',        0.25, 1,   0.05, 0.6],
+  ['speed',    'Speed',          0,    2,   0.01, 1],
+  ['flowTime', 'Growth time',    6,    60,  1,    20],
+  ['morph',    'Drift',          0,    1,   0.01, 0.6],
+  ['sens',     'Kick detect',    0,    1,   0.01, 0.55],
+  ['dof',      'Depth of field', 0,    1,   0.01, 0.35],
+  ['haze',     'Haze',           0,    1,   0.01, 0.4],
+  ['flies',    'Drifting lights', 0,   1,   0.01, 0.5],
+  ['exposure', 'Exposure',       0.3,  3,   0.01, 1],
+];
+
+const STORE = 'fractal-caves-1';
+const S = { kick2: false, testMon: true, bpm: 144, scene: 0, flow: false, motion: 'zoom', autoQ: true, deviceId: '' };
+for (const [k, , , , , d] of SLIDERS) S[k] = d;
+try {
+  const stored = JSON.parse(localStorage.getItem(STORE) || '{}');
+  // settings from before the zoom: start on Coral, zooming, without endless growth
+  if (!('motion' in stored)) Object.assign(stored, { scene: 0, flow: false });
+  Object.assign(S, stored);
+} catch (e) { /* private window */ }
+
+let saveTimer = 0;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }, 300);
+}
+
+// ================================================================= scenes ===
+// kind 0 is a Mandelbox, kind 1 an Apollonian-style sphere inversion with a
+// ball of radius r as its seed shape, which makes the holes-within-holes
+// sponge. Lengths are in fractal units; `clear` is the distance the camera
+// keeps from the walls, and the optics (haze, AO radius, light falloff)
+// scale with the room around the camera.
+//
+// The forms are never still: dS, dQ and rot are how far the slow drift swings
+// the formula, and `flood` how far the walls spill into the space when the
+// music goes quiet. For the sponges, s is the inversion strength and q the
+// ratio of s to the seed ball's radius; q stays above sqrt(3), because below it
+// the corners of the fold turn solid and leave sharp, flat plates. lvl0 is
+// their detail level (iterations) at the camera's usual wall distance, `lod`
+// how many levels they gain per halving of the distance to the camera.
+
+const SCENES = [
+  {
+    name: 'Coral', kind: 1, lvl0: 6, lod: 1, s: 1.37, q: 2.0, r0: [0, 0, 0],
+    dS: 0.08, dQ: 0.15, rot: 0, flood: 0.12,
+    clear: 0.04, box: 2, speed: 0.18, tilt: 0.5, tmax: 90, fog: 0.08, shadow: 0.5, trapK: 1.0, gloss: 0.35,
+    albA: [0.14, 0.2, 0.36], albB: [0.48, 0.3, 0.19], albC: [0.36, 0.4, 0.48],
+    keyDir: [-0.45, 0.8, 0.4], keyCol: [1.1, 1.25, 1.6], amb: [0.5, 0.64, 1.0], fill: [1.0, 1.1, 1.4],
+    skyLo: [0.02, 0.03, 0.06], skyHi: [0.03, 0.045, 0.09], fogCol: [0.02, 0.03, 0.06],
+    core: [0.8, 0.35, 0.15],
+  },
+  {
+    name: 'Pores', kind: 1, lvl0: 7, lod: 0.8, s: 1.12, q: 1.9, r0: [0, 0, 0],
+    dS: 0.08, dQ: 0.1, rot: 0, flood: 0.08,
+    clear: 0.04, box: 2, speed: 0.18, tilt: 0.5, tmax: 90, fog: 0.08, shadow: 0.4, trapK: 1.2, gloss: 0.2,
+    albA: [0.26, 0.31, 0.43], albB: [0.36, 0.24, 0.12], albC: [0.6, 0.6, 0.6],
+    keyDir: [0.3, 0.9, -0.25], keyCol: [1.28, 1.36, 1.6], amb: [0.44, 0.52, 0.72], fill: [1.1, 1.16, 1.4],
+    skyLo: [0.03, 0.035, 0.05], skyHi: [0.04, 0.05, 0.07], fogCol: [0.03, 0.035, 0.05],
+    core: [0.7, 0.4, 0.18],
+  },
+  {
+    name: 'Strata', kind: 0, iters: 12, S: 2.0, mr2: 0.25, r0: [0.12, 0.06, 0.02],
+    dS: 0.025, rot: 0.06, flood: 0.1,
+    clear: 0.03, box: 5, speed: 0.18, tilt: 0.45, tmax: 140, fog: 0.05, shadow: 1, trapK: 0.8,
+    albA: [0.18, 0.22, 0.32], albB: [0.55, 0.42, 0.28], albC: [0.7, 0.68, 0.62],
+    keyDir: [0.6, 0.55, 0.4], keyCol: [2.0, 1.75, 1.35], amb: [0.35, 0.45, 0.65], fill: [0.15, 0.15, 0.15],
+    skyLo: [0.65, 0.75, 0.88], skyHi: [0.35, 0.55, 0.85], fogCol: [0.6, 0.7, 0.85],
+    core: [0.3, 0.22, 0.15],
+  },
+];
+
+// a scene part-way into another: numbers and colours interpolate
+function blendScene(a, b, w) {
+  const o = {};
+  for (const k in a) {
+    const x = a[k], y = b[k];
+    if (typeof x === 'number' && typeof y === 'number') o[k] = x + (y - x) * w;
+    else if (Array.isArray(x) && Array.isArray(y)) o[k] = x.map((v, i) => v + (y[i] - v) * w);
+    else o[k] = w < 0.5 ? x : y;
+  }
+  return o;
+}
+
+// The live fractal: formula A, plus formula B blended in by FW while a scene
+// turns into one of the other kind. The shader and the camera's collision
+// probes both read these, so de() must match the GLSL map() exactly.
+const newFrac = () => ({ kind: 1, iters: 8, lvl: 8, S: 2, mr2: 0.25, apS: 1.2, apR: 0.7, ang: [0, 0, 0], rot: rotMat(0, 0, 0), sig: 1, tr: [0, 0, 0] });
+const FA = newFrac(), FB = newFrac();
+let FW = 0, FB_LIVE = false;
+
+function deMandelbox(f, px, py, pz) {
+  const mr2 = f.mr2, k = f.S / mr2, kw = Math.abs(f.S) / mr2, m = f.rot;
+  let x = px, y = py, z = pz, w = 1;
+  for (let i = 0; i < f.iters; i++) {
+    x = (x < -1 ? -1 : x > 1 ? 1 : x) * 2 - x;
+    y = (y < -1 ? -1 : y > 1 ? 1 : y) * 2 - y;
+    z = (z < -1 ? -1 : z > 1 ? 1 : z) * 2 - z;
+    const r2 = x * x + y * y + z * z;
+    let f = mr2 / r2;
+    if (f < mr2) f = mr2;
+    if (f > 1) f = 1;
+    x *= f; y *= f; z *= f; w *= f;
+    const rx = m[0] * x + m[3] * y + m[6] * z, ry = m[1] * x + m[4] * y + m[7] * z, rz = m[2] * x + m[5] * y + m[8] * z;
+    x = rx * k + px; y = ry * k + py; z = rz * k + pz; w = w * kw + 1;
+  }
+  return (Math.sqrt(x * x + y * y + z * z) - Math.abs(f.S - 1)) / w - Math.pow(Math.abs(f.S), 1 - f.iters);
+}
+
+// The detail level `lvl` may be fractional: the shape is then a blend of the
+// one with floor(lvl) iterations and the one with a single more, so finer
+// structure grows out of the coarser shapes as lvl rises.
+function deApollo(f, px, py, pz, lvl) {
+  const m = f.rot, lo = Math.floor(lvl), t = lvl - lo;
+  let x = px, y = py, z = pz, sc = 1, dLo = 0;
+  for (let i = 1; i <= lo + 1; i++) {
+    x = -1 + 2 * fract(0.5 * x + 0.5);
+    y = -1 + 2 * fract(0.5 * y + 0.5);
+    z = -1 + 2 * fract(0.5 * z + 0.5);
+    const rx = m[0] * x + m[3] * y + m[6] * z, ry = m[1] * x + m[4] * y + m[7] * z, rz = m[2] * x + m[5] * y + m[8] * z;
+    x = rx; y = ry; z = rz;
+    const k = f.apS / (x * x + y * y + z * z);
+    x *= k; y *= k; z *= k; sc *= k;
+    if (i === lo) {
+      dLo = 0.25 * (Math.sqrt(x * x + y * y + z * z) - f.apR) / sc;
+      if (t < 0.001) return dLo;
+    }
+  }
+  return dLo + (0.25 * (Math.sqrt(x * x + y * y + z * z) - f.apR) / sc - dLo) * t;
+}
+
+// each form sits in the world scaled by 1/sig and shifted by tr, so one can
+// grow out of a scaled copy of itself
+// Detail follows distance, like a Mandelbrot zoom: the sponges get more
+// iterations the closer a point is to the camera (LOD.grow more per halving
+// of the distance, f.lvl at LOD.ref), so approaching anything makes finer
+// structure sprout there and grow.
+const LOD = { ref: 0.04, grow: 1 };
+function lodLevel(f, p) {
+  const c = pilot.pos, d = Math.hypot(p[0] - c[0], p[1] - c[1], p[2] - c[2]);
+  return clamp(f.lvl + LOD.grow * Math.log2(LOD.ref / Math.max(d, 1e-7)), 4, 22);
+}
+function deOne(f, p) {
+  const x = p[0] * f.sig + f.tr[0], y = p[1] * f.sig + f.tr[1], z = p[2] * f.sig + f.tr[2];
+  return (f.kind === 0 ? deMandelbox(f, x, y, z) : deApollo(f, x, y, z, lodLevel(f, p))) / f.sig;
+}
+
+function de(p) {
+  const a = deOne(FA, p);
+  return FW > 0.001 ? a + (deOne(FB, p) - a) * FW : a;
+}
+
+// what the camera steers by: clear of both forms while one grows into the
+// other, so the incoming shapes never close over it
+function deSafe(p) {
+  const a = deOne(FA, p);
+  return FB_LIVE ? Math.min(a, deOne(FB, p)) : a;
+}
+
+// ================================================================== audio ===
+
+class TestPattern {
+  // A stand-in for the rig: 16ths at the clock's BPM, kick on 1 and the
+  // "and" of 3, snare on 3, C#-Phrygian-dominant bass, and drums out for the
+  // last two bars of every 16 - Auru's phrase shape.
+  constructor(ctx, bpm) {
+    this.ctx = ctx;
+    this.bpm = bpm;
+    this.out = ctx.createGain();
+    this.out.gain.value = 0.55;
+    this.kickBus = ctx.createGain();
+    const n = ctx.sampleRate, buf = ctx.createBuffer(1, n, n), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    this.noise = buf;
+    this.events = [];
+  }
+  start() {
+    this.step = 0;
+    this.t0 = this.ctx.currentTime + 0.1;
+    this.next = this.t0;
+    this.timer = setInterval(() => this.pump(), 25);
+    this.pump();
+  }
+  stop() { clearInterval(this.timer); }
+  beatsAt(t) { return (t - this.t0) * this.bpm / 60; }
+  setBpm(bpm) {
+    const now = this.ctx.currentTime, b = this.beatsAt(now);
+    this.bpm = bpm;
+    this.t0 = now - b * 60 / bpm;
+    this.next = this.t0 + this.step * 15 / bpm;
+  }
+  pump() {
+    const until = this.ctx.currentTime + 0.15;
+    while (this.next < until) {
+      this.play(this.step, this.next);
+      this.step++;
+      this.next = this.t0 + this.step * 15 / this.bpm;
+    }
+  }
+  play(step, t) {
+    const BASS = [37, 0, 37, 49, 0, 37, 38, 0, 37, 0, 37, 49, 0, 38, 37, 0];
+    const s = step % 16, bar = Math.floor(step / 16) % 16, drop = bar >= 14;
+    if (!drop) {
+      if (s === 0) this.kick(t, 1);
+      if (s === 10) this.kick(t, 0.75);
+      if (s === 8) this.snare(t);
+      if (BASS[s]) { this.bass(t, BASS[s], 0.12); this.events.push({ t, note: BASS[s], vel: 90 }); }
+    } else if (s === 0 && bar === 14) {
+      this.bass(t, 37, 2.4);
+      this.events.push({ t, note: 37, vel: 60 });
+    }
+    if (s % 2 === 0) this.hat(t, s % 4 === 2 ? 0.5 : 0.25);
+  }
+  env(g, t, peak, decay) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+  }
+  kick(t, v) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(45, t + 0.09);
+    this.env(g, t, v, 0.38);
+    o.connect(g); g.connect(this.out); g.connect(this.kickBus);
+    o.start(t); o.stop(t + 0.42);
+  }
+  snare(t) {
+    const c = this.ctx, n = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    n.buffer = this.noise;
+    f.type = 'bandpass'; f.frequency.value = 1900; f.Q.value = 0.8;
+    this.env(g, t, 0.5, 0.18);
+    n.connect(f); f.connect(g); g.connect(this.out);
+    n.start(t, Math.random() * 0.5); n.stop(t + 0.2);
+    const o = c.createOscillator(), og = c.createGain();
+    o.type = 'triangle'; o.frequency.value = 190;
+    this.env(og, t, 0.3, 0.08);
+    o.connect(og); og.connect(this.out);
+    o.start(t); o.stop(t + 0.1);
+  }
+  hat(t, v) {
+    const c = this.ctx, n = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    n.buffer = this.noise;
+    f.type = 'highpass'; f.frequency.value = 7500;
+    this.env(g, t, v * 0.35, 0.045);
+    n.connect(f); f.connect(g); g.connect(this.out);
+    n.start(t, Math.random() * 0.5); n.stop(t + 0.06);
+  }
+  bass(t, note, len) {
+    const c = this.ctx, o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 440 * Math.pow(2, (note - 69) / 12);
+    f.type = 'lowpass'; f.Q.value = 7;
+    f.frequency.setValueAtTime(1400, t);
+    f.frequency.exponentialRampToValueAtTime(160, t + Math.min(0.25, len));
+    this.env(g, t, 0.28, len + 0.05);
+    o.connect(f); f.connect(g); g.connect(this.out);
+    o.start(t); o.stop(t + len + 0.1);
+  }
+}
+
+const audio = {
+  ctx: null, kind: 'off', mixAn: null, kickAn: null, stream: null, test: null, media: null, monitor: null,
+  links: [],
+
+  init() {
+    if (this.ctx) return;
+    this.ctx = new AudioContext({ latencyHint: 'interactive' });
+    this.mixAn = this.ctx.createAnalyser();
+    this.mixAn.fftSize = 2048;
+    this.mixAn.smoothingTimeConstant = 0;
+    this.kickAn = this.ctx.createAnalyser();
+    this.kickAn.fftSize = 1024;
+    this.kickAn.smoothingTimeConstant = 0;
+    analysis.attach(this.ctx, this.mixAn, this.kickAn);
+  },
+  link(a, b, out) {
+    if (out === undefined) a.connect(b); else a.connect(b, out);
+    this.links.push(() => { try { if (out === undefined) a.disconnect(b); else a.disconnect(b, out); } catch (e) {} });
+  },
+  teardown() {
+    for (const f of this.links) f();
+    this.links = [];
+    if (this.stream) { for (const t of this.stream.getTracks()) t.stop(); this.stream = null; }
+    if (this.test) { this.test.stop(); this.test = null; }
+    $('player').pause();
+  },
+  async use(kind) {
+    this.init();
+    await this.ctx.resume();
+    this.teardown();
+    this.kind = kind;
+    if (kind === 'test') {
+      this.test = new TestPattern(this.ctx, clock.bpm);
+      this.monitor = this.ctx.createGain();
+      this.setMonitor();
+      this.link(this.test.out, this.mixAn);
+      this.link(this.test.kickBus, this.kickAn);
+      this.link(this.test.out, this.monitor);
+      this.link(this.monitor, this.ctx.destination);
+      this.test.start();
+    } else if (kind === 'file') {
+      const el = $('player');
+      if (!this.media) this.media = this.ctx.createMediaElementSource(el);
+      this.link(this.media, this.mixAn);
+      this.link(this.media, this.ctx.destination);
+      if (el.src) el.play().catch(() => {});
+    } else if (kind === 'input') {
+      await this.openInput();
+    }
+    analysis.reset();
+    ui.sync();
+  },
+  setMonitor() { if (this.monitor) this.monitor.gain.value = S.testMon ? 1 : 0; },
+  async openInput() {
+    // Browser voice processing would pump and gate the synth: switch it all off.
+    const c = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 } };
+    if (S.deviceId) c.deviceId = { exact: S.deviceId };
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: c });
+    } catch (e) {
+      if (S.deviceId) { S.deviceId = ''; return this.openInput(); }   // the saved device is gone
+      toast('No audio input: ' + e.message);
+      this.kind = 'off';
+      return;
+    }
+    const src = this.ctx.createMediaStreamSource(this.stream);
+    if (S.kick2) {
+      const sp = this.ctx.createChannelSplitter(2);
+      this.link(src, sp);
+      this.link(sp, this.mixAn, 0);
+      this.link(sp, this.kickAn, 1);
+    } else {
+      this.link(src, this.mixAn);
+    }
+    await refreshDevices();
+  },
+};
+
+async function refreshDevices() {
+  const sel = $('device');
+  let list = [];
+  try { list = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput'); } catch (e) {}
+  sel.innerHTML = '';
+  for (const d of list) {
+    const o = document.createElement('option');
+    o.value = d.deviceId;
+    o.textContent = d.label || 'Input ' + (sel.length + 1);
+    sel.append(o);
+  }
+  const track = audio.stream && audio.stream.getAudioTracks()[0];
+  sel.value = (track && track.getSettings().deviceId) || S.deviceId || '';
+}
+
+// =============================================================== analysis ===
+
+class Agc {
+  // Level in dB to 0..1 against a slowly falling peak, so quiet passages read
+  // quiet but any input level works. Below `floor` dBFS it is silence.
+  constructor(range = 36, fall = 2.5, floor = -75) {
+    this.range = range; this.fall = fall; this.floor = floor;
+    this.peak = floor + range;
+  }
+  norm(db, dt) {
+    this.peak = Math.max(db, this.peak - this.fall * dt, this.floor + this.range);
+    return clamp((db - this.peak + this.range) / this.range, 0, 1);
+  }
+}
+
+class Onset {
+  // Spectral-flux peak picker. A hit needs to clear the recent median by a
+  // few deviations AND reach a fraction of the recent peak: the second test
+  // is what keeps a 16th-note bass line from reading as kicks. Returns the
+  // hit strength 0..1, or 0.
+  constructor(minGap) { this.minGap = minGap; this.reset(); }
+  reset() { this.buf = []; this.peak = 0; this.last = -1; this.prev = 0; this.raw = 0; }
+  step(raw, t, dt, gate, sens) {
+    // an attack straddles two analysis frames, split differently each time:
+    // judge the two together
+    const x = raw + this.raw, b = this.buf;
+    this.raw = raw;
+    this.peak = Math.max(x, this.peak * Math.exp(-dt / 1.5));
+    let hit = 0;
+    if (b.length >= 8) {
+      const s = b.slice().sort((p, q) => p - q), med = s[s.length >> 1];
+      const dev = b.map(v => Math.abs(v - med)).sort((p, q) => p - q)[b.length >> 1];
+      const thr = Math.max(med + (2 + 6 * (1 - sens)) * dev, (0.6 - 0.4 * sens) * this.peak, 1e-6);
+      if (gate && x > thr && x >= this.prev && t - this.last > this.minGap) {
+        hit = clamp(0.45 + 0.55 * (x - thr) / thr, 0.45, 1);
+        this.last = t;
+      }
+    }
+    b.push(x);
+    if (b.length > 45) b.shift();
+    this.prev = x;
+    return hit;
+  }
+}
+
+const analysis = {
+  ready: false,
+  f: { loud: 0, bass: 0, mid: 0, high: 0, centroid: 0.5, kick: 0, snap: 0 },
+
+  attach(ctx, mixAn, kickAn) {
+    this.sr = ctx.sampleRate;
+    this.mixAn = mixAn;
+    this.kickAn = kickAn;
+    this.db = new Float32Array(mixAn.frequencyBinCount);
+    this.mag = new Float32Array(this.db.length);
+    this.prev = new Float32Array(this.db.length);
+    this.kdb = new Float32Array(kickAn.frequencyBinCount);
+    this.kmag = new Float32Array(this.kdb.length);
+    this.kprev = new Float32Array(this.kdb.length);
+    this.td = new Float32Array(mixAn.fftSize);
+    this.ready = true;
+    this.reset();
+  },
+  reset() {
+    this.agc = { loud: new Agc(), bass: new Agc(), mid: new Agc(), high: new Agc(), kick: new Agc() };
+    this.kickOn = new Onset(0.11);
+    this.snapOn = new Onset(0.07);
+  },
+  bins(an, f0, f1) {
+    const hz = this.sr / an.fftSize;
+    return [Math.max(1, Math.round(f0 / hz)), Math.min(an.frequencyBinCount - 1, Math.round(f1 / hz))];
+  },
+  update(dt, t) {
+    const f = this.f;
+    f.kick = 0; f.snap = 0;
+    if (!this.ready || audio.kind === 'off') { f.loud = f.bass = f.mid = f.high = 0; return f; }
+
+    const an = this.mixAn, mag = this.mag, prev = this.prev;
+    an.getFloatFrequencyData(this.db);
+    for (let i = 0; i < mag.length; i++) mag[i] = this.db[i] > -160 ? Math.pow(10, this.db[i] / 20) : 0;
+    const bandDb = (m, an, lo, hi) => {
+      const [a, b] = this.bins(an, lo, hi);
+      let s = 0;
+      for (let i = a; i <= b; i++) s += m[i] * m[i];
+      return 10 * Math.log10(s + 1e-12);
+    };
+    // rise in magnitude across a band; on power, the loudest hits stand out
+    // most, which is what tells a kick from a bass note
+    const flux = (m, p, an, lo, hi, power) => {
+      const [a, b] = this.bins(an, lo, hi);
+      let s = 0;
+      for (let i = a; i <= b; i++) { const d = power ? m[i] * m[i] - p[i] * p[i] : m[i] - p[i]; if (d > 0) s += d; }
+      return s;
+    };
+
+    an.getFloatTimeDomainData(this.td);
+    let ss = 0;
+    for (let i = 0; i < this.td.length; i++) ss += this.td[i] * this.td[i];
+    f.loud = this.agc.loud.norm(10 * Math.log10(ss / this.td.length + 1e-12), dt);
+    f.bass = this.agc.bass.norm(bandDb(mag, an, 30, 150), dt);
+    f.mid = this.agc.mid.norm(bandDb(mag, an, 150, 2000), dt);
+    f.high = this.agc.high.norm(bandDb(mag, an, 2000, 12000), dt);
+
+    // spectral centroid on a log axis: 60 Hz .. 12 kHz -> 0..1
+    {
+      const [a, b] = this.bins(an, 60, 12000), hz = this.sr / an.fftSize;
+      let num = 0, den = 0;
+      for (let i = a; i <= b; i++) { num += i * hz * mag[i]; den += mag[i]; }
+      if (den > 1e-6) f.centroid = clamp(Math.log2(num / den / 60) / Math.log2(200), 0, 1);
+    }
+
+    // Kick: flux in the kick band. A clean kick on input 2 beats any mix trick.
+    let kx, kgate;
+    if (S.kick2 && (audio.kind === 'input' || audio.kind === 'test')) {
+      const ka = this.kickAn, km = this.kmag;
+      ka.getFloatFrequencyData(this.kdb);
+      for (let i = 0; i < km.length; i++) km[i] = this.kdb[i] > -160 ? Math.pow(10, this.kdb[i] / 20) : 0;
+      kx = flux(km, this.kprev, ka, 30, 300);
+      kgate = this.agc.kick.norm(bandDb(km, ka, 30, 300), dt) > 0.15;
+      this.kprev.set(km);
+    } else {
+      kx = flux(mag, prev, an, 35, 160, true);
+      kgate = f.bass > 0.15;
+    }
+    f.kick = this.kickOn.step(kx, t, dt, kgate, S.sens);
+    f.snap = this.snapOn.step(flux(mag, prev, an, 1500, 9000), t, dt, f.high > 0.15, S.sens);
+    prev.set(mag);
+    return f;
+  },
+};
+
+// ================================================================== clock ===
+// Beats come from one of three places: MIDI clock from the Meowsic over USB
+// serial (24 per beat), the test pattern's own scheduler, or an internal
+// clock set by the BPM box and tap tempo. `offset` lines bar 1 up.
+
+const clock = {
+  bpm: S.bpm, t0: performance.now() / 1000, offset: 0, mode: 'internal', lastRaw: 0,
+  ticks: 0, lastTick: -100, fit: [], slope: 0, icpt: 0, fitT0: 0, midiBpm: 0,
+  taps: [], lastBeat: -1,
+
+  internalBeats(now) { return (now - this.t0) * this.bpm / 60; },
+  rawBeats(now) {
+    if (this.mode === 'midi') return this.midiTicks(now) / 24;
+    if (this.mode === 'test') return audio.test.beatsAt(audio.ctx.currentTime);
+    return this.internalBeats(now);
+  },
+  setBpm(bpm) {
+    bpm = clamp(bpm || 120, 40, 300);
+    const now = performance.now() / 1000, raw = this.internalBeats(now);
+    this.bpm = bpm;
+    this.t0 = now - raw * 60 / bpm;       // keep counting from the same beat
+    S.bpm = Math.round(bpm * 10) / 10;
+    save();
+    if (audio.test) audio.test.setBpm(bpm);
+    $('bpm').value = S.bpm;
+  },
+  tap(now) {
+    if (this.taps.length && now - this.taps[this.taps.length - 1] > 2) this.taps = [];
+    this.taps.push(now);
+    if (this.taps.length > 5) this.taps.shift();
+    if (this.taps.length < 2) return;
+    this.setBpm((this.taps.length - 1) * 60 / (now - this.taps[0]));
+    // and land a beat exactly on this tap
+    if (this.mode === 'internal') {
+      const d = this.rawBeats(now) - this.offset;
+      this.offset += d - Math.round(d);
+    }
+  },
+  downbeat(now) {
+    let raw = this.rawBeats(now);
+    if (this.mode === 'midi') raw = Math.round(raw * 24) / 24;   // snap to the nearest clock tick
+    this.offset = raw;
+  },
+
+  midiTick(now) {
+    this.ticks++;
+    if (now - this.lastTick > 0.5) this.fit = [];
+    this.lastTick = now;
+    // USB delivers the bytes in bursts; a least-squares line through the last
+    // two beats of arrivals gives a steady tempo and phase anyway.
+    this.fit.push([now, this.ticks]);
+    if (this.fit.length > 48) this.fit.shift();
+    const n = this.fit.length;
+    if (n < 8) return;
+    const t0 = this.fit[0][0];
+    let st = 0, sk = 0, stt = 0, stk = 0;
+    for (const [t, k] of this.fit) { const x = t - t0; st += x; sk += k; stt += x * x; stk += x * k; }
+    const den = n * stt - st * st;
+    if (den > 1e-9) {
+      this.slope = (n * stk - st * sk) / den;
+      this.icpt = (sk - this.slope * st) / n;
+      this.fitT0 = t0;
+      this.midiBpm = this.slope * 60 / 24;
+    }
+  },
+  midiStart(now) { this.ticks = 0; this.fit = []; this.lastTick = now; this.offset = 0; },
+  midiTicks(now) {
+    if (this.fit.length < 8 || !(this.slope > 0)) return this.ticks;
+    return clamp(this.icpt + this.slope * (now - this.fitT0), this.ticks - 1, this.ticks + 1);
+  },
+
+  update(now) {
+    const prevMode = this.mode;
+    const midiAlive = serial.connected && now - this.lastTick < 2;
+    this.mode = midiAlive ? 'midi' : audio.test ? 'test' : 'internal';
+    if (this.mode !== prevMode) {
+      const shown = this.lastRaw - this.offset;     // carry the count across the change
+      if (this.mode === 'internal') {
+        if (prevMode === 'midi' && this.midiBpm > 40) this.setBpm(this.midiBpm);
+        this.t0 = now - this.lastRaw * 60 / this.bpm;
+      } else if (this.mode === 'test') {
+        this.offset = 0;                            // the pattern starts on bar 1
+      } else {
+        this.offset = this.rawBeats(now) - shown;
+      }
+    }
+    const raw = this.rawBeats(now);
+    this.lastRaw = raw;
+    const beats = raw - this.offset;
+    const running = this.mode !== 'midi' || now - this.lastTick < 0.5;
+    return { beats, phase: fract(beats), beat: Math.floor(beats), bar: Math.floor(beats / 4), running };
+  },
+};
+
+// ================================================================= serial ===
+// The Meowsic keyboard (meowsic-keyboard/) sends raw MIDI over its USB serial
+// port at 115200 when USB_MIDI is 1, including MIDI clock whenever its clock
+// comes from tap tempo or its clock jack.
+
+const midi = {
+  status: 0, data: [],
+  byte(b, now) {
+    if (b >= 0xF8) {                       // real-time bytes can arrive anywhere
+      if (b === 0xF8) clock.midiTick(now);
+      else if (b === 0xFA) clock.midiStart(now);
+      return;
+    }
+    if (b & 0x80) { this.status = b < 0xF0 ? b : 0; this.data.length = 0; return; }
+    if (!this.status) return;              // SysEx or text: skip
+    this.data.push(b);
+    const type = this.status & 0xF0, need = type === 0xC0 || type === 0xD0 ? 1 : 2;
+    if (this.data.length < need) return;
+    if (type === 0x90 && this.data[1] > 0) director.noteOn(this.data[0], this.data[1]);
+    this.data.length = 0;                  // running status: keep the status byte
+  },
+};
+
+const serial = {
+  port: null, reader: null, loop: null, connected: false,
+
+  async connect() {
+    if (!('serial' in navigator)) { toast('USB serial needs Chrome or Edge'); return; }
+    let port;
+    try { port = await navigator.serial.requestPort(); } catch (e) { return; }   // picker cancelled
+    try {
+      await port.open({ baudRate: 115200 });
+    } catch (e) {
+      toast('Could not open the port: ' + e.message);
+      return;
+    }
+    this.port = port;
+    this.connected = true;
+    ui.sync();
+    toast('Meowsic connected. Patch the rig clock into its clock jack.');
+    this.loop = this.read(port);
+  },
+  async read(port) {
+    while (port.readable && this.port === port) {
+      const reader = this.reader = port.readable.getReader();
+      try {
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const now = performance.now() / 1000;
+          for (let i = 0; i < value.length; i++) midi.byte(value[i], now);
+        }
+      } catch (e) {
+        // a framing error leaves the port usable; an unplug ends the loop below
+      } finally {
+        reader.releaseLock();
+      }
+    }
+    if (this.port === port) this.closed();
+  },
+  async disconnect() {
+    const port = this.port;
+    this.port = null;
+    try { if (this.reader) await this.reader.cancel(); } catch (e) {}
+    try { await this.loop; } catch (e) {}
+    try { if (port) await port.close(); } catch (e) {}
+    this.closed();
+  },
+  closed() {
+    this.port = null;
+    this.connected = false;
+    ui.sync();
+  },
+};
+
+if ('serial' in navigator) {
+  navigator.serial.addEventListener('disconnect', e => { if (e.target === serial.port) serial.disconnect(); });
+}
+
+// ================================================================ camera ===
+// The autopilot flies the camera through free space using the same distance
+// estimator as the shader: it probes a cone of directions ahead, steers toward
+// the most open one, keeps a set distance from the walls, and moves at a speed
+// proportional to the room around it, so tight spots play out like macro shots.
+
+const pilot = {
+  pos: [0, 0, 3], dir: [0, 0, -1], look: [0, 0, -1], up: [0, 1, 0],
+  scale: 0.05, scale0: 0.05, depth: 0, target: null, zd: 0, d0: 0.05, focus: 0.5, core: [0, 0, 0], t: 0, seed: Math.random() * 100,
+
+  free(p, v, maxT, hit) {
+    let t = 0;
+    for (let i = 0; i < 28; i++) {
+      const d = deSafe([p[0] + v[0] * t, p[1] + v[1] * t, p[2] + v[2] * t]);
+      if (d < hit) return t;
+      t += d * 0.9;
+      if (t >= maxT) return maxT;
+    }
+    return t;
+  },
+  grad(p, e) {
+    return v3.norm([
+      deSafe([p[0] + e, p[1], p[2]]) - deSafe([p[0] - e, p[1], p[2]]),
+      deSafe([p[0], p[1] + e, p[2]]) - deSafe([p[0], p[1] - e, p[2]]),
+      deSafe([p[0], p[1], p[2] + e]) - deSafe([p[0], p[1], p[2] - e]),
+    ]);
+  },
+  reset(sc, form = director.cur) {
+    // a start point in free space at about the scene's wall distance
+    let best = null, bestErr = Infinity;
+    for (let i = 0; i < 6000; i++) {
+      const b = form.base.box, q = [(Math.random() * 2 - 1) * b, (Math.random() * 2 - 1) * b, (Math.random() * 2 - 1) * b];
+      const p = q.map((v, j) => (v - form.tr[j]) / form.sig);
+      const d = deSafe(p);
+      if (!(d > 0)) continue;
+      const err = Math.abs(Math.log(d / (sc.clear * 1.5)));
+      if (err < bestErr) { bestErr = err; best = p; if (err < 0.1) break; }
+    }
+    this.pos = best || [0, 0, form.base.box / form.sig];
+    this.scale = sc.clear;
+    this.d0 = deSafe(this.pos);
+    // head off in the most open direction
+    let bd = [0, 0, 1], bf = -1;
+    for (let i = 0; i < 64; i++) {
+      const v = randomUnit(), f = this.free(this.pos, v, sc.clear * 30, sc.clear * 0.25);
+      if (f > bf) { bf = f; bd = v; }
+    }
+    this.dir = bd;
+    this.look = bd;
+    if (S.motion === 'zoom') {
+      // zooming starts out looking at a wall, partly along it
+      const g = this.grad(this.pos, sc.clear * 0.1), [t1] = basis(g);
+      this.look = v3.norm(v3.add(v3.mul(g, -0.6), v3.mul(t1, 0.4)));
+    }
+    this.up = v3.norm(v3.sub([0, 1, 0], v3.mul(this.look, this.look[1])));
+    this.focus = Math.max(bf, sc.clear);
+    this.core = v3.madd(this.pos, bd, bf * 0.8);
+    this.scale = this.scale0 = sc.clear;
+    this.depth = 0;
+    this.target = null;
+    this.shut = 0;
+  },
+  // Zoom, like a Mandelbrot zoom: fix on a point on the surface and halve
+  // the distance to it every so many seconds. Detail grows with closeness
+  // (lodLevel), so new structure keeps sprouting around the point; the point
+  // is kept pinned to the surface as it does, and whatever grows into the
+  // line of sight becomes the new point. The view orbits it very slowly.
+  zoom(dt, sc) {
+    this.t += dt;
+    if (!this.target) {
+      let h = this.free(this.pos, this.look, sc.clear * 80, sc.clear * 0.01);
+      if (h >= sc.clear * 79) {
+        this.look = v3.mul(this.grad(this.pos, sc.clear * 0.1), -1);
+        h = this.free(this.pos, this.look, sc.clear * 80, sc.clear * 0.01);
+      }
+      this.zd = Math.max(h, sc.clear * 0.2);
+      this.target = v3.madd(this.pos, this.look, this.zd);
+      this.scale0 = this.zd * 0.15;
+    }
+    const halving = 45 / Math.max(S.speed, 0.05);
+
+    // something grew into the line of sight: close in on that instead
+    const h = this.free(this.pos, this.look, this.zd * 1.2, this.zd * 0.003);
+    if (h < this.zd * 0.8) {
+      this.target = v3.madd(this.pos, this.look, h);
+      this.zd = h;
+    }
+    // keep the point on the surface as finer detail grows around it
+    const dT = de(this.target);
+    this.target = v3.madd(this.target, this.grad(this.target, this.zd * 0.01), -dT * Math.min(1, dt * 2));
+    this.zd *= Math.pow(0.5, dt / halving);
+
+    // orbit slowly; and swing away from a wall that comes too close to the lens
+    const w = [Math.sin(this.t * 0.021 + this.seed), Math.sin(this.t * 0.017 + this.seed * 2.1), Math.sin(this.t * 0.013 + this.seed * 3.7)];
+    let look = v3.norm(v3.madd(this.look, w, 0.015 * dt));
+    const d0 = de(this.pos);
+    this.d0 = d0;
+    if (d0 < this.zd * 0.2) look = v3.norm(v3.madd(look, this.grad(this.pos, this.zd * 0.02), -Math.min(1, dt * 2) * (1 - d0 / (this.zd * 0.2))));
+    this.look = look;
+    this.pos = v3.madd(this.target, this.look, -this.zd);
+    this.shut = d0 < 0 ? this.shut + dt : 0;
+    this.transportUp(dt);
+
+    // the optics scale with the distance to the point
+    this.scale = this.zd * 0.15;
+    this.depth = Math.max(0, Math.log2(this.scale0 / this.scale));
+    this.focus = this.zd;
+    this.core = v3.madd(v3.madd(this.pos, this.look, this.zd * 0.6), this.up, this.zd * 0.4);
+  },
+  transportUp(dt) {
+    let up = v3.sub(this.up, v3.mul(this.look, v3.dot(this.up, this.look)));
+    const worldUp = v3.sub([0, 1, 0], v3.mul(this.look, this.look[1]));
+    up = v3.lerp(up, worldUp, (1 - Math.exp(-dt * 0.3)) * (1 - Math.abs(this.look[1])));
+    this.up = v3.len(up) > 1e-3 ? v3.norm(up) : basis(this.look)[0];
+  },
+  update(dt, speedK, sc) {
+    // Zoom: the depth grows steadily and the room the camera keeps shrinks
+    // with it, halving every so many seconds, so it sinks into ever smaller
+    // hollows while the detail level climbs (director.shape) and finer
+    // patterns keep growing out of the larger ones.
+    if (S.motion === 'zoom') return this.zoom(dt, sc);
+    this.depth = 0;
+    const d0 = deSafe(this.pos);
+    this.d0 = d0;
+    this.scale = smooth(this.scale, clamp(d0, sc.clear * 0.4, sc.clear * 2.5), 0.8, dt);
+    const s = this.scale;
+    this.t += dt;
+
+    // probe a cone around the heading; the wander term makes the path meander
+    const w = [Math.sin(this.t * 0.07 + this.seed), Math.sin(this.t * 0.053 + this.seed * 2.1), Math.sin(this.t * 0.041 + this.seed * 3.7)];
+    const bias = v3.norm(v3.madd(this.dir, w, 0.5));
+    const [b1, b2] = basis(bias);
+    let best = bias, bestScore = -1, bestFree = 0;
+    for (const [ang, n] of [[0, 1], [0.35, 6], [0.75, 8]]) {
+      for (let k = 0; k < n; k++) {
+        const a = k / n * Math.PI * 2 + this.t * 0.03;
+        const v = v3.norm(v3.add(v3.mul(bias, Math.cos(ang)),
+          v3.add(v3.mul(b1, Math.sin(ang) * Math.cos(a)), v3.mul(b2, Math.sin(ang) * Math.sin(a)))));
+        // past a few clearances every opening is as good: prefer the heading,
+        // or the camera would always point at the emptiest part of the scene
+        const f = this.free(this.pos, v, s * 30, s * 0.25);
+        const score = Math.min(f, s * 8) * (0.6 + 0.4 * v3.dot(v, bias));
+        if (score > bestScore) { bestScore = score; best = v; bestFree = f; }
+      }
+    }
+
+    let dir = v3.norm(v3.lerp(this.dir, best, 1 - Math.exp(-dt * 0.35)));
+    // hold a macro distance: push off when close, drift back when the walls recede
+    const g = this.grad(this.pos, s * 0.1);
+    if (d0 < sc.clear * 0.7) dir = v3.norm(v3.madd(dir, g, dt * 2.5 * (1 - d0 / (sc.clear * 0.7))));
+    else if (d0 > sc.clear * 2.5) dir = v3.norm(v3.madd(dir, g, -dt * 0.6));
+    this.dir = dir;
+
+    const speed = speedK * sc.speed * clamp(d0, s * 0.3, s * 3);
+    this.pos = v3.madd(this.pos, dir, Math.max(0, Math.min(speed * dt, d0 * 0.5)));
+    // the forms move too: back away from a wall as it comes in, gently
+    if (d0 < sc.clear * 0.7) this.pos = v3.madd(this.pos, g, Math.min(sc.clear * 0.7 - d0, sc.clear * 2 * dt));
+    // and if the visible walls have closed over the camera for a while, cut to open space nearby
+    this.shut = de(this.pos) < sc.clear * 0.1 ? (this.shut || 0) + dt : 0;
+    if (this.shut > 2) this.relocate(sc);
+
+    // the view follows the heading more lazily than the heading follows the
+    // probes, turned a little toward the nearest wall to keep surface in frame
+    const view = v3.norm(v3.madd(dir, g, -(sc.tilt ?? 0.3)));
+    this.look = v3.norm(v3.lerp(this.look, view, 1 - Math.exp(-dt * 0.45)));
+    this.transportUp(dt);
+
+    // autofocus: the median of five rays around the centre, so a ray slipping
+    // through a pore doesn't throw the focus to the back; the warm light sits
+    // deep in the opening
+    const [f1, f2] = basis(this.look), hits = [];
+    for (const [a, b] of [[0, 0], [0.1, 0], [-0.1, 0], [0, 0.1], [0, -0.1]]) {
+      const v = v3.norm(v3.add(this.look, v3.add(v3.mul(f1, a), v3.mul(f2, b))));
+      hits.push(this.free(this.pos, v, s * 40, s * 0.05));
+    }
+    hits.sort((a, b) => a - b);
+    this.focus = smooth(this.focus, Math.max(hits[2], s * 0.5), 0.6, dt);
+    this.core = v3.lerp(this.core, v3.madd(this.pos, best, Math.min(bestFree * 0.85, s * 25)), 1 - Math.exp(-dt / 3));
+  },
+  relocate(sc) {
+    // the nearest roomy spot, searching outward in growing shells
+    this.shut = 0;
+    for (let r = sc.clear; r < sc.clear * 300; r *= 1.6) {
+      for (let k = 0; k < 24; k++) {
+        const p = v3.madd(this.pos, randomUnit(), r), d = deSafe(p);
+        if (d > sc.clear * 1.2 && d < sc.clear * 4) {
+          this.pos = p;
+          renderer.histOk = false;
+          return;
+        }
+      }
+    }
+    this.reset(sc);
+    renderer.histOk = false;
+  },
+  camera(roll) {
+    const fw = this.look;
+    let rt = v3.norm(v3.cross(this.up, fw)), up = v3.cross(fw, rt);
+    const c = Math.cos(roll), s = Math.sin(roll);
+    [rt, up] = [v3.add(v3.mul(rt, c), v3.mul(up, s)), v3.sub(v3.mul(up, c), v3.mul(rt, s))];
+    return { pos: this.pos, fw, rt, up };
+  },
+};
+
+// ======================================================== drifting lights ===
+// Small warm lights that wander through the open space. They are never seen
+// themselves, only the pools of light they cast on the walls nearby.
+
+const MAX_FLIES = 12;
+
+function noteColor(note) {
+  // pitch class around the circle of fifths onto amber..gold, so related
+  // notes get related colours
+  const pc = ((note % 12) + 12) % 12;
+  return hsv(0.03 + 0.1 * ((pc * 7) % 12) / 11, 0.72, 1);
+}
+
+const flies = {
+  list: [],
+  spawn(color, power) {
+    if (this.list.length >= MAX_FLIES) this.list.shift();
+    const s = pilot.scale, [b1, b2] = basis(pilot.look);
+    for (let k = 0; k < 8; k++) {
+      const a = Math.random() * Math.PI * 2, r = Math.random() * 0.55;
+      const v = v3.norm(v3.add(pilot.look, v3.add(v3.mul(b1, Math.cos(a) * r), v3.mul(b2, Math.sin(a) * r))));
+      const p = v3.madd(pilot.pos, v, pilot.focus * (0.6 + Math.random() * 1.2));
+      if (de(p) > s * 0.3) {
+        this.list.push({ p, v: v3.mul(randomUnit(), s * 0.15), col: color, power, age: 0, life: 6 + Math.random() * 6, seed: Math.random() * 100 });
+        return;
+      }
+    }
+  },
+  update(dt) {
+    const s = pilot.scale;
+    for (const f of this.list) {
+      f.age += dt;
+      const w = [Math.sin(f.age * 0.3 + f.seed), Math.sin(f.age * 0.23 + f.seed * 1.7), Math.sin(f.age * 0.37 + f.seed * 2.3)];
+      f.v = v3.lerp(f.v, v3.mul(w, s * 0.12), 1 - Math.exp(-dt * 0.5));
+      if (de(f.p) < s * 0.25) f.v = v3.madd(f.v, pilot.grad(f.p, s * 0.05), s * dt * 2);
+      f.p = v3.madd(f.p, f.v, dt);
+    }
+    this.list = this.list.filter(f => f.age < f.life && v3.dot(v3.sub(f.p, pilot.pos), pilot.look) > -s * 2);
+  },
+  pack(bright) {
+    const pos = new Float32Array(MAX_FLIES * 3), col = new Float32Array(MAX_FLIES * 3);
+    this.list.forEach((f, i) => {
+      const env = clamp(f.age / 0.8, 0, 1) * clamp((f.life - f.age) / 2, 0, 1);
+      const k = f.power * env * bright;
+      pos.set(f.p, i * 3);
+      col.set([f.col[0] * k, f.col[1] * k, f.col[2] * k], i * 3);
+    });
+    return { pos, col, n: this.list.length };
+  },
+};
+
+// =============================================================== director ===
+// The picture is always one form growing into view out of another: the
+// distance fields of the two are blended, so the new shapes well up through
+// the old ones. When it has fully grown in, the next one starts growing out
+// of it, endlessly. Half the time the next one is the same form, scaled up or
+// down around the camera, so it grows out of a copy of itself. Each form also
+// drifts slowly on its own, and long-term loudness sets the pace; nothing
+// reacts to single hits.
+
+const director = {
+  cur: null, next: null, x: 0, w: 0, queued: null,
+  e: { loud: 0, slow: 0, bass: 0, bslow: 0, mid: 0, high: 0, kick: 0, snap: 0, note: 0 },
+  m: [0, 1, 2, 3, 4],
+  lastFly: 0, sc: null, fade: null,
+
+  noteOn(note, vel) {
+    this.e.note = 1;
+    const now = performance.now() / 1000;
+    if (now - this.lastFly > 0.25 + 0.6 * (1 - S.flies) && Math.random() < S.flies) {
+      flies.spawn(noteColor(note), 0.5 + vel / 127);
+      this.lastFly = now;
+    }
+  },
+  // a scene placed in the world: scaled by 1/sig, shifted by tr
+  form(i, sig = 1, tr = [0, 0, 0]) {
+    const base = SCENES[i];
+    return { i, base, sig, tr, sc: { ...base, clear: base.clear / sig } };
+  },
+  // a form picked by hand grows in next: right away if the current growth
+  // has barely started, otherwise after it
+  go(i) {
+    if (this.x < 0.05) {
+      this.next = this.form(i, this.cur.sig, this.cur.tr);
+      if (!S.flow && this.x === 0) this.x = 1e-6;
+    } else {
+      this.queued = i;
+    }
+  },
+  pick(cur) {
+    // half the time the same form, scaled about the camera so it grows out
+    // of itself; the scale leans back toward 1 so it never runs away
+    if (Math.random() < 0.5) {
+      const logK = -Math.log(cur.sig);
+      const lk = (0.25 + Math.random() * 0.25) * (Math.random() < 0.5 + 0.5 * Math.tanh(2 * logK) ? -1 : 1);
+      const k = Math.exp(lk), c = pilot.pos;
+      return this.form(cur.i, cur.sig / k, c.map((v, j) => cur.sig * v * (1 - 1 / k) + cur.tr[j]));
+    }
+    // otherwise another form, preferring one the camera already has room in
+    const probe = newFrac(), options = SCENES.map((_, i) => i).filter(i => i !== cur.i);
+    const roomy = options.filter(i => {
+      this.shape(this.form(i, cur.sig, cur.tr), probe);
+      probe.rot = rotMat(...probe.ang);
+      return deOne(probe, pilot.pos) > SCENES[i].clear / cur.sig;
+    });
+    const from = roomy.length ? roomy : options;
+    return this.form(from[Math.floor(Math.random() * from.length)], cur.sig, cur.tr);
+  },
+  scene() { return this.sc || this.cur.sc; },
+  growing() { return this.x > 0; },
+  update(dt, now, f, ck) {
+    const e = this.e, active = audio.kind !== 'off';
+    e.loud = follow(e.loud, f.loud, 0.05, 0.4, dt);
+    e.slow = follow(e.slow, f.loud, 1.5, 4, dt);
+    e.bass = follow(e.bass, f.bass, 0.03, 0.3, dt);
+    e.bslow = follow(e.bslow, f.bass, 0.4, 1.5, dt);
+    e.mid = follow(e.mid, f.mid, 0.05, 0.4, dt);
+    e.high = follow(e.high, f.high, 0.02, 0.25, dt);
+    e.kick = Math.max(e.kick * Math.exp(-dt / 0.22), f.kick);
+    e.snap = Math.max(e.snap * Math.exp(-dt / 0.12), f.snap);
+    e.note *= Math.exp(-dt / 0.3);
+
+    // test-pattern notes are stamped on the audio clock
+    if (audio.test) {
+      const ev = audio.test.events, ta = audio.ctx.currentTime;
+      while (ev.length && ev[0].t <= ta) { const x = ev.shift(); this.noteOn(x.note, x.vel); }
+    }
+    // without MIDI notes, snares and hats call up drifting lights; and a few drift in anyway
+    if (f.snap && !serial.connected && now - this.lastFly > 0.4 && Math.random() < 0.5 * S.flies) {
+      flies.spawn(hsv(0.04 + Math.random() * 0.08, 0.7, 1), 0.7);
+      this.lastFly = now;
+    }
+    if (flies.list.length < 2 + 6 * S.flies && Math.random() < dt * 0.4 * S.flies) {
+      flies.spawn(hsv(0.04 + Math.random() * 0.08, 0.7, 1), 0.6);
+    }
+
+    // growth: x runs 0..1 per form; when it wraps, the grown-in form becomes the
+    // base and the next one starts growing out of it
+    if (!this.next) this.next = this.pick(this.cur);
+    if (S.flow || this.x > 0) {
+      this.x += dt / S.flowTime * (active ? 0.7 + 0.6 * e.slow : 1);
+      if (this.x >= 1) {
+        this.cur = this.next;
+        this.x = S.flow || this.queued !== null ? this.x - 1 : 0;
+        this.next = this.queued !== null ? this.form(this.queued, this.cur.sig, this.cur.tr) : this.pick(this.cur);
+        this.queued = null;
+        S.scene = this.cur.i;
+        save();
+        ui.sync();
+      }
+    }
+    // eased, but never at rest, so one growth runs straight into the next
+    this.w = this.x - 0.6 * Math.sin(2 * Math.PI * this.x) / (2 * Math.PI);
+    this.sc = this.w > 0 ? blendScene(this.cur.sc, this.next.sc, this.w) : this.cur.sc;
+    this.applyFractal(dt);
+
+    // a zoom only goes about 13 halvings deep before the GPU's 32-bit numbers
+    // run out (or a wall grows over the camera): fade out, start a new dive
+    // somewhere else, fade in
+    let fade = 0;
+    if (!this.fade && S.motion === 'zoom' && (pilot.scale < 6e-6 || pilot.shut > 2)) this.fade = { t: 0, done: false };
+    if (this.fade) {
+      const F = this.fade;
+      F.t += dt;
+      const x = clamp(F.t / 6, 0, 1);
+      fade = Math.sin(Math.PI * x);
+      if (!F.done && x >= 0.5) {
+        F.done = true;
+        pilot.reset(this.scene());
+        renderer.histOk = false;
+      }
+      if (x >= 1) this.fade = null;
+    }
+
+    const sc = this.sc;
+    return {
+      fade,
+      speedK: S.speed * (active ? 0.5 + 0.5 * e.slow : 0.6),
+      core: v3.mul(sc.core, active ? 0.6 + 0.8 * e.bslow : 0.8),
+      key: sc.keyCol,
+      fog: sc.fog * (0.4 + 1.6 * S.haze) * (1 + (active ? 1.2 * (1 - e.slow) : 0.3)),
+      flies: 1,
+      exposure: S.exposure,
+      fov: 58 * Math.PI / 180,
+      roll: 0.1 * Math.sin(now * 0.03) + 0.04 * Math.sin(now * 0.071),
+    };
+  },
+  // one form's formula as it drifts
+  shape(form, f) {
+    const sc = form.base, e = this.e, active = audio.kind !== 'off';
+    f.sig = form.sig;
+    f.tr = form.tr;
+    const depth = S.morph * (active ? 0.6 + 0.4 * e.slow : 0.7);
+    const flood = (active ? 1 - e.slow : 0.3) * sc.flood;   // quiet passages: the walls spill into the space
+    f.kind = sc.kind;
+    f.iters = sc.iters;
+    if (sc.kind === 0) {
+      f.S = sc.S + sc.dS * depth * Math.sin(this.m[0]);
+      f.mr2 = sc.mr2 * (1 + 0.25 * depth * Math.sin(this.m[1]) + flood);
+    } else {
+      f.apS = sc.s + sc.dS * depth * Math.sin(this.m[0]);
+      f.apR = f.apS / Math.max(1.78, sc.q + sc.dQ * depth * Math.sin(this.m[1]) - flood);
+      f.lvl = sc.lvl0 + 0.6 * depth * Math.sin(this.m[4]);
+    }
+    const ra = sc.rot * depth;
+    f.ang = [sc.r0[0] + ra * Math.sin(this.m[2]), sc.r0[1] + ra * Math.sin(this.m[3]), sc.r0[2] + ra * 0.6 * Math.sin(this.m[4])];
+  },
+  applyFractal(dt) {
+    // slow incommensurate cycles of a minute or two, quicker when it's loud;
+    // held still while zooming, since deep in a fractal the smallest change
+    // makes it boil
+    const rate = S.motion === 'zoom' ? 0 : dt * (0.5 + 1.5 * this.e.loud);
+    const periods = [97, 71, 53, 83, 61];
+    for (let i = 0; i < 5; i++) this.m[i] += rate * 2 * Math.PI / periods[i];
+    this.shape(this.cur, FA);
+    this.shape(this.next || this.cur, FB);
+    FA.rot = rotMat(...FA.ang);
+    FB.rot = rotMat(...FB.ang);
+    FW = this.w;
+    FB_LIVE = this.x > 0;
+    LOD.ref = this.cur.sc.clear;
+    LOD.grow = this.cur.base.lod || 0;
+  },
+};
+
+// =============================================================== shaders ===
+
+const VS = `#version 300 es
+void main() {
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}`;
+
+const FS_SCENE = `#version 300 es
+precision highp float;
+precision highp int;
+
+uniform vec2  uRes;
+uniform vec2  uJitter;
+uniform float uFrame;
+uniform vec3  uCamPos, uCamRt, uCamUp, uCamFw;
+uniform float uFl;
+uniform float uTMax;
+uniform int   uSteps;
+
+struct Frac {
+  int   kind;
+  int   iters;
+  vec4  mbK;
+  float mbMinR2, mbC1, mbC2;
+  float apS, apR, lvl;
+  mat3  rot;
+  float sig;
+  vec3  tr;
+};
+uniform Frac  uFA, uFB;
+uniform float uMixW;
+uniform float uLodRef, uLodGrow;
+
+uniform float uScale, uView;
+uniform vec3  uFill;
+uniform float uGloss;
+uniform vec3  uAlbA, uAlbB, uAlbC;
+uniform float uTrapK;
+uniform vec3  uKeyDir, uKeyCol;
+uniform float uShadow;
+uniform vec3  uAmb;
+uniform vec3  uSkyLo, uSkyHi, uFogCol;
+uniform float uFogDen;
+uniform vec3  uCorePos, uCoreCol;
+uniform vec3  uFlyPos[${MAX_FLIES}];
+uniform vec3  uFlyCol[${MAX_FLIES}];
+uniform int   uFlyN;
+
+out vec4 outColor;
+
+vec4 gTrap;
+
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+float deMandelbox(vec3 pos, Frac f) {
+  vec4 p = vec4(pos, 1.0), p0 = p;
+  vec4 trap = vec4(1e4);
+  for (int i = 0; i < 20; i++) {
+    if (i >= f.iters) break;
+    p.xyz = clamp(p.xyz, -1.0, 1.0) * 2.0 - p.xyz;
+    float r2 = dot(p.xyz, p.xyz);
+    trap = min(trap, vec4(abs(p.xyz), r2));
+    p *= clamp(max(f.mbMinR2 / r2, f.mbMinR2), 0.0, 1.0);
+    p.xyz = f.rot * p.xyz;
+    p = p * f.mbK + p0;
+  }
+  gTrap = trap;
+  return (length(p.xyz) - f.mbC1) / p.w - f.mbC2;
+}
+
+float deApollo(vec3 p, Frac f, float lvl) {
+  int lo = int(floor(lvl));
+  float t = lvl - float(lo), sc = 1.0, dLo = 0.0;
+  vec4 trap = vec4(1e4);
+  for (int i = 1; i <= 24; i++) {
+    p = -1.0 + 2.0 * fract(0.5 * p + 0.5);
+    p = f.rot * p;
+    float r2 = dot(p, p);
+    trap = min(trap, vec4(abs(p), r2));
+    float k = f.apS / r2;
+    p *= k;
+    sc *= k;
+    if (i == lo) {
+      dLo = 0.25 * (length(p) - f.apR) / sc;
+      if (t < 0.001) break;
+    }
+    if (i > lo) break;
+  }
+  gTrap = trap;
+  return t < 0.001 ? dLo : mix(dLo, 0.25 * (length(p) - f.apR) / sc, t);
+}
+
+float deOne(vec3 p, Frac f) {
+  vec3 q = p * f.sig + f.tr;
+  if (f.kind == 0) return deMandelbox(q, f) / f.sig;
+  float lvl = clamp(f.lvl + uLodGrow * log2(uLodRef / max(length(p - uCamPos), 1e-7)), 4.0, 22.0);
+  return deApollo(q, f, lvl) / f.sig;
+}
+
+// formula A, flowing into formula B while a scene changes kind
+float map(vec3 p) {
+  float a = deOne(p, uFA);
+  if (uMixW < 0.001) return a;
+  vec4 ta = gTrap;
+  float b = deOne(p, uFB);
+  gTrap = mix(ta, gTrap, uMixW);
+  return mix(a, b, uMixW);
+}
+
+vec3 normalAt(vec3 p, float e) {
+  const vec2 k = vec2(1.0, -1.0);
+  return normalize(k.xyy * map(p + k.xyy * e) + k.yyx * map(p + k.yyx * e) +
+                   k.yxy * map(p + k.yxy * e) + k.xxx * map(p + k.xxx * e));
+}
+
+float occlusion(vec3 p, vec3 n, float r, float rnd) {
+  float o = 0.0, w = 1.0;
+  for (int i = 0; i < 5; i++) {
+    float h = r * (0.04 + 0.96 * pow((float(i) + rnd) / 5.0, 1.6));
+    o += w * max(h - map(p + n * h), 0.0) / h;
+    w *= 0.75;
+  }
+  return clamp(1.0 - o * 0.8, 0.0, 1.0);
+}
+
+float softShadow(vec3 ro, vec3 rd, float tmin, float tmax) {
+  float res = 1.0, t = tmin;
+  for (int i = 0; i < 24; i++) {
+    float h = map(ro + rd * t);
+    res = min(res, 10.0 * h / t);
+    t += clamp(h, tmin, tmax * 0.15);
+    if (res < 0.01 || t > tmax) break;
+  }
+  return clamp(res, 0.0, 1.0);
+}
+
+void main() {
+  vec2 uv = ((gl_FragCoord.xy + uJitter) * 2.0 - uRes) / uRes.y;
+  vec3 ro = uCamPos;
+  vec3 rd = normalize(uv.x * uCamRt + uv.y * uCamUp + uFl * uCamFw);
+  float rnd = hash12(gl_FragCoord.xy + fract(uFrame * 0.618034) * 113.0);
+  float pix = 2.0 / (uRes.y * uFl);
+
+  float t = uScale * 0.02 * (0.5 + rnd);
+  int steps = 0;
+  bool hit = false;
+  for (int i = 0; i < 400; i++) {
+    if (i >= uSteps) break;
+    steps = i;
+    float d = map(ro + rd * t);
+    if (d < pix * t * 0.6) { hit = true; break; }
+    t += d * 0.85;
+    if (t > uTMax) break;
+  }
+  if (!hit && t < uTMax) hit = true;   // out of steps inside fine detail: call it surface
+  t = min(t, uTMax);
+
+  float s2 = uScale * uScale;
+  vec3 col;
+  if (hit) {
+    vec3 p = ro + rd * t;
+    float e = max(pix * t * 0.5, uScale * 1e-4);
+    vec3 n = normalAt(p, e);
+    map(p);
+    vec4 tr = gTrap;
+    float ao = occlusion(p, n, uScale * 1.2, rnd);
+    float cav = 1.0 - float(steps) / float(uSteps);
+
+    // material from the orbit trap: cool stone, warm deposits, pale chalk
+    float m1 = clamp(sqrt(tr.w) * uTrapK, 0.0, 1.0);
+    float m2 = clamp(tr.x * 2.0, 0.0, 1.0);
+    vec3 alb = mix(uAlbA, uAlbB, smoothstep(0.25, 0.85, m1));
+    alb = mix(alb, uAlbC, 0.35 * smoothstep(0.6, 1.0, m2));
+
+    vec3 lin = vec3(0.0);
+    float ndl = dot(n, uKeyDir);
+    float dif = clamp((ndl + 0.15) / 1.15, 0.0, 1.0);          // slightly wrapped: soft, chalky
+    if (uShadow > 0.0 && ndl > -0.2)
+      dif *= mix(1.0, softShadow(p + n * e * 3.0, uKeyDir, uScale * 0.05, uScale * 8.0), uShadow);
+    lin += uKeyCol * dif;
+    lin += uAmb * (0.6 + 0.4 * n.y) * ao;
+    // soft light from the lens, like a macro ring light, fading past the focus distance
+    float tv = t / uView;
+    lin += uFill * max(dot(n, -rd), 0.0) / (1.0 + tv * tv) * mix(ao, 1.0, 0.5);
+
+    vec3 lv = uCorePos - p;
+    float l2 = dot(lv, lv);
+    lin += uCoreCol * (clamp(dot(n, lv) * inversesqrt(l2), 0.0, 1.0) * 0.85 + 0.15)
+         * s2 * 3.0 / (l2 + s2 * 2.0) * mix(ao, 1.0, 0.4);
+
+    for (int j = 0; j < ${MAX_FLIES}; j++) {
+      if (j >= uFlyN) break;
+      vec3 fv = uFlyPos[j] - p;
+      float f2 = dot(fv, fv);
+      lin += uFlyCol[j] * max(dot(n, fv) * inversesqrt(f2), 0.0) * s2 * 0.25 / (f2 + s2 * 0.1);
+    }
+
+    col = alb * lin * mix(0.35, 1.0, ao) * mix(0.6, 1.0, cav);
+    float fr = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 3.0);
+    col += fr * 0.12 * (uAmb + uKeyCol * 0.3) * ao;
+    // a soft glaze: highlights from the key light and from the lens light
+    float spec = pow(clamp(dot(n, normalize(uKeyDir - rd)), 0.0, 1.0), 32.0) * dif;
+    float ring = pow(clamp(dot(n, -rd), 0.0, 1.0), 24.0) / (1.0 + tv * tv);
+    col += (uKeyCol * spec + uFill * ring) * uGloss * mix(0.3, 1.0, ao);
+  } else {
+    col = mix(uSkyLo, uSkyHi, clamp(rd.y * 0.6 + 0.4, 0.0, 1.0));
+  }
+
+  // haze; the lights themselves stay unseen, only what they light shows
+  col = mix(col, uFogCol, 1.0 - exp(-t * uFogDen));
+
+  col = max(col, 0.0);
+  if (any(isnan(col))) col = vec3(0.0);
+  outColor = vec4(col, t / uTMax);
+}`;
+
+// Temporal accumulation: reproject last frame's result through the previous
+// camera and blend, clamped to this frame's neighbourhood against ghosting.
+const FS_TAA = `#version 300 es
+precision highp float;
+uniform sampler2D uCur, uHist;
+uniform vec2  uRes;
+uniform vec3  uCamPos, uCamRt, uCamUp, uCamFw;
+uniform float uFl;
+uniform vec3  uPCamPos, uPCamRt, uPCamUp, uPCamFw;
+uniform float uPFl;
+uniform float uTMax, uBlend;
+uniform int   uValid;
+out vec4 outColor;
+
+void main() {
+  ivec2 ip = ivec2(gl_FragCoord.xy), lim = ivec2(uRes) - 1;
+  vec4 c = texelFetch(uCur, ip, 0);
+  vec3 lo = c.rgb, hi = c.rgb;
+  for (int y = -1; y <= 1; y++)
+    for (int x = -1; x <= 1; x++) {
+      vec3 s = texelFetch(uCur, clamp(ip + ivec2(x, y), ivec2(0), lim), 0).rgb;
+      lo = min(lo, s);
+      hi = max(hi, s);
+    }
+  vec3 res = c.rgb;
+  if (uValid == 1) {
+    vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;
+    vec3 rd = normalize(uv.x * uCamRt + uv.y * uCamUp + uFl * uCamFw);
+    vec3 v = uCamPos + rd * (c.a * uTMax) - uPCamPos;
+    float z = dot(v, uPCamFw);
+    if (z > 1e-6) {
+      vec2 puv = vec2(dot(v, uPCamRt), dot(v, uPCamUp)) / z * uPFl;
+      vec2 tc = (puv * uRes.y + uRes) * 0.5 / uRes;
+      if (all(greaterThan(tc, vec2(0.0))) && all(lessThan(tc, vec2(1.0)))) {
+        vec3 h = texture(uHist, tc).rgb;
+        if (!any(isnan(h))) res = mix(c.rgb, clamp(h, lo, hi), uBlend);
+      }
+    }
+  }
+  outColor = vec4(res, c.a);
+}`;
+
+// Depth of field: a golden-angle spiral gather (after Dennis Gustafsson's
+// single-pass bokeh). Circle of confusion from distance relative to focus.
+const FS_DOF = `#version 300 es
+precision highp float;
+uniform sampler2D uTex;
+uniform vec2  uRes;
+uniform float uTMax, uFocus, uAperture, uMaxBlur;
+out vec4 outColor;
+
+float coc(float depth) {
+  return clamp(abs(1.0 - uFocus / max(depth, 1e-6)) * uAperture, 0.0, 1.0) * uMaxBlur;
+}
+
+void main() {
+  vec2 px = 1.0 / uRes, tc = gl_FragCoord.xy * px;
+  vec4 c0 = texture(uTex, tc);
+  float d0 = c0.a * uTMax, s0 = coc(d0);
+  vec3 acc = c0.rgb;
+  float tot = 1.0, r = 0.5, ang = 0.0;
+  for (int i = 0; i < 160; i++) {
+    if (r >= uMaxBlur) break;
+    vec4 s = texture(uTex, tc + vec2(cos(ang), sin(ang)) * r * px);
+    float sd = s.a * uTMax, ss = coc(sd);
+    if (sd > d0) ss = min(ss, s0 * 2.0);   // a blurry background must not smear over a sharp foreground
+    acc += mix(acc / tot, s.rgb, smoothstep(r - 0.5, r + 0.5, ss));
+    tot += 1.0;
+    ang += 2.39996323;
+    r += 0.9 / r;
+  }
+  outColor = vec4(acc / tot, c0.a);
+}`;
+
+const FS_OUT = `#version 300 es
+precision highp float;
+uniform sampler2D uTex;
+uniform vec2  uOutRes;
+uniform float uExposure, uTime, uBloom, uGrain, uFade;
+uniform vec3  uFadeCol;
+out vec4 outColor;
+
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+vec3 aces(vec3 x) {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
+
+void main() {
+  vec2 tc = gl_FragCoord.xy / uOutRes, dc = tc - 0.5;
+  float ca = 0.012 * dot(dc, dc);              // lateral colour fringing toward the corners
+  vec3 col = vec3(texture(uTex, tc - dc * ca).r, texture(uTex, tc).g, texture(uTex, tc + dc * ca).b);
+  vec3 glow = textureLod(uTex, tc, 3.0).rgb * 0.5 + textureLod(uTex, tc, 5.0).rgb * 0.3 + textureLod(uTex, tc, 7.0).rgb * 0.2;
+  col += glow * uBloom;
+  col *= uExposure;
+  col = mix(col, uFadeCol, uFade);
+  col = aces(col);
+  float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col += vec3(-0.012, 0.0, 0.02) * (1.0 - l) + vec3(0.02, 0.008, -0.015) * l;   // cool shadows, warm highlights
+  vec2 vc = dc * vec2(uOutRes.x / uOutRes.y, 1.0);
+  col *= 1.0 - 0.45 * smoothstep(0.35, 1.0, length(vc));
+  col = pow(max(col, 0.0), vec3(1.0 / 2.2));
+  col += (hash12(gl_FragCoord.xy + fract(uTime * 7.13) * 431.0) - 0.5) * uGrain;
+  outColor = vec4(col, 1.0);
+}`;
+
+// ============================================================== renderer ===
+
+const canvas = $('gl');
+
+// one formula's uniforms, with the Mandelbox's derived constants worked out once
+function fracUniforms(name, f) {
+  const k = f.S / f.mr2;
+  return {
+    [name + '.kind']: f.kind, [name + '.iters']: f.iters,
+    [name + '.mbK']: [k, k, k, Math.abs(f.S) / f.mr2], [name + '.mbMinR2']: f.mr2,
+    [name + '.mbC1']: Math.abs(f.S - 1), [name + '.mbC2']: Math.pow(Math.abs(f.S), 1 - f.iters),
+    [name + '.apS']: f.apS, [name + '.apR']: f.apR, [name + '.lvl']: f.lvl, [name + '.rot']: f.rot,
+    [name + '.sig']: f.sig, [name + '.tr']: f.tr,
+  };
+}
+
+// Resolution scale. With GPU timer queries it steers on the GPU's own time
+// per frame (target 8-13 ms); without, on the frame interval, which a
+// throttled or hidden window can fool.
+const quality = {
+  current: S.quality, ema: 16.7, gpu: 0, next: 0, block: 9, blockUntil: 0,
+  update(dtMs, now) {
+    this.ema += (dtMs - this.ema) * 0.05;
+    const max = S.quality;
+    if (!S.autoQ) { this.current = max; return; }
+    if (this.current > max) this.current = max;
+    if (now < this.next) return;
+    this.next = now + 1;
+    const ms = this.gpu || this.ema, slow = this.gpu ? 13 : 25, fast = this.gpu ? 8 : 18.5;
+    if (ms > slow && this.current > 0.25) {
+      // too slow: step down, and don't try this level again for a while
+      this.block = this.current;
+      this.blockUntil = now + 30;
+      this.current = Math.max(0.25, Math.round((this.current - (ms > slow * 1.6 ? 0.1 : 0.05)) * 20) / 20);
+    } else if (ms < fast && this.current < max) {
+      const up = Math.round((this.current + 0.05) * 20) / 20;
+      if (!(up >= this.block && now < this.blockUntil)) { this.current = up; this.next = now + 2; }
+    }
+  },
+  gpuSample(ms) { this.gpu = this.gpu ? this.gpu + (ms - this.gpu) * 0.1 : ms; },
+};
+
+const renderer = {
+  gl: null, rt: null, pp: 0, frame: 0, histOk: false, prev: null,
+
+  init() {
+    const gl = this.gl = canvas.getContext('webgl2', {
+      antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'high-performance',
+    });
+    if (!gl) throw new Error('This browser has no WebGL2.');
+    this.half = !!gl.getExtension('EXT_color_buffer_float');
+    this.timer = gl.getExtension('EXT_disjoint_timer_query_webgl2');
+    this.queries = [];
+    this.progs = { scene: this.program(FS_SCENE), taa: this.program(FS_TAA), dof: this.program(FS_DOF), out: this.program(FS_OUT) };
+    this.vao = gl.createVertexArray();
+  },
+  program(fs) {
+    const gl = this.gl, p = gl.createProgram();
+    for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        const lines = src.split('\n').map((l, i) => String(i + 1).padStart(3) + '  ' + l).join('\n');
+        throw new Error(gl.getShaderInfoLog(sh) + '\n' + lines);
+      }
+      gl.attachShader(p, sh);
+    }
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {};
+    const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) {
+      const info = gl.getActiveUniform(p, i);
+      u[info.name.replace(/\[0\]$/, '')] = { loc: gl.getUniformLocation(p, info.name), type: info.type, size: info.size };
+    }
+    return { p, u };
+  },
+  set(P, name, v) {
+    const gl = this.gl, u = P.u[name];
+    if (!u) return;                        // optimised away
+    switch (u.type) {
+      case gl.FLOAT: gl.uniform1f(u.loc, v); break;
+      case gl.FLOAT_VEC2: gl.uniform2fv(u.loc, v); break;
+      case gl.FLOAT_VEC3: gl.uniform3fv(u.loc, v); break;
+      case gl.FLOAT_VEC4: gl.uniform4fv(u.loc, v); break;
+      case gl.FLOAT_MAT3: gl.uniformMatrix3fv(u.loc, false, v); break;
+      default: gl.uniform1i(u.loc, v);      // int, bool, sampler
+    }
+  },
+  setAll(P, obj) { for (const k in obj) this.set(P, k, obj[k]); },
+  bind(unit, tex) {
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+  },
+  alloc(w, h) {
+    const gl = this.gl;
+    if (this.rt) for (const t of [this.rt.scene, ...this.rt.hist, this.rt.dof]) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fb); }
+    const make = mip => {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      if (this.half) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+      else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      if (mip) gl.generateMipmap(gl.TEXTURE_2D);
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      return { tex, fb };
+    };
+    this.rt = { w, h, scene: make(false), hist: [make(false), make(false)], dof: make(true) };
+    this.histOk = false;
+  },
+  render(R, now) {
+    const gl = this.gl;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cw = Math.round(innerWidth * dpr), ch = Math.round(innerHeight * dpr);
+    if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
+    const w = Math.max(64, Math.round(cw * quality.current)), h = Math.max(36, Math.round(ch * quality.current));
+    if (!this.rt || this.rt.w !== w || this.rt.h !== h) this.alloc(w, h);
+    this.frame++;
+
+    const sc = director.scene(), s = pilot.scale;
+    const cam = pilot.camera(R.roll), fl = 1 / Math.tan(R.fov / 2);
+    // haze is set by what the camera looks at, not by how close the walls are
+    const view = Math.max(pilot.focus, s * 3);
+    const tmax = Math.max(s * sc.tmax, view * 10);
+    const j = (this.frame % 16) + 1;
+    const fl8 = flies.pack(R.flies);
+    gl.bindVertexArray(this.vao);
+
+    // GPU time per frame, read back a few frames late
+    const T = this.timer;
+    let query = null;
+    if (T) {
+      while (this.queries.length && gl.getQueryParameter(this.queries[0], gl.QUERY_RESULT_AVAILABLE)) {
+        const q = this.queries.shift();
+        if (!gl.getParameter(T.GPU_DISJOINT_EXT)) quality.gpuSample(gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6);
+        gl.deleteQuery(q);
+      }
+      if (this.queries.length < 4) { query = gl.createQuery(); gl.beginQuery(T.TIME_ELAPSED_EXT, query); }
+    }
+
+    // 1. ray-march the fractal
+    let P = this.progs.scene;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.rt.scene.fb);
+    gl.viewport(0, 0, w, h);
+    gl.useProgram(P.p);
+    this.setAll(P, {
+      uRes: [w, h], uJitter: [halton(j, 2) - 0.5, halton(j, 3) - 0.5], uFrame: this.frame,
+      uCamPos: cam.pos, uCamRt: cam.rt, uCamUp: cam.up, uCamFw: cam.fw, uFl: fl, uTMax: tmax, uSteps: 160,
+      ...fracUniforms('uFA', FA), ...fracUniforms('uFB', FB), uMixW: FW, uLodRef: LOD.ref, uLodGrow: LOD.grow,
+      uScale: s, uView: view, uFill: sc.fill, uGloss: sc.gloss || 0, uAlbA: sc.albA, uAlbB: sc.albB, uAlbC: sc.albC, uTrapK: sc.trapK,
+      uKeyDir: v3.norm(sc.keyDir), uKeyCol: R.key, uShadow: sc.shadow, uAmb: sc.amb,
+      uSkyLo: sc.skyLo, uSkyHi: sc.skyHi, uFogCol: sc.fogCol, uFogDen: R.fog / view,
+      uCorePos: pilot.core, uCoreCol: R.core,
+      uFlyPos: fl8.pos, uFlyCol: fl8.col, uFlyN: fl8.n,
+    });
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // 2. accumulate over time
+    const src = this.rt.hist[this.pp], dst = this.rt.hist[1 - this.pp];
+    this.pp = 1 - this.pp;
+    P = this.progs.taa;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb);
+    gl.useProgram(P.p);
+    this.bind(0, this.rt.scene.tex);
+    this.bind(1, src.tex);
+    const pc = this.prev || { pos: cam.pos, rt: cam.rt, up: cam.up, fw: cam.fw, fl };
+    this.setAll(P, {
+      uCur: 0, uHist: 1, uRes: [w, h],
+      uCamPos: cam.pos, uCamRt: cam.rt, uCamUp: cam.up, uCamFw: cam.fw, uFl: fl,
+      uPCamPos: pc.pos, uPCamRt: pc.rt, uPCamUp: pc.up, uPCamFw: pc.fw, uPFl: pc.fl,
+      uTMax: tmax, uBlend: 0.86, uValid: this.histOk ? 1 : 0,
+    });
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    this.prev = { pos: cam.pos, rt: cam.rt, up: cam.up, fw: cam.fw, fl };
+    this.histOk = true;
+
+    // 3. depth of field
+    P = this.progs.dof;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.rt.dof.fb);
+    gl.useProgram(P.p);
+    this.bind(0, dst.tex);
+    this.setAll(P, {
+      uTex: 0, uRes: [w, h], uTMax: tmax, uFocus: pilot.focus,
+      uAperture: S.dof * 1.4, uMaxBlur: Math.max(1, h * 0.024 * S.dof),
+    });
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    this.bind(0, this.rt.dof.tex);
+    gl.generateMipmap(gl.TEXTURE_2D);
+
+    // 4. tone map and grade to the screen
+    P = this.progs.out;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, cw, ch);
+    gl.useProgram(P.p);
+    this.setAll(P, {
+      uTex: 0, uOutRes: [cw, ch], uExposure: R.exposure, uTime: now, uBloom: 0.08, uGrain: 0.035,
+      uFade: R.fade || 0, uFadeCol: sc.fogCol,
+    });
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    if (query) { gl.endQuery(T.TIME_ELAPSED_EXT); this.queries.push(query); }
+  },
+};
+
+// ===================================================================== ui ===
+
+const ui = {
+  init() {
+    for (const b of $('src').querySelectorAll('button')) {
+      b.onclick = () => audio.use(b.dataset.v).catch(e => toast(e.message));
+    }
+    $('device').onchange = e => { S.deviceId = e.target.value; save(); if (audio.kind === 'input') audio.use('input'); };
+    $('kick2').checked = S.kick2;
+    $('kick2').onchange = e => { S.kick2 = e.target.checked; save(); if (audio.kind === 'input') audio.use('input'); };
+    $('testMon').checked = S.testMon;
+    $('testMon').onchange = e => { S.testMon = e.target.checked; save(); audio.setMonitor(); };
+    $('file').onchange = e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const el = $('player');
+      if (el.src) URL.revokeObjectURL(el.src);
+      el.src = URL.createObjectURL(f);
+      audio.use('file');
+    };
+    $('player').onplay = () => { if (audio.kind !== 'file') audio.use('file'); };
+
+    $('serial').onclick = () => serial.connected ? serial.disconnect() : serial.connect();
+    $('bpm').value = S.bpm;
+    $('bpm').onchange = e => clock.setBpm(+e.target.value);
+    $('tap').onclick = () => clock.tap(performance.now() / 1000);
+    $('bar1').onclick = () => clock.downbeat(performance.now() / 1000);
+
+    SCENES.forEach((sc, i) => {
+      const b = document.createElement('button');
+      b.textContent = sc.name;
+      b.onclick = () => director.go(i);
+      $('scene').append(b);
+    });
+    for (const b of $('motion').querySelectorAll('button')) {
+      b.onclick = () => {
+        if (S.motion === b.dataset.v) return;
+        S.motion = b.dataset.v;
+        save();
+        pilot.reset(director.scene());
+        renderer.histOk = false;
+        this.sync();
+      };
+    }
+    $('flow').checked = S.flow;
+    $('flow').onchange = e => { S.flow = e.target.checked; save(); };
+
+    for (const [key, label, min, max, step] of SLIDERS) {
+      const row = document.createElement('div');
+      row.className = 'slider';
+      row.innerHTML = `<span>${label}</span><input type="range" min="${min}" max="${max}" step="${step}"><span></span>`;
+      const input = row.children[1], out = row.children[2];
+      input.value = S[key];
+      out.textContent = (+S[key]).toFixed(2);
+      input.oninput = () => { S[key] = +input.value; out.textContent = (+S[key]).toFixed(2); save(); };
+      $('sliders').append(row);
+    }
+    $('autoQ').checked = S.autoQ;
+    $('autoQ').onchange = e => { S.autoQ = e.target.checked; save(); };
+
+    addEventListener('keydown', e => {
+      if (e.target.closest('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+      const now = performance.now() / 1000, k = e.key.toLowerCase();
+      if (k === 'h') $('panel').classList.toggle('hidden');
+      else if (k === 'f') this.fullscreen();
+      else if (k === ' ') { e.preventDefault(); clock.downbeat(now); }
+      else if (k === 't') clock.tap(now);
+      else if (k === 'n') director.go((director.cur.i + 1) % SCENES.length);
+      else if (k >= '1' && k <= String(SCENES.length)) director.go(+k - 1);
+    });
+    canvas.addEventListener('dblclick', () => this.fullscreen());
+
+    // hide the cursor over the visuals when the panel is hidden and the mouse rests
+    let idle = 0;
+    addEventListener('mousemove', () => {
+      document.body.classList.remove('idle');
+      clearTimeout(idle);
+      idle = setTimeout(() => { if ($('panel').classList.contains('hidden')) document.body.classList.add('idle'); }, 2500);
+    });
+    if (!('serial' in navigator)) $('serial').title = 'Needs Chrome or Edge';
+    this.sync();
+  },
+  fullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => {});
+  },
+  sync() {
+    for (const b of $('src').querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === audio.kind);
+    for (const k of ['input', 'file', 'test']) $('opt-' + k).classList.toggle('show', audio.kind === k);
+    for (const b of $('motion').querySelectorAll('button')) b.classList.toggle('on', b.dataset.v === S.motion);
+    $('serial').textContent = serial.connected ? 'Disconnect Meowsic' : 'Connect Meowsic (USB)';
+    $('serial').classList.toggle('on', serial.connected);
+    [...$('scene').children].forEach((b, i) => b.classList.toggle('on', director.cur && i === director.cur.i));
+  },
+  frame(e, ck, dtMs) {
+    $('m-bass').style.width = (e.bass * 100).toFixed(1) + '%';
+    $('m-mid').style.width = (e.mid * 100).toFixed(1) + '%';
+    $('m-high').style.width = (e.high * 100).toFixed(1) + '%';
+    const lamp = (id, v) => { $(id).style.background = `rgba(240, 180, 110, ${0.1 + 0.9 * clamp(v, 0, 1)})`; };
+    lamp('l-kick', e.kick);
+    lamp('l-snap', e.snap);
+    lamp('l-note', e.note);
+    const bi = ((ck.beat % 4) + 4) % 4;
+    [...$('beats').children].forEach((el, i) => el.classList.toggle('on', ck.running && i === bi));
+    $('barNo').textContent = `bar ${ck.bar + 1}`;
+    const src = { midi: 'MIDI clock ' + clock.midiBpm.toFixed(1), test: 'test pattern', internal: 'internal' }[clock.mode];
+    $('clockSrc').textContent = src;
+    if (clock.mode === 'midi' && document.activeElement !== $('bpm')) $('bpm').value = clock.midiBpm.toFixed(1);
+    this.t = (this.t || 0) + dtMs;
+    if (this.t > 500) {
+      this.t = 0;
+      const r = renderer.rt;
+      const gpu = quality.gpu ? ` · gpu ${quality.gpu.toFixed(1)} ms` : '';
+      $('fps').textContent = `${(1000 / quality.ema).toFixed(0)} fps${gpu} · ${r ? r.w + '×' + r.h : ''}`;
+    }
+  },
+};
+
+// =================================================================== main ===
+
+let lastMs = performance.now();
+
+function loop(ms) {
+  requestAnimationFrame(loop);
+  const dtMs = clamp(ms - lastMs, 0, 100);
+  lastMs = ms;
+  const dt = dtMs / 1000, now = ms / 1000;
+  quality.update(dtMs, now);
+  const f = analysis.update(dt, now);
+  const ck = clock.update(now);
+  const R = director.update(dt, now, f, ck);
+  pilot.update(dt, R.speedK, director.scene());
+  flies.update(dt);
+  renderer.render(R, now);
+  ui.frame(director.e, ck, dtMs);
+}
+
+try {
+  renderer.init();
+  ui.init();
+  director.cur = director.form(clamp(S.scene | 0, 0, SCENES.length - 1));
+  director.applyFractal(0);
+  pilot.reset(director.scene());
+  requestAnimationFrame(loop);
+} catch (e) {
+  showErr(e.message);
+}
+
+// for poking at it from the console
+window.fc = { S, FA, FB, SCENES, pilot, director, clock, audio, analysis, renderer, serial, midi, flies, de, quality };
+</script>
+</body>
+</html>

@@ -48,7 +48,7 @@ as now, so the toy's latency is unchanged.
 | catface | cat sound | **unchanged**, and recorded into the loop | **toy notes** on / off — the toy stops playing notes (keys, MIDI, arp, loops) and only its buttons still reach it; the jacks and MIDI carry on. Hold the cat's face to hush the cat |
 | STOP | stops rhythm / song | **stop the loop**, and STOP tapped into the toy | **panic** — notes off everywhere, tap queue flushed, gates low |
 | record | the toy's recorder | empty → **record** · recording → play · playing → **overdub** · overdubbing → play | **undo** the newest overdub |
-| play | the toy's playback | **play / stop** the loop | **clear** the loop (only while stopped) |
+| play | the toy's playback | **play / stop** the loop | **clear** the loop — from any state, stopping it first; the LED flashes red |
 | rock | rhythm | **next rhythm**: rock → blues → samba → techno → disco → rock … tapped into the toy | stop the rhythm (STOP into the toy; the loop keeps going) |
 | blues | rhythm | **quantise loop** on / off | **gate mode**: retrigger / legato |
 | samba | rhythm | **quantise pitch** on / off | **glide**: off / short / long |
@@ -115,11 +115,15 @@ the toy's own buttons. Only its recorder is gone, replaced by the looper.
   only for the AUX *per bar* rate and the LED's beat-1 flash, counted from
   beat 1 of the loop, where a wrong assumption is harmless.
 - **Overdub**: record while playing. Each pass is a layer; long record undoes
-  the newest layer, and can be repeated down to the first pass. A note held
-  across the end of a pass is closed on its last tick and reopened on the
-  first tick of the next, in the next layer; a key still down when the
-  recording closes keeps recording until it comes up. So every note-on has
-  its note-off in its own layer and undo never leaves a note hanging.
+  the newest layer, and can be repeated down to the first pass. While the
+  recording runs on into the next pass, a note held across the end is closed
+  on the last tick and reopened on the first tick of the next, in the next
+  layer. So every note-on has its note-off in its own layer and undo never
+  leaves a note hanging.
+- A key still down when the recording **closes** — the usual way to record a
+  bass note that lasts the whole loop — ends with the pass: note-on where it
+  was pressed, note-off on the last tick, and the key is finished with. Its
+  release records nothing, and the pass is not re-closed on later laps.
 - **Quantise loop** is a live toggle: on = every event plays at its nearest
   16th; off = as recorded. Events keep their raw ticks, so it can be flipped
   while the loop runs and flipped back; the flip takes effect from the next

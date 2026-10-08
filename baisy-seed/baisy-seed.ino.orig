@@ -1,0 +1,1198 @@
+#include <DaisyDuino.h>
+#include <Wire.h>
+#include <U8g2lib.h>
+#include <math.h>
+// #include <CpuLoadMeter.h>
+
+// Module Layout
+
+// A2  -  A1  -  A0
+// A5  -  A4  -  A3
+// A8  -  A7  -  A6
+//
+// A11 -  A10 -  A9
+// D14 -  O0  -  O1
+
+// ===== Pin Mapping =====
+#define PIN_WT     A2
+#define PIN_SUB    A1
+#define PIN_ENV    A0
+#define PIN_CUT    A5
+#define PIN_RES    A4
+#define PIN_DRV    A3
+#define PIN_LFO    A8
+#define PIN_FM     A7
+#define PIN_DETUNE A6
+
+
+#define PIN_1VOCT  A11
+#define PIN_CV_1   A10
+#define PIN_CV_2   A9
+
+#define PIN_GATE   D5
+
+#define PIN_ENC_1_CW D13
+#define PIN_ENC_1_CCW D14
+#define PIN_ENC_1_SW D8
+#define PIN_ENC_2_CW D7
+#define PIN_ENC_2_CCW D6
+#define PIN_ENC_2_SW D9
+
+#define OLED_SCL D11
+#define OLED_SDA D12
+
+// I2C constructor for SSD1306 128x64
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, OLED_SCL, OLED_SDA);
+
+DaisyHardware hw;
+// CpuLoadMeter cpuMeter;
+
+Encoder enc1;
+Encoder enc2;
+
+// DSP objects
+Oscillator osc;
+Oscillator detuneOscUp;
+Oscillator detuneOscDown;
+
+Oscillator subOsc;
+MoogLadder filter;
+Adsr env;
+Oscillator lfo;
+
+Svf svf;
+
+float lfoOut = 0.0f;
+
+float samplerate;
+
+// Menu stuff
+#define MENU_REFRESH_MS 250
+#define MENU_VISIBLE 3
+
+int menuIndex = 0;
+int menuScroll = 0;
+
+// Trigger a display update after the loop
+bool shouldUpdateDisplay = true;
+long lastDisplayUpdate = 0;
+
+enum MenuState {
+  SHOW_PARAMETERS = 0,
+  SHOW_KNOBS = 1,
+  SHOW_SETTINGS
+};
+
+enum LfoTarget {
+  LFO_TARGET_PITCH = 0,
+  LFO_TARGET_CUTOFF,
+  LFO_TARGET_AMP,
+  LFO_TARGET_WAVETABLE,
+  LFO_TARGET_COUNT
+};
+
+enum FilterMode {
+  FILTER_MOOG_LP = 0,
+  FILTER_SVF_LP,
+  FILTER_SVF_HP,
+  FILTER_SVF_BP,
+  FILTER_SVF_NOTCH,
+  FILTER_MODE_COUNT
+};
+
+enum DistortionType {
+  DIST_SOFT = 0,
+  DIST_HARD,
+  DIST_FOLD,
+  DIST_BIT,
+  DIST_TYPE_COUNT
+};
+
+enum WtBank {
+  WT_BANK_BASIC = 0,
+  WT_BANK_COUNT
+  // Add more banks here as wavetables are added
+};
+
+const char* lfoTargetNames[LFO_TARGET_COUNT] = {
+  "Pitch",
+  "Cutoff",
+  "Amp",
+  "Wavetable"
+};
+
+const char* filterModeNames[FILTER_MODE_COUNT] = {
+  "Moog LP",
+  "SVF LP",
+  "SVF HP",
+  "SVF BP",
+  "SVF Notch"
+};
+
+const char* distortionNames[DIST_TYPE_COUNT] = {
+  "Soft",
+  "Hard",
+  "Fold",
+  "Bit"
+};
+
+enum CvTarget {
+  CV_TARGET_PITCH = 0,
+  CV_TARGET_CUTOFF,
+  CV_TARGET_AMP,
+  CV_TARGET_FM,
+  CV_TARGET_COUNT
+};
+
+const char* cvTargetNames[CV_TARGET_COUNT] = {
+  "Pitch",
+  "Cutoff",
+  "Amp",
+  "FM"
+};
+
+MenuState menuState = SHOW_PARAMETERS;
+
+enum MenuParameters {
+  BASE_NOTE = 0,
+  ENV_ATT,
+  ENV_DEC,
+  ENV_SUS,
+  ENV_REL,
+  GLIDE,
+  LFO_SHAPE,
+  LFO_TARGET,
+  FILTER_MODE,
+  DISTORT_TYPE,
+  WT_BANK,
+  CV_1_TARGET,
+  CV_2_TARGET,
+  PARAMETER_COUNT
+};
+
+const char* parameterLabels[PARAMETER_COUNT] = {
+  "Base Note",
+  "Envelope Attack",
+  "Envelope Decay",
+  "Envelope Sustain",
+  "Envelope Release",
+  "Glide",
+  "LFO Shape",
+  "LFO Target",
+  "Filter Mode",
+  "Distortion Type",
+  "Wavetable Bank",
+  "CV 1 Target",
+  "CV 2 Target"
+};
+
+enum MenuKnobs {
+  KNOB_WAVETABLE = 0,
+  KNOB_SUB,
+  KNOB_ENV_AMT,
+  KNOB_CUTOFF,
+  KNOB_RESONANCE,
+  KNOB_DRIVE,
+  KNOB_LFO_RATE,
+  KNOB_FM,
+  KNOB_DETUNE,
+  IN_1VOCT,
+  IN_CV_1,
+  IN_CV_2,
+  IN_GATE,
+  KNOB_COUNT
+};
+
+const char* knobLabels[KNOB_COUNT] = {
+  "Wavetable",
+  "Sub Amount",
+  "Envelope Amount",
+  "Filter Cutoff",
+  "Filter Resonance",
+  "Drive",
+  "LFO Rate",
+  "FM Amount",
+  "Detune",
+  "1 V/Oct Input",
+  "CV 1 Input",
+  "CV 2 Input",
+  "Gate Input"
+};
+
+enum MenuSettings {
+  SETTINGS_CAL_VOCT = 0,
+  SETTINGS_CAL_CV1,
+  SETTINGS_CAL_CV2,
+  SETTINGS_BRIGHTNESS,
+  SETTINGS_SAVE,
+  SETTINGS_LOAD,
+  SETTINGS_FACTORY_RESET,
+  SETTINGS_COUNT
+};
+
+const char* settingsLabels[SETTINGS_COUNT] = {
+  "Cal 1V/Oct",
+  "Cal CV 1",
+  "Cal CV 2",
+  "Brightness",
+  "Save State",
+  "Load State",
+  "Factory Reset"
+};
+
+enum CalibrationState {
+  CAL_IDLE = 0,
+  CAL_STEP1_PATCH,   // Prompt user to patch low voltage
+  CAL_STEP1_HOLD,    // Waiting for confirmation, sampling ADC
+  CAL_STEP2_PATCH,   // Prompt user to patch high voltage
+  CAL_STEP2_HOLD,    // Waiting for confirmation, sampling ADC
+  CAL_DONE,
+  CAL_CANCELLED
+};
+
+CalibrationState calState = CAL_IDLE;
+int calTarget = -1; // which input is being calibrated (SETTINGS_CAL_VOCT etc.)
+
+// Known reference voltages for two-point calibration
+#define CAL_LOW_VOLTAGE  1.0f
+#define CAL_HIGH_VOLTAGE 5.0f
+
+// Accumulator for averaging ADC readings during hold
+float calAccum = 0.0f;
+int calSamples = 0;
+#define CAL_SAMPLE_COUNT 512
+
+float calLowRaw = 0.0f;   // raw ADC reading at low reference
+float calHighRaw = 0.0f;  // raw ADC reading at high reference
+
+// Global calibration coefficients, derived from stored cal points
+float cal_voct_scale = 1.0f, cal_voct_offset = 0.0f;
+float cal_cv1_scale  = 1.0f, cal_cv1_offset  = 0.0f;
+float cal_cv2_scale  = 1.0f, cal_cv2_offset  = 0.0f;
+
+int displayBrightness = 255; // 0-255
+
+float smoothedVOct = 0.0f;
+float smoothedCV1 = 0.0f;
+float smoothedCV2 = 0.0f;
+
+float smoothedSemitones = 36.0f;
+float smoothedCutoff = 4000.0f;
+
+const char* noteNames[12] = {
+  "C","C#","D","D#","E","F",
+  "F#","G","G#","A","A#","B"
+};
+
+// CV input parameters
+volatile float v_oct, cv_1, cv_2;
+volatile bool gate = false;
+volatile uint8_t gateTriggerCount = 0;
+// Knob parameters
+volatile float wt, subLvl, envAmt, cutoffK, resK, driveK, lfoRate, FMAmt, detune;
+// Menu parameters
+volatile float envAtt, envDec, envSus, envRel, glideAmount;
+volatile int baseNote, lfoShape, lfoTarget, filterMode, distortionType, wtBank;
+// CV Targets
+volatile CvTarget cv1Target, cv2Target;
+
+// Bump whenever the struct changes
+#define SETTINGS_VERSION 4
+
+struct Settings {
+  uint32_t version;
+
+  int baseNote;
+  float envAtt;
+  float envDec;
+  float envSus;
+  float envRel;
+  float glideAmount;
+
+  int lfoShape;
+  int lfoTarget;
+  int filterMode;
+  int distortionType;
+  int wtBank;
+  int cv1Target;
+  int cv2Target;
+
+  // Two-point calibration: raw ADC low/high and known voltages
+  float cal_voct_low,  cal_voct_high;
+  float cal_cv1_low,   cal_cv1_high;
+  float cal_cv2_low,   cal_cv2_high;
+
+  int displayBrightness;
+
+  bool operator==(Settings &rhs) {
+    return baseNote  == rhs.baseNote  &&
+           envAtt  == rhs.envAtt  &&
+           envDec  == rhs.envDec  &&
+           envSus  == rhs.envSus  &&
+           envRel  == rhs.envRel  &&
+           lfoShape  == rhs.lfoShape  &&
+           filterMode  == rhs.filterMode  &&
+           distortionType  == rhs.distortionType  &&
+           wtBank  == rhs.wtBank  &&
+           cv1Target  == rhs.cv1Target  &&
+           cv2Target  == rhs.cv2Target &&
+           cal_voct_low  == rhs.cal_voct_low  &&
+           cal_voct_high  == rhs.cal_voct_high  &&
+           cal_cv1_low  == rhs.cal_cv1_low  &&
+           cal_cv1_high  == rhs.cal_cv1_high  &&
+           cal_cv2_low  == rhs.cal_cv2_low  &&
+           cal_cv2_high  == rhs.cal_cv2_high  &&
+           displayBrightness  == rhs.displayBrightness;
+  }
+  bool operator!=(Settings &rhs) { return !this->operator==(rhs); }
+};
+
+// QSPI pin config for Daisy Seed
+#define PIN_QSPI_CLK dsy_pin(DSY_GPIOF, 10)
+#define PIN_QSPI_IO0 dsy_pin(DSY_GPIOF, 8)
+#define PIN_QSPI_IO1 dsy_pin(DSY_GPIOF, 9)
+#define PIN_QSPI_IO2 dsy_pin(DSY_GPIOF, 7)
+#define PIN_QSPI_IO3 dsy_pin(DSY_GPIOF, 6)
+#define PIN_QSPI_NCS dsy_pin(DSY_GPIOG, 6)
+
+QSPIHandle qspi;
+PersistentStorage<Settings> storage(qspi);
+
+// ===== Audio Callback =====
+void AudioCallback(float **in, float **out, size_t size)
+{
+  // Freezes everything :(
+  // cpuMeter.OnBlockStart();
+  
+  for (size_t i = 0; i < size; i++)
+  {
+    // ===== Gate edge detection =====
+    if (gateTriggerCount > 0) {
+        env.Retrigger(false);
+        lfo.Reset();
+        gateTriggerCount--;
+    }
+
+    float envOut = env.Process(gate);
+
+    // ===== LFO =====
+    // Update shape from parameter
+    lfoOut = lfo.Process(); // -1 to +1
+
+    // ===== Pitch Calculation =====
+    // 1V/oct: each volt = 12 semitones
+    // baseNote is the MIDI note at 0V
+    float semitones = (float)baseNote + (v_oct * 12.0f);
+
+    if (cv1Target == CV_TARGET_PITCH) semitones += cv_1;
+    if (cv2Target == CV_TARGET_PITCH) semitones += cv_2;
+
+    semitones = fclamp(semitones, 0.0f, 127.0f);
+    if (lfoTarget == LFO_TARGET_PITCH)
+      semitones += lfoOut * lfoRate * 12.0f; // depth via lfoRate, ±1 octave max
+    
+    // Glide
+    float coeff = (glideAmount < 0.001f) ? 1.0f : (1.0f - glideAmount * 0.9999f);
+    fonepole(smoothedSemitones, semitones, coeff);
+    float freq = mtof(smoothedSemitones);
+
+    // Detune: knob 0-1 maps to 0-50 cents spread
+    // Up osc is +cents, down osc is -cents, main stays centred
+    float detuneCents = detune * 50.0f;
+
+    float freqUp   = mtof(semitones + detuneCents / 100.0f);
+    float freqDown = mtof(semitones - detuneCents / 100.0f);
+    
+    osc.SetFreq(freq);
+    subOsc.SetFreq(freq * 0.5f);
+    detuneOscUp.SetFreq(freqUp);
+    detuneOscDown.SetFreq(freqDown);
+
+    // ===== Wavetable Shape =====
+    float wtMod = wt;
+    if (lfoTarget == LFO_TARGET_WAVETABLE)
+      wtMod = fclamp(wt + lfoOut * 0.5f, 0.0f, 1.0f);
+
+    uint8_t wf;
+    if (wtMod < 0.25f)      wf = Oscillator::WAVE_SIN;
+    else if (wtMod < 0.5f)  wf = Oscillator::WAVE_TRI;
+    else if (wtMod < 0.75f) wf = Oscillator::WAVE_SAW;
+    else                    wf = Oscillator::WAVE_SQUARE;
+
+    osc.SetWaveform(wf);
+    detuneOscUp.SetWaveform(wf);
+    detuneOscDown.SetWaveform(wf);
+
+    // ===== Osc Mix =====
+    float subSample  = subOsc.Process();
+    float fmDepth = FMAmt;
+
+    if (cv1Target == CV_TARGET_FM) fmDepth = fclamp(FMAmt + cv_1 / 10.0f, 0.0f, 1.0f);
+    if (cv2Target == CV_TARGET_FM) fmDepth = fclamp(FMAmt + cv_2 / 10.0f, 0.0f, 1.0f);
+
+    float fmOffset = subSample * fmDepth * freq * 2.0f;
+    osc.SetFreq(fclamp(freq + fmOffset, 20.0f, 18000.0f));
+
+    float sig      = osc.Process();
+    float sigUp    = detuneOscUp.Process();
+    float sigDown  = detuneOscDown.Process();
+    float sub      = subSample * subLvl;
+
+    // detuneMix fades in the unison voices as knob moves from 0
+    // at detune=0 only main oscillator sounds, at detune=1 all three are equal
+    float detuneMix = detune;
+    float mix = (sig + (sigUp * detuneMix) + (sigDown * detuneMix) + sub) / (1.0f + detuneMix * 2.0f);
+
+    // ===== Drive =====
+    float drive = 1.0f + driveK * 30.0f;
+    mix *= drive;
+
+    switch(distortionType) {
+      case DIST_SOFT:
+        mix = daisysp::SoftClip(mix);
+        break;
+
+      case DIST_HARD: {
+        // Drive knob controls threshold: high drive = lower threshold = more clipping
+        float threshold = 1.0f - (driveK * 0.85f); // threshold range: 0.15 to 1.0
+        mix = fclamp(mix, -threshold, threshold);
+        mix /= threshold; // normalize back to -1/+1
+        break;
+      }
+
+      case DIST_FOLD: {
+        // Wavefolder: folds signal back when it exceeds threshold
+        // Multiple folds possible at high drive
+        float folded = mix;
+        while (folded > 1.0f)  folded = 2.0f - folded;
+        while (folded < -1.0f) folded = -2.0f - folded;
+        mix = folded;
+        break;
+      }
+
+      case DIST_BIT: {
+        int bits = constrain((int)(16.0f - driveK * 14.0f), 2, 16);
+        float levels = powf(2.0f, bits);
+        mix = roundf(mix * levels) / levels;
+        break;
+      }
+    }
+
+    // ===== Filter =====
+    fonepole(smoothedCutoff, fmap(cutoffK, 20.0f, 18000.0f, Mapping::EXP), 0.01f);
+
+    float envMod = envOut * envAmt * 4000.0f;
+
+    float lfoMod = 0.0f;
+    if (lfoTarget == LFO_TARGET_CUTOFF)
+      lfoMod = lfoOut * 2000.0f; // ±2000Hz
+
+    float cvCutoffMod = 0.0f;
+    if (cv1Target == CV_TARGET_CUTOFF) cvCutoffMod += cv_1 / 10.0f * 9000.0f;
+    if (cv2Target == CV_TARGET_CUTOFF) cvCutoffMod += cv_2 / 10.0f * 9000.0f;
+
+    float cutoff = fclamp(smoothedCutoff + envMod + lfoMod + cvCutoffMod, 20.0f, 18000.0f);
+    float filtered;
+
+    switch(filterMode) {
+      case FILTER_MOOG_LP:
+        filter.SetFreq(cutoff);
+        filter.SetRes(resK * 0.9f);
+        filtered = filter.Process(mix);
+        break;
+
+      case FILTER_SVF_LP:
+      case FILTER_SVF_HP:
+      case FILTER_SVF_BP:
+      case FILTER_SVF_NOTCH:
+        svf.SetFreq(fclamp(cutoff, 20.0f, 16000.0f)); // tighter clamp for SVF stability
+        svf.SetRes(fclamp(resK * 0.9f, 0.0f, 0.95f));
+        svf.Process(mix); // SVF processes once then exposes all outputs
+        switch(filterMode) {
+          case FILTER_SVF_LP:    filtered = svf.Low();   break;
+          case FILTER_SVF_HP:    filtered = svf.High();  break;
+          case FILTER_SVF_BP:    filtered = svf.Band();  break;
+          case FILTER_SVF_NOTCH: filtered = svf.Notch(); break;
+          default:               filtered = svf.Low();   break;
+        }
+        break;
+
+      default:
+        filtered = mix;
+        break;
+    }
+
+    // ===== VCA =====
+    float ampMod = 1.0f;
+    if (lfoTarget == LFO_TARGET_AMP)
+      ampMod = fclamp(0.5f + lfoOut * 0.5f, 0.0f, 1.0f);
+
+    // CV VCA — 0V or negative = silence, +10V = unity
+    if (cv1Target == CV_TARGET_AMP) ampMod *= fclamp(cv_1 / 10.0f, 0.0f, 1.0f);
+    if (cv2Target == CV_TARGET_AMP) ampMod *= fclamp(cv_2 / 10.0f, 0.0f, 1.0f);
+
+    float outSig = filtered* envOut * ampMod;
+    
+    if (isnan(outSig) || isinf(outSig)) outSig = 0.0f;
+
+    out[0][i] = outSig;
+    out[1][i] = outSig;
+  }
+  
+  // cpuMeter.OnBlockEnd();
+}
+
+void setup()
+{
+  Serial.begin(9600);
+  // while (!Serial) {}
+
+  Wire.begin();
+  u8g2.begin(); 
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_6x12_tr);
+  u8g2.drawStr(0, 20, "BOOT OK");
+  u8g2.sendBuffer();
+  
+  delay(2000);
+
+  hw = DAISY.init(DAISY_SEED, AUDIO_SR_48K);
+  samplerate = DAISY.get_samplerate();
+
+  // Gate input
+  pinMode(PIN_GATE, INPUT_PULLDOWN);
+
+  // Encoders
+  enc1.Init(100.0f, PIN_ENC_1_CW, PIN_ENC_1_CCW, PIN_ENC_1_SW, INPUT_PULLUP, INPUT_PULLUP, INPUT_PULLUP);
+  enc2.Init(100.0f, PIN_ENC_2_CW, PIN_ENC_2_CCW, PIN_ENC_2_SW, INPUT_PULLUP, INPUT_PULLUP, INPUT_PULLUP);
+
+  // Oscillator
+  osc.Init(samplerate);
+  osc.SetAmp(0.8f);
+  osc.SetWaveform(Oscillator::WAVE_SIN);
+  osc.SetFreq(250.0f);
+  detuneOscUp.Init(samplerate);
+  detuneOscUp.SetAmp(0.8f);
+  detuneOscUp.SetWaveform(Oscillator::WAVE_SIN);
+  detuneOscUp.SetFreq(250.0f);
+
+  detuneOscDown.Init(samplerate);
+  detuneOscDown.SetAmp(0.8f);
+  detuneOscDown.SetWaveform(Oscillator::WAVE_SIN);
+  detuneOscDown.SetFreq(250.0f);
+
+  subOsc.Init(samplerate);
+  subOsc.SetWaveform(Oscillator::WAVE_SIN);
+  subOsc.SetAmp(1.0f);
+
+  // Filter
+  filter.Init(samplerate);
+  
+  svf.Init(samplerate);
+  svf.SetFreq(4000.0f);
+  svf.SetRes(0.0f);
+
+  // Envelope
+  env.Init(samplerate);
+  env.SetTime(ADSR_SEG_ATTACK, 0.1f);
+  env.SetTime(ADSR_SEG_DECAY, 0.1f);
+  env.SetTime(ADSR_SEG_RELEASE, 0.2f);
+  env.SetSustainLevel(0.7f);
+
+  lfo.Init(samplerate);
+  lfo.SetAmp(1.0f);
+  lfo.SetFreq(1.0f);
+  lfo.SetWaveform(Oscillator::WAVE_SIN);
+
+  initStorage();
+  loadSettings();
+
+  u8g2.setFont(u8g2_font_ncenB08_tr);
+  u8g2.clearBuffer();
+
+  DAISY.begin(AudioCallback);
+  // cpuMeter.Init(samplerate, DAISY.AudioBlockSize());
+  
+  delay(500);
+}
+
+void loop()
+{
+    readEncoders();
+    updateCalibration();
+
+    // ===== Read Controls =====
+    float rawVOct = applyCalibration(analogRead(PIN_1VOCT), cal_voct_scale, cal_voct_offset);
+    fonepole(smoothedVOct, rawVOct, 0.1f);
+    v_oct = smoothedVOct;
+    float rawCV1 = applyCalibration(analogRead(PIN_CV_1),  cal_cv1_scale,  cal_cv1_offset);
+    fonepole(smoothedCV1, rawCV1, 0.1f);
+    cv_1 = smoothedCV1;
+    float rawCV2 = applyCalibration(analogRead(PIN_CV_2),  cal_cv2_scale,  cal_cv2_offset);
+    fonepole(smoothedCV2, rawCV2, 0.1f);
+    cv_2 = smoothedCV2;
+
+    wt      = analogRead(PIN_WT)   / 1023.0f;
+    subLvl  = analogRead(PIN_SUB)  / 1023.0f;
+    envAmt  = analogRead(PIN_ENV)  / 1023.0f;
+
+    cutoffK = analogRead(PIN_CUT)  / 1023.0f;
+    resK    = analogRead(PIN_RES)  / 1023.0f;
+    driveK  = analogRead(PIN_DRV)  / 1023.0f;
+    
+    lfoRate  = analogRead(PIN_LFO)  / 1023.0f;
+    lfo.SetFreq(fmap(lfoRate, 0.01f, 20.0f, Mapping::EXP));
+    switch(lfoShape) {
+      case 0: lfo.SetWaveform(Oscillator::WAVE_SIN);    break;
+      case 1: lfo.SetWaveform(Oscillator::WAVE_TRI);    break;
+      case 2: lfo.SetWaveform(Oscillator::WAVE_SAW);    break;
+      case 3: lfo.SetWaveform(Oscillator::WAVE_SQUARE); break;
+    }
+
+    FMAmt  = analogRead(PIN_FM)  / 1023.0f;
+    detune  = analogRead(PIN_DETUNE)  / 1023.0f;
+
+
+    bool currentGate = digitalRead(PIN_GATE);
+    if (currentGate && !gate) {
+        gateTriggerCount++;  // increment, don't just set true
+    }
+    gate = currentGate;
+
+    static long lastKnobTrigger = 0;
+    if (millis() - lastKnobTrigger >= MENU_REFRESH_MS) {
+      triggerDisplayUpdate();
+      lastKnobTrigger = millis();
+    }
+    updateDisplay();
+}
+
+void readEncoders()
+{
+  enc1.Debounce();
+  enc2.Debounce();
+
+  // ===== Encoder 1 (Menu Select) =====
+  int a = enc1.Increment();
+  if (a != 0) {
+    menuIndex += a;
+
+    if(menuIndex < 0)
+        menuIndex = getMenuCount() - 1;
+
+    if(menuIndex >= getMenuCount())
+        menuIndex = 0;
+
+    // Adjust scroll window
+    if(menuIndex < menuScroll)
+        menuScroll = menuIndex;
+
+    if(menuIndex >= menuScroll + MENU_VISIBLE)
+        menuScroll = menuIndex - MENU_VISIBLE + 1;
+
+    triggerDisplayUpdate();
+  }
+
+  if (enc1.RisingEdge()) {
+    toggleMenuState();
+  }
+
+  // ===== Encoder 2 (Value Select) =====
+  int b = enc2.Increment();
+  
+  if (b != 0 && menuState == SHOW_PARAMETERS) {
+      
+    switch(menuIndex) {
+      case BASE_NOTE:
+        baseNote = fclamp(baseNote + b, 0, 50);
+        break;
+      case ENV_ATT:
+        envAtt = fclamp(envAtt + b * 0.01f, 0.001f, 10.0f);
+        env.SetTime(ADSR_SEG_ATTACK, envAtt);
+        break;
+      case ENV_DEC:
+        envDec = fclamp(envDec + b * 0.01f, 0.001f, 10.0f);
+        env.SetTime(ADSR_SEG_DECAY, envDec);
+        break;
+      case ENV_SUS:
+        envSus = fclamp(envSus + b * 0.01f, 0.0f, 1.0f);
+        env.SetSustainLevel(envSus);
+        break;
+      case ENV_REL:
+        envRel = fclamp(envRel + b * 0.01f, 0.001f, 10.0f);
+        env.SetTime(ADSR_SEG_RELEASE, envRel);
+        break;
+      case GLIDE:
+        glideAmount = fclamp(glideAmount + b * 0.01f, 0.0f, 1.0f);
+        break;
+      case LFO_SHAPE:
+        lfoShape = fclamp(lfoShape + b, 0, 3);
+        break;
+      case LFO_TARGET:
+        lfoTarget = constrain(lfoTarget + b, 0, LFO_TARGET_COUNT - 1);
+        break;
+      case FILTER_MODE:
+        filterMode = constrain(filterMode + b, 0, FILTER_MODE_COUNT - 1);
+        break;
+      case DISTORT_TYPE:
+        distortionType = constrain(distortionType + b, 0, DIST_TYPE_COUNT - 1);
+        break;
+      case WT_BANK:
+        wtBank = constrain(wtBank + b, 0, WT_BANK_COUNT - 1);
+        break;
+      case CV_1_TARGET:
+        cv1Target = (CvTarget)constrain(cv1Target + b, 0, CV_TARGET_COUNT - 1);
+        break;
+      case CV_2_TARGET:
+        cv2Target = (CvTarget)constrain(cv2Target + b, 0, CV_TARGET_COUNT - 1);
+        break;
+    }
+
+    triggerDisplayUpdate();
+  }
+
+  if (b != 0 && menuState == SHOW_SETTINGS) {
+    if (menuIndex == SETTINGS_BRIGHTNESS) {
+      displayBrightness = constrain(displayBrightness + b * 5, 0, 255);
+      u8g2.setContrast(displayBrightness);
+      storage.GetSettings().displayBrightness = displayBrightness;
+      triggerDisplayUpdate();
+    }
+  }
+
+  if (enc2.RisingEdge()) {
+   if (menuState == SHOW_SETTINGS) {
+      switch(menuIndex) {
+        case SETTINGS_CAL_VOCT:
+        case SETTINGS_CAL_CV1:
+        case SETTINGS_CAL_CV2:
+          if (calState == CAL_IDLE || calState == CAL_DONE || calState == CAL_CANCELLED)
+            startCalibration(menuIndex);
+          else if (calState == CAL_STEP1_PATCH)
+            calState = CAL_STEP1_HOLD;  // user confirms: start sampling
+          else if (calState == CAL_STEP2_PATCH)
+            calState = CAL_STEP2_HOLD;
+          triggerDisplayUpdate();
+          break;
+        case SETTINGS_SAVE:
+          saveSettings();
+          break;
+        case SETTINGS_LOAD:
+          loadSettings(); // placeholder — reloads from flash for now
+          break;
+        case SETTINGS_FACTORY_RESET:
+          factoryReset();
+          break;
+      }
+    }
+  }
+}
+
+void triggerDisplayUpdate() {
+  shouldUpdateDisplay = true;
+}
+
+// Cycle through all three states on enc1 press
+void toggleMenuState() {
+  switch(menuState) {
+    case SHOW_PARAMETERS: menuState = SHOW_KNOBS;      break;
+    case SHOW_KNOBS:      menuState = SHOW_SETTINGS;   break;
+    case SHOW_SETTINGS:   menuState = SHOW_PARAMETERS; break;
+  }
+  menuIndex  = 0;
+  menuScroll = 0;
+  triggerDisplayUpdate();
+}
+
+int getMenuCount() {
+  switch(menuState) {
+    case SHOW_PARAMETERS: return PARAMETER_COUNT;
+    case SHOW_KNOBS:      return KNOB_COUNT;
+    case SHOW_SETTINGS:   return SETTINGS_COUNT;
+  }
+  return PARAMETER_COUNT;
+}
+
+void updateDisplay()
+{
+  if (!shouldUpdateDisplay) return;
+  if (millis() - lastDisplayUpdate < MENU_REFRESH_MS) return;
+  
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_6x12_tr);
+
+  if (menuState == SHOW_PARAMETERS)   drawParameterValues();
+  else if (menuState == SHOW_KNOBS)   drawKnobValues();
+  else                                drawSettingsValues();
+
+  u8g2.sendBuffer();
+
+  lastDisplayUpdate = millis();
+  shouldUpdateDisplay = false;
+}
+
+// Format a 0.0-1.0 float as "0.00" without float sprintf
+void formatFloat(char* buf, float val) {
+  int i = (int)(val * 100);
+  sprintf(buf, "%d.%02d", i / 100, abs(i % 100));
+}
+
+// Format seconds as "0.00s"
+void formatTime(char* buf, float val) {
+  int i = (int)(val * 100);
+  sprintf(buf, "%d.%02ds", i / 100, abs(i % 100));
+}
+
+void drawRow(int y, bool selected, const char* label, const char* value) {
+  int lineHeight = 10;
+  if (selected) {
+    u8g2.drawBox(0, y, 128, 2 * lineHeight);
+    u8g2.setDrawColor(0);
+  }
+  u8g2.drawStr(2, y + lineHeight - 2, label);
+  int valWidth = u8g2.getStrWidth(value);
+  u8g2.drawStr(126 - valWidth, y + 2 * lineHeight - 2, value);
+  if (selected) u8g2.setDrawColor(1);
+}
+
+void drawParameterValues()
+{
+  int lineHeight = 10;
+  char valbuf[16];
+
+  const char* lfoShapeNames[]  = { "Sine", "Tri", "Saw", "Sqr" };
+
+  for (int i = 0; i < MENU_VISIBLE; i++)
+  {
+    int itemIndex = menuScroll + i;
+    if (itemIndex >= PARAMETER_COUNT) break;
+
+    int y = i * lineHeight * 2;
+
+    switch(itemIndex) {
+      case BASE_NOTE:   formatNote(valbuf, baseNote); break;
+      case ENV_ATT:     formatTime(valbuf, envAtt); break;
+      case ENV_DEC:     formatTime(valbuf, envDec); break;
+      case ENV_SUS:     formatFloat(valbuf, envSus); break;
+      case ENV_REL:     formatTime(valbuf, envRel); break;
+      case GLIDE: formatFloat(valbuf, glideAmount); break;
+      case LFO_SHAPE:   strcpy(valbuf, lfoShapeNames[lfoShape]); break;
+      case LFO_TARGET: strcpy(valbuf, lfoTargetNames[lfoTarget]); break;
+      case FILTER_MODE:  strcpy(valbuf, filterModeNames[filterMode]);     break;
+      case DISTORT_TYPE: strcpy(valbuf, distortionNames[distortionType]); break;
+      case WT_BANK:      sprintf(valbuf, "%d", wtBank); break;
+      case CV_1_TARGET: strcpy(valbuf, cvTargetNames[cv1Target]); break;
+      case CV_2_TARGET: strcpy(valbuf, cvTargetNames[cv2Target]); break;
+    }
+
+    drawRow(y, itemIndex == menuIndex, parameterLabels[itemIndex], valbuf);
+  }
+}
+
+void drawKnobValues()
+{
+  int lineHeight = 10;
+  char valbuf[16];
+
+  for (int i = 0; i < MENU_VISIBLE; i++)
+  {
+    int itemIndex = menuScroll + i;
+    if (itemIndex >= KNOB_COUNT) break;
+
+    int y = i * lineHeight * 2;
+
+    switch(itemIndex) {
+      case KNOB_WAVETABLE: {
+        const char* shapes[] = { "Sin", "Tri", "Saw", "Sqr" };
+        strcpy(valbuf, shapes[(int)(wt * 4) % 4]);
+        break;
+      }
+      case KNOB_SUB:       formatFloat(valbuf, subLvl); break;
+      case KNOB_ENV_AMT:   formatFloat(valbuf, envAmt); break;
+      case KNOB_CUTOFF: {
+        // Show as Hz
+        int hz = (int)(fmap(cutoffK, 20.0f, 18000.0f, Mapping::EXP));
+        sprintf(valbuf, "%dHz", hz);
+        break;
+      }
+      case KNOB_RESONANCE: formatFloat(valbuf, resK); break;
+      case KNOB_DRIVE: {
+        int drv = (int)(1.0f + driveK * 30.0f);
+        sprintf(valbuf, "x%d", drv);
+        break;
+      }
+      case KNOB_LFO_RATE:  formatFloat(valbuf, lfoRate); break;
+      case KNOB_FM:        formatFloat(valbuf, FMAmt); break;
+      case KNOB_DETUNE:    formatFloat(valbuf, detune); break;
+      case IN_1VOCT: {
+        int v = (int)(v_oct * 100);
+        sprintf(valbuf, "%d.%02dV", v / 100, abs(v % 100));
+        break;
+      }
+      case IN_CV_1: {
+        int v = (int)(cv_1 * 100);
+        sprintf(valbuf, "%d.%02dV", v / 100, abs(v % 100));
+        break;
+      }
+      case IN_CV_2: {
+        int v = (int)(cv_2 * 100);
+        sprintf(valbuf, "%d.%02dV", v / 100, abs(v % 100));
+        break;
+      }
+      case IN_GATE:        strcpy(valbuf, gate ? "HIGH" : "LOW"); break;
+    }
+
+    drawRow(y, itemIndex == menuIndex, knobLabels[itemIndex], valbuf);
+  }
+
+  // CPU load — always visible at bottom of knob view
+  // char cpubuf[16];
+  // int cpuPct = (int)(cpuMeter.GetAvgCpuLoad() * 100.0f);
+  // sprintf(cpubuf, "CPU:%d%%", cpuPct);
+  // u8g2.drawStr(0, 60, cpubuf);
+}
+
+void drawSettingsValues() {
+  int lineHeight = 10;
+  char valbuf[16];
+
+  // If calibration is active, take over the whole screen
+  if (calState != CAL_IDLE && calState != CAL_DONE && calState != CAL_CANCELLED) {
+    u8g2.drawStr(0, 12, "Calibrating...");
+    switch(calState) {
+      case CAL_STEP1_PATCH:
+        u8g2.drawStr(0, 26, "Patch 1V, press Set");
+        break;
+      case CAL_STEP1_HOLD:
+        u8g2.drawStr(0, 26, "Sampling 1V...");
+        break;
+      case CAL_STEP2_PATCH:
+        u8g2.drawStr(0, 26, "Patch 5V, press Set");
+        break;
+      case CAL_STEP2_HOLD:
+        u8g2.drawStr(0, 26, "Sampling 5V...");
+        break;
+      default: break;
+    }
+    return;
+  }
+
+  for (int i = 0; i < MENU_VISIBLE; i++) {
+    int itemIndex = menuScroll + i;
+    if (itemIndex >= SETTINGS_COUNT) break;
+
+    int y = i * lineHeight * 2;
+
+    switch(itemIndex) {
+      case SETTINGS_CAL_VOCT:
+      case SETTINGS_CAL_CV1:
+      case SETTINGS_CAL_CV2:
+        strcpy(valbuf, (calState == CAL_DONE && calTarget == itemIndex) 
+                       ? "Done!" : "Press Set");
+        break;
+      case SETTINGS_BRIGHTNESS: {
+        int pct = (displayBrightness * 100) / 255;
+        sprintf(valbuf, "%d%%", pct);
+        break;
+      }
+      case SETTINGS_SAVE:         strcpy(valbuf, "Press Set"); break;
+      case SETTINGS_LOAD:         strcpy(valbuf, "Press Set"); break;
+      case SETTINGS_FACTORY_RESET:strcpy(valbuf, "Press Set"); break;
+    }
+
+    drawRow(y, itemIndex == menuIndex, settingsLabels[itemIndex], valbuf);
+  }
+}
+
+// Linear interpolation: voltage = scale * raw + offset
+// Derived from two known points (low and high)
+static void computeCoeffs(float rawLow, float rawHigh, float &scale, float &offset) {
+  scale  = (CAL_HIGH_VOLTAGE - CAL_LOW_VOLTAGE) / (rawHigh - rawLow);
+  offset = CAL_LOW_VOLTAGE - scale * rawLow;
+}
+
+void computeCalCoefficients() {
+  Settings &s = storage.GetSettings();
+
+  computeCoeffs(s.cal_voct_low, s.cal_voct_high, cal_voct_scale, cal_voct_offset);
+  computeCoeffs(s.cal_cv1_low,  s.cal_cv1_high,  cal_cv1_scale,  cal_cv1_offset);
+  computeCoeffs(s.cal_cv2_low,  s.cal_cv2_high,  cal_cv2_scale,  cal_cv2_offset);
+}
+
+float applyCalibration(float raw, float scale, float offset) {
+  return scale * raw + offset;
+}
+
+void formatNote(char* buf, float semitoneOffset)
+{
+  int note = (int)round(semitoneOffset);
+
+  int midi = note;
+
+  int octave = (midi / 12) - 1;
+  int noteIndex = midi % 12;
+
+  sprintf(buf, "%s%d", noteNames[noteIndex], octave);
+}
+
+void initStorage() {
+  QSPIHandle::Config qspiConfig;
+  qspiConfig.device = QSPIHandle::Config::IS25LP064A;
+  qspiConfig.mode   = QSPIHandle::Config::MEMORY_MAPPED;
+  qspiConfig.pin_config.clk = PIN_QSPI_CLK;
+  qspiConfig.pin_config.io0 = PIN_QSPI_IO0;
+  qspiConfig.pin_config.io1 = PIN_QSPI_IO1;
+  qspiConfig.pin_config.io2 = PIN_QSPI_IO2;
+  qspiConfig.pin_config.io3 = PIN_QSPI_IO3;
+  qspiConfig.pin_config.ncs = PIN_QSPI_NCS;
+  qspi.Init(qspiConfig);
+
+  // Define defaults — used on first boot or if flash is corrupt
+  Settings defaults;
+  defaults.version = SETTINGS_VERSION;
+
+  defaults.baseNote  = 36;
+  defaults.envAtt = 0.0f;
+  defaults.envDec = 0.0f;
+  defaults.envSus = 0.0f;
+  defaults.envRel = 0.0f;
+  defaults.glideAmount = 0.0f;
+  defaults.lfoShape = 0;
+  defaults.lfoTarget = 0;
+  defaults.filterMode = 0;
+  defaults.distortionType = 0;
+  defaults.wtBank = 0;
+  defaults.cv1Target = 0;
+  defaults.cv2Target = 0;
+
+  // Calibration defaults: assume linear 0-8V maps to 0-1023
+  defaults.cal_voct_low  = 128.0f;  // ~1V on a 0-8V range
+  defaults.cal_voct_high = 640.0f;  // ~5V on a 0-8V range
+  defaults.cal_cv1_low   = 128.0f;
+  defaults.cal_cv1_high  = 640.0f;
+  defaults.cal_cv2_low   = 128.0f;
+  defaults.cal_cv2_high  = 640.0f;
+  defaults.displayBrightness = 255;
+
+  storage.Init(defaults);
+  // Fore a memory reset when changin memory fields
+  // storage.RestoreDefaults();
+}
+
+void loadSettings() {
+  Settings &settings = storage.GetSettings();
+ 
+  if (storage.GetSettings().version != SETTINGS_VERSION) {
+    Serial.println("Settings update, resetting all settings");
+
+    storage.RestoreDefaults();
+    loadSettings(); // reload after reset
+    return;
+  }
+  
+  baseNote = settings.baseNote;
+  envAtt = settings.envAtt;
+  envDec = settings.envDec;
+  envSus = settings.envSus;
+  envRel = settings.envRel;
+  glideAmount = settings.glideAmount;
+  lfoShape = settings.lfoShape;
+  lfoTarget = settings.lfoTarget;
+  filterMode = settings.filterMode;
+  distortionType = settings.distortionType;
+  wtBank = settings.wtBank;
+  cv1Target = (CvTarget)settings.cv1Target;
+  cv2Target = (CvTarget)settings.cv2Target;
+
+  displayBrightness = settings.displayBrightness;
+  u8g2.setContrast(displayBrightness);
+  computeCalCoefficients();
+}
+
+
+void saveSettings()
+{
+  Settings &settings = storage.GetSettings();
+  
+  settings.baseNote = baseNote;
+  settings.envAtt = envAtt;
+  settings.envDec = envDec;
+  settings.envSus = envSus;
+  settings.envRel = envRel;
+  settings.glideAmount = glideAmount;
+  settings.lfoShape = lfoShape;
+  settings.lfoTarget = lfoTarget;
+  settings.filterMode = filterMode;
+  settings.distortionType = distortionType;
+  settings.wtBank = wtBank;
+  settings.cv1Target = cv1Target;
+  settings.cv2Target = cv2Target;
+
+  storage.Save();
+
+  Serial.println("Settings saved");
+}
+
+void startCalibration(int target) {
+  calTarget  = target;
+  calState   = CAL_STEP1_PATCH;
+  calAccum   = 0.0f;
+  calSamples = 0;
+  triggerDisplayUpdate();
+}
+
+void updateCalibration() {
+  if (calState == CAL_IDLE) return;
+
+  if (calState == CAL_STEP1_HOLD || calState == CAL_STEP2_HOLD) {
+    // Sample the relevant ADC
+    int pin = (calTarget == SETTINGS_CAL_VOCT) ? PIN_1VOCT :
+              (calTarget == SETTINGS_CAL_CV1)  ? PIN_CV_1  : PIN_CV_2;
+
+    calAccum += analogRead(pin);
+    calSamples++;
+
+    if (calSamples >= CAL_SAMPLE_COUNT) {
+      float avg = calAccum / CAL_SAMPLE_COUNT;
+
+      if (calState == CAL_STEP1_HOLD) {
+        calLowRaw  = avg;
+        calState   = CAL_STEP2_PATCH;
+      } else {
+        calHighRaw = avg;
+        calState   = CAL_DONE;
+        commitCalibration();
+      }
+
+      calAccum   = 0.0f;
+      calSamples = 0;
+      triggerDisplayUpdate();
+    }
+  }
+}
+
+void commitCalibration() {
+  Settings &s = storage.GetSettings();
+
+  if (calTarget == SETTINGS_CAL_VOCT) {
+    s.cal_voct_low  = calLowRaw;
+    s.cal_voct_high = calHighRaw;
+  } else if (calTarget == SETTINGS_CAL_CV1) {
+    s.cal_cv1_low   = calLowRaw;
+    s.cal_cv1_high  = calHighRaw;
+  } else {
+    s.cal_cv2_low   = calLowRaw;
+    s.cal_cv2_high  = calHighRaw;
+  }
+
+  computeCalCoefficients(); // apply immediately
+
+  storage.Save();
+}
+
+void factoryReset() {
+  // Re-init storage with defaults — wipes everything including calibration
+  initStorage();
+  loadSettings();
+  triggerDisplayUpdate();
+}

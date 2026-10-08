@@ -265,7 +265,10 @@ static void handleCommand(controls::Cmd c)
     case controls::CMD_RECORD:    looper::record(); break;
     case controls::CMD_UNDO:      looper::undo(); break;
     case controls::CMD_PLAY:      looper::play(); break;
-    case controls::CMD_CLEAR:     looper::clear(); break;
+    case controls::CMD_CLEAR:
+        looper::clear();
+        led::flash(255, 0, 0, 200);   // there is no undoing it: say so
+        break;
     }
 }
 

@@ -212,11 +212,13 @@ struct Loop
 
     // ---- Recording ----------------------------------------------------------
 
-    // At the end of a pass, notes the recording still holds get their
-    // note-off on the last tick and a fresh note-on on the first tick of the
-    // next pass, in the given layer; the key stays pending, so its release
-    // records the off later. Every on thus has its off in its own layer,
-    // and undoing a layer can never leave a note sounding.
+    // Overdubbing across the end of a pass: a note the recording still
+    // holds gets its note-off on the last tick and a fresh note-on on the
+    // first tick of the next pass, in the next layer, and the key stays
+    // pending so its release records the off later. Every on thus has its
+    // off in its own layer, and undoing a layer can never leave a note
+    // sounding. Only while the recording continues into the next pass -
+    // once it has stopped, a held key is finished with closePending().
     void closeHeld(uint8_t layerForOn)
     {
         for (uint8_t note = 0; note < 128; ++note)
@@ -252,7 +254,7 @@ struct Loop
             if (ev[i].tick >= len)
                 ev[i].tick = (uint16_t)(ev[i].tick % len);
 
-        closeHeld(curLayer);
+        closePending((int32_t)len - 1);   // a key still down lasted the pass
         rebuildOrder();
 
         // Keep playing from where we are. If the length was rounded down
@@ -267,8 +269,13 @@ struct Loop
         lastPos = pos;
     }
 
-    // Overdubbing ends; keys still held record their note-off on release.
-    void finishOverdub() { st = PLAYING; }
+    // Overdubbing ends: keys still held end here, so nothing stays pending
+    // into the playback that follows.
+    void finishOverdub()
+    {
+        closePending(recordPos());
+        st = PLAYING;
+    }
 
     uint16_t recordPos() const
     {
@@ -311,10 +318,10 @@ struct Loop
 
     void noteOff(uint8_t note)
     {
-        // A recorded note-on gets its off whenever the key comes up - also
-        // after the recording closed or the overdub ended, so a note held
-        // across either is as long in the loop as it was played.
-        if (st != RECORDING && st != OVERDUB && st != PLAYING)
+        // Only while the recording is open. A key held past the end of a
+        // recording was closed with the pass (closeRecording), so there is
+        // nothing pending for its release to write.
+        if (st != RECORDING && st != OVERDUB)
             return;
         if (!has(recOn, note))
             return;   // its on was never recorded (pressed before, or undone)
@@ -432,10 +439,15 @@ struct Loop
         }
     }
 
+    // From any state: a loop that is running is stopped first. It used to
+    // refuse while playing, on the theory that a slip should not take a
+    // running loop - but a clear that silently does nothing is worse, and
+    // the next record press then overdubs the loop the player meant to be
+    // rid of. A second of deliberate hold is the protection.
     void clear()
     {
-        if (st == PLAYING || st == OVERDUB || st == RECORDING)
-            return;   // only while stopped, so a slip cannot take a running loop
+        if (st == PLAYING || st == OVERDUB)
+            stopPlayback();
         n = 0;
         len = 0;
         curLayer = 0;
@@ -516,8 +528,6 @@ struct Loop
                 closeHeld((uint8_t)(curLayer + 1));
                 ++curLayer;
             }
-            else
-                closeHeld(curLayer);   // a key held on after the recording closed
             startTick += len;
             pos -= len;
             if (orderDirty)
