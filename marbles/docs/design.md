@@ -291,7 +291,7 @@ The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.
 | 4 | 47k 1 % | R71, R75, R79, R83 | |
 | 4 | 100k 1 % | R72, R76, R80, R84 | |
 | 2 | 100k | R50, R52 | |
-| 3 | 15k | R45, R61, R64, R67 | |
+| 4 | 15k | R45, R61, R64, R67 | |
 | 15 | 10k | R42, R43, R46, R51, R53, R60, R63, R66, R9, R10, R100–R106 | |
 | 14 | 1k | R23, R26, R29, R32, R35, R38, R41, R62, R65, R68, R73, R77, R81, R85 | |
 | 1 | 2.2k | R47 | |
