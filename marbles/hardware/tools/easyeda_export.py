@@ -35,6 +35,9 @@ from easyeda_export import (Doc, Symbol, Page, Project, meta, attr_payload, Y, r
 _spec = importlib.util.spec_from_file_location("marbles_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("marbles_pcb", os.path.join(HERE, "pcb.py"))
+pcb = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(pcb)
 
 NAME = "Marblesy"
 OUT = os.path.join(HERE, "..", "easyeda", "Marbles.epro2")
@@ -146,7 +149,8 @@ def fp_led(leads):
         f.pad(1, -1.27, 0, 0.8, 1.5, square=True)
         f.pad(2, 1.27, 0, 0.8, 1.5)
     f.circle(0, 0, 1.6)
-    f.line(-1.6, 1.3, -1.6, -1.3)    # flat = cathode side marker
+    if leads == 2:
+        f.line(1.6, 1.3, 1.6, -1.3)    # flat on the cathode (pad 2) side
     return f
 
 
@@ -307,6 +311,14 @@ C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF")}
 
 
 class MPage(Page):
+    page_count = "3"
+
+    def place(self, *args, **kw):
+        p = super().place(*args, **kw)
+        # remember the schematic component id: the PCB's Channel ID attribute points at it
+        self.comps[-1]["cid"] = next(h["id"] for h, _ in reversed(self.doc.recs) if h["type"] == "COMPONENT")
+        return p
+
     def frame(self):
         d, pr = self.doc, self.pr
         cid = d.nid()
@@ -314,7 +326,7 @@ class MPage(Page):
         d.add("COMPONENT", cid, {"locked": False, "zIndex": d.zi(), "partId": pr.symgeo[sym]["parts"][0],
                                  "groupId": "", "x": 0, "y": 0, "rotation": 0, "isMirror": False, "attrs": {}})
         today = ee.time.strftime("%Y-%m-%d")
-        vals = [("Symbol", sym), ("@Project Name", NAME), ("@Page Count", "3"), ("@Update Date", today),
+        vals = [("Symbol", sym), ("@Project Name", NAME), ("@Page Count", self.page_count), ("@Update Date", today),
                 ("@Create Date", today), ("@Schematic Name", NAME), ("@Page No", str(self.number)),
                 ("@Page Name", self.title), ("Company", ""), ("Reviewed", ""), ("Version", "V0.1"),
                 ("Page Size", "A3"), ("Drawn", ""), ("Name", ""), ("@Create Time", ""), ("@Update Time", ""),
@@ -342,6 +354,18 @@ class MProject(Project):
         lines = fp.build()
         self.new_docs.append(("FOOTPRINT", lines))
         return fp.doc.uuid
+
+    def footprint_geo(self, uid):
+        """Pads and body box of a library or generated footprint, by uuid."""
+        if not hasattr(self, "_fpgeo"):
+            self._fpgeo = {}
+            docs = {u: d for u, d in self.lib.items() if d["docType"] == "FOOTPRINT"}
+            for typ, lines in self.new_docs:
+                if typ == "FOOTPRINT":
+                    docs.update(ee.parse(lines))
+            for u, d in docs.items():
+                self._fpgeo[u] = pcb.footprint_geometry(d)
+        return self._fpgeo[uid]
 
     def _new_devices(self):
         r1k = meta(self.lib[DEV["R1k"]])["attributes"]
@@ -398,8 +422,9 @@ class MProject(Project):
                      "3D Model": "", "3D Model Title": "", "3D Model Transform": "", "Description": desc}
             self._device(key, title, attrs)
 
-    def write(self, pages, path):
-        board, sch = Doc("BOARD", new_uuid()[:16]), Doc("SCH")
+    def write(self, boards, path, template):
+        """boards: [(title, pages, pcb.Board)]; each gets a BOARD doc holding
+        its schematic pages and its PCB."""
         used = {u for u, m in self.devices.values()}
         refs = {m["attributes"].get(k) for u, m in self.devices.values() for k in ("Symbol", "Footprint")}
         keep = {"FOOTPRINT": refs, "SYMBOL": refs, "DEVICE": used}
@@ -409,10 +434,13 @@ class MProject(Project):
                 if d["docType"] == typ and u in keep[typ]:
                     lines += d["lines"]
             lines += [l for t, ls in self.new_docs if t == typ for l in ls]
-        lines += board.lines({"title": NAME, "zIndex": 1})
-        lines += sch.lines({"title": f"{NAME} Schema", "board": board.uuid, "zIndex": None})
-        for pg in pages:
-            lines += pg.lines(sch.uuid)
+        for k, (title, pages, pcb_board) in enumerate(boards):
+            board, sch = Doc("BOARD", new_uuid()[:16]), Doc("SCH")
+            lines += board.lines({"title": title, "zIndex": k + 1})
+            lines += sch.lines({"title": f"{title} Schema", "board": board.uuid, "zIndex": None})
+            for pg in pages:
+                lines += pg.lines(sch.uuid)
+            lines += pcb_board.doc(ee, template, board.uuid, f"{title} PCB")
         lines += Doc("CONFIG", "CONFIG").lines({"defaultSheet": ""})
         lines += [l for u, d in self.lib.items() if d["docType"] == "BLOB" for l in d["lines"]]
         project = {"title": NAME, "cbb_project": False, "editorVersion": ee.EDIT, "introduction": "",
@@ -695,7 +723,7 @@ def main_page_2(pr, parts):
 
 def faceplate_page(pr, parts):
     P = {p.ref: p for p in parts}
-    pg = MPage(pr, "Faceplate", 3)
+    pg = MPage(pr, "Faceplate", 1)     # page 1 of the faceplate board's own schematic
     probe_r = {p.nets["1"]: p for p in parts if p.kind == "R" and p.nets.get("2") == "PROBE_F"}
 
     pg.text(70, Y(45), "Jacks (Thonkiconn). Sleeves to GND_F; CV inputs have their switch lug grounded, the two clock inputs get the probe", 12)
@@ -866,10 +894,25 @@ def translated(pg, dx):
     return comps, wires
 
 
+def part_info(pages):
+    """ref -> device key, schematic Unique ID and the PCB's Channel ID
+    ('$' + page number + id of the part's first schematic component)."""
+    info = {}
+    for pg in pages:
+        for c in pg.comps:
+            if c["ref"] and c["ref"] not in info:
+                info[c["ref"]] = {"dev": c["dev"], "uid": pg.pr.unique_id(c["ref"]),
+                                  "channel": f"${pg.number}{c['cid']}"}
+    return info
+
+
 def main():
     pr = MProject()
     mb, fb = circuit.main_board_parts(), circuit.faceplate_parts()
-    pages = [main_page_1(pr, mb), main_page_2(pr, mb), faceplate_page(pr, fb)]
+    MPage.page_count = "2"
+    pages = [main_page_1(pr, mb), main_page_2(pr, mb)]
+    MPage.page_count = "1"
+    pages.append(faceplate_page(pr, fb))
     bad = []
     # the main board is drawn over two pages: check them together
     merged = MPage.__new__(MPage)
@@ -887,11 +930,23 @@ def main():
                     for num, (x, y) in c["pins"].items():
                         if abs(x - px) < 0.01 and abs(y - py) < 0.01:
                             print("       pin", c["ref"] or c["dev"], num, "on page", pg_.number)
-    pr.write(pages, OUT)
+    # PCBs: placed and net-assigned, not routed
+    info = part_info(pages)
+    board_fb = pcb.faceplate_board(pr, fb, info, circuit)
+    board_mb = pcb.main_board(pr, mb, info, circuit)
+    pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
+               + pcb.placement_check(board_fb, circuit))
+    for b in pcb_bad:
+        print("PCB:", b)
+    template = pcb.load_template(ee)
+    pr.write([(f"{NAME} Main", pages[:2], board_mb), (f"{NAME} Faceplate", pages[2:], board_fb)], OUT, template)
     for pg in pages:
         render(pr, pg, PREVIEW.format(pg.title.split(":")[0].lower().replace(" ", "-")))
+    board_mb.render(PREVIEW.format("pcb-main-board"))
+    board_fb.render(PREVIEW.format("pcb-faceplate"))
     n = sum(1 for pg in pages for c in pg.comps if c["ref"])
-    print(f"{os.path.normpath(OUT)}: {n} part units on {len(pages)} pages, {len(bad)} problems")
+    print(f"{os.path.normpath(OUT)}: {n} part units on {len(pages)} pages, {len(bad)} schematic problems; "
+          f"{len(board_mb.placed)} + {len(board_fb.placed)} parts placed on the PCBs, {len(pcb_bad)} PCB problems")
 
 
 if __name__ == "__main__":

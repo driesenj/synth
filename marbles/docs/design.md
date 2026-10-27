@@ -7,7 +7,8 @@ designator matches `hardware/tools/circuit.py`, which generates the EasyEDA
 Pro schematic (`hardware/easyeda/Marbles.epro2`) and the panel files.
 
 Status: schematic done and checked, footprints assigned, faceplate placement
-defined, panel template generated. PCB routing and firmware not started.
+defined, panel template generated, both PCBs placed and net-assigned (see
+[PCB placement](#pcb-placement)). PCB routing and firmware not started.
 
 ---
 
@@ -265,6 +266,59 @@ The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.
 
 ---
 
+## PCB placement
+
+`hardware/tools/pcb.py` places every part of both boards, assigns each pad
+its net and writes the two PCB documents into `Marbles.epro2`; the exporter
+checks the result (pads 0.25 mm apart or more, 0.5 mm from the edge, no
+bodies overlapping on one side, nothing under a standoff, header pins
+coinciding on both boards, panel parts exactly at `PLACEMENT`). Nothing is
+routed. Previews: `hardware/easyeda/marbles-easyeda-pcb-*.png`.
+
+**Frame.** Each PCB is drawn as EasyEDA shows it, looking at the top layer,
+which on both boards is the rear of the stack: x to the right, y up, origin
+at the bottom-left corner. The front view of the faceplate placement is its
+mirror image, `x_front = 90 − x`. Both boards use this one frame, so the
+five header pairs have identical coordinates on both PCBs and the stack
+lines up pin for pin. EasyEDA mirrors a bottom-layer footprint about its own
+X axis (y → −y) before rotating it; `pcb.py` uses that rule and picks the
+panel parts' angles by it (jack sleeve pad towards the top of the board,
+pot pins in a column towards the left as seen from the front, button pads
+1/4 on the left, LED pad 1 on the left).
+
+**Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 buttons, 7 LEDs.
+Top (rear) layer, inside the 8.5 mm header gap: U1 and U11 in the strip
+between the top jack row and the lowest pots (y 29–42), U9 and U10 in the
+pockets between the pot rows at the left and right edges (y 52–62), the
+button pull-ups in the right margin, the LED resistors in the left margin
+and the pockets at y 74–87, the probe resistors beside U1, one 100 n per IC.
+The male headers (front-view x, y): H1 (20, 104), H3 (45, 104), H2
+(70, 104), H4 (33, 41), H5 (56, 41); pin 1 towards +x in the front view.
+
+**Main board.** Bottom layer: the five female sockets at the same spots.
+Top (rear) layer: the Seed breakout vertical along the left edge, centred at
+(11, 64) in the PCB frame, power end (J1/J3) down and USB end up; the four
+TL074s vertical at x = 28 (U3 top, U6 bottom), each with its resistors in
+horizontal columns at x = 41.5 / 54.5 (/ 67.5) and its capacitors beside
+them; the two MCP4922 at the bottom right with C39/C40, R47, D21 and C30
+above them; the clock input stages in the right strip. Every main-board
+part except the sockets is on the rear side, so the front side carries
+only sockets and standoffs.
+
+**Mounting.** Four 3.2 mm holes, front-view (4.5, 33), (4.5, 104),
+(85.5, 104), (79, 84), identical on both boards; the odd one sits between
+the breakout's two pad rows on the main board. M3 standoffs between the
+boards; the breakout and Seed hang on the main board's rear.
+
+**Assumptions to check.** The library PTV09A footprint draws the pot body
+9 mm beyond its origin; the checks use 4 mm (the Alpha 9 mm housing ends
+about 3.3 mm beyond the shaft, as in KiCad's RD901F footprint). If your
+pots are deeper than that, the LEDs 8 mm from the pot origins (D2, D3,
+D5, D6) are the parts to watch. The 5 × 5 button pairing (item 3 of the
+Plaitsy audit) still has to be verified on a real switch.
+
+---
+
 ## BOM
 
 | Qty | Part | Refs | Source |
@@ -334,6 +388,7 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   note as in the Plaitsy audit).
 - Verify the LM4040 TO-92 pinout for the exact part you buy; the footprint
   leaves pad 3 open.
-- Route the two PCBs (the schematic imports into EasyEDA Pro with every
-  footprint assigned; place the faceplate parts at the `PLACEMENT`
-  coordinates, then route).
+- Route the two PCBs: import `Marbles.epro2`, run DRC and the netlist check
+  on each placed PCB, then route (GND / GND_F pours on the bottom layers as
+  on Plaitsy; keep copper off the jack barrels, 3 mm around the point
+  0.78 mm below each jack origin on the panel side).
