@@ -248,3 +248,20 @@ as you prefer, keeping the rails in mind). Three offsets are applied as noted.
 The jack rows are 12.6 mm apart horizontally and 14.9 mm apart vertically; the
 pot rows are 22.3 mm apart. Thonkiconn nuts (about 8 mm across) and 9 mm pot
 bodies clear each other at these spacings.
+
+---
+
+## Addendum: the breakout's PCB file
+
+Rob Heel's `seed_power_opamps` PCB (EasyEDA JSON) settles two items above:
+
+- Its Seed sockets are 2.54 mm pitch, two rows 15.24 mm apart, so item 1
+  stands: the footprint in the Plaitsy project is wrong, the breakout is not.
+  The headers sit in line with the socket rows: J1 (GND, −12 V ×3) and J3
+  (GND, +12 V ×3) beyond pins 20/21 with one empty position in between, J5
+  (audio in) and J4 (audio out) directly beyond pins 1/40. A corrected
+  footprint with all 56 pads is in `marbles/hardware/easyeda/Marbles.epro2`
+  (`DAISY-SEED-POWER-OPAMPS-2.54`); copy it into the Plaitsy project.
+- The breakout joins Seed pins 20 and 40 on its own GND net, so item 2 is
+  covered as long as the breakout is fitted. A local DGND-to-GND track on
+  the main board is still cheap insurance.
