@@ -372,6 +372,90 @@ a row are one contact (pads 1+4 and 2+3), which is the convention every
 
 ---
 
+## Routing notes
+
+Plan: set the rules, route the few nets that matter by hand and lock them,
+let the autorouter do the rest with the grounds excluded, clean up, pour.
+
+**Rules first** (Design > Design Rules; the project carries the rules copied
+from one of the MorrisSynth boards, whose clearance is a tight 0.1 mm).
+For a hand-soldered 2-layer board: clearance 0.25 mm, default track 0.3 mm,
+a POWER net class at 0.6 mm (+12V, −12V, 3V3A, 3V3D, 3V3A_F, 3V3D_F), vias
+0.8 mm with a 0.4 mm hole, copper 0.5 mm from the edge.
+
+**Keepouts before routing.** Faceplate, panel-side (bottom) layer: a 3 mm
+circle at each jack barrel, 0.78 mm below the jack origin, where the metal
+barrel sits (GND_F copper may stay). Both boards: 3.5 mm around the four
+mounting holes on the standoff side (faceplate top, main board bottom).
+
+**Autorouter** (Route > Auto Route). Layers top and bottom; preferred
+direction vertical on top and horizontal on bottom, since both boards are
+taller than wide and the long runs are vertical; 45° corners; via quantity
+"less"; priority "completion first" for the first pass, then re-run the
+ugly nets selected with "quality first". Skip (ignore) nets: GND, GND_F,
+GND_D_F and the POWER class, which are poured or hand-routed. Hand-route
+and lock before the run: the power buses, the SPI bundle, the summing
+nodes and references (below). Afterwards: remove loops, DRC, then pours.
+
+**Ground planes.**
+- Main board: one GND net. Pour it on both layers; the bottom (socket) side
+  is nearly empty and becomes the plane. It must reach the Seed's pins 20
+  and 40 and the breakout's J1-1 / J3-1; the breakout joins AGND and DGND,
+  so no split.
+- Faceplate: GND_F (jacks, pots, mux, gate LEDs) poured on the panel-side
+  (bottom) layer under everything, which also shields the CV lines.
+  GND_D_F (shift registers, 74HC165, LED buttons, CV output LEDs) as a pour
+  on the rear (top) layer confined to the logic area around U9, U10, U11
+  and the pull-ups, or plain tracks. The two never touch on this board;
+  they meet on the main board's GND through H2 pin 6 / H3 pin 5 (GND_F)
+  and H5 pin 7 (GND_D_F).
+
+**Main board, by hand and with care.**
+1. Summing nodes IN_* (op-amp pin −, R_in, R_fb, C_fb): one layer, as
+   short as the resistor columns allow, over the pour, nowhere near SPI or
+   clock lines. The ADC_* lines from the 1 kΩ resistors to the Seed's right
+   pin row likewise, routed as a group.
+2. References: BIAS from C29 as a short tree to the seven op-amp + inputs;
+   VREF from D21/C30 to the DAC VREFA/VREFB pins (U7/U8 13 and 11) and to
+   R42; NEG_REF to the four 47 kΩ. DC nets, but keep them off the digital
+   corridor.
+3. SPI bundle (SPI_SCK, SPI_MOSI, SPI_MISO, DAC_CS1, DAC_CS2, DAC_LDAC):
+   from Seed pins 8–13 down the channel between the breakout's two pad
+   rows (x 5–17, free on both layers), east along y ≈ 35 to U7/U8, picking
+   up H5 (x 25–43, y 41) on the way. Keep it out of the op-amp column.
+4. Clock inputs T_CLK_IN / X_CLK_IN from H2 (top) to the clock stages in
+   the right strip along the top edge at y ≥ 102, and T_CLK / X_CLK back
+   to Seed pins 1 and 2 the same way; U3's summing nodes sit just below at
+   y 84–99, so keep pour between.
+5. Gates: GATE_T1..3 (Seed pins 3–5 to U6) and T1..T3 (U6 to H2) carry
+   0–8 V edges; route them on the bottom layer with the pour around them.
+6. Power: +12 V from J3 (x 18.6) and −12 V from J1 (x 3.4) as 0.6 mm
+   buses up the decoupling column at x ≈ 20–22 to pins 4 and 11 of each
+   TL074; 3V3A to U7/U8 pins 1 and 9, R45, R47 and H3; 3V3D to R51, R53 and
+   H5.
+7. DAC outputs DAC_X1..Y (U7/U8 pins 14 and 10) up to the 24 kΩ in the U5
+   block: 25 mm, keep them off SCK.
+
+**Faceplate, by hand and with care.**
+1. Pot wipers POT_*_F to U1 and MUX_OUT_F / MUX_S0..2 to H4: panel-side
+   layer under the GND_F pour, away from the rear-side LED and SPI lines.
+2. CV_*_F from the jack row (y 21.85) to H1 at the top (y 105.5), the
+   longest runs on the board, plus PROBE_F: panel-side layer in the centre
+   and left corridors with GND_F around them, never alongside the LED
+   button lines.
+3. T_CLK_IN_F / X_CLK_IN_F to H2: outer margins, away from the CV lines
+   and the wipers.
+4. SCK_F, MOSI_F, MISO_F, LED_LATCH_F, BTN_LOAD_F from H5 to U9/U10/U11 and
+   SR_CHAIN between U9 and U10: rear layer, short.
+5. LED button and output LED lines (L_*, LED_*): 2.5 mA switched by PWM;
+   rear layer, bipolar pairs together, away from the wipers and CV lines.
+6. Outputs T1_F..T3_F, X1_F..Y_F from H2/H3 down to the bottom jack row:
+   rear layer down the margins; low impedance, not critical.
+7. Grounds: LED button pins 1, 2 (and 6 on the green ones) and the CV
+   output LEDs return to GND_D_F; the gate LEDs D11–D13 to GND_F.
+
+---
+
 ## BOM
 
 | Qty | Part | Refs | Source |
