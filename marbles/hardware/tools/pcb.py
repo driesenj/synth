@@ -354,9 +354,14 @@ def faceplate_board(pr, parts, info, circuit):
         b.orient(ref, lambda r: abs(r["1"][0] - r["3"][0]) < 0.01 and r["1"][1] > r["3"][1])
     for ref, *_ in circuit.POTS:         # pins in a column towards -x (pin 1 then lands above pin 3)
         b.orient(ref, lambda r: r["1"][0] < r["4"][0] and abs(r["1"][0] - r["3"][0]) < 0.01)
-    for ref, *_ in circuit.BUTTONS:      # contact pairs 1+4 and 2+3 as rows, pad 1 bottom left
-        b.orient(ref, lambda r: abs(r["1"][1] - r["4"][1]) < 0.01 and r["1"][0] < r["4"][0] and r["1"][1] < r["2"][1])
+    for ref, *_ in circuit.BUTTONS:
+        if ref in circuit.LED_BUTTONS:   # LED button: LED pins in a row along x, anode on the right
+            b.orient(ref, lambda r: abs(r["5"][1] - r["6"][1]) < 0.01 and r["5"][0] > r["6"][0] and r["1"][1] > r["3"][1])
+        else:                            # contact pairs 1+4 and 2+3 as rows, pad 1 bottom left
+            b.orient(ref, lambda r: abs(r["1"][1] - r["4"][1]) < 0.01 and r["1"][0] < r["4"][0] and r["1"][1] < r["2"][1])
     for ref, _, kind, _ in circuit.LEDS:  # leads in a row along x, pad 1 on the left
+        if ref not in b.P:
+            continue
         last = "3" if kind == "RG" else "2"
         b.orient(ref, lambda r, last=last: abs(r["1"][1] - r[last][1]) < 0.01 and r["1"][0] < r[last][0])
     # headers (male, top layer), shared with the main board

@@ -165,6 +165,22 @@ def fp_switch():
     return f
 
 
+def fp_led_button():
+    """Thonk low-profile LED button (7.5 mm square, 5.5 mm round cap), from
+    Thonk's KiCad footprint with the three extra holes for the feet: switch
+    pins 1-4 on a 5.08 mm square (1+2 and 3+4 are the contacts), LED anode
+    pin 5 and cathode pin 6 at x = +-2.7, feet 7-9 (plated 1.2 mm holes)."""
+    f = Footprint("SW-TACT-LP-LED-THONK", "SW?")
+    for num, (x, y) in ((1, (2.54, 2.54)), (2, (-2.54, 2.54)), (3, (2.54, -2.54)), (4, (-2.54, -2.54)),
+                        (5, (2.7, 0)), (6, (-2.7, 0))):
+        f.pad(num, x, y, 1.0, 1.6, square=(num == 1))
+    for num, (x, y) in ((7, (-1.25, 1.75)), (8, (1.25, 1.75)), (9, (0, -2.25))):
+        f.pad(num, x, y, 1.2, 1.6)
+    f.rect(-3.75, -3.75, 3.75, 3.75)
+    f.circle(0, 0, 2.75)
+    return f
+
+
 def fp_seed_breakout():
     """Rob Heel's seed_power_opamps board, pads as measured in its PCB file.
     Origin at the centre of the Seed's pin field; pins 1 and 40 at +x (the
@@ -233,6 +249,13 @@ def hc165_symbol():
     right = [(0, "11", "D0"), (1, "12", "D1"), (2, "13", "D2"), (3, "14", "D3"), (4, "3", "D4"), (5, "4", "D5"),
              (6, "5", "D6"), (7, "6", "D7"), (8, "9", "Q7"), (9, "7", "/Q7")]
     return ic_symbol("74HC165", "74HC165.1", left, right)
+
+
+def led_button_symbol():
+    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 (A) and 6 (K), feet 7-9."""
+    left = [(0, "1", "1"), (1, "2", "2"), (3, "5", "LED A")]
+    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED K"), (4, "7", "foot"), (5, "8", "foot"), (6, "9", "foot")]
+    return ic_symbol("LED button", "SWLED.1", left, right, designator="SW?")
 
 
 def header_symbol(n):
@@ -396,7 +419,7 @@ class MProject(Project):
         dip14 = meta(self.lib[DEV["TL074"]])["attributes"]["Footprint"]
         fps = {"SEED": self._footprint(fp_seed_breakout()), "TO92": self._footprint(fp_to92()),
                "LED3": self._footprint(fp_led(3)), "LED2": self._footprint(fp_led(2)),
-               "SW": self._footprint(fp_switch())}
+               "SW": self._footprint(fp_switch()), "SWLED": self._footprint(fp_led_button())}
         for n in (4, 6, 7, 8):
             fps[f"HDR{n}"] = self._footprint(fp_header(n))
         new = [
@@ -415,6 +438,9 @@ class MProject(Project):
             ("SW", button4_symbol(), "Tactile switch 6x6", "SW?", fps["SW"],
              "6 x 6 mm tactile switch, 4.5 x 6.5 mm pin pattern; pads 1+4 are one contact, 2+3 the other. "
              "Pick a height that puts a round cap just proud of the panel (about 9.5 mm for a 7 mm panel gap)"),
+            ("SWLED", led_button_symbol(), "LED button, Thonk low profile", "SW?", fps["SWLED"],
+             "Thonk low-profile LED button: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED anode 5, "
+             "cathode 6, feet 7-9 in 1.2 mm holes so it sits at Thonkiconn height"),
         ]
         for n in (4, 6, 7, 8):
             new.append((f"HDR{n}", header_symbol(n), f"Pin header 1x{n}", "H?", fps[f"HDR{n}"],
@@ -835,9 +861,32 @@ def faceplate_page(pr, parts):
     pg.text(1440, Y(600), "C9..C11 at U9..U11 pin 16", 8)
 
     # buttons
-    pg.text(70, Y(835), "Buttons (6x6 mm tactile, TL1105 pattern): pads 1+4 (6.5 mm apart, one contact) to GND_D_F, pads 2+3 to the 74HC165", 12)
+    pg.text(70, Y(822), "Buttons: 6x6 mm tactiles (pads 1+4 one contact, 2+3 the other); SW1 / SW4 are Thonk LED buttons (1+2 / 3+4, LED on 5 / 6)", 12)
     for k, (ref, label, sw) in enumerate(circuit.BUTTONS):
-        bx, by = 150 + k * 185, Y(935)
+        bx, by = (150, 400, 560, 800, 1050, 1210, 1370)[k], Y(935)     # the LED buttons need more room
+        if ref in circuit.LED_BUTTONS:
+            net = P[ref].nets["3"]
+            s = pg.place(ref, "SWLED", bx, by, des=(-50, -42, "LEFT_BOTTOM"), name=False)
+            pg.text(bx - 50, by + 48, label + " (LED button)", 9)
+            gx = s["1"][0] - 15
+            pg.wire([s["1"], (gx, s["1"][1])], "GND_D_F")
+            pg.wire([s["2"], (gx, s["2"][1])], "GND_D_F")
+            pg.wire([(gx, s["1"][1]), (gx, s["2"][1])], "GND_D_F")
+            pg.wire([(gx, s["1"][1]), (gx, s["1"][1] - 10)], "GND_D_F")
+            pg.flag(gx, s["1"][1] - 10, 180, "GND_D_F")
+            nx = s["3"][0] + 15
+            pg.wire([s["3"], (nx, s["3"][1])], net)
+            pg.wire([s["4"], (nx, s["4"][1])], net)
+            pg.wire([(nx, s["3"][1]), (nx, s["4"][1])], net)
+            r = pg.place(f"R{100 + k}", r_dev("10k"), nx, s["3"][1] - 40, 270, *V_TXT)
+            pg.wire([r["2"], (nx, s["3"][1])], net)
+            pg.wire([(nx, s["4"][1]), (nx + 20, s["4"][1])], net)
+            pg.port(nx + 20, s["4"][1], net, "OUT", "right")
+            pg.wire([r["1"], (nx, s["3"][1] - 70), (nx - 20, s["3"][1] - 70)], "3V3D_F")
+            pg.port(nx - 20, s["3"][1] - 70, "3V3D_F", "IN", "left")
+            pg.stub_port(s["5"], P[ref].nets["5"], "IN", "left")
+            pg.stub_flag(s["6"], "GND_D_F", "right", 15)
+            continue
         s = pg.place(ref, "SW", bx, by, des=(-12, -20, "LEFT_BOTTOM"), name=False)
         pg.text(bx - 30, by + 30, label, 9)
         net = P[ref].nets["2"]
@@ -856,8 +905,10 @@ def faceplate_page(pr, parts):
         pg.wire([r["1"], (bx + 50, by - 70), (bx + 30, by - 70)], "3V3D_F")
         pg.port(bx + 30, by - 70, "3V3D_F", "IN", "left")
 
-    # LEDs
+    # LEDs (D1 and D4 are inside SW1 and SW4)
     for k, (ref, label, kind, _) in enumerate(circuit.LEDS):
+        if ref not in P:
+            continue
         lx, ly = 150 + k * 148, Y(1050)
         led = pg.place(ref, "LED_RG" if kind == "RG" else "LED_G", lx, ly, des=(-15, -24, "LEFT_BOTTOM"), name=False)
         pg.text(lx - 30, ly + 24, label, 9)

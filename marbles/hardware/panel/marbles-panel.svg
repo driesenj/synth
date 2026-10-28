@@ -6,8 +6,10 @@
 <text x="78.80" y="6.40" font-size="3.6" text-anchor="end" letter-spacing="0.5">MARBLESY</text>
 <line x1="3" y1="9.6" x2="88.3" y2="9.6" class="silk dots"/>
 <line x1="3" y1="10.6" x2="88.3" y2="10.6" class="silk dots"/>
-<text x="6.90" y="19.80" font-size="7.0" text-anchor="middle" class="serif">t</text>
-<text x="84.40" y="19.80" font-size="7.0" text-anchor="middle" class="serif">X</text>
+<text x="9.15" y="19.80" font-size="7.0" text-anchor="middle" class="serif">t</text>
+<text x="82.15" y="19.80" font-size="7.0" text-anchor="middle" class="serif">X</text>
+<circle cx="16.50" cy="17.60" r="4.35" class="silk" stroke-width="0.35"/>
+<circle cx="74.80" cy="17.60" r="4.35" class="silk" stroke-width="0.35"/>
 <path d="M 17.47 41.86 A 9.0 9.0 0 1 1 30.19 41.86" class="silk" stroke-width="0.3"/>
 <line x1="17.47" y1="41.86" x2="16.62" y2="42.71" class="silk" stroke-width="0.3"/>
 <line x1="15.27" y1="38.28" x2="14.60" y2="38.50" class="silk" stroke-width="0.3"/>
@@ -88,8 +90,6 @@
 <polyline points="68.53,48.70 68.53,51.00 69.65,53.50 69.65,92.28" class="silk dots"/>
 <polyline points="10.03,68.80 10.03,71.10 9.65,73.60 9.65,77.88" class="silk dots"/>
 <polyline points="82.33,68.80 82.33,71.10 81.65,73.60 81.65,77.88" class="silk dots"/>
-<polyline points="16.50,23.95 16.50,23.30" class="silk dots"/>
-<polyline points="74.80,23.95 74.80,23.30" class="silk dots"/>
 <polyline points="7.50,33.80 7.50,36.40" class="silk dots"/>
 <polyline points="83.80,33.80 83.80,36.40" class="silk dots"/>
 <polyline points="26.60,55.80 26.60,56.40" class="silk dots"/>
@@ -139,15 +139,13 @@
 <circle cx="46.18" cy="51.70" r="3.75" class="hole"/>
 <circle cx="32.23" cy="73.50" r="3.75" class="hole"/>
 <circle cx="60.13" cy="73.50" r="3.75" class="hole"/>
-<circle cx="16.50" cy="17.60" r="5.50" class="hole"/>
-<circle cx="74.80" cy="17.60" r="5.50" class="hole"/>
+<circle cx="16.50" cy="17.60" r="3.25" class="hole"/>
+<circle cx="74.80" cy="17.60" r="3.25" class="hole"/>
 <circle cx="7.50" cy="40.00" r="3.50" class="hole"/>
 <circle cx="83.80" cy="40.00" r="3.50" class="hole"/>
 <circle cx="26.60" cy="60.00" r="3.50" class="hole"/>
 <circle cx="64.70" cy="60.00" r="3.50" class="hole"/>
 <circle cx="45.65" cy="66.80" r="3.50" class="hole"/>
-<circle cx="16.50" cy="26.25" r="1.60" class="hole"/>
-<circle cx="74.80" cy="26.25" r="1.60" class="hole"/>
 <circle cx="7.50" cy="31.50" r="1.60" class="hole"/>
 <circle cx="83.80" cy="31.50" r="1.60" class="hole"/>
 <circle cx="26.60" cy="53.50" r="1.60" class="hole"/>
@@ -215,15 +213,13 @@
 <circle cx="60.13" cy="73.50" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
 <circle cx="60.13" cy="73.50" r="3.10" fill="#e8e8e4"/>
 <line x1="59.07" y1="74.56" x2="56.77" y2="76.86" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
-<circle cx="16.50" cy="17.60" r="5.0" fill="#9ccc3c" stroke="#1a1a1a" stroke-width="0.6"/>
-<circle cx="74.80" cy="17.60" r="5.0" fill="#9ccc3c" stroke="#1a1a1a" stroke-width="0.6"/>
+<circle cx="16.50" cy="17.60" r="2.75" fill="#9ccc3c" stroke="#1a1a1a" stroke-width="0.4"/>
+<circle cx="74.80" cy="17.60" r="2.75" fill="#9ccc3c" stroke="#1a1a1a" stroke-width="0.4"/>
 <circle cx="7.50" cy="40.00" r="2.9" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>
 <circle cx="83.80" cy="40.00" r="2.9" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>
 <circle cx="26.60" cy="60.00" r="2.9" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>
 <circle cx="64.70" cy="60.00" r="2.9" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>
 <circle cx="45.65" cy="66.80" r="2.9" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>
-<circle cx="16.50" cy="26.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
-<circle cx="74.80" cy="26.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
 <circle cx="7.50" cy="31.50" r="1.6" fill="#e0b03a" opacity="0.9"/>
 <circle cx="83.80" cy="31.50" r="1.6" fill="#e0b03a" opacity="0.9"/>
 <circle cx="26.60" cy="53.50" r="1.6" fill="#e0b03a" opacity="0.9"/>

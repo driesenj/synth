@@ -123,16 +123,16 @@
 <line x1="60.13" y1="72.00" x2="60.13" y2="75.00" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="64.38" y="69.45">Ø7.5</text>
 <text class="lbl" x="60.13" y="79.65" text-anchor="middle">STEPS</text>
-<circle cx="16.50" cy="17.60" r="5.50" fill="none" stroke="#c00" stroke-width="0.2"/>
+<circle cx="16.50" cy="17.60" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="15.00" y1="17.60" x2="18.00" y2="17.60" stroke="#000" stroke-width="0.12"/>
 <line x1="16.50" y1="16.10" x2="16.50" y2="19.10" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="22.50" y="11.80">Ø11.0</text>
-<text class="lbl" x="16.50" y="25.50" text-anchor="middle">t deja vu</text>
-<circle cx="74.80" cy="17.60" r="5.50" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="20.25" y="14.05">Ø6.5</text>
+<text class="lbl" x="16.50" y="23.25" text-anchor="middle">t deja vu</text>
+<circle cx="74.80" cy="17.60" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="73.30" y1="17.60" x2="76.30" y2="17.60" stroke="#000" stroke-width="0.12"/>
 <line x1="74.80" y1="16.10" x2="74.80" y2="19.10" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="80.80" y="11.80">Ø11.0</text>
-<text class="lbl" x="74.80" y="25.50" text-anchor="middle">X deja vu</text>
+<text class="dim" x="78.55" y="14.05">Ø6.5</text>
+<text class="lbl" x="74.80" y="23.25" text-anchor="middle">X deja vu</text>
 <circle cx="7.50" cy="40.00" r="3.50" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="6.00" y1="40.00" x2="9.00" y2="40.00" stroke="#000" stroke-width="0.12"/>
 <line x1="7.50" y1="38.50" x2="7.50" y2="41.50" stroke="#000" stroke-width="0.12"/>
@@ -158,16 +158,6 @@
 <line x1="45.65" y1="65.30" x2="45.65" y2="68.30" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="49.65" y="63.00">Ø7.0</text>
 <text class="lbl" x="45.65" y="72.70" text-anchor="middle">X ext / scale</text>
-<circle cx="16.50" cy="26.25" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="15.00" y1="26.25" x2="18.00" y2="26.25" stroke="#000" stroke-width="0.12"/>
-<line x1="16.50" y1="24.75" x2="16.50" y2="27.75" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="18.60" y="24.35">Ø3.2</text>
-<text class="lbl" x="16.50" y="30.25" text-anchor="middle">t deja vu</text>
-<circle cx="74.80" cy="26.25" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="73.30" y1="26.25" x2="76.30" y2="26.25" stroke="#000" stroke-width="0.12"/>
-<line x1="74.80" y1="24.75" x2="74.80" y2="27.75" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="76.90" y="24.35">Ø3.2</text>
-<text class="lbl" x="74.80" y="30.25" text-anchor="middle">X deja vu</text>
 <circle cx="7.50" cy="31.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="6.00" y1="31.50" x2="9.00" y2="31.50" stroke="#000" stroke-width="0.12"/>
 <line x1="7.50" y1="30.00" x2="7.50" y2="33.00" stroke="#000" stroke-width="0.12"/>
@@ -213,5 +203,5 @@
 <line x1="5" y1="-9.5" x2="5" y2="-6.5" stroke="#000" stroke-width="0.3"/>
 <line x1="55" y1="-9.5" x2="55" y2="-6.5" stroke="#000" stroke-width="0.3"/>
 <text x="30" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>
-<text x="45.65" y="136.5" font-size="2" text-anchor="middle">Marblesy 18HP panel, front view. Red circles: final hole size. Dashed: the faceplate board. Button holes suit 6 mm and 10 mm round caps; check yours.</text>
+<text x="45.65" y="136.5" font-size="2" text-anchor="middle">Marblesy 18HP panel, front view. Red circles: final hole size. Dashed: the faceplate board. Button holes suit 6 mm caps and the Thonk LED button; check yours.</text>
 </svg>
