@@ -40,6 +40,7 @@ def features():
     labels.update({r: lbl for r, lbl, *_ in circuit.POTS})
     labels.update({r: lbl for r, lbl, *_ in circuit.BUTTONS})
     labels.update({r: lbl for r, lbl, *_ in circuit.LEDS})
+    labels.update({r: lbl for r, lbl, *_ in circuit.GATE_LEDS})
     out = []
     for ref, (x, y, rot) in circuit.PLACEMENT.items():
         if ref.startswith("J"):
@@ -255,7 +256,7 @@ def write_artwork(feats, path):
         x = pos[ref][2]
         main, sub = OUT_LABELS[ref]
         t = main + (f'<tspan font-size="2.1" dy="0.9">{sub}</tspan>' if sub else "")
-        text(x, jy - A["nut"] - 1.2, t, 3.4, cls="serif cu-text")
+        text(x + 2.6, jy - A["nut"] - 1.2, t, 3.4, cls="serif cu-text")      # the LED sits to the left
     s.append('</g>')
     # -- holes
     s.append('<g id="holes">')
@@ -284,8 +285,7 @@ def write_artwork(feats, path):
         elif kind == "button":
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"]}" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>')
         elif kind == "led":
-            col = "#e0b03a" if ref in ("D2", "D3", "D5", "D6") else "#4bd36a"
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["led"]}" fill="{col}" opacity="0.9"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["led"]}" fill="#4bd36a" opacity="0.9"/>')
     for x, y in MOUNTS:
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>')
     s.append('</g>')

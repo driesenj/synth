@@ -333,7 +333,7 @@ def button4_symbol():
 
 
 # ------------------------------------------------------------------ project
-R_NEW = {"470": ("LR1F470R", "470Ω"), "2k2": ("LR1F2K2", "2.2kΩ"), "15k": ("LR1F15K", "15kΩ"),
+R_NEW = {"470": ("LR1F470R", "470Ω"), "2k2": ("LR1F2K2", "2.2kΩ"), "3k3": ("LR1F3K3", "3.3kΩ"), "15k": ("LR1F15K", "15kΩ"),
          "24k": ("LR1F24K", "24kΩ"), "27k": ("LR1F27K", "27kΩ"), "47k": ("LR1F47K", "47kΩ"),
          "100k": ("LR1F100K", "100kΩ")}
 C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF")}
@@ -917,10 +917,17 @@ def faceplate_page(pr, parts):
         pg.wire([r["1"], (bx + 50, by - 70), (bx + 30, by - 70)], "3V3D_F")
         pg.port(bx + 30, by - 70, "3V3D_F", "IN", "left")
 
-    # LEDs (D1 and D4 are inside SW1 and SW4)
-    for k, (ref, label, kind, _) in enumerate(circuit.LEDS):
-        if ref not in P:
-            continue
+    # LEDs: the button LEDs are inside the buttons; these are the CV output LEDs and the gate LEDs
+    pg.text(70, Y(1020), "Output LEDs: Y, X1-X3 from the spare 74HC595 lines (brightness by PWM); t1-t3 passive from the gate jacks", 12)
+    for k, (ref, label, net) in enumerate(circuit.GATE_LEDS):
+        rx, ry = 820 + k * 210, Y(1050)
+        rr = pg.place(f"R{91 + k}", r_dev("3k3"), rx, ry, des=H_TXT[0], value_at=H_TXT[1])
+        led = pg.place(ref, "LED_G", rx + 80, ry, des=(-15, -24, "LEFT_BOTTOM"), name=False)
+        pg.text(rx + 50, ry + 24, label, 9)
+        pg.stub_port(rr["1"], net, "IN", "left")
+        pg.wire([rr["2"], led["1"]], f"LED_{ref}")
+        pg.stub_flag(led["2"], "GND_F", "right", 15)
+    for k, (ref, label, kind, _) in enumerate([l for l in circuit.LEDS if l[0] in P]):
         lx, ly = 150 + k * 148, Y(1050)
         led = pg.place(ref, "LED_RG" if kind == "RG" else "LED_G", lx, ly, des=(-15, -24, "LEFT_BOTTOM"), name=False)
         pg.text(lx - 30, ly + 24, label, 9)

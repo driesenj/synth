@@ -112,9 +112,11 @@ def footprint_geometry(doc):
     title = next(p["title"] for h, p in doc["recs"] if h["type"] == "META")
     if title in BODY:
         pts = [BODY[title][:2], BODY[title][2:]]
+    padpts = []
     for pd in pads.values():
-        pts += [(pd["x"] - pd["w"] / 2, pd["y"] - pd["h"] / 2), (pd["x"] + pd["w"] / 2, pd["y"] + pd["h"] / 2)]
-    xs, ys = [x for x, _ in pts], [y for _, y in pts]
+        padpts += [(pd["x"] - pd["w"] / 2, pd["y"] - pd["h"] / 2), (pd["x"] + pd["w"] / 2, pd["y"] + pd["h"] / 2)]
+    body = pts or padpts             # the housing as drawn; pads are checked on their own
+    xs, ys = [x for x, _ in body], [y for _, y in body]
     return {"pads": pads, "bbox": (min(xs), min(ys), max(xs), max(ys)), "title": title}
 
 
@@ -408,7 +410,8 @@ FB_REAR = [
 ]
 _ROWS = [77, 79.5, 82, 84.5, 87, 89.5, 92]
 FB_REAR += [(f"R{80 + i}", 34.75, y, 0) for i, y in enumerate(_ROWS)]                       # LED resistors
-FB_REAR += [(r, 56.3, y, 0) for r, y in zip(("R100", "R101", "R102"), _ROWS)]
+FB_REAR += [(r, 56.3, y, 0) for r, y in zip(("R100", "R101", "R102", "R87", "R88", "R89", "R90"), _ROWS)]
+FB_REAR += [("R91", 71.5, 47.5, 90), ("R92", 40.5, 34.5, 90), ("R93", 49.5, 34.5, 90)]   # gate LED resistors
 FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R9", "R103", "R104", "R105"), (15.5, 18.5, 21.5, 24.5))]
 FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R10", "R106"), (65.5, 68.5))]
 

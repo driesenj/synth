@@ -25,7 +25,7 @@ repository) and its calibration constants:
 | Gate outputs | T1, T2, T3 | 3 |
 | CV outputs, about ±5.3 V (16-bit DAC, code 32768 = 0 V, −6213 codes/V) | X1, X2, X3, Y | 4 |
 | Buttons | t deja vu, t mode, t range, X deja vu, X mode, X range, X ext | 7 |
-| LEDs | t deja vu (green), t mode (R/G), t range (R/G), X deja vu (green), X mode (R/G), X range (R/G), X ext (green) | 7, all inside the buttons, 11 lines |
+| LEDs | t deja vu (green), t mode (R/G), t range (R/G), X deja vu (green), X mode (R/G), X range (R/G), X ext (green) | 7 inside the buttons (11 lines) + 7 output LEDs |
 
 Marbles reads the X SPREAD CV through two ADC channels and averages them;
 this design reads it once. The firmware port handles that.
@@ -35,7 +35,7 @@ this design reads it once. The firmware port handles that.
 ## Architecture
 
 ```
- panel ─┬─ faceplate board (FB)   16 Thonkiconn jacks, 8 Alpha pots, 7 LED buttons,
+ panel ─┬─ faceplate board (FB)   16 Thonkiconn jacks, 8 Alpha pots, 7 LED buttons, 7 output LEDs,
         │   90 x 108 mm            74HC4051 pot mux, 2x 74HC595 (LEDs), 74HC165 (buttons),
         │                          probe resistors, pull-ups, LED resistors
         │      31 pins in 5 headers (male on the FB, female on the MB)
@@ -188,7 +188,14 @@ SCK/SDI on the shared SPI bus, /LDAC shared. 100 n at each VDD (C39, C40).
   red/green ones (mode and range) sit between their two lines with one 470 Ω
   on the red line: red line high and green line low gives red, the reverse
   gives green, both equal is off, and orange is the two alternated at the
-  1 ms LED update. About 2.5 mA per lit LED. R80–R86. U10 QD–QH are spare.
+  1 ms LED update. About 2.5 mA per lit LED. R80–R86.
+- **Output LEDs**: Y, X1, X2, X3 (D14–D17) on U10 QD–QG through 470 Ω
+  (R87–R90); the firmware sets their brightness by PWM at the LED update
+  rate. t1, t2, t3 (D11–D13) are passive: jack net → 3.3 kΩ (R91–R93) →
+  LED → GND_F, about 1.5 mA, which costs 1.5 V across the gate stage's 1 kΩ
+  output resistor (the gate stays above 6 V). The CV outputs cannot be
+  loaded that way: any LED current through their 1 kΩ would shift the
+  pitch CV. U10 QH is the last spare line.
 - **Buttons**: U11 (74HC165, /PL from BTN_LOAD_F, CP from SCK_F, Q7 to
   MISO_F, DS and CE low). D0–D6 read the seven buttons, each with a 10k
   pull-up to 3V3D_F (R100–R106); D7 is tied low. Buttons connect pads 2+3 to
@@ -262,6 +269,7 @@ The arrangement follows Mutable's Marbles panel (board mm, y up):
    44.75        JITTER (31.05)               STEPS (58.95)
    36.25  BIAS jack                                  BIAS jack
    21.85  CLOCK  RATE  JITTER  DEJA VU  STEPS  SPREAD  CLOCK     x = 9 + 12 k
+   13.0   *      *     *       *        *      *       *         output LEDs, 4.2 mm left of each jack
     7.25  t1     t2    t3      Y        X1     X2      X3        outputs, same pitch
 ```
 
@@ -284,7 +292,7 @@ PCB in the Marbles style: black solder mask, white silkscreen (title, serif
 the knobs, dotted guides from each knob to its CV jack, the three-state
 labels beside the mode and range buttons in press order green / orange /
 red, LENGTH graduations 1 2 3 4 6 8 12 16, STEPS and JITTER end marks), a
-bare copper band behind the seven outputs with their labels
+bare copper band with an LED left of each output label and behind the seven outputs with their labels
 knocked out, every hole, and a mockup layer with knobs, nuts, caps and LEDs
 for the preview. Colours, radii and the
 title are the `ART` dict at the top of the artwork section; the SVG groups
@@ -314,7 +322,7 @@ panel parts' angles by it (jack sleeve pad towards the top of the board,
 pot pins in a column towards the left as seen from the front, button pads
 1/4 on the left, LED button LED pins along x with pin 5 on the right).
 
-**Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 LED buttons.
+**Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 LED buttons, 7 output LEDs between the jack rows.
 Top (rear) layer, inside the 8.5 mm header gap: U1 and U11 in the strip
 between the CV jacks and the JITTER/STEPS knobs (y 29–40), U9 and U10
 vertical in the pockets either side of LENGTH, the LED resistors and
@@ -360,6 +368,7 @@ a row are one contact (pads 1+4 and 2+3), which is the convention every
 | 8 | Alpha 9 mm vertical B10K (pick the shaft to match your knobs) | RV1–RV8 | Thonk |
 | 3 | Thonk low-profile LED button, green (switch + LED in one, 7.5 mm body, 5.5 mm cap) | SW1, SW4, SW7 | Thonk |
 | 4 | Thonk low-profile LED button, bipolar red/green | SW2, SW3, SW5, SW6 | Thonk |
+| 7 | 3 mm green LED (output indicators) | D11–D17 | Thonk |
 | 8 | Knobs: 3 large (RATE, DEJA VU, SPREAD), 5 small | | Thonk |
 | 4 | TL074 + DIP-14 socket | U3–U6 | Thonk |
 | 2 | MCP4922 + DIP-14 socket | U7, U8 | Mouser / Farnell |
@@ -379,7 +388,8 @@ a row are one contact (pads 1+4 and 2+3), which is the convention every
 | 15 | 10k | R42, R43, R46, R51, R53, R60, R63, R66, R9, R10, R100–R106 | |
 | 14 | 1k | R23, R26, R29, R32, R35, R38, R41, R62, R65, R68, R73, R77, R81, R85 | |
 | 1 | 2.2k | R47 | |
-| 7 | 470 Ω | R80–R86 (faceplate, one per LED button) | |
+| 11 | 470 Ω | R80–R90 (faceplate: one per LED button, four CV output LEDs) | |
+| 3 | 3.3k | R91–R93 (gate output LEDs) | |
 | 7 | 1 n C0G | C21–C27 | |
 | 1 | 1 µ | C29 | |
 | 15 | 100 n | C8–C11, C30–C40 | |

@@ -204,7 +204,12 @@ LEDS = [
     ("D3", "t range", "RG", ("U9:3", "U9:4")), ("D4", "X deja vu", "G", (None, "U9:5")),
     ("D5", "X mode", "RG", ("U9:6", "U9:7")), ("D6", "X range", "RG", ("U10:15", "U10:1")),
     ("D7", "X ext", "G", (None, "U10:2")),
+    # output LEDs for the CV outputs, brightness from the firmware (PWM on the spare 74HC595 lines)
+    ("D14", "Y", "G", (None, "U10:3")), ("D15", "X1", "G", (None, "U10:4")),
+    ("D16", "X2", "G", (None, "U10:5")), ("D17", "X3", "G", (None, "U10:6")),
 ]
+# gate output LEDs, passive: jack net -> 3.3k -> LED -> GND_F (about 1.5 mA, the 1k output resistor drops 1.5 V)
+GATE_LEDS = [("D11", "t1", "T1_F"), ("D12", "t2", "T2_F"), ("D13", "t3", "T3_F")]
 HC595_PINS = {"8": "GND_D_F", "10": "3V3D_F", "11": "SCK_F", "13": "GND_D_F", "16": "3V3D_F"}   # SRCLR high, OE low
 # 74HC165: 1 /PL, 2 CP, 3..6 D4..D7, 7 /Q7, 8 GND, 9 Q7, 10 DS, 11..14 D0..D3, 15 CE, 16 VCC
 HC165_INPUTS = ["11", "12", "13", "14", "3", "4", "5", "6"]   # D0..D7
@@ -255,6 +260,9 @@ def faceplate_parts():
             parts.append(Part(ref, "LED_RG" if kind == "RG" else "LED_G", "", nets, label))
     for u in ("U9", "U10"):
         parts.append(Part(u, "HC595", "74HC595", sr[u]))
+    for k, (ref, label, net) in enumerate(GATE_LEDS):
+        parts.append(R(f"R{91 + k}", "3k3", net, f"LED_{ref}"))
+        parts.append(Part(ref, "LED_G", "", {"1": f"LED_{ref}", "2": "GND_F"}, label))
     # buttons through the 74HC165, 10k pull-ups to 3V3D
     hc165 = {"1": "BTN_LOAD_F", "2": "SCK_F", "8": "GND_D_F", "9": "MISO_F", "10": "GND_D_F", "15": "GND_D_F",
              "16": "3V3D_F"}
@@ -314,7 +322,10 @@ BUTTON_XY = {"SW1": (15.85, 100.65), "SW4": (74.15, 100.65),                   #
              "SW7": (45, 51.45)}                                               # X ext (green)
 for ref, (x, y) in BUTTON_XY.items():
     PLACEMENT[ref] = (x, y, 0)
-# every LED is inside its button, so no LED placements
+# the seven output LEDs sit between the jack rows, 4.2 mm left of their jack
+OUTPUT_LEDS = {"D11": "J9", "D12": "J10", "D13": "J11", "D14": "J16", "D15": "J13", "D16": "J14", "D17": "J15"}
+for ref, jack in OUTPUT_LEDS.items():
+    PLACEMENT[ref] = (PLACEMENT[jack][0] - 4.2, 13.0, 0)
 
 
 def all_parts():

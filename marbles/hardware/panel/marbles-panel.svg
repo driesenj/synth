@@ -146,13 +146,13 @@
 </g>
 <g id="copper">
 <rect x="3.6" y="103.18" width="84.10" height="14.4" rx="1.4" class="copper"/>
-<text x="9.65" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">t<tspan font-size="2.1" dy="0.9">1</tspan></text>
-<text x="21.65" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">t<tspan font-size="2.1" dy="0.9">2</tspan></text>
-<text x="33.65" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">t<tspan font-size="2.1" dy="0.9">3</tspan></text>
-<text x="45.65" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">Y</text>
-<text x="57.65" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">X<tspan font-size="2.1" dy="0.9">1</tspan></text>
-<text x="69.65" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">X<tspan font-size="2.1" dy="0.9">2</tspan></text>
-<text x="81.65" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">X<tspan font-size="2.1" dy="0.9">3</tspan></text>
+<text x="12.25" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">t<tspan font-size="2.1" dy="0.9">1</tspan></text>
+<text x="24.25" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">t<tspan font-size="2.1" dy="0.9">2</tspan></text>
+<text x="36.25" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">t<tspan font-size="2.1" dy="0.9">3</tspan></text>
+<text x="48.25" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">Y</text>
+<text x="60.25" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">X<tspan font-size="2.1" dy="0.9">1</tspan></text>
+<text x="72.25" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">X<tspan font-size="2.1" dy="0.9">2</tspan></text>
+<text x="84.25" y="106.58" font-size="3.4" text-anchor="middle" class="serif cu-text">X<tspan font-size="2.1" dy="0.9">3</tspan></text>
 </g>
 <g id="holes">
 <circle cx="9.65" cy="111.78" r="3.25" class="hole"/>
@@ -186,6 +186,13 @@
 <circle cx="25.65" cy="56.50" r="3.25" class="hole"/>
 <circle cx="65.65" cy="56.50" r="3.25" class="hole"/>
 <circle cx="45.65" cy="66.80" r="3.25" class="hole"/>
+<circle cx="5.45" cy="105.25" r="1.60" class="hole"/>
+<circle cx="17.45" cy="105.25" r="1.60" class="hole"/>
+<circle cx="29.45" cy="105.25" r="1.60" class="hole"/>
+<circle cx="41.45" cy="105.25" r="1.60" class="hole"/>
+<circle cx="53.45" cy="105.25" r="1.60" class="hole"/>
+<circle cx="65.45" cy="105.25" r="1.60" class="hole"/>
+<circle cx="77.45" cy="105.25" r="1.60" class="hole"/>
 <circle cx="7.50" cy="3.00" r="1.60" class="hole"/>
 <circle cx="7.50" cy="125.50" r="1.60" class="hole"/>
 <circle cx="83.80" cy="3.00" r="1.60" class="hole"/>
@@ -255,6 +262,13 @@
 <circle cx="25.65" cy="56.50" r="2.75" fill="#e8c060" stroke="#1a1a1a" stroke-width="0.4"/>
 <circle cx="65.65" cy="56.50" r="2.75" fill="#e8c060" stroke="#1a1a1a" stroke-width="0.4"/>
 <circle cx="45.65" cy="66.80" r="2.75" fill="#9ccc3c" stroke="#1a1a1a" stroke-width="0.4"/>
+<circle cx="5.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
+<circle cx="17.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
+<circle cx="29.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
+<circle cx="41.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
+<circle cx="53.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
+<circle cx="65.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
+<circle cx="77.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
 <circle cx="7.50" cy="3.00" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
 <circle cx="7.50" cy="125.50" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
 <circle cx="83.80" cy="3.00" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
