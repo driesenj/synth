@@ -251,10 +251,13 @@ def hc165_symbol():
     return ic_symbol("74HC165", "74HC165.1", left, right)
 
 
-def led_button_symbol():
-    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 (A) and 6 (K), feet 7-9."""
-    left = [(0, "1", "1"), (1, "2", "2"), (3, "5", "LED A")]
-    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED K"), (4, "7", "foot"), (5, "8", "foot"), (6, "9", "foot")]
+def led_button_symbol(bipolar=False):
+    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 and 6, feet 7-9."""
+    left = [(0, "1", "1"), (1, "2", "2"), (3, "5", "LED R" if bipolar else "LED A")]
+    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED G" if bipolar else "LED K"), (4, "7", "foot"),
+             (5, "8", "foot"), (6, "9", "foot")]
+    if bipolar:
+        return ic_symbol("LED button bipolar", "SWLEDRG.1", left, right, designator="SW?")
     return ic_symbol("LED button", "SWLED.1", left, right, designator="SW?")
 
 
@@ -438,9 +441,12 @@ class MProject(Project):
             ("SW", button4_symbol(), "Tactile switch 6x6", "SW?", fps["SW"],
              "6 x 6 mm tactile switch, 4.5 x 6.5 mm pin pattern; pads 1+4 are one contact, 2+3 the other. "
              "Pick a height that puts a round cap just proud of the panel (about 9.5 mm for a 7 mm panel gap)"),
-            ("SWLED", led_button_symbol(), "LED button, Thonk low profile", "SW?", fps["SWLED"],
-             "Thonk low-profile LED button: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED anode 5, "
+            ("SWLED", led_button_symbol(), "LED button green, Thonk low profile", "SW?", fps["SWLED"],
+             "Thonk low-profile LED button, green: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED anode 5, "
              "cathode 6, feet 7-9 in 1.2 mm holes so it sits at Thonkiconn height"),
+            ("SWLED_RG", led_button_symbol(True), "LED button bipolar R/G, Thonk low profile", "SW?", fps["SWLED"],
+             "Thonk low-profile LED button, bipolar red/green (two leads): pin 5 red anode, pin 6 green anode; "
+             "driven between two 74HC595 lines, orange by alternating. Same body and feet as the green one"),
         ]
         for n in (4, 6, 7, 8):
             new.append((f"HDR{n}", header_symbol(n), f"Pin header 1x{n}", "H?", fps[f"HDR{n}"],
@@ -818,7 +824,7 @@ def faceplate_page(pr, parts):
     pg.text(1535, Y(430), "C8 at U1 pin 16", 8)
 
     # shift registers
-    pg.text(820, Y(495), "LEDs: two 74HC595 on the SPI bus, 470R per colour. Buttons: 74HC165, 10k pull-ups", 12)
+    pg.text(820, Y(495), "LEDs (inside the buttons): two 74HC595 on the SPI bus, 470R per LED. Buttons: 74HC165, 10k pull-ups", 12)
     for k, u in enumerate(("U9", "U10")):
         x, y = 880, Y(560 + k * 200)
         sr = pg.place(u, "HC595", x, y, des=(-50, -52, "LEFT_BOTTOM"), value_at=(-50, 58, "LEFT_BOTTOM"))
@@ -831,7 +837,10 @@ def faceplate_page(pr, parts):
             net = nets.get(num)
             if not net:
                 continue
-            r = next(p for p in parts if p.kind == "R" and p.nets["1"] == net)
+            r = next((p for p in parts if p.kind == "R" and p.nets["1"] == net), None)
+            if r is None:                # green line of a bipolar LED button: no resistor
+                pg.stub_port(sr[num], net, "OUT", "right", length=110)
+                continue
             rr = pg.place(r.ref, r_dev(r.value), x + 90, sr[num][1], des=(-18, -7, "LEFT_BOTTOM"),
                           value_at=(2, -7, "LEFT_BOTTOM"))
             pg.wire([sr[num], rr["1"]], net)
@@ -861,13 +870,13 @@ def faceplate_page(pr, parts):
     pg.text(1440, Y(600), "C9..C11 at U9..U11 pin 16", 8)
 
     # buttons
-    pg.text(70, Y(822), "Buttons: 6x6 mm tactiles (pads 1+4 one contact, 2+3 the other); SW1 / SW4 are Thonk LED buttons (1+2 / 3+4, LED on 5 / 6)", 12)
+    pg.text(70, Y(822), "Buttons: Thonk low-profile LED buttons (1+2 / 3+4 contacts, LED on pins 5 / 6). Bipolar ones sit between two 74HC595 lines, 470R on the red line.", 12)
     for k, (ref, label, sw) in enumerate(circuit.BUTTONS):
-        bx, by = (150, 400, 560, 800, 1050, 1210, 1370)[k], Y(935)     # the LED buttons need more room
+        bx, by = (150, 380, 610, 840, 1070, 1300, 1530)[k], Y(935)
         if ref in circuit.LED_BUTTONS:
             net = P[ref].nets["3"]
-            s = pg.place(ref, "SWLED", bx, by, des=(-50, -42, "LEFT_BOTTOM"), name=False)
-            pg.text(bx - 50, by + 48, label + " (LED button)", 9)
+            s = pg.place(ref, P[ref].kind, bx, by, des=(-50, -42, "LEFT_BOTTOM"), name=False)
+            pg.text(bx - 50, by + 48, label + (" (bipolar LED button)" if P[ref].kind == "SWLED_RG" else " (LED button)"), 9)
             gx = s["1"][0] - 15
             pg.wire([s["1"], (gx, s["1"][1])], "GND_D_F")
             pg.wire([s["2"], (gx, s["2"][1])], "GND_D_F")
@@ -885,7 +894,10 @@ def faceplate_page(pr, parts):
             pg.wire([r["1"], (nx, s["3"][1] - 70), (nx - 20, s["3"][1] - 70)], "3V3D_F")
             pg.port(nx - 20, s["3"][1] - 70, "3V3D_F", "IN", "left")
             pg.stub_port(s["5"], P[ref].nets["5"], "IN", "left")
-            pg.stub_flag(s["6"], "GND_D_F", "right", 15)
+            if P[ref].nets["6"] == "GND_D_F":
+                pg.stub_flag(s["6"], "GND_D_F", "right", 15)
+            else:
+                pg.stub_port(s["6"], P[ref].nets["6"], "IN", "right")
             continue
         s = pg.place(ref, "SW", bx, by, des=(-12, -20, "LEFT_BOTTOM"), name=False)
         pg.text(bx - 30, by + 30, label, 9)

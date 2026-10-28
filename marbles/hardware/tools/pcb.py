@@ -408,7 +408,7 @@ FB_REAR = [
 ]
 _ROWS = [77, 79.5, 82, 84.5, 87, 89.5, 92]
 FB_REAR += [(f"R{80 + i}", 34.75, y, 0) for i, y in enumerate(_ROWS)]                       # LED resistors
-FB_REAR += [(r, 56.3, y, 0) for r, y in zip(("R87", "R88", "R89", "R90", "R100", "R101", "R102"), _ROWS)]
+FB_REAR += [(r, 56.3, y, 0) for r, y in zip(("R100", "R101", "R102"), _ROWS)]
 FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R9", "R103", "R104", "R105"), (15.5, 18.5, 21.5, 24.5))]
 FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R10", "R106"), (65.5, 68.5))]
 

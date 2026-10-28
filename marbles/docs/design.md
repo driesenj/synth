@@ -25,7 +25,7 @@ repository) and its calibration constants:
 | Gate outputs | T1, T2, T3 | 3 |
 | CV outputs, about ±5.3 V (16-bit DAC, code 32768 = 0 V, −6213 codes/V) | X1, X2, X3, Y | 4 |
 | Buttons | t deja vu, t mode, t range, X deja vu, X mode, X range, X ext | 7 |
-| LEDs | t deja vu (green), t mode (R/G), t range (R/G), X deja vu (green), X mode (R/G), X range (R/G), X ext (green) | 7, 11 lines (two inside the deja vu buttons) |
+| LEDs | t deja vu (green), t mode (R/G), t range (R/G), X deja vu (green), X mode (R/G), X range (R/G), X ext (green) | 7, all inside the buttons, 11 lines |
 
 Marbles reads the X SPREAD CV through two ADC channels and averages them;
 this design reads it once. The firmware port handles that.
@@ -35,7 +35,7 @@ this design reads it once. The firmware port handles that.
 ## Architecture
 
 ```
- panel ─┬─ faceplate board (FB)   16 Thonkiconn jacks, 8 Alpha pots, 7 buttons, 7 LEDs,
+ panel ─┬─ faceplate board (FB)   16 Thonkiconn jacks, 8 Alpha pots, 7 LED buttons,
         │   90 x 108 mm            74HC4051 pot mux, 2x 74HC595 (LEDs), 74HC165 (buttons),
         │                          probe resistors, pull-ups, LED resistors
         │      31 pins in 5 headers (male on the FB, female on the MB)
@@ -182,8 +182,13 @@ SCK/SDI on the shared SPI bus, /LDAC shared. 100 n at each VDD (C39, C40).
 - **Pots RV1–RV8** (Alpha 9 mm B10k): CCW end to GND_F, CW end to 3V3A_F,
   wiper into U1 (74HC4051), channel order below. C8 100 n at U1 pin 16.
 - **LEDs**: U9 and U10 (74HC595, chained, SER from MOSI_F, SRCLK from SCK_F,
-  RCLK from LED_LATCH_F, /OE low, /SRCLR high) drive the 11 LED lines through
-  470 Ω (R80–R90). U10 QD–QH are spare.
+  RCLK from LED_LATCH_F, /OE low, /SRCLR high) drive the 11 LED lines. Every
+  LED is inside a Thonk low-profile LED button. The three green ones (deja vu
+  t / X, EXT) take one line each through 470 Ω to ground. The four bipolar
+  red/green ones (mode and range) sit between their two lines with one 470 Ω
+  on the red line: red line high and green line low gives red, the reverse
+  gives green, both equal is off, and orange is the two alternated at the
+  1 ms LED update. About 2.5 mA per lit LED. R80–R86. U10 QD–QH are spare.
 - **Buttons**: U11 (74HC165, /PL from BTN_LOAD_F, CP from SCK_F, Q7 to
   MISO_F, DS and CE low). D0–D6 read the seven buttons, each with a 10k
   pull-up to 3V3D_F (R100–R106); D7 is tied low. Buttons connect pads 2+3 to
@@ -249,12 +254,11 @@ The arrangement follows Mutable's Marbles panel (board mm, y up):
 ```
    y
   100.7  [t]o              DEJA VU (45)                o[X]      deja vu LED buttons
-   86.8   o                                            o         mode LED
    82.75         RATE (22.65)              SPREAD (67.35)
    78.25  o MODE                                       MODE o
    66.55  BIAS (8.85)        LENGTH (45)        BIAS (81.15)   (BIAS knobs at y 59.95)
-   64.75          o RANGE                  RANGE o               range LED + button (58.25)
-   51.45                      o EXT  (LED at 42.05)
+   58.25          o RANGE                  RANGE o               range buttons
+   51.45                      o EXT
    44.75        JITTER (31.05)               STEPS (58.95)
    36.25  BIAS jack                                  BIAS jack
    21.85  CLOCK  RATE  JITTER  DEJA VU  STEPS  SPREAD  CLOCK     x = 9 + 12 k
@@ -262,12 +266,12 @@ The arrangement follows Mutable's Marbles panel (board mm, y up):
 ```
 
 Three large knobs (RATE, DEJA VU, SPREAD, Ø15 drawn), five small (Ø10).
-The two deja vu buttons are Thonk low-profile LED buttons (green LED
-inside, 5.5 mm cap, 6.5 mm hole; their three plastic feet drop into 1.2 mm
-holes so they sit at Thonkiconn height, as Thonk's footprint note says).
-The other five are 6 × 6 mm tactiles with 6 mm caps (7 mm hole); pick a
-switch height that puts the cap just proud of the panel. Panel hole sizes:
-pots 7.5, jacks 6.5, LEDs 3.2, mounting 3.2. Pads of neighbouring parts clear
+All seven buttons are Thonk low-profile LED buttons (5.5 mm cap, 6.5 mm
+hole; their three plastic feet drop into 1.2 mm holes so they sit at
+Thonkiconn height, as Thonk's footprint note says): green for the deja vu
+pair and EXT, bipolar red/green for mode and range. Panel hole sizes: pots
+7.5, jacks 6.5, buttons 6.5, mounting 3.2 (Eurorack puts the mounting holes
+3 mm from the top and bottom edge; slots 5.5 × 3.2 give some play). Pads of neighbouring parts clear
 each other by 0.25 mm or more on the board (checked by the exporter).
 
 The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.
@@ -277,8 +281,10 @@ The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.
 `panel.py` also writes `hardware/panel/marbles-panel.svg`, the panel as a
 PCB in the Marbles style: black solder mask, white silkscreen (title, serif
 `t` / `X` beside the deja vu buttons, scale arcs with ticks, labels under
-the knobs, dotted guides from each knob to its CV jack and from each LED to
-its button), a bare copper band behind the seven outputs with their labels
+the knobs, dotted guides from each knob to its CV jack, the three-state
+labels beside the mode and range buttons in press order green / orange /
+red, LENGTH graduations 1 2 3 4 6 8 12 16, STEPS and JITTER end marks), a
+bare copper band behind the seven outputs with their labels
 knocked out, every hole, and a mockup layer with knobs, nuts, caps and LEDs
 for the preview. Colours, radii and the
 title are the `ART` dict at the top of the artwork section; the SVG groups
@@ -306,9 +312,9 @@ lines up pin for pin. EasyEDA mirrors a bottom-layer footprint about its own
 X axis (y → −y) before rotating it; `pcb.py` uses that rule and picks the
 panel parts' angles by it (jack sleeve pad towards the top of the board,
 pot pins in a column towards the left as seen from the front, button pads
-1/4 on the left, LED pad 1 on the left).
+1/4 on the left, LED button LED pins along x with pin 5 on the right).
 
-**Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 buttons, 7 LEDs.
+**Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 LED buttons.
 Top (rear) layer, inside the 8.5 mm header gap: U1 and U11 in the strip
 between the CV jacks and the JITTER/STEPS knobs (y 29–40), U9 and U10
 vertical in the pockets either side of LENGTH, the LED resistors and
@@ -352,10 +358,8 @@ a row are one contact (pads 1+4 and 2+3), which is the convention every
 | 1 | seed_power_opamps breakout, built | U2 | OSHWLab (Rob Heel) |
 | 16 | Thonkiconn PJ398SM + nut | J1–J16 | Thonk |
 | 8 | Alpha 9 mm vertical B10K (pick the shaft to match your knobs) | RV1–RV8 | Thonk |
-| 2 | Thonk low-profile LED button, green (switch + LED in one, 7.5 mm body, 5.5 mm cap) | SW1, SW4 | Thonk |
-| 5 | 6 × 6 mm tactile switch (TL1105 type, about 9.5 mm high) + 6 mm round cap | SW2, SW3, SW5, SW6, SW7 | Thonk / Tayda |
-| 1 | 3 mm green LED | D7 | Thonk |
-| 4 | 3 mm bicolour R/G, common cathode, 3 leads, 1.27 mm pitch | D2, D3, D5, D6 | Tayda / Kingbright (not at Thonk) |
+| 3 | Thonk low-profile LED button, green (switch + LED in one, 7.5 mm body, 5.5 mm cap) | SW1, SW4, SW7 | Thonk |
+| 4 | Thonk low-profile LED button, bipolar red/green | SW2, SW3, SW5, SW6 | Thonk |
 | 8 | Knobs: 3 large (RATE, DEJA VU, SPREAD), 5 small | | Thonk |
 | 4 | TL074 + DIP-14 socket | U3–U6 | Thonk |
 | 2 | MCP4922 + DIP-14 socket | U7, U8 | Mouser / Farnell |
@@ -375,7 +379,7 @@ a row are one contact (pads 1+4 and 2+3), which is the convention every
 | 15 | 10k | R42, R43, R46, R51, R53, R60, R63, R66, R9, R10, R100–R106 | |
 | 14 | 1k | R23, R26, R29, R32, R35, R38, R41, R62, R65, R68, R73, R77, R81, R85 | |
 | 1 | 2.2k | R47 | |
-| 11 | 470 Ω | R80–R90 (faceplate; R80 and R84 feed the LED buttons) | |
+| 7 | 470 Ω | R80–R86 (faceplate, one per LED button) | |
 | 7 | 1 n C0G | C21–C27 | |
 | 1 | 1 µ | C29 | |
 | 15 | 100 n | C8–C11, C30–C40 | |

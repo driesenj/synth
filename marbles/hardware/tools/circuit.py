@@ -186,10 +186,13 @@ POTS = [
     ("RV5", "LENGTH", "POT_LENGTH_F", "1", 4), ("RV6", "SPREAD", "POT_X_SPREAD_F", "5", 5),
     ("RV7", "BIAS (X)", "POT_X_BIAS_F", "2", 6), ("RV8", "STEPS", "POT_X_STEPS_F", "4", 7),
 ]
-# ref, label, firmware switch. SW1 and SW4 are Thonk low-profile LED buttons
-# (switch on pins 1+2 / 3+4, LED anode pin 5, cathode pin 6, three feet on
-# pins 7-9); their LED takes the place of D1 / D4.
-LED_BUTTONS = {"SW1": "D1", "SW4": "D4"}
+# ref, label, firmware switch. Every button is a Thonk low-profile LED button
+# (switch on pins 1+2 / 3+4, LED on pins 5 and 6, three feet on pins 7-9):
+# green ones for deja vu and EXT, bipolar red/green ones for mode and range.
+# The LED inside takes the place of the D1..D7 of the LEDS table; a bipolar
+# LED sits between two 74HC595 lines (one 470R), red one way, green the
+# other, orange by alternating them quickly.
+LED_BUTTONS = {"SW1": "D1", "SW2": "D2", "SW3": "D3", "SW4": "D4", "SW5": "D5", "SW6": "D6", "SW7": "D7"}
 BUTTONS = [
     ("SW1", "t deja vu", "T_DEJAVU"), ("SW2", "t mode", "T_MODE"), ("SW3", "t range", "T_RANGE"),
     ("SW4", "X deja vu", "X_DEJAVU"), ("SW5", "X mode", "X_MODE"), ("SW6", "X range", "X_RANGE"),
@@ -231,19 +234,23 @@ def faceplate_parts():
           "U10": dict(HC595_PINS, **{"14": "SR_CHAIN", "12": "LED_LATCH_F"})}
     nl = 80
     in_button = {led: sw for sw, led in LED_BUTTONS.items()}
-    button_led = {}                      # SW ref -> net of its built-in LED's anode
+    button_led = {}                      # SW ref -> (pin 5 net, pin 6 net) of its built-in LED
     for ref, label, kind, (red, green) in LEDS:
         nets = {"2": "GND_D_F"}
+        bipolar = ref in in_button and kind == "RG"
         for colour, pin_of_led, src in (("R", "1", red), ("G", "3" if kind == "RG" else "1", green)):
             if src is None:
                 continue
             u, pin = src.split(":")
             lnet = f"L_{ref}_{colour}"
             sr[u][pin] = lnet
+            if bipolar and colour == "G":    # the one 470R on the red line limits both directions
+                nets[pin_of_led] = lnet
+                continue
             parts.append(R(f"R{nl}", "470", lnet, f"LED_{ref}_{colour}")); nl += 1
             nets[pin_of_led] = f"LED_{ref}_{colour}"
         if ref in in_button:             # the LED sits inside the button
-            button_led[in_button[ref]] = nets["1"]
+            button_led[in_button[ref]] = (nets["1"], nets["3"]) if bipolar else (nets["1"], "GND_D_F")
         else:
             parts.append(Part(ref, "LED_RG" if kind == "RG" else "LED_G", "", nets, label))
     for u in ("U9", "U10"):
@@ -254,8 +261,9 @@ def faceplate_parts():
     for i, (ref, label, sw) in enumerate(BUTTONS):
         net = f"BTN_{sw}_F"
         if ref in LED_BUTTONS:
-            parts.append(Part(ref, "SWLED", "", {"1": "GND_D_F", "2": "GND_D_F", "3": net, "4": net,
-                                                 "5": button_led[ref], "6": "GND_D_F"}, label))
+            a, k = button_led[ref]
+            parts.append(Part(ref, "SWLED" if k == "GND_D_F" else "SWLED_RG", "",
+                              {"1": "GND_D_F", "2": "GND_D_F", "3": net, "4": net, "5": a, "6": k}, label))
         else:
             parts.append(Part(ref, "SW", "", {"1": "GND_D_F", "4": "GND_D_F", "2": net, "3": net}, label))
         parts.append(R(f"R{100 + i}", "10k", "3V3D_F", net))
@@ -300,16 +308,13 @@ POT_XY = {"RV1": (22.65, 82.75), "RV6": (67.35, 82.75), "RV4": (45, 97.55),    #
           "RV3": (31.05, 44.75), "RV8": (58.95, 44.75)}                        # JITTER, STEPS
 for ref, (x, y) in POT_XY.items():
     PLACEMENT[ref] = (x, y, 90)
-BUTTON_XY = {"SW1": (15.85, 100.65), "SW4": (74.15, 100.65),                   # t / X deja vu (LED buttons)
-             "SW2": (6.85, 78.25), "SW5": (83.15, 78.25),                      # t / X mode
-             "SW3": (25.95, 58.25), "SW6": (64.05, 58.25),                     # t / X range
-             "SW7": (45, 51.45)}                                               # X ext
+BUTTON_XY = {"SW1": (15.85, 100.65), "SW4": (74.15, 100.65),                   # t / X deja vu (green)
+             "SW2": (6.85, 78.25), "SW5": (83.15, 78.25),                      # t / X mode (bipolar)
+             "SW3": (25.95, 58.25), "SW6": (64.05, 58.25),                     # t / X range (bipolar)
+             "SW7": (45, 51.45)}                                               # X ext (green)
 for ref, (x, y) in BUTTON_XY.items():
     PLACEMENT[ref] = (x, y, 0)
-LED_XY = {"D2": (6.85, 86.75), "D5": (83.15, 86.75), "D3": (25.95, 64.75), "D6": (64.05, 64.75),
-          "D7": (45, 42.05)}                                                     # D1 / D4 are inside SW1 / SW4
-for ref, (x, y) in LED_XY.items():
-    PLACEMENT[ref] = (x, y, 0)
+# every LED is inside its button, so no LED placements
 
 
 def all_parts():

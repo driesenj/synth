@@ -47,7 +47,7 @@ def features():
         elif ref.startswith("RV"):
             out.append(("pot", ref, labels[ref], x, y, x + POT_SHAFT, y))
         elif ref.startswith("SW"):
-            out.append(("ledbutton" if ref in circuit.LED_BUTTONS else "button", ref, labels[ref], x, y, x, y))
+            out.append(("ledbutton", ref, labels[ref], x, y, x, y))
         elif ref.startswith("D"):
             out.append(("led", ref, labels[ref], x, y, x, y))
     return out
@@ -112,14 +112,19 @@ ART = {
     "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227",
     "knob_big": 7.5, "scale_big": 9.0, "knob_small": 5.0, "scale_small": 6.3,   # radii, mm
     "cap": 2.9, "cap_led": 2.75, "nut": 4.0, "led": 1.6,
-    "title": "MARBLESY", "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
+    "title": "Marbles", "subtitle": "Random sampler", "maker": "Seedable Instruments",
+    "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
 }
 BIG_POTS = {"RV1", "RV4", "RV6"}
 OUTPUTS = ["J9", "J10", "J11", "J16", "J13", "J14", "J15"]
 OUT_LABELS = {"J9": ("t", "1"), "J10": ("t", "2"), "J11": ("t", "3"), "J16": ("Y", ""), "J13": ("X", "1"),
               "J14": ("X", "2"), "J15": ("X", "3")}
 KNOB_TO_JACK = {"RV1": "J2", "RV3": "J4", "RV8": "J8", "RV6": "J6", "RV2": "J3", "RV7": "J7"}   # dotted guides
-LED_TO_BUTTON = {"D2": "SW2", "D5": "SW5", "D3": "SW3", "D6": "SW6", "D7": "SW7"}
+# labels printed beside the bipolar buttons, in press order (green, orange, red)
+MODE_LABELS = {"SW2": ("COIN", "RATIO", "DRUMS"), "SW3": ("\u00f74", "\u00d71", "\u00d74"),
+               "SW6": ("+2", "+5", "\u00b15")}
+LABEL_COLOURS = ("#4bd36a", "#f0a030", "#e04040")
+LENGTHS = ("1", "2", "3", "4", "6", "8", "12", "16")
 
 
 def _arc(cx, cy, r, a0, a1):
@@ -156,14 +161,52 @@ def write_artwork(feats, path):
 
     # -- silkscreen
     s.append('<g id="silk">')
-    text(W - 12.5, 6.4, A["title"], 3.6, anchor="end", extra=' letter-spacing="0.5"')   # clear of the screw
+    text(12.0, 7.4, A["title"], 5.2, anchor="start", cls="serif")            # between the screw and the centre
+    text(W - 12.0, 6.6, A["subtitle"], 2.4, anchor="end")
+    text(W / 2, 121.9, A["maker"], 2.4)
     s.append(f'<line x1="3" y1="9.6" x2="{W - 3}" y2="9.6" class="silk dots"/>')   # band under the title
     s.append(f'<line x1="3" y1="10.6" x2="{W - 3}" y2="10.6" class="silk dots"/>')
     text(pos["SW1"][2] - A["cap_led"] - 4.6, pos["SW1"][3] + 2.2, "t", 7.0, cls="serif")
     text(pos["SW4"][2] + A["cap_led"] + 4.6, pos["SW4"][3] + 2.2, "X", 7.0, cls="serif")
-    for sw in ("SW1", "SW4"):            # ring around the LED buttons, as on Marbles
+    for sw in ("SW1", "SW4"):            # ring around the deja vu buttons, as on Marbles
         s.append(f'<circle cx="{pos[sw][2]:.2f}" cy="{pos[sw][3]:.2f}" r="{A["cap_led"] + 1.6:.2f}" '
                  f'class="silk" stroke-width="0.35"/>')
+    # three-state labels beside the bipolar buttons (coloured here; one colour on a silkscreen)
+    def labels_above(sw, words):
+        x, y = pos[sw][2], pos[sw][3]
+        for i, w in enumerate(words):
+            text(x, y - A["cap_led"] - 9.4 + 3.4 * i, w, 1.7, extra=f' fill="{LABEL_COLOURS[i]}"')
+
+    def labels_beside(sw, words, side):
+        x, y = pos[sw][2], pos[sw][3]
+        for i, w in enumerate(words):
+            text(x + side * (A["cap_led"] + 1.8), y - 4.9 + 3.4 * i, w, 1.7, anchor="start" if side > 0 else "end",
+                 extra=f' fill="{LABEL_COLOURS[i]}"')
+
+    labels_above("SW2", MODE_LABELS["SW2"])
+    labels_beside("SW3", MODE_LABELS["SW3"], 1)
+    labels_beside("SW6", MODE_LABELS["SW6"], -1)
+    # X mode: three small bar icons (all channels alike / X2 centre with X1, X3 opposite / X1 low, X2 mid, X3 high)
+    x, y0 = pos["SW5"][2], pos["SW5"][3] - A["cap_led"] - 10.6
+    for i, bars in enumerate(((2, 2, 2), (2.6, 1.2, 2.6), (1.0, 1.8, 2.6))):
+        y = y0 + 3.4 * i
+        for j, h in enumerate(bars):
+            bx = x - 1.3 + 1.3 * j
+            s.append(f'<line x1="{bx:.2f}" y1="{y + 1.3:.2f}" x2="{bx:.2f}" y2="{y + 1.3 - h:.2f}" '
+                     f'stroke="{LABEL_COLOURS[i]}" stroke-width="0.55" stroke-linecap="round"/>')
+    # LENGTH graduations
+    lx, ly = pos["RV5"][2], pos["RV5"][3]
+    for i, n in enumerate(LENGTHS):
+        a = math.radians(-135 + 270 * i / 7)
+        text(lx + 9.0 * math.sin(a), ly - 9.0 * math.cos(a) + 0.6, n, 1.6)
+    # STEPS: smooth curve (CCW), S&H steps (12 o'clock), quantized steps (CW); JITTER: steady / random
+    sx, sy = pos["RV8"][2], pos["RV8"][3]
+    s.append(f'<path d="M {sx - 9.2:.2f} {sy + 7.6:.2f} q 0.9 -2.2 1.8 0 t 1.8 0" class="silk" stroke-width="0.4"/>')
+    s.append(f'<path d="M {sx - 1.8:.2f} {sy - 8.0:.2f} h 0.9 v -0.9 h 0.9 v -0.9 h 0.9 v -0.9 h 0.9" class="silk" stroke-width="0.4"/>')
+    s.append(f'<path d="M {sx + 5.6:.2f} {sy + 7.6:.2f} h 1.2 v -1.6 h 1.2 v -1.6 h 1.2" class="silk" stroke-width="0.4"/>')
+    jx, jy = pos["RV3"][2], pos["RV3"][3]
+    s.append(f'<path d="M {jx - 9.2:.2f} {jy + 7.2:.2f} h 3.4" class="silk" stroke-width="0.4"/>')
+    s.append(f'<path d="M {jx + 5.8:.2f} {jy + 7.6:.2f} l 0.6 -2.2 l 0.7 1.6 l 0.6 -2.4 l 0.7 1.8 l 0.8 -1.2" class="silk" stroke-width="0.4"/>')
     for ref, (kind, label, x, y) in pos.items():
         if kind == "pot":
             big = ref in BIG_POTS
@@ -187,19 +230,10 @@ def write_artwork(feats, path):
             dots([(lx, ly + 1.2), (lx, top)])
         else:
             dots([(lx, ly + 1.2), (lx, ly + 3.5), (jx, ly + 6.0), (jx, top)])
-    # LED to button ticks
-    for led, sw in LED_TO_BUTTON.items():
-        (_, _, lx, ly), (kind, _, bx, by) = pos[led], pos[sw]
-        cap = A["cap"]
-        dx, dy = bx - lx, by - ly
-        d = math.hypot(dx, dy)
-        ux, uy = dx / d, dy / d
-        dots([(lx + ux * (A["led"] + 0.7), ly + uy * (A["led"] + 0.7)), (bx - ux * (cap + 0.7), by - uy * (cap + 0.7))])
     # button words
-    for sw, word in (("SW2", "MODE"), ("SW5", "MODE"), ("SW3", "RANGE"), ("SW6", "RANGE")):
+    for sw, word in (("SW2", "MODE"), ("SW5", "MODE"), ("SW3", "RANGE"), ("SW6", "RANGE"), ("SW7", "EXT")):
         x, y = pos[sw][2], pos[sw][3]
-        text(x, y + A["cap"] + 2.6, word, 1.8)
-    text(pos["D7"][2], pos["D7"][3] + A["led"] + 2.6, "EXT", 1.8)
+        text(x, y + A["cap_led"] + 2.6, word, 1.8)
     # jack labels: CLOCK over the clock jacks, DEJA VU over its CV jack (its knob is far away)
     for jack in ("J1", "J12"):
         text(pos[jack][2], pos[jack][3] - A["nut"] - 1.6, "CLOCK", 2.2)
@@ -237,7 +271,8 @@ def write_artwork(feats, path):
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["nut"]}" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>')
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="1.75" fill="#111"/>')
         elif kind == "ledbutton":
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap_led"]}" fill="#9ccc3c" stroke="#1a1a1a" stroke-width="0.4"/>')
+            col = "#9ccc3c" if ref in ("SW1", "SW4", "SW7") else "#e8c060"
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap_led"]}" fill="{col}" stroke="#1a1a1a" stroke-width="0.4"/>')
         elif kind == "button":
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"]}" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>')
         elif kind == "led":

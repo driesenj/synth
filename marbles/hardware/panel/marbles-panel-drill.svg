@@ -133,56 +133,31 @@
 <line x1="74.80" y1="16.10" x2="74.80" y2="19.10" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="78.55" y="14.05">Ø6.5</text>
 <text class="lbl" x="74.80" y="23.25" text-anchor="middle">X deja vu</text>
-<circle cx="7.50" cy="40.00" r="3.50" fill="none" stroke="#c00" stroke-width="0.2"/>
+<circle cx="7.50" cy="40.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="6.00" y1="40.00" x2="9.00" y2="40.00" stroke="#000" stroke-width="0.12"/>
 <line x1="7.50" y1="38.50" x2="7.50" y2="41.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="11.50" y="36.20">Ø7.0</text>
-<text class="lbl" x="7.50" y="45.90" text-anchor="middle">t mode</text>
-<circle cx="83.80" cy="40.00" r="3.50" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="11.25" y="36.45">Ø6.5</text>
+<text class="lbl" x="7.50" y="45.65" text-anchor="middle">t mode</text>
+<circle cx="83.80" cy="40.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="82.30" y1="40.00" x2="85.30" y2="40.00" stroke="#000" stroke-width="0.12"/>
 <line x1="83.80" y1="38.50" x2="83.80" y2="41.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="87.80" y="36.20">Ø7.0</text>
-<text class="lbl" x="83.80" y="45.90" text-anchor="middle">X mode</text>
-<circle cx="26.60" cy="60.00" r="3.50" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="87.55" y="36.45">Ø6.5</text>
+<text class="lbl" x="83.80" y="45.65" text-anchor="middle">X mode</text>
+<circle cx="26.60" cy="60.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="25.10" y1="60.00" x2="28.10" y2="60.00" stroke="#000" stroke-width="0.12"/>
 <line x1="26.60" y1="58.50" x2="26.60" y2="61.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="30.60" y="56.20">Ø7.0</text>
-<text class="lbl" x="26.60" y="65.90" text-anchor="middle">t range</text>
-<circle cx="64.70" cy="60.00" r="3.50" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="30.35" y="56.45">Ø6.5</text>
+<text class="lbl" x="26.60" y="65.65" text-anchor="middle">t range</text>
+<circle cx="64.70" cy="60.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="63.20" y1="60.00" x2="66.20" y2="60.00" stroke="#000" stroke-width="0.12"/>
 <line x1="64.70" y1="58.50" x2="64.70" y2="61.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="68.70" y="56.20">Ø7.0</text>
-<text class="lbl" x="64.70" y="65.90" text-anchor="middle">X range</text>
-<circle cx="45.65" cy="66.80" r="3.50" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="68.45" y="56.45">Ø6.5</text>
+<text class="lbl" x="64.70" y="65.65" text-anchor="middle">X range</text>
+<circle cx="45.65" cy="66.80" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="44.15" y1="66.80" x2="47.15" y2="66.80" stroke="#000" stroke-width="0.12"/>
 <line x1="45.65" y1="65.30" x2="45.65" y2="68.30" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="49.65" y="63.00">Ø7.0</text>
-<text class="lbl" x="45.65" y="72.70" text-anchor="middle">X ext / scale</text>
-<circle cx="7.50" cy="31.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="6.00" y1="31.50" x2="9.00" y2="31.50" stroke="#000" stroke-width="0.12"/>
-<line x1="7.50" y1="30.00" x2="7.50" y2="33.00" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="9.60" y="29.60">Ø3.2</text>
-<text class="lbl" x="7.50" y="35.50" text-anchor="middle">t mode</text>
-<circle cx="83.80" cy="31.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="82.30" y1="31.50" x2="85.30" y2="31.50" stroke="#000" stroke-width="0.12"/>
-<line x1="83.80" y1="30.00" x2="83.80" y2="33.00" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="85.90" y="29.60">Ø3.2</text>
-<text class="lbl" x="83.80" y="35.50" text-anchor="middle">X mode</text>
-<circle cx="26.60" cy="53.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="25.10" y1="53.50" x2="28.10" y2="53.50" stroke="#000" stroke-width="0.12"/>
-<line x1="26.60" y1="52.00" x2="26.60" y2="55.00" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="28.70" y="51.60">Ø3.2</text>
-<text class="lbl" x="26.60" y="57.50" text-anchor="middle">t range</text>
-<circle cx="64.70" cy="53.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="63.20" y1="53.50" x2="66.20" y2="53.50" stroke="#000" stroke-width="0.12"/>
-<line x1="64.70" y1="52.00" x2="64.70" y2="55.00" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="66.80" y="51.60">Ø3.2</text>
-<text class="lbl" x="64.70" y="57.50" text-anchor="middle">X range</text>
-<circle cx="45.65" cy="76.20" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="44.15" y1="76.20" x2="47.15" y2="76.20" stroke="#000" stroke-width="0.12"/>
-<line x1="45.65" y1="74.70" x2="45.65" y2="77.70" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="47.75" y="74.30">Ø3.2</text>
-<text class="lbl" x="45.65" y="80.20" text-anchor="middle">X ext</text>
+<text class="dim" x="49.40" y="63.25">Ø6.5</text>
+<text class="lbl" x="45.65" y="72.45" text-anchor="middle">X ext / scale</text>
 <circle cx="7.50" cy="3.00" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="6.00" y1="3.00" x2="9.00" y2="3.00" stroke="#000" stroke-width="0.12"/>
 <line x1="7.50" y1="1.50" x2="7.50" y2="4.50" stroke="#000" stroke-width="0.12"/>
