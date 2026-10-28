@@ -310,7 +310,7 @@ for ref, (x, y) in POT_XY.items():
     PLACEMENT[ref] = (x, y, 90)
 BUTTON_XY = {"SW1": (15.85, 100.65), "SW4": (74.15, 100.65),                   # t / X deja vu (green)
              "SW2": (6.85, 78.25), "SW5": (83.15, 78.25),                      # t / X mode (bipolar)
-             "SW3": (25.95, 58.25), "SW6": (64.05, 58.25),                     # t / X range (bipolar)
+             "SW3": (25.0, 61.75), "SW6": (65.0, 61.75),                       # t / X range (bipolar)
              "SW7": (45, 51.45)}                                               # X ext (green)
 for ref, (x, y) in BUTTON_XY.items():
     PLACEMENT[ref] = (x, y, 0)

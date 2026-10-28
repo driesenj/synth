@@ -147,9 +147,13 @@ def write_artwork(feats, path):
          f'<rect x="0" y="0" width="{W}" height="{H}" fill="{A["panel"]}"/>']
     pos = {ref: (kind, label, *panel_xy(hx, hy)) for kind, ref, label, ox, oy, hx, hy in feats}
 
-    def text(x, y, t, size, anchor="middle", cls="", extra=""):
+    def text(x, y, t, size, anchor="middle", cls="", extra="", colour=None):
         c = f' class="{cls}"' if cls else ""
-        s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="{anchor}"{c}{extra}>{t}</text>')
+        st = f' style="fill:{colour}"' if colour else ""
+        s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="{anchor}"{c}{st}{extra}>{t}</text>')
+
+    def led_dot(x, y, colour):
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="0.8" fill="{colour}"/>')
 
     def dots(pts):
         s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts) + '" class="silk dots"/>')
@@ -175,13 +179,16 @@ def write_artwork(feats, path):
     def labels_above(sw, words):
         x, y = pos[sw][2], pos[sw][3]
         for i, w in enumerate(words):
-            text(x, y - A["cap_led"] - 9.4 + 3.4 * i, w, 1.7, extra=f' fill="{LABEL_COLOURS[i]}"')
+            yy = y - A["cap_led"] - 9.4 + 3.4 * i
+            led_dot(x - 4.6, yy - 0.6, LABEL_COLOURS[i])
+            text(x + 0.6, yy, w, 1.7, colour=LABEL_COLOURS[i])
 
     def labels_beside(sw, words, side):
         x, y = pos[sw][2], pos[sw][3]
         for i, w in enumerate(words):
-            text(x + side * (A["cap_led"] + 1.8), y - 4.9 + 3.4 * i, w, 1.7, anchor="start" if side > 0 else "end",
-                 extra=f' fill="{LABEL_COLOURS[i]}"')
+            x0, yy = x + side * (A["cap_led"] + 1.6), y - 3.9 + 3.4 * i
+            led_dot(x0 + side * 0.8, yy - 0.6, LABEL_COLOURS[i])
+            text(x0 + side * 2.4, yy, w, 1.7, anchor="start" if side > 0 else "end", colour=LABEL_COLOURS[i])
 
     labels_above("SW2", MODE_LABELS["SW2"])
     labels_beside("SW3", MODE_LABELS["SW3"], 1)
@@ -190,18 +197,19 @@ def write_artwork(feats, path):
     x, y0 = pos["SW5"][2], pos["SW5"][3] - A["cap_led"] - 10.6
     for i, bars in enumerate(((2, 2, 2), (2.6, 1.2, 2.6), (1.0, 1.8, 2.6))):
         y = y0 + 3.4 * i
+        led_dot(x - 4.0, y + 0.6, LABEL_COLOURS[i])
         for j, h in enumerate(bars):
-            bx = x - 1.3 + 1.3 * j
+            bx = x - 0.7 + 1.3 * j
             s.append(f'<line x1="{bx:.2f}" y1="{y + 1.3:.2f}" x2="{bx:.2f}" y2="{y + 1.3 - h:.2f}" '
                      f'stroke="{LABEL_COLOURS[i]}" stroke-width="0.55" stroke-linecap="round"/>')
     # LENGTH graduations
     lx, ly = pos["RV5"][2], pos["RV5"][3]
     for i, n in enumerate(LENGTHS):
         a = math.radians(-135 + 270 * i / 7)
-        text(lx + 9.0 * math.sin(a), ly - 9.0 * math.cos(a) + 0.6, n, 1.6)
+        text(lx + 8.6 * math.sin(a), ly - 8.6 * math.cos(a) + 0.6, n, 1.5)
     # STEPS: smooth curve (CCW), S&H steps (12 o'clock), quantized steps (CW); JITTER: steady / random
     sx, sy = pos["RV8"][2], pos["RV8"][3]
-    s.append(f'<path d="M {sx - 9.2:.2f} {sy + 7.6:.2f} q 0.9 -2.2 1.8 0 t 1.8 0" class="silk" stroke-width="0.4"/>')
+    s.append(f'<path d="M {sx - 9.6:.2f} {sy + 7.8:.2f} h 1.0 c 1.0 0 0.6 -2.0 1.6 -2.0 h 1.0" class="silk" stroke-width="0.4"/>')
     s.append(f'<path d="M {sx - 1.8:.2f} {sy - 8.0:.2f} h 0.9 v -0.9 h 0.9 v -0.9 h 0.9 v -0.9 h 0.9" class="silk" stroke-width="0.4"/>')
     s.append(f'<path d="M {sx + 5.6:.2f} {sy + 7.6:.2f} h 1.2 v -1.6 h 1.2 v -1.6 h 1.2" class="silk" stroke-width="0.4"/>')
     jx, jy = pos["RV3"][2], pos["RV3"][3]

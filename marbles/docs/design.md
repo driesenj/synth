@@ -257,7 +257,7 @@ The arrangement follows Mutable's Marbles panel (board mm, y up):
    82.75         RATE (22.65)              SPREAD (67.35)
    78.25  o MODE                                       MODE o
    66.55  BIAS (8.85)        LENGTH (45)        BIAS (81.15)   (BIAS knobs at y 59.95)
-   58.25          o RANGE                  RANGE o               range buttons
+   61.75          o RANGE (25)             RANGE (65) o          range buttons, labels inside
    51.45                      o EXT
    44.75        JITTER (31.05)               STEPS (58.95)
    36.25  BIAS jack                                  BIAS jack
