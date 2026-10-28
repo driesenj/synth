@@ -223,13 +223,27 @@ class PanelBoard:
                                     "fillStyle": "SOLID", "path": [path], "locked": False, "zIndex": d.zi(),
                                     "isBridgingCopper": False, "networkList": [], "refs": []})
 
+        def rounded(x, y, w, h, r):
+            """Rounded rectangle from its top-left (y up) as lines and clockwise 90-degree arcs.
+            The "R" path form's trailing parameters are not corner radii (EasyEDA rotated the shape),
+            so rounded shapes are drawn explicitly, as the library jack outline does."""
+            r = min(r, w / 2, h / 2)
+            path = [mil(x + r), mil(y)]
+            for seg in (("L", x + w - r, y), ("ARC", x + w, y - r), ("L", x + w, y - h + r), ("ARC", x + w - r, y - h),
+                        ("L", x + r, y - h), ("ARC", x, y - h + r), ("L", x, y - r), ("ARC", x + r, y)):
+                kind, px, py = seg
+                if kind == "L" and (mil(px), mil(py)) == (path[-2], path[-1]):
+                    continue                      # a slot has no straight piece between its two end arcs
+                path += ["L", mil(px), mil(py)] if kind == "L" else ["ARC", -90, mil(px), mil(py)]
+            return path
+
         for x, y, dia in self.holes:
             fill(12, ["CIRCLE", mil(x), mil(y), mil(dia / 2)])
         for x, y, w, h in self.slots:
-            fill(12, ["R", mil(x - w / 2), mil(y + h / 2), mil(w), mil(h), mil(h / 2), mil(h / 2)])
+            fill(12, rounded(x - w / 2, y + h / 2, w, h, h / 2))
         for x, y, w, h, rx in self.copper:        # (x, y) is the band's top-left in the PCB frame
             for layer in (1, 5):                  # top copper, top solder mask opening
-                fill(layer, ["R", mil(x), mil(y), mil(w), mil(h), mil(rx), mil(rx)])
+                fill(layer, rounded(x, y, w, h, rx))
         d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 11, "width": 10,
                                 "path": ["R", 0, mil(self.H), mil(self.W), mil(self.H), 0, 0], "locked": False,
                                 "zIndex": d.zi(), "polyType": "BOARD_OUTLINE"})

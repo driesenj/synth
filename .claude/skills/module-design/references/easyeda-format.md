@@ -37,9 +37,14 @@ and `marbles/hardware/tools/{easyeda_export,pcb,panel_pcb}.py`.
   `POLY` on layer 11, `path: ["R", 0, H, W, H, 0, 0]` = (x_left, y_top,
   width, height, rx, ry), so a rectangle's anchor is its top-left.
 - Path grammar in `POLY`/`FILL` paths: `[x, y, "L", x, y, ...]`,
-  `["CIRCLE", cx, cy, r]`, `["R", x, y, w, h, rx, ry]`, and arcs as
+  `["CIRCLE", cx, cy, r]`, `["R", x, y, w, h, 0, 0]`, and arcs as
   `"ARC", sweepDeg, endX, endY` (negative sweep = clockwise in the y-up
-  frame). `FILL.path` is a list of paths; `POLY.path` is one path.
+  frame). `FILL.path` is a list of paths; `POLY.path` is one path. The
+  "R" form's last two numbers are NOT corner radii: a nonzero value
+  rotated the shape in EasyEDA (the Marblesy panel band came out at 55°).
+  Keep them 0 and draw rounded rectangles and slots as L/ARC paths with
+  clockwise −90° arcs at the corners, the way the library jack outline is
+  drawn.
 - Bottom-layer components: pad position = origin + rotate(angle)·(px, −py),
   i.e. mirror about the footprint's X axis, then rotate (angle in degrees,
   CCW positive). Top layer: rotate only. Verified against every routed
