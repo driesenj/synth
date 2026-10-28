@@ -278,8 +278,8 @@ All seven buttons are Thonk low-profile LED buttons (5.5 mm cap, 6.5 mm
 hole; their three plastic feet drop into 1.2 mm holes so they sit at
 Thonkiconn height, as Thonk's footprint note says): green for the deja vu
 pair and EXT, bipolar red/green for mode and range. Panel hole sizes: pots
-7.5, jacks 6.5, buttons 6.5, mounting 3.2 (Eurorack puts the mounting holes
-3 mm from the top and bottom edge; slots 5.5 × 3.2 give some play). Pads of neighbouring parts clear
+7.5, jacks 6.5, buttons 6.5; mounting slots 5.5 × 3.2 mm with their centres
+3 mm from the top and bottom edge and 7.5 / 83.8 mm from the left (Eurorack). Pads of neighbouring parts clear
 each other by 0.25 mm or more on the board (checked by the exporter).
 
 The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.

@@ -59,7 +59,17 @@ def panel_xy(bx, by):
     return BOARD_X0 + bx, PANEL_H - (BOARD_Y0 + by)
 
 
+# Eurorack mounting: centres 3 mm from the top and bottom edge, 7.5 mm from the left edge and
+# (HP - 3) * 5.08 further right; slots 5.5 x 3.2 mm (horizontal) give side-to-side play
 MOUNTS = [(x, y) for x in (7.5, PANEL_W - 7.5) for y in (3.0, PANEL_H - 3.0)]
+SLOT_W, SLOT_H = 5.5, 3.2
+
+
+def slot(x, y, cls=None, stroke=None):
+    c = f' class="{cls}"' if cls else ""
+    st = f' fill="none" stroke="{stroke}" stroke-width="0.2"' if stroke else ""
+    return (f'<rect x="{x - SLOT_W / 2:.2f}" y="{y - SLOT_H / 2:.2f}" width="{SLOT_W}" height="{SLOT_H}" '
+            f'rx="{SLOT_H / 2}"{c}{st}/>')
 
 
 def write_csv(feats, path):
@@ -71,7 +81,7 @@ def write_csv(feats, path):
             px, py = panel_xy(hx, hy)
             w.writerow([kind, ref, label, f"{ox:.2f}", f"{oy:.2f}", f"{px:.2f}", f"{py:.2f}", HOLE[kind]])
         for x, y in MOUNTS:
-            w.writerow(["mount", "", "mounting", "", "", f"{x:.2f}", f"{y:.2f}", HOLE["mount"]])
+            w.writerow(["mount", "", "mounting slot", "", "", f"{x:.2f}", f"{y:.2f}", f"{SLOT_W} x {SLOT_H} slot"])
 
 
 def write_svg(feats, path):
@@ -85,7 +95,9 @@ def write_svg(feats, path):
          f'<rect x="{BOARD_X0:.2f}" y="{PANEL_H - BOARD_Y0 - circuit.BOARD_H:.2f}" width="{circuit.BOARD_W}" '
          f'height="{circuit.BOARD_H}" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>']
     rows = [(k, lbl, *panel_xy(hx, hy)) for k, ref, lbl, ox, oy, hx, hy in feats]
-    rows += [("mount", "", x, y) for x, y in MOUNTS]
+    for x, y in MOUNTS:
+        s.append(slot(x, y, stroke="#c00"))
+        s.append(f'<text class="dim" x="{x + SLOT_W / 2 + 0.5:.2f}" y="{y - SLOT_H / 2 - 0.3:.2f}">{SLOT_W}x{SLOT_H}</text>')
     for kind, label, x, y in rows:
         d = HOLE[kind]
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{d / 2:.2f}" fill="none" stroke="#c00" stroke-width="0.2"/>')
@@ -263,7 +275,7 @@ def write_artwork(feats, path):
     for ref, (kind, label, x, y) in pos.items():
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE[kind] / 2:.2f}" class="hole"/>')
     for x, y in MOUNTS:
-        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE["mount"] / 2:.2f}" class="hole"/>')
+        s.append(slot(x, y, cls="hole"))
     s.append('</g>')
     # -- mockup of the fitted parts (preview only)
     s.append('<g id="mockup">')
@@ -286,7 +298,7 @@ def write_artwork(feats, path):
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"]}" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>')
         elif kind == "led":
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["led"]}" fill="#4bd36a" opacity="0.9"/>')
-    for x, y in MOUNTS:
+    for x, y in MOUNTS:                  # M3 screw head
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>')
     s.append('</g>')
     s.append('</svg>')

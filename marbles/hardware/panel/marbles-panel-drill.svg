@@ -3,6 +3,14 @@
 <style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444} .lbl{font-size:2px;fill:#06c}</style>
 <rect x="0" y="0" width="91.3" height="128.5" fill="none" stroke="#000" stroke-width="0.25"/>
 <rect x="0.65" y="10.25" width="90.0" height="108.0" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>
+<rect x="4.75" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="1.10">5.5x3.2</text>
+<rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="123.60">5.5x3.2</text>
+<rect x="81.05" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="87.05" y="1.10">5.5x3.2</text>
+<rect x="81.05" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="87.05" y="123.60">5.5x3.2</text>
 <circle cx="9.65" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="8.15" y1="111.78" x2="11.15" y2="111.78" stroke="#000" stroke-width="0.12"/>
 <line x1="9.65" y1="110.28" x2="9.65" y2="113.28" stroke="#000" stroke-width="0.12"/>
@@ -193,22 +201,6 @@
 <line x1="77.45" y1="103.75" x2="77.45" y2="106.75" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="79.55" y="103.35">Ø3.2</text>
 <text class="lbl" x="77.45" y="109.25" text-anchor="middle">X3</text>
-<circle cx="7.50" cy="3.00" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="6.00" y1="3.00" x2="9.00" y2="3.00" stroke="#000" stroke-width="0.12"/>
-<line x1="7.50" y1="1.50" x2="7.50" y2="4.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="9.60" y="1.10">Ø3.2</text>
-<circle cx="7.50" cy="125.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="6.00" y1="125.50" x2="9.00" y2="125.50" stroke="#000" stroke-width="0.12"/>
-<line x1="7.50" y1="124.00" x2="7.50" y2="127.00" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="9.60" y="123.60">Ø3.2</text>
-<circle cx="83.80" cy="3.00" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="82.30" y1="3.00" x2="85.30" y2="3.00" stroke="#000" stroke-width="0.12"/>
-<line x1="83.80" y1="1.50" x2="83.80" y2="4.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="85.90" y="1.10">Ø3.2</text>
-<circle cx="83.80" cy="125.50" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="82.30" y1="125.50" x2="85.30" y2="125.50" stroke="#000" stroke-width="0.12"/>
-<line x1="83.80" y1="124.00" x2="83.80" y2="127.00" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="85.90" y="123.60">Ø3.2</text>
 <line x1="5" y1="-8" x2="55" y2="-8" stroke="#000" stroke-width="0.3"/>
 <line x1="5" y1="-9.5" x2="5" y2="-6.5" stroke="#000" stroke-width="0.3"/>
 <line x1="55" y1="-9.5" x2="55" y2="-6.5" stroke="#000" stroke-width="0.3"/>
