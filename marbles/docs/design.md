@@ -348,9 +348,10 @@ jacks and the knobs, H5 (74, 47.5) vertical beside the X range button.
 **Main board.** Bottom layer: the five female sockets at the same spots.
 Top (rear) layer: the Seed breakout vertical along the left edge, centred at
 (11, 64) in the PCB frame, power end (J1/J3) down and USB end up; the four
-TL074s vertical at x = 28 (U3 top, U6 bottom), each with its resistors in
-horizontal columns at x = 41.5 / 54.5 (/ 67.5) and its capacitors beside
-them; the two MCP4922 at the bottom right with C39/C40, R47, D21 and C30
+TL074s vertical at x = 29 (U3 top, U6 bottom), each with its two 100 n
+right beside it in the channel between the breakout and the op-amps
+(x = 22) and its resistors in horizontal columns at x = 41.5 / 54.5 (/ 67.5)
+with the feedback capacitors beside them; the two MCP4922 at the bottom right with C39/C40, R47, D21 and C30
 above them; the clock input stages in the right strip. Every main-board
 part except the sockets is on the rear side, so the front side carries
 only sockets and standoffs.

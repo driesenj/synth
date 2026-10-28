@@ -418,27 +418,28 @@ FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R10", "R106"), (65.5, 68.5))]
 # Main board, top (rear) layer, PCB frame: ref, x, y, angle.
 XA, XB, XC = 41.5, 54.5, 67.5      # resistor columns right of the op-amps (horizontal, 10.3 mm pitch)
 MB_TOP = [("U2", 11, 64, 90),        # Seed breakout along the left edge, power end down, USB end up
-          ("U3", 28, 92, 90), ("U4", 28, 72, 90), ("U5", 28, 52, 90), ("U6", 28, 20, 90),
+          ("U3", 29, 92, 90), ("U4", 29, 72, 90), ("U5", 29, 52, 90), ("U6", 29, 20, 90),
           ("U7", 70, 20, 90), ("U8", 82, 20, 90)]
-# U3: CV stages T_RATE..DEJAVU (R21-R32, C21-C24), decoupling C31/C32
+# each TL074's 100 n pair right beside it, in the channel between the breakout and the op-amps
+MB_TOP += [(c, 22, y, 90) for c, y in (("C31", 96), ("C32", 88), ("C33", 76), ("C34", 68), ("C35", 56), ("C36", 48),
+                                      ("C37", 24), ("C38", 16))]
+# U3: CV stages T_RATE..DEJAVU (R21-R32, C21-C24)
 MB_TOP += [(f"R{21 + i}", XA, y, 0) for i, y in enumerate(_rows(92))]
 MB_TOP += [(f"R{27 + i}", XB, y, 0) for i, y in enumerate(_rows(92))]
-MB_TOP += [("C21", 63.5, 88, 90), ("C22", 63.5, 96, 90), ("C23", 66.5, 88, 90), ("C24", 66.5, 96, 90),
-           ("C31", 69.5, 88, 90), ("C32", 69.5, 96, 90)]
-# U4: CV stages X_SPREAD..X_STEPS (R33-R41, C25-C27), -2.5 V inverter R42/R43, decoupling C33/C34
+MB_TOP += [("C21", 63.5, 88, 90), ("C22", 63.5, 96, 90), ("C23", 66.5, 88, 90), ("C24", 66.5, 96, 90)]
+# U4: CV stages X_SPREAD..X_STEPS (R33-R41, C25-C27), -2.5 V inverter R42/R43
 MB_TOP += [(f"R{33 + i}", XA, y, 0) for i, y in enumerate(_rows(72))]
 MB_TOP += [(f"R{39 + i}", XB, y, 0) for i, y in enumerate(_rows(72)[:5])]
-MB_TOP += [("C25", 63.5, 68, 90), ("C26", 63.5, 76, 90), ("C27", 66.5, 68, 90), ("C33", 69.5, 68, 90),
-           ("C34", 69.5, 76, 90)]
-# U5: DAC output stages (R70-R85), bias R45/R46/C29, decoupling C35/C36
+MB_TOP += [("C25", 63.5, 68, 90), ("C26", 63.5, 76, 90), ("C27", 66.5, 68, 90)]
+# U5: DAC output stages (R70-R85), bias R45/R46/C29
 MB_TOP += [(f"R{70 + i}", XA, y, 0) for i, y in enumerate(_rows(52))]
 MB_TOP += [(f"R{76 + i}", XB, y, 0) for i, y in enumerate(_rows(52))]
 MB_TOP += [(r, XC, y, 0) for r, y in zip(("R82", "R83", "R84", "R85", "R45", "R46"), _rows(52))]
-MB_TOP += [("C35", 77, 48, 90), ("C36", 77, 56, 90), ("C29", 81, 52, 90)]
-# U6: gate stages (R60-R68), decoupling C37/C38; reference C30 in the same column
+MB_TOP += [("C29", 77, 52, 90)]
+# U6: gate stages (R60-R68); reference C30 beside the DACs
 MB_TOP += [(f"R{60 + i}", XA, y, 0) for i, y in enumerate(_rows(20))]
 MB_TOP += [(f"R{66 + i}", XB, y, 0) for i, y in enumerate(_rows(20)[:3])]
-MB_TOP += [("C37", 62.5, 16, 90), ("C38", 62.5, 24, 90), ("C30", 62.5, 33, 90)]
+MB_TOP += [("C30", 62.5, 33, 90)]
 # DAC decoupling and the 2.5 V reference next to the DACs
 MB_TOP += [("C39", 66, 33.5, 90), ("C40", 78, 34, 90), ("R47", 70.5, 38.8, 0), ("D21", 85, 38.5, 0)]
 # clock input stages in the right strip (vertical parts)
