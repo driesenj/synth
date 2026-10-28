@@ -63,6 +63,12 @@ its rows is fine.
   wrong). Panel-part housings vs rear parts do not interact.
 - Nothing on the standoff side within 3 mm of a mounting hole.
 - Every part placed once; every pin's pad exists in the footprint.
+- Rear-side pads of the faceplate must not fall inside a panel part's
+  housing box (`front_housing_check` in `plaits/hardware/tools/pcb.py`):
+  they are soldered on the panel side, where the pot and jack bodies lie
+  flat. Headers in particular: a vertical header beside a pot column has
+  to clear the lug pads (2.8 × 3.0, so r 1.5 in the circle check) and the
+  housing, which on a 12HP board leaves only the outer 1.7 mm of margin.
 - Previews: `marbles-easyeda-pcb-*.png`, rear view, red top / blue bottom /
   grey standoffs; look at them, the checker cannot see ugliness.
 
@@ -77,3 +83,12 @@ its rows is fine.
   neater.
 - When a clearance report shows 0.05 mm overlaps between rows of parts,
   change the pitch (2.4 instead of 2.3) rather than nudging each part.
+- Count resistor slots before promising a layout. On the 12HP Plaitsy
+  faceplate the 16 LED resistors plus 5 probe resistors only fit as
+  vertical parts (12.1 mm pad span, 2.4 mm pitch) in rows either side of
+  the LED column, and the two button-LED resistors had to move to the main
+  board. Three DIP-16s do not fit side by side in 59.4 mm.
+- A 59.4 mm main board holds the breakout (18.8 wide) plus one TL074
+  column and one horizontal resistor column (x 43.5) and one capacitor
+  column (x 52.5); the second resistor column of the 18HP layout is gone,
+  so everything else goes in 2.5 mm rows of that one column.

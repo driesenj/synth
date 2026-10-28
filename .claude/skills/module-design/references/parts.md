@@ -14,6 +14,10 @@ missing, in the same style, with real pin numbers.
 - Barrel centre = sleeve pad + 6.48 mm towards the tip = 0.78 mm below the
   footprint origin when the sleeve points up. Panel hole 6.5 mm. Keep
   non-ground copper 3 mm clear of the barrel on the panel side.
+- With the sleeve up (bottom layer, angle 0) the drawn body runs from
+  6.78 mm below the origin to 3.73 mm above it: the sleeve lug sticks out
+  of the back of the body, and the strip above a jack row is wider than it
+  looks (a row at origin y 22.8 ends at 26.6).
 - Place at 11–12 mm pitch; nuts are about 8 mm across.
 - Sleeve to the analog ground; CV inputs get the switch lug grounded, clock
   inputs get the normalization probe through 10 kΩ; outputs leave it open.
@@ -85,6 +89,17 @@ too big for a dense panel.
   SCK, MISO, MOSI), D11–D14 CS2/LDAC/LED latch/button load, 20 AGND, 21
   3V3A, 22 A0 probe, 23–28 and 31 ADC, 32 A10 mux out, 33–35 mux S0–S2, 38
   3V3D, 40 DGND.
+
+## Library passives (measured from the footprints)
+
+- LR1F resistor: pads at ±5.15 (r 0.76), body 6.2 × 2.3. Vertical, 2.4 mm
+  pitch, gives 0.88 mm between pads.
+- FG28 100 n / 1 n / 100 p (`CAP-TH_L3.0-W2.0-P5.08`): 5.08 mm pitch, not
+  2.5; pads 1.8, body 6.9 × 2.3. Vertical caps in a column need 7.5 mm
+  steps.
+- SR305 1 µ: 5.08 mm pitch, body 7.6 × 3.8.
+- PDIP-14 pads 2.0 × 1.5 at ±4.44; DIP-16 pads 1.6 at ±3.81, body 20 × 6.6.
+- DO-35: pads at ±4.0 (8 mm pitch), r 0.8.
 
 ## Chips
 
