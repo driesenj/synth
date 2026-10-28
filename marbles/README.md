@@ -15,7 +15,7 @@ placement, the BOM and the firmware plan.
 |---|---|---|
 | Netlist | Done, 165 parts, checked | `hardware/tools/circuit.py` |
 | EasyEDA Pro schematic | Done, three A3 pages, every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
-| Panel layout (Marbles arrangement), drill template, artwork | Done; artwork to fine-tune, then build as a PCB panel | `hardware/panel/` |
+| Panel layout (Marbles arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
 | PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
 | PCB routing | Not started (do it in EasyEDA Pro on the imported project) | |
 | Firmware | Not started | |
@@ -31,6 +31,7 @@ hardware/
     easyeda_export.py   builds Marbles.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
     pcb.py              the two PCBs: placement tables, clearance checks, the PCB documents
     panel.py            hole list, drill template and the panel artwork from the placement
+    panel_pcb.py        the panel as a PCB document (holes, slots, silk, copper band), same source as the artwork
   easyeda/
     Marbles.epro2       import this into EasyEDA Pro
     marbles-easyeda-*.png   schematic page and PCB placement previews
@@ -54,10 +55,12 @@ The exporter needs the MorrisSynth library cache in
 File > Import > EasyEDA (Professional) > `Marbles.epro2`. The project carries
 its own symbols and footprints, including a corrected `seed_power_opamps`
 footprint at 2.54 mm pitch (the Plaitsy project's copy is at 2.0 mm). It
-holds two boards, each with its schematic and its PCB:
+holds three boards, each with its schematic and its PCB:
 
 - **Marblesy Main**: schematic pages 1 and 2, `Marblesy Main PCB`
 - **Marblesy Faceplate**: the faceplate page, `Marblesy Faceplate PCB`
+- **Marblesy Panel**: a note page and `Marblesy Panel PCB`, the front panel
+  (no parts: outline, slots and holes, silkscreen, bare-copper output band)
 
 Net ports with the same name connect within a board; the `_F` nets are the
 faceplate side of the headers. Both PCBs come placed and net-assigned but

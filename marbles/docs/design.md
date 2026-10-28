@@ -300,6 +300,19 @@ title are the `ART` dict at the top of the artwork section; the SVG groups
 needs (drill, top silkscreen, top solder-mask opening). Knobs are drawn at
 Ø15 (RATE, DEJA VU, SPREAD) and Ø10; the scale arcs assume those.
 
+`panel_pcb.py` builds the same drawing as the project's third board,
+`Marblesy Panel PCB`: 91.3 × 128.5 outline, every hole and the four
+5.5 × 3.2 slots as non-plated drills, the silkscreen (titles, labels, arcs,
+ticks, graduations, marks, dotted guides as 0.12 mm dashes, LED-colour dots
+as small rings, button rings) and the output band as a copper fill on the top
+layer under a solder-mask opening of the same shape, so it comes out as bare
+ENIG gold; the output labels are silkscreen on top of it. Text uses the
+default stroke font and estimated centring, so expect to nudge a few labels.
+Order it as a 1.6 mm board, black mask, white silk, ENIG. Two things the fab
+may ask about: silkscreen over bare copper (the band labels; some fabs drop
+it, in which case put the labels on the solder-mask layer instead and they
+come out gold on black) and non-plated holes through the copper band.
+
 ---
 
 ## PCB placement

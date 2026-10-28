@@ -38,6 +38,9 @@ _spec.loader.exec_module(circuit)
 _spec = importlib.util.spec_from_file_location("marbles_pcb", os.path.join(HERE, "pcb.py"))
 pcb = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(pcb)
+_spec = importlib.util.spec_from_file_location("marbles_panel_pcb", os.path.join(HERE, "panel_pcb.py"))
+panel_pcb = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(panel_pcb)
 
 NAME = "Marblesy"
 OUT = os.path.join(HERE, "..", "easyeda", "Marbles.epro2")
@@ -1013,11 +1016,19 @@ def main():
     for b in pcb_bad:
         print("PCB:", b)
     template = pcb.load_template(ee)
-    pr.write([(f"{NAME} Main", pages[:2], board_mb), (f"{NAME} Faceplate", pages[2:], board_fb)], OUT, template)
+    # the panel: a board of its own, no parts; its schematic page only carries a note
+    MPage.page_count = "1"
+    panel_page = MPage(pr, "Panel", 1)
+    panel_page.text(70, Y(60), "Marblesy 18HP panel as a PCB: no parts, no nets. Holes, slots, silkscreen and the "
+                               "bare-copper output band are in the PCB document; the art is hardware/panel/marbles-panel.svg.", 12)
+    board_panel = panel_pcb.PanelBoard()
+    pr.write([(f"{NAME} Main", pages[:2], board_mb), (f"{NAME} Faceplate", pages[2:], board_fb),
+              (f"{NAME} Panel", [panel_page], board_panel)], OUT, template)
     for pg in pages:
         render(pr, pg, PREVIEW.format(pg.title.split(":")[0].lower().replace(" ", "-")))
     board_mb.render(PREVIEW.format("pcb-main-board"))
     board_fb.render(PREVIEW.format("pcb-faceplate"))
+    board_panel.render(PREVIEW.format("pcb-panel"))
     n = sum(1 for pg in pages for c in pg.comps if c["ref"])
     print(f"{os.path.normpath(OUT)}: {n} part units on {len(pages)} pages, {len(bad)} schematic problems; "
           f"{len(board_mb.placed)} + {len(board_fb.placed)} parts placed on the PCBs, {len(pcb_bad)} PCB problems")
