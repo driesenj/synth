@@ -137,29 +137,107 @@ ATT_TO_JACK = {"RV5": "J2", "RV6": "J3", "RV7": "J4"}          # dotted guides a
 KNOB_TO_ATT = {"RV3": "RV5", "RV4": "RV7"}                      # dotted guides TIMBRE / MORPH -> attenuverter
 # The sixteen model icons beside the LEDs: green bank left (filled disc, glyph
 # knocked out), red bank right (ring, white glyph). Glyphs are drawn in a
-# 2.4 mm box around the disc centre; {c} is the glyph colour.
+# 2.4 mm box around the disc centre as lists of primitives: ("path", d) with
+# M L H V Q C Z only (no arcs, so panel_pcb.py can flatten them to silk
+# lines), ("circle", cx, cy, r, filled), ("text", s, size, dy).
 GLYPHS = {
-    "va": '<path d="M -1.1 0 C -0.8 -1.4 -0.3 -1.4 0 0 S 0.8 1.4 1.1 0"/>',
-    "fold": '<path d="M -1.1 0.7 L -0.55 -0.7 L 0 0.7 L 0.55 -0.7 L 1.1 0.7"/>',
-    "fm": '<text x="0" y="0.42" font-size="1.2" text-anchor="middle" style="fill:{c}" stroke="none">FM</text>',
-    "formant": '<path d="M -1.1 0.6 Q -0.65 -1.1 -0.2 0.6 Q 0.2 -0.5 0.5 0.6 Q 0.75 0.05 1.1 0.6"/>',
-    "harmonic": '<path d="M -0.8 0.8 V -0.9 M 0 0.8 V -0.3 M 0.8 0.8 V 0.2"/>',
-    "wavetable": '<path d="M -0.9 -0.35 H 0.9 M -0.9 0.35 H 0.9 M -0.35 -0.9 V 0.9 M 0.35 -0.9 V 0.9"/>',
-    "chord": '<circle cx="0" cy="-0.75" r="0.3" fill="{c}"/><circle cx="0" cy="0" r="0.3" fill="{c}"/>'
-             '<circle cx="0" cy="0.75" r="0.3" fill="{c}"/>',
-    "speech": '<path d="M -1.0 -0.9 H 1.0 V 0.3 H -0.1 L -0.6 0.9 V 0.3 H -1.0 Z"/>',
-    "cloud": '<path d="M -0.9 0.6 H 0.75 A 0.45 0.45 0 0 0 0.6 -0.3 A 0.6 0.6 0 0 0 -0.5 -0.4 '
-             'A 0.5 0.5 0 0 0 -0.9 0.6 Z"/>',
-    "noise": '<path d="M -1.0 0.8 V 0.2 M -0.6 0.8 V -0.7 M -0.2 0.8 V -0.1 M 0.2 0.8 V -0.9 M 0.6 0.8 V 0.3 '
-             'M 1.0 0.8 V -0.4"/>',
-    "particle": "".join(f'<circle cx="{x}" cy="{y}" r="0.22" fill="{{c}}"/>'
-                        for x, y in ((-0.7, -0.5), (0.4, -0.8), (0.8, 0.3), (-0.1, 0.3), (-0.8, 0.8), (0.5, 0.9))),
-    "string": '<path d="M 0 -1.1 V 1.1 M -0.7 -0.2 Q 0 0.9 0.7 -0.2"/>',
-    "modal": '<circle cx="0" cy="0" r="0.4"/><circle cx="0" cy="0" r="0.95"/>',
-    "kick": '<circle cx="0" cy="0" r="0.9"/><path d="M 0 0 L 0.95 -0.95"/><circle cx="0" cy="0" r="0.3" fill="{c}"/>',
-    "snare": '<path d="M -0.95 -0.5 H 0.95 V 0.5 H -0.95 Z M -0.95 0 H 0.95"/>',
-    "hihat": '<path d="M 0 -1.0 V 1.0 M -0.95 -0.15 L 0 -0.5 L 0.95 -0.15 M -0.95 0.3 L 0 0.65 L 0.95 0.3"/>',
+    "va": [("path", "M -1.1 0 C -0.8 -1.4 -0.3 -1.4 0 0 C 0.3 1.4 0.8 1.4 1.1 0")],
+    "fold": [("path", "M -1.1 0.7 L -0.55 -0.7 L 0 0.7 L 0.55 -0.7 L 1.1 0.7")],
+    "fm": [("text", "FM", 1.2, 0.42)],
+    "formant": [("path", "M -1.1 0.6 Q -0.65 -1.1 -0.2 0.6 Q 0.2 -0.5 0.5 0.6 Q 0.75 0.05 1.1 0.6")],
+    "harmonic": [("path", "M -0.8 0.8 V -0.9 M 0 0.8 V -0.3 M 0.8 0.8 V 0.2")],
+    "wavetable": [("path", "M -0.9 -0.35 H 0.9 M -0.9 0.35 H 0.9 M -0.35 -0.9 V 0.9 M 0.35 -0.9 V 0.9")],
+    "chord": [("circle", 0, -0.75, 0.3, True), ("circle", 0, 0, 0.3, True), ("circle", 0, 0.75, 0.3, True)],
+    "speech": [("path", "M -1.0 -0.9 H 1.0 V 0.3 H -0.1 L -0.6 0.9 V 0.3 H -1.0 Z")],
+    "cloud": [("path", "M -0.9 0.6 H 0.75 C 1.4 0.6 1.4 -0.3 0.6 -0.3 C 0.6 -1.1 -0.5 -1.2 -0.5 -0.4 "
+                       "C -1.3 -0.6 -1.5 0.5 -0.9 0.6 Z")],
+    "noise": [("path", "M -1.0 0.8 V 0.2 M -0.6 0.8 V -0.7 M -0.2 0.8 V -0.1 M 0.2 0.8 V -0.9 M 0.6 0.8 V 0.3 "
+                       "M 1.0 0.8 V -0.4")],
+    "particle": [("circle", x, y, 0.22, True)
+                 for x, y in ((-0.7, -0.5), (0.4, -0.8), (0.8, 0.3), (-0.1, 0.3), (-0.8, 0.8), (0.5, 0.9))],
+    "string": [("path", "M 0 -1.1 V 1.1 M -0.7 -0.2 Q 0 0.9 0.7 -0.2")],
+    "modal": [("circle", 0, 0, 0.4, False), ("circle", 0, 0, 0.95, False)],
+    "kick": [("circle", 0, 0, 0.9, False), ("path", "M 0 0 L 0.95 -0.95"), ("circle", 0, 0, 0.3, True)],
+    "snare": [("path", "M -0.95 -0.5 H 0.95 V 0.5 H -0.95 Z M -0.95 0 H 0.95")],
+    "hihat": [("path", "M 0 -1.0 V 1.0 M -0.95 -0.15 L 0 -0.5 L 0.95 -0.15 M -0.95 0.3 L 0 0.65 L 0.95 0.3")],
+    # the panel's other small marks, same format: the wrench (a filled outline), the "levels" disc's dots
+    # and the LPG icons beside TIMBRE (colour: a lowpass curve) and MORPH (decay)
+    "wrench": [("path", "M -0.9 -1.7 H -0.35 V -1.05 H 0.35 V -1.7 H 0.9 V -0.5 L 0.4 0 V 1.8 H -0.4 V 0 L -0.9 -0.5 Z")],
+    "lpg_colour": [("path", "M -0.8 -0.3 H 0 Q 0.45 -0.3 0.8 0.6")],
+    "lpg_decay": [("path", "M -0.8 -0.6 Q -0.45 0.6 0.8 0.6")],
 }
+
+
+def glyph_svg(name, colour):
+    """The glyph's primitives as SVG elements (inside a translated group)."""
+    out = []
+    for item in GLYPHS[name]:
+        if item[0] == "path":
+            out.append(f'<path d="{item[1]}"/>')
+        elif item[0] == "circle":
+            _, cx, cy, r, filled = item
+            out.append(f'<circle cx="{cx}" cy="{cy}" r="{r}"' + (f' fill="{colour}"' if filled else "") + '/>')
+        else:
+            _, s_, size, dy = item
+            out.append(f'<text x="0" y="{dy}" font-size="{size}" text-anchor="middle" style="fill:{colour}" '
+                       f'stroke="none">{s_}</text>')
+    return "".join(out)
+
+
+def flatten_path(d, steps=8):
+    """An M/L/H/V/Q/C/Z path string -> list of polylines (lists of (x, y))."""
+    tokens = d.replace(",", " ").split()
+    lines, cur, start, i = [], None, None, 0
+    pts = []
+
+    def flush():
+        if len(pts) > 1:
+            lines.append(list(pts))
+        pts.clear()
+
+    while i < len(tokens):
+        cmd = tokens[i]
+        i += 1
+        if cmd == "M":
+            flush()
+            cur = start = (float(tokens[i]), float(tokens[i + 1]))
+            pts.append(cur)
+            i += 2
+        elif cmd == "L":
+            cur = (float(tokens[i]), float(tokens[i + 1]))
+            pts.append(cur)
+            i += 2
+        elif cmd == "H":
+            cur = (float(tokens[i]), cur[1])
+            pts.append(cur)
+            i += 1
+        elif cmd == "V":
+            cur = (cur[0], float(tokens[i]))
+            pts.append(cur)
+            i += 1
+        elif cmd in ("Q", "C"):
+            n = 2 if cmd == "Q" else 3
+            cp = [(float(tokens[i + 2 * k]), float(tokens[i + 2 * k + 1])) for k in range(n)]
+            i += 2 * n
+            p0 = cur
+            for k in range(1, steps + 1):
+                t = k / steps
+                if cmd == "Q":
+                    x = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * cp[0][0] + t ** 2 * cp[1][0]
+                    y = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * cp[0][1] + t ** 2 * cp[1][1]
+                else:
+                    x = ((1 - t) ** 3 * p0[0] + 3 * (1 - t) ** 2 * t * cp[0][0] + 3 * (1 - t) * t ** 2 * cp[1][0]
+                         + t ** 3 * cp[2][0])
+                    y = ((1 - t) ** 3 * p0[1] + 3 * (1 - t) ** 2 * t * cp[0][1] + 3 * (1 - t) * t ** 2 * cp[1][1]
+                         + t ** 3 * cp[2][1])
+                pts.append((x, y))
+            cur = cp[-1]
+        elif cmd == "Z":
+            pts.append(start)
+            cur = start
+            flush()
+    flush()
+    return lines
 # model name, glyph; Plaits 1.2 banks: green 1-8, red 9-16 (the yellow bank 17-24 has no icons, as on Plaits)
 MODELS_GREEN = [("pair of classic waveforms", "va"), ("waveshaping oscillator", "fold"),
                 ("two-operator FM", "fm"), ("granular formant oscillator", "formant"),
@@ -168,6 +246,19 @@ MODELS_GREEN = [("pair of classic waveforms", "va"), ("waveshaping oscillator", 
 MODELS_RED = [("granular cloud", "cloud"), ("filtered noise", "noise"), ("particle noise", "particle"),
               ("inharmonic string", "string"), ("modal resonator", "modal"), ("analog bass drum", "kick"),
               ("analog snare drum", "snare"), ("analog hi-hat", "hihat")]
+
+
+def label_xy(pos, ref):
+    """Where a main knob's label sits (baseline centre, panel mm)."""
+    kind, label, x, y = pos[ref]
+    return x, y + ART["scale"][KNOB_SIZE[ref]] + 3.0
+
+
+def alt_icon_xy(pos, ref, side):
+    """The LPG icon beside TIMBRE (side -1) or MORPH (+1): past the label's estimated half-width."""
+    lx, ly = label_xy(pos, ref)
+    half = 0.68 * 2.4 * len(pos[ref][1]) / 2
+    return lx + side * (half + 2.4), ly - 0.8
 
 
 def _arc(cx, cy, r, a0, a1):
@@ -200,17 +291,16 @@ def write_artwork(feats, path):
     def dots(pts):
         s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts) + '" class="silk dots"/>')
 
-    def glyph(x, y, name, colour, scale=1.0, rotate=0):
+    def glyph(x, y, name, colour, scale=1.0, rotate=0, fill="none"):
         s.append(f'<g transform="translate({x:.2f} {y:.2f}) rotate({rotate}) scale({scale})" stroke="{colour}" '
-                 f'fill="none" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round">'
-                 + GLYPHS[name].format(c=colour) + '</g>')
+                 f'fill="{fill}" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round">'
+                 + glyph_svg(name, colour) + '</g>')
 
     def scale_r(ref):
         return A["scale"][KNOB_SIZE[ref]]
 
     def label_below(ref):
-        kind, label, x, y = pos[ref]
-        return x, y + scale_r(ref) + 3.0
+        return label_xy(pos, ref)
 
     # -- preview tint under the icons (the real silk is one colour)
     s.append('<g id="tint">')
@@ -235,9 +325,7 @@ def write_artwork(feats, path):
     bx1, by = pos["SW1"][2], pos["SW1"][3]
     bx2 = pos["SW2"][2]
     wx = bx1 - A["cap_led"] - 3.6
-    s.append(f'<g transform="translate({wx:.2f} {by:.2f}) rotate(-40)">'
-             f'<path d="M -0.9 -1.7 H 0.9 V -0.5 L 0.4 0 V 1.8 H -0.4 V 0 L -0.9 -0.5 Z" fill="{A["silk"]}"/>'
-             f'<path d="M -0.35 -1.7 V -1.05 H 0.35 V -1.7 Z" fill="{A["panel"]}"/></g>')
+    glyph(wx, by, "wrench", A["silk"], rotate=-40, fill=A["silk"])
     dx = bx2 + A["cap_led"] + 3.4
     s.append(f'<circle cx="{dx:.2f}" cy="{by:.2f}" r="1.5" fill="{A["silk"]}"/>')
     for k in (-1, 0, 1):
@@ -276,13 +364,10 @@ def write_artwork(feats, path):
             lx, ly = label_below(ref)
             text(lx, ly, label, 2.7 if size == "big" else 2.4)
     # the alternate functions reached by holding the left button: LPG colour on TIMBRE, decay on MORPH
-    for ref, side, d in (("RV3", -1, 'M -0.8 -0.3 H 0 Q 0.45 -0.3 0.8 0.6'), ("RV4", 1, 'M -0.8 -0.6 Q -0.45 0.6 0.8 0.6')):
-        lx, ly = label_below(ref)
-        half = 0.68 * 2.4 * len(pos[ref][1]) / 2             # rough half-width of the label
-        ix = lx + side * (half + 2.4)
-        s.append(f'<circle cx="{ix:.2f}" cy="{ly - 0.8:.2f}" r="1.45" fill="{A["silk"]}"/>')
-        s.append(f'<path d="{d}" transform="translate({ix:.2f} {ly - 0.8:.2f})" fill="none" stroke="{A["panel"]}" '
-                 f'stroke-width="0.3" stroke-linecap="round"/>')
+    for ref, side, name in (("RV3", -1, "lpg_colour"), ("RV4", 1, "lpg_decay")):
+        ix, iy = alt_icon_xy(pos, ref, side)
+        s.append(f'<circle cx="{ix:.2f}" cy="{iy:.2f}" r="1.45" fill="{A["silk"]}"/>')
+        glyph(ix, iy, name, A["panel"])
     # FM over its attenuverter
     fx, fy = pos["RV6"][2], pos["RV6"][3]
     text(fx, fy - scale_r("RV6") - 1.7, "FM", 2.4)
