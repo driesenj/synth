@@ -228,7 +228,7 @@ every clock, including DAC transfers, but only latch on LED_LATCH, and the
 | H4 | 4 | MUX_OUT, MUX_S0, MUX_S1, MUX_S2 |
 | H5 | 7 | SPI_SCK, SPI_MOSI, SPI_MISO, LED_LATCH, BTN_LOAD, 3V3D, GND (GND_D_F) |
 
-Male pins on the faceplate (H1F–H5F), female sockets on the main board.
+Male pins on the faceplate (HF1–HF5), female sockets on the main board.
 Place each pair at the same x/y on both boards. GND_F (jacks, pots, mux) and
 GND_D_F (LEDs, buttons, logic) are separate on the faceplate and meet on the
 main board's GND.
@@ -263,6 +263,18 @@ pots 7.5, jacks 6.5, LEDs 3.2, buttons 12.5 (for the 12 mm round cap; check
 your switch), mounting 3.2.
 
 The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.
+
+### Panel artwork
+
+`panel.py` also writes `hardware/panel/marbles-panel.svg`, a draft of the
+panel as a PCB: black solder mask, white silkscreen (title, `t` / `X`
+section letters, scale arcs with ticks, labels, dotted LED-to-button
+ticks), bare copper pills for the seven outputs, every hole, and a mockup
+layer with knobs, nuts, caps and LEDs for the preview. Colours, radii and the
+title are the `ART` dict at the top of the artwork section; the SVG groups
+`#holes`, `#silk` and `#copper` are the three layers an EasyEDA panel PCB
+needs (drill, top silkscreen, top solder-mask opening). Knobs are drawn at
+Ø15 (RATE, DEJA VU, SPREAD) and Ø10; the scale arcs assume those.
 
 ---
 

@@ -214,7 +214,8 @@ def seed_symbol():
 def mcp4922_symbol():
     left = [(0, "1", "VDD"), (1, "3", "/CS"), (2, "4", "SCK"), (3, "5", "SDI"), (4, "8", "/LDAC"), (5, "9", "/SHDN"),
             (6, "12", "AVSS")]
-    right = [(0, "14", "VOUTA"), (1, "13", "VREFA"), (3, "11", "VREFB"), (4, "10", "VOUTB")]
+    right = [(0, "14", "VOUTA"), (1, "13", "VREFA"), (3, "11", "VREFB"), (4, "10", "VOUTB"),
+             (5, "2", "NC"), (6, "6", "NC"), (2, "7", "NC")]      # the DIP-14 has three unused pins
     return ic_symbol("MCP4922", "MCP4922.1", left, right)
 
 
@@ -267,6 +268,7 @@ def lm4040_symbol():
     s.text(-14, -8, "2.5V", 6)
     s.pin("1", "K", -20, 0, 0)     # cathode: the positive end
     s.pin("2", "A", 20, 0, 180)
+    s.pin("3", "NC", 0, 17, 90)    # the TO-92's third lead, not connected
     return s
 
 
@@ -869,8 +871,8 @@ def faceplate_page(pr, parts):
     pg.text(1180, Y(725), "Headers to the main board (male pins here)", 12)
     for k, (ref, kind, pins) in enumerate(circuit.HEADERS):
         x, y = 1250 + k * 80, Y(800)
-        h = pg.place(ref + "F", kind, x, y, des=(-10, -len(pins) * 5 - 10, "LEFT_BOTTOM"), name=False)
-        nets = P[ref + "F"].nets
+        h = pg.place(circuit.fb_ref(ref), kind, x, y, des=(-10, -len(pins) * 5 - 10, "LEFT_BOTTOM"), name=False)
+        nets = P[circuit.fb_ref(ref)].nets
         for num, net in nets.items():
             if net in ("GND_F", "GND_D_F"):
                 pg.stub_flag(h[num], net, "left", 15)

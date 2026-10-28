@@ -100,11 +100,135 @@ def write_svg(feats, path):
     open(path, "w", encoding="utf-8").write("\n".join(s))
 
 
+# ------------------------------------------------------------------ artwork
+# Panel as a PCB (black solder mask, white silkscreen, bare ENIG copper for
+# the output markers). Groups in the SVG: #holes, #copper, #silk and #mockup
+# (knobs, jacks, caps and LEDs for the preview only). Tune the constants, run,
+# look at marbles-panel.svg; coordinates are the panel's, y down from the top.
+ART = {
+    "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227", "rail": "#000000",
+    "knob_big": 7.5, "scale_big": 9.0, "knob_small": 5.0, "scale_small": 6.3,   # radii, mm
+    "cap": 6.0, "nut": 4.0, "led": 1.6,
+    "title": "MARBLESY", "font": "Arial, Helvetica, sans-serif",
+}
+BIG_POTS = {"RV1", "RV4", "RV6"}
+OUTPUTS = {"J9", "J10", "J11", "J13", "J14", "J15", "J16"}
+JACK_SHORT = {"T CLOCK": "T CLK", "X CLOCK": "X CLK"}
+
+
+def _arc(cx, cy, r, a0, a1):
+    """SVG path of an arc from angle a0 to a1 (degrees, clockwise from 12 o'clock)."""
+    import math
+    p0 = (cx + r * math.sin(math.radians(a0)), cy - r * math.cos(math.radians(a0)))
+    p1 = (cx + r * math.sin(math.radians(a1)), cy - r * math.cos(math.radians(a1)))
+    large = 1 if (a1 - a0) % 360 > 180 else 0
+    return f"M {p0[0]:.2f} {p0[1]:.2f} A {r} {r} 0 {large} 1 {p1[0]:.2f} {p1[1]:.2f}"
+
+
+def write_artwork(feats, path):
+    import math
+    A = ART
+    W, H = PANEL_W, PANEL_H
+    s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="0 0 {W} {H}">',
+         f'<title>Marblesy 18HP panel - artwork</title>',
+         f'<style>text{{font-family:{A["font"]};font-weight:bold;fill:{A["silk"]}}} '
+         f'.silk{{stroke:{A["silk"]};fill:none;stroke-linecap:round}} .copper{{fill:{A["copper"]}}} '
+         f'.cu-text{{fill:{A["panel"]}}} .hole{{fill:#ffffff;stroke:none}}</style>',
+         f'<rect x="0" y="0" width="{W}" height="{H}" fill="{A["panel"]}"/>',
+         f'<rect x="0" y="0" width="{W}" height="9.5" fill="{A["rail"]}" opacity="0.35"/>',
+         f'<rect x="0" y="{H - 9.5}" width="{W}" height="9.5" fill="{A["rail"]}" opacity="0.35"/>']
+    pos = {ref: (kind, label, *panel_xy(hx, hy)) for kind, ref, label, ox, oy, hx, hy in feats}
+
+    def text(x, y, t, size, anchor="middle", cls="", extra=""):
+        c = f' class="{cls}"' if cls else ""
+        s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="{anchor}"{c}{extra}>{t}</text>')
+
+    # -- silkscreen
+    s.append('<g id="silk">')
+    text(W / 2, 7.4, A["title"], 4.2, extra=' letter-spacing="0.6"')
+    for ref, glyph in (("RV1", "t"), ("RV6", "X")):          # section letters over the first knobs
+        x = pos[ref][2]
+        text(x, 15.6, glyph, 5.5, extra=' font-style="italic"')
+    for ref, (kind, label, x, y) in pos.items():
+        if kind == "pot":
+            big = ref in BIG_POTS
+            r = A["scale_big"] if big else A["scale_small"]
+            s.append(f'<path d="{_arc(x, y, r, -135, 135)}" class="silk" stroke-width="0.3"/>')
+            n = 11 if big else 5
+            for i in range(n):
+                a = math.radians(-135 + 270 * i / (n - 1))
+                r1 = r + (1.2 if i in (0, n - 1, (n - 1) // 2) else 0.7)
+                s.append(f'<line x1="{x + r * math.sin(a):.2f}" y1="{y - r * math.cos(a):.2f}" '
+                         f'x2="{x + r1 * math.sin(a):.2f}" y2="{y - r1 * math.cos(a):.2f}" class="silk" stroke-width="0.3"/>')
+            lab = {"BIAS (t)": "BIAS", "BIAS (X)": "BIAS"}.get(label, label)
+            text(x, y + r + 2.9, lab, 2.6 if big else 2.3)
+    # buttons: mode / range words between the pairs, t / X beside the deja vu buttons, EXT beside the last
+    for top, bottom, word in (("SW2", "SW3", "MODE"), ("SW5", "SW6", "MODE")):
+        x, y1, y2 = pos[top][2], pos[top][3], pos[bottom][3]
+        text(x, (y1 + y2) / 2 + 0.7, word, 2.0)
+        text(x, y2 + A["cap"] + 2.8, "RANGE", 2.0)
+    text(pos["SW1"][2] - A["cap"] - 3.0, pos["SW1"][3] + 1.3, "t", 3.4, extra=' font-style="italic"')
+    text(pos["SW4"][2] + A["cap"] + 3.0, pos["SW4"][3] + 1.3, "X", 3.4, extra=' font-style="italic"')
+    text(pos["SW7"][2] - A["cap"] - 1.2, pos["SW7"][3] + 0.7, "EXT", 2.0, anchor="end")
+    # LED legends: a short tick from each LED towards its button
+    for led, sw in (("D2", "SW2"), ("D3", "SW3"), ("D5", "SW5"), ("D6", "SW6"), ("D1", "SW1"), ("D4", "SW4"), ("D7", "SW7")):
+        (_, _, lx, ly), (_, _, bx, by) = pos[led], pos[sw]
+        dx, dy = bx - lx, by - ly
+        d = math.hypot(dx, dy)
+        ux, uy = dx / d, dy / d
+        s.append(f'<line x1="{lx + ux * (A["led"] + 0.8):.2f}" y1="{ly + uy * (A["led"] + 0.8):.2f}" '
+                 f'x2="{bx - ux * (A["cap"] + 0.8):.2f}" y2="{by - uy * (A["cap"] + 0.8):.2f}" '
+                 f'class="silk" stroke-width="0.35" stroke-dasharray="0.1 0.9"/>')
+    # jacks: labels above, inputs plain, outputs on copper pills (drawn in #copper)
+    for ref, (kind, label, x, y) in pos.items():
+        if kind == "jack" and ref not in OUTPUTS:
+            text(x, y - 4.6, JACK_SHORT.get(label, label), 1.9)
+    s.append('</g>')
+    # -- bare copper: output markers
+    s.append('<g id="copper">')
+    for ref, (kind, label, x, y) in pos.items():
+        if ref in OUTPUTS:
+            s.append(f'<rect x="{x - 3.9:.2f}" y="{y - 6.9:.2f}" width="7.8" height="3.2" rx="0.8" class="copper"/>')
+            text(x, y - 4.55, label, 2.0, cls="cu-text")
+    s.append('</g>')
+    # -- holes
+    s.append('<g id="holes">')
+    for ref, (kind, label, x, y) in pos.items():
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE[kind] / 2:.2f}" class="hole"/>')
+    for x in (7.5, W - 7.5):
+        for y in (3.0, H - 3.0):
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE["mount"] / 2:.2f}" class="hole"/>')
+    s.append('</g>')
+    # -- mockup of the fitted parts (preview only)
+    s.append('<g id="mockup">')
+    for ref, (kind, label, x, y) in pos.items():
+        if kind == "pot":
+            r = A["knob_big"] if ref in BIG_POTS else A["knob_small"]
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r}" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>')
+            a = math.radians(-135)
+            s.append(f'<line x1="{x + 0.35 * r * math.sin(a):.2f}" y1="{y - 0.35 * r * math.cos(a):.2f}" '
+                     f'x2="{x + 0.95 * r * math.sin(a):.2f}" y2="{y - 0.95 * r * math.cos(a):.2f}" '
+                     f'stroke="#eee" stroke-width="0.6" stroke-linecap="round"/>')
+        elif kind == "jack":
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["nut"]}" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="1.75" fill="#111"/>')
+        elif kind == "button":
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"]}" fill="#1d1f1e" stroke="#3a3a3a" stroke-width="0.3"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"] - 1.6}" fill="none" stroke="#2c2c2c" stroke-width="0.3"/>')
+        elif kind == "led":
+            col = "#e0b03a" if ref in ("D2", "D3", "D5", "D6") else "#4bd36a"
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["led"]}" fill="{col}" opacity="0.9"/>')
+    s.append('</g>')
+    s.append('</svg>')
+    open(path, "w", encoding="utf-8").write("\n".join(s))
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     feats = features()
     write_csv(feats, os.path.join(OUT, "marbles-panel-holes.csv"))
     write_svg(feats, os.path.join(OUT, "marbles-panel-drill.svg"))
+    write_artwork(feats, os.path.join(OUT, "marbles-panel.svg"))
     print(f"{len(feats)} features + 4 mounting holes written to {os.path.normpath(OUT)}")
 
 

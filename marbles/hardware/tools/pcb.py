@@ -360,7 +360,7 @@ def faceplate_board(pr, parts, info, circuit):
         b.orient(ref, lambda r, last=last: abs(r["1"][1] - r[last][1]) < 0.01 and r["1"][0] < r[last][0])
     # headers (male, top layer), shared with the main board
     for ref, (xf, y) in HEADERS_FRONT.items():
-        b.place_front(ref + "F", xf, y, 0)
+        b.place_front(circuit.fb_ref(ref), xf, y, 0)
     # logic on the top (rear) side: front-view coordinates, angle in the PCB frame
     for ref, xf, y, a in FB_REAR:
         b.place_front(ref, xf, y, a)
@@ -434,7 +434,7 @@ MB_TOP += [("R50", 73.5, 92, 90), ("R51", 75.9, 92, 90), ("Q1", 80, 92, 90), ("D
 def header_check(fb, mb, circuit):
     bad = []
     for ref, kind, pins in circuit.HEADERS:
-        a, b = fb.front_pads(ref + "F"), mb.front_pads(ref)
+        a, b = fb.front_pads(circuit.fb_ref(ref)), mb.front_pads(ref)
         for num in a:
             if a[num] != b.get(num):
                 bad.append(f"header {ref} pin {num}: faceplate {a[num]} vs main board {b.get(num)}")

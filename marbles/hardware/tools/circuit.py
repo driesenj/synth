@@ -255,8 +255,13 @@ def faceplate_parts():
     parts.append(C("C11", "100n", "3V3D_F", "GND_D_F"))   # U11
     # board-to-board headers (male pins on this board)
     for ref, kind, nets in HEADERS:
-        parts.append(Part(ref + "F", kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets)}))
+        parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets)}))
     return parts
+
+
+def fb_ref(ref):
+    """Faceplate-side designator of a header: H1 -> HF1 (EasyEDA wants letters, then digits)."""
+    return "HF" + ref[1:]
 
 
 # ------------------------------------------------------ faceplate placement

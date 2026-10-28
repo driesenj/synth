@@ -15,7 +15,7 @@ placement, the BOM and the firmware plan.
 |---|---|---|
 | Netlist | Done, 162 parts, checked | `hardware/tools/circuit.py` |
 | EasyEDA Pro schematic | Done, three A3 pages, every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
-| Faceplate placement, panel template | Done | `hardware/panel/` |
+| Faceplate placement, panel template, panel artwork draft | Done; artwork to fine-tune, then build as a PCB panel | `hardware/panel/` |
 | PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
 | PCB routing | Not started (do it in EasyEDA Pro on the imported project) | |
 | Firmware | Not started | |
@@ -30,13 +30,14 @@ hardware/
     circuit.py          the netlist and the faceplate placement
     easyeda_export.py   builds Marbles.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
     pcb.py              the two PCBs: placement tables, clearance checks, the PCB documents
-    panel.py            hole list and drill template from the placement
+    panel.py            hole list, drill template and the panel artwork from the placement
   easyeda/
     Marbles.epro2       import this into EasyEDA Pro
     marbles-easyeda-*.png   schematic page and PCB placement previews
     pcb-template.epru   canvas, layer and rule records copied from one of your own PCBs
   panel/
     marbles-panel-holes.csv, marbles-panel-drill.svg
+    marbles-panel.svg       panel artwork (groups: holes, silk, copper, mockup), marbles-panel-preview.png
 ```
 
 Regenerate everything from `hardware/tools`:
