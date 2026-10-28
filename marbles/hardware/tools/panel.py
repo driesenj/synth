@@ -1,6 +1,6 @@
-"""18HP panel for Marblesy: hole list (CSV), a 1:1 drill template (SVG) and
-the faceplate footprint origins for the PCB. Everything is computed from
-PLACEMENT in circuit.py, so board and panel agree.
+"""18HP panel for Marblesy: hole list (CSV), a 1:1 drill template (SVG), the
+panel artwork (SVG, as a PCB panel) and the faceplate footprint origins.
+Everything is computed from PLACEMENT in circuit.py, so board and panel agree.
 
 Conventions (the same as the Plaitsy PCB): the faceplate board is seen from
 the front, x to the right, y up, origin at the board's bottom-left corner.
@@ -11,11 +11,12 @@ Panel-facing parts sit on the board's bottom layer.
   pot    angle 90, pins towards -x; the shaft is 7.5 mm from the pin row,
          the PTV09A footprint origin is 6.97 mm from it: shaft = origin + 0.53 in x
   LED    3-lead LED in the generated LED-3MM-3P footprint: body centred on the origin
-  switch Thonk Highly Tactile: body centred on the origin, 12 mm round body
+  switch 6 x 6 mm tactile, cap centred on the origin; hole = cap + 1 mm
 Run from marbles/hardware/tools:  python panel.py
 """
 import csv
 import importlib.util
+import math
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -26,7 +27,8 @@ _spec.loader.exec_module(circuit)
 PANEL_W, PANEL_H = 91.3, 128.5          # Eurorack 3U, 18HP
 BOARD_X0 = (PANEL_W - circuit.BOARD_W) / 2
 BOARD_Y0 = (PANEL_H - circuit.BOARD_H) / 2   # board centred on the panel; move it if your rails need it
-HOLE = {"pot": 7.5, "jack": 6.5, "led": 3.2, "button": 12.5, "mount": 3.2}
+# hole diameters; the two button sizes are cap diameter + 1 mm (6 mm and 10 mm caps)
+HOLE = {"pot": 7.5, "jack": 6.5, "led": 3.2, "button": 7.0, "button_big": 11.0, "mount": 3.2}
 JACK_BARREL = -0.78
 POT_SHAFT = 0.53
 OUT = os.path.join(HERE, "..", "panel")
@@ -45,7 +47,7 @@ def features():
         elif ref.startswith("RV"):
             out.append(("pot", ref, labels[ref], x, y, x + POT_SHAFT, y))
         elif ref.startswith("SW"):
-            out.append(("button", ref, labels[ref], x, y, x, y))
+            out.append(("button_big" if ref in circuit.BIG_BUTTONS else "button", ref, labels[ref], x, y, x, y))
         elif ref.startswith("D"):
             out.append(("led", ref, labels[ref], x, y, x, y))
     return out
@@ -56,6 +58,9 @@ def panel_xy(bx, by):
     return BOARD_X0 + bx, PANEL_H - (BOARD_Y0 + by)
 
 
+MOUNTS = [(x, y) for x in (7.5, PANEL_W - 7.5) for y in (3.0, PANEL_H - 3.0)]
+
+
 def write_csv(feats, path):
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -64,9 +69,8 @@ def write_csv(feats, path):
         for kind, ref, label, ox, oy, hx, hy in feats:
             px, py = panel_xy(hx, hy)
             w.writerow([kind, ref, label, f"{ox:.2f}", f"{oy:.2f}", f"{px:.2f}", f"{py:.2f}", HOLE[kind]])
-        for x in (7.5, PANEL_W - 7.5):
-            for y in (3.0, PANEL_H - 3.0):
-                w.writerow(["mount", "", "mounting", "", "", f"{x:.2f}", f"{y:.2f}", HOLE["mount"]])
+        for x, y in MOUNTS:
+            w.writerow(["mount", "", "mounting", "", "", f"{x:.2f}", f"{y:.2f}", HOLE["mount"]])
 
 
 def write_svg(feats, path):
@@ -80,7 +84,7 @@ def write_svg(feats, path):
          f'<rect x="{BOARD_X0:.2f}" y="{PANEL_H - BOARD_Y0 - circuit.BOARD_H:.2f}" width="{circuit.BOARD_W}" '
          f'height="{circuit.BOARD_H}" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>']
     rows = [(k, lbl, *panel_xy(hx, hy)) for k, ref, lbl, ox, oy, hx, hy in feats]
-    rows += [("mount", "", x, y) for x in (7.5, W - 7.5) for y in (3.0, H - 3.0)]
+    rows += [("mount", "", x, y) for x, y in MOUNTS]
     for kind, label, x, y in rows:
         d = HOLE[kind]
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{d / 2:.2f}" fill="none" stroke="#c00" stroke-width="0.2"/>')
@@ -94,31 +98,32 @@ def write_svg(feats, path):
         s.append(f'<line x1="{x}" y1="-9.5" x2="{x}" y2="-6.5" stroke="#000" stroke-width="0.3"/>')
     s.append('<text x="30" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>')
     s.append(f'<text x="{W / 2}" y="{H + 8}" font-size="2" text-anchor="middle">Marblesy 18HP panel, front view. '
-             'Red circles: final hole size. Dashed: the faceplate board. Button holes suit the 12 mm round cap; '
-             'check your switch.</text>')
+             'Red circles: final hole size. Dashed: the faceplate board. Button holes suit 6 mm and 10 mm round caps; '
+             'check yours.</text>')
     s.append('</svg>')
     open(path, "w", encoding="utf-8").write("\n".join(s))
 
 
 # ------------------------------------------------------------------ artwork
-# Panel as a PCB (black solder mask, white silkscreen, bare ENIG copper for
-# the output markers). Groups in the SVG: #holes, #copper, #silk and #mockup
-# (knobs, jacks, caps and LEDs for the preview only). Tune the constants, run,
-# look at marbles-panel.svg; coordinates are the panel's, y down from the top.
+# The panel as a PCB: black solder mask, white silkscreen, bare (ENIG) copper
+# for the output band. SVG groups: #silk, #copper, #holes and #mockup (knobs,
+# nuts, caps and LEDs, preview only). Tune ART, run, look at marbles-panel.svg.
 ART = {
-    "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227", "rail": "#000000",
+    "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227",
     "knob_big": 7.5, "scale_big": 9.0, "knob_small": 5.0, "scale_small": 6.3,   # radii, mm
-    "cap": 6.0, "nut": 4.0, "led": 1.6,
-    "title": "MARBLESY", "font": "Arial, Helvetica, sans-serif",
+    "cap": 2.9, "cap_big": 5.0, "nut": 4.0, "led": 1.6,
+    "title": "MARBLESY", "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
 }
 BIG_POTS = {"RV1", "RV4", "RV6"}
-OUTPUTS = {"J9", "J10", "J11", "J13", "J14", "J15", "J16"}
-JACK_SHORT = {"T CLOCK": "T CLK", "X CLOCK": "X CLK"}
+OUTPUTS = ["J9", "J10", "J11", "J16", "J13", "J14", "J15"]
+OUT_LABELS = {"J9": ("t", "1"), "J10": ("t", "2"), "J11": ("t", "3"), "J16": ("Y", ""), "J13": ("X", "1"),
+              "J14": ("X", "2"), "J15": ("X", "3")}
+KNOB_TO_JACK = {"RV1": "J2", "RV3": "J4", "RV8": "J8", "RV6": "J6", "RV2": "J3", "RV7": "J7"}   # dotted guides
+LED_TO_BUTTON = {"D1": "SW1", "D4": "SW4", "D2": "SW2", "D5": "SW5", "D3": "SW3", "D6": "SW6", "D7": "SW7"}
 
 
 def _arc(cx, cy, r, a0, a1):
     """SVG path of an arc from angle a0 to a1 (degrees, clockwise from 12 o'clock)."""
-    import math
     p0 = (cx + r * math.sin(math.radians(a0)), cy - r * math.cos(math.radians(a0)))
     p1 = (cx + r * math.sin(math.radians(a1)), cy - r * math.cos(math.radians(a1)))
     large = 1 if (a1 - a0) % 360 > 180 else 0
@@ -126,29 +131,36 @@ def _arc(cx, cy, r, a0, a1):
 
 
 def write_artwork(feats, path):
-    import math
     A = ART
     W, H = PANEL_W, PANEL_H
     s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="0 0 {W} {H}">',
-         f'<title>Marblesy 18HP panel - artwork</title>',
+         '<title>Marblesy 18HP panel - artwork</title>',
          f'<style>text{{font-family:{A["font"]};font-weight:bold;fill:{A["silk"]}}} '
-         f'.silk{{stroke:{A["silk"]};fill:none;stroke-linecap:round}} .copper{{fill:{A["copper"]}}} '
-         f'.cu-text{{fill:{A["panel"]}}} .hole{{fill:#ffffff;stroke:none}}</style>',
-         f'<rect x="0" y="0" width="{W}" height="{H}" fill="{A["panel"]}"/>',
-         f'<rect x="0" y="0" width="{W}" height="9.5" fill="{A["rail"]}" opacity="0.35"/>',
-         f'<rect x="0" y="{H - 9.5}" width="{W}" height="9.5" fill="{A["rail"]}" opacity="0.35"/>']
+         f'.serif{{font-family:{A["serif"]};font-style:italic;font-weight:normal}} '
+         f'.silk{{stroke:{A["silk"]};fill:none;stroke-linecap:round}} .dots{{stroke-dasharray:0.1 1.0;stroke-width:0.45}} '
+         f'.copper{{fill:{A["copper"]}}} .cu-text{{fill:{A["panel"]}}} .hole{{fill:#ffffff;stroke:none}}</style>',
+         f'<rect x="0" y="0" width="{W}" height="{H}" fill="{A["panel"]}"/>']
     pos = {ref: (kind, label, *panel_xy(hx, hy)) for kind, ref, label, ox, oy, hx, hy in feats}
 
     def text(x, y, t, size, anchor="middle", cls="", extra=""):
         c = f' class="{cls}"' if cls else ""
         s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="{anchor}"{c}{extra}>{t}</text>')
 
+    def dots(pts):
+        s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts) + '" class="silk dots"/>')
+
+    def label_below(ref):
+        kind, label, x, y = pos[ref]
+        r = A["scale_big"] if ref in BIG_POTS else A["scale_small"]
+        return x, y + r + 3.0
+
     # -- silkscreen
     s.append('<g id="silk">')
-    text(W / 2, 7.4, A["title"], 4.2, extra=' letter-spacing="0.6"')
-    for ref, glyph in (("RV1", "t"), ("RV6", "X")):          # section letters over the first knobs
-        x = pos[ref][2]
-        text(x, 15.6, glyph, 5.5, extra=' font-style="italic"')
+    text(W - 12.5, 6.4, A["title"], 3.6, anchor="end", extra=' letter-spacing="0.5"')   # clear of the screw
+    s.append(f'<line x1="3" y1="9.6" x2="{W - 3}" y2="9.6" class="silk dots"/>')   # band under the title
+    s.append(f'<line x1="3" y1="10.6" x2="{W - 3}" y2="10.6" class="silk dots"/>')
+    text(pos["SW1"][2] - A["cap_big"] - 4.6, pos["SW1"][3] + 2.2, "t", 7.0, cls="serif")
+    text(pos["SW4"][2] + A["cap_big"] + 4.6, pos["SW4"][3] + 2.2, "X", 7.0, cls="serif")
     for ref, (kind, label, x, y) in pos.items():
         if kind == "pot":
             big = ref in BIG_POTS
@@ -161,43 +173,51 @@ def write_artwork(feats, path):
                 s.append(f'<line x1="{x + r * math.sin(a):.2f}" y1="{y - r * math.cos(a):.2f}" '
                          f'x2="{x + r1 * math.sin(a):.2f}" y2="{y - r1 * math.cos(a):.2f}" class="silk" stroke-width="0.3"/>')
             lab = {"BIAS (t)": "BIAS", "BIAS (X)": "BIAS"}.get(label, label)
-            text(x, y + r + 2.9, lab, 2.6 if big else 2.3)
-    # buttons: mode / range words between the pairs, t / X beside the deja vu buttons, EXT beside the last
-    for top, bottom, word in (("SW2", "SW3", "MODE"), ("SW5", "SW6", "MODE")):
-        x, y1, y2 = pos[top][2], pos[top][3], pos[bottom][3]
-        text(x, (y1 + y2) / 2 + 0.7, word, 2.0)
-        text(x, y2 + A["cap"] + 2.8, "RANGE", 2.0)
-    text(pos["SW1"][2] - A["cap"] - 3.0, pos["SW1"][3] + 1.3, "t", 3.4, extra=' font-style="italic"')
-    text(pos["SW4"][2] + A["cap"] + 3.0, pos["SW4"][3] + 1.3, "X", 3.4, extra=' font-style="italic"')
-    text(pos["SW7"][2] - A["cap"] - 1.2, pos["SW7"][3] + 0.7, "EXT", 2.0, anchor="end")
-    # LED legends: a short tick from each LED towards its button
-    for led, sw in (("D2", "SW2"), ("D3", "SW3"), ("D5", "SW5"), ("D6", "SW6"), ("D1", "SW1"), ("D4", "SW4"), ("D7", "SW7")):
-        (_, _, lx, ly), (_, _, bx, by) = pos[led], pos[sw]
+            lx, ly = label_below(ref)
+            text(lx, ly, lab, 2.7 if big else 2.4)
+    # dotted guides from a knob's label down to its CV jack
+    for pot, jack in KNOB_TO_JACK.items():
+        lx, ly = label_below(pot)
+        jx, jy = pos[jack][2], pos[jack][3]
+        top = jy - A["nut"] - 0.9
+        if abs(jx - lx) < 0.3:
+            dots([(lx, ly + 1.2), (lx, top)])
+        else:
+            dots([(lx, ly + 1.2), (lx, ly + 3.5), (jx, ly + 6.0), (jx, top)])
+    # LED to button ticks
+    for led, sw in LED_TO_BUTTON.items():
+        (_, _, lx, ly), (kind, _, bx, by) = pos[led], pos[sw]
+        cap = A["cap_big"] if kind == "button_big" else A["cap"]
         dx, dy = bx - lx, by - ly
         d = math.hypot(dx, dy)
         ux, uy = dx / d, dy / d
-        s.append(f'<line x1="{lx + ux * (A["led"] + 0.8):.2f}" y1="{ly + uy * (A["led"] + 0.8):.2f}" '
-                 f'x2="{bx - ux * (A["cap"] + 0.8):.2f}" y2="{by - uy * (A["cap"] + 0.8):.2f}" '
-                 f'class="silk" stroke-width="0.35" stroke-dasharray="0.1 0.9"/>')
-    # jacks: labels above, inputs plain, outputs on copper pills (drawn in #copper)
-    for ref, (kind, label, x, y) in pos.items():
-        if kind == "jack" and ref not in OUTPUTS:
-            text(x, y - 4.6, JACK_SHORT.get(label, label), 1.9)
+        dots([(lx + ux * (A["led"] + 0.7), ly + uy * (A["led"] + 0.7)), (bx - ux * (cap + 0.7), by - uy * (cap + 0.7))])
+    # button words
+    for sw, word in (("SW2", "MODE"), ("SW5", "MODE"), ("SW3", "RANGE"), ("SW6", "RANGE")):
+        x, y = pos[sw][2], pos[sw][3]
+        text(x, y + A["cap"] + 2.6, word, 1.8)
+    text(pos["D7"][2], pos["D7"][3] + A["led"] + 2.6, "EXT", 1.8)
+    # jack labels: CLOCK over the clock jacks, DEJA VU over its CV jack (its knob is far away)
+    for jack in ("J1", "J12"):
+        text(pos[jack][2], pos[jack][3] - A["nut"] - 1.6, "CLOCK", 2.2)
+    text(pos["J5"][2], pos["J5"][3] - A["nut"] - 1.6, "DEJA VU", 2.2)
     s.append('</g>')
-    # -- bare copper: output markers
+    # -- bare copper: the output band with its labels knocked out
     s.append('<g id="copper">')
-    for ref, (kind, label, x, y) in pos.items():
-        if ref in OUTPUTS:
-            s.append(f'<rect x="{x - 3.9:.2f}" y="{y - 6.9:.2f}" width="7.8" height="3.2" rx="0.8" class="copper"/>')
-            text(x, y - 4.55, label, 2.0, cls="cu-text")
+    jy = pos["J9"][3]
+    s.append(f'<rect x="3.6" y="{jy - 8.6:.2f}" width="{W - 7.2:.2f}" height="14.4" rx="1.4" class="copper"/>')
+    for ref in OUTPUTS:
+        x = pos[ref][2]
+        main, sub = OUT_LABELS[ref]
+        t = main + (f'<tspan font-size="2.1" dy="0.9">{sub}</tspan>' if sub else "")
+        text(x, jy - A["nut"] - 1.2, t, 3.4, cls="serif cu-text")
     s.append('</g>')
     # -- holes
     s.append('<g id="holes">')
     for ref, (kind, label, x, y) in pos.items():
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE[kind] / 2:.2f}" class="hole"/>')
-    for x in (7.5, W - 7.5):
-        for y in (3.0, H - 3.0):
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE["mount"] / 2:.2f}" class="hole"/>')
+    for x, y in MOUNTS:
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE["mount"] / 2:.2f}" class="hole"/>')
     s.append('</g>')
     # -- mockup of the fitted parts (preview only)
     s.append('<g id="mockup">')
@@ -205,19 +225,23 @@ def write_artwork(feats, path):
         if kind == "pot":
             r = A["knob_big"] if ref in BIG_POTS else A["knob_small"]
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r}" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r * 0.62:.2f}" fill="#e8e8e4"/>')
             a = math.radians(-135)
-            s.append(f'<line x1="{x + 0.35 * r * math.sin(a):.2f}" y1="{y - 0.35 * r * math.cos(a):.2f}" '
+            s.append(f'<line x1="{x + 0.3 * r * math.sin(a):.2f}" y1="{y - 0.3 * r * math.cos(a):.2f}" '
                      f'x2="{x + 0.95 * r * math.sin(a):.2f}" y2="{y - 0.95 * r * math.cos(a):.2f}" '
-                     f'stroke="#eee" stroke-width="0.6" stroke-linecap="round"/>')
+                     f'stroke="#555" stroke-width="0.6" stroke-linecap="round"/>')
         elif kind == "jack":
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["nut"]}" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>')
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="1.75" fill="#111"/>')
+        elif kind == "button_big":
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap_big"]}" fill="#9ccc3c" stroke="#1a1a1a" stroke-width="0.6"/>')
         elif kind == "button":
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"]}" fill="#1d1f1e" stroke="#3a3a3a" stroke-width="0.3"/>')
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"] - 1.6}" fill="none" stroke="#2c2c2c" stroke-width="0.3"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap"]}" fill="#1d1f1e" stroke="#444" stroke-width="0.3"/>')
         elif kind == "led":
             col = "#e0b03a" if ref in ("D2", "D3", "D5", "D6") else "#4bd36a"
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["led"]}" fill="{col}" opacity="0.9"/>')
+    for x, y in MOUNTS:
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>')
     s.append('</g>')
     s.append('</svg>')
     open(path, "w", encoding="utf-8").write("\n".join(s))

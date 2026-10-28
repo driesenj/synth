@@ -9,8 +9,9 @@ x_front = BOARD_W - x. Both boards share one frame, so a header pair has the
 same x/y on both PCBs and the stack lines up pin for pin (checked below).
 
 Faceplate board: jacks, pots, buttons and LEDs on the bottom layer (towards
-the panel); the mux, shift registers, their resistors and the male headers
-on the top layer, inside the board-to-board gap.
+the panel) in the Marbles arrangement; the mux, shift registers, their
+resistors and the male headers on the top layer, inside the board-to-board
+gap.
 Main board: the five female sockets on the bottom layer; everything else on
 the top layer, the Seed breakout along the left edge.
 
@@ -353,14 +354,14 @@ def faceplate_board(pr, parts, info, circuit):
         b.orient(ref, lambda r: abs(r["1"][0] - r["3"][0]) < 0.01 and r["1"][1] > r["3"][1])
     for ref, *_ in circuit.POTS:         # pins in a column towards -x (pin 1 then lands above pin 3)
         b.orient(ref, lambda r: r["1"][0] < r["4"][0] and abs(r["1"][0] - r["3"][0]) < 0.01)
-    for ref, *_ in circuit.BUTTONS:      # pads 1+4 on the left, 2+3 on the right
-        b.orient(ref, lambda r: r["1"][0] < r["2"][0] and abs(r["1"][0] - r["4"][0]) < 0.01)
+    for ref, *_ in circuit.BUTTONS:      # contact pairs 1+4 and 2+3 as rows, pad 1 bottom left
+        b.orient(ref, lambda r: abs(r["1"][1] - r["4"][1]) < 0.01 and r["1"][0] < r["4"][0] and r["1"][1] < r["2"][1])
     for ref, _, kind, _ in circuit.LEDS:  # leads in a row along x, pad 1 on the left
         last = "3" if kind == "RG" else "2"
         b.orient(ref, lambda r, last=last: abs(r["1"][1] - r[last][1]) < 0.01 and r["1"][0] < r[last][0])
     # headers (male, top layer), shared with the main board
-    for ref, (xf, y) in HEADERS_FRONT.items():
-        b.place_front(circuit.fb_ref(ref), xf, y, 0)
+    for ref, (xf, y, a) in HEADERS_FRONT.items():
+        b.place_front(circuit.fb_ref(ref), xf, y, a)
     # logic on the top (rear) side: front-view coordinates, angle in the PCB frame
     for ref, xf, y, a in FB_REAR:
         b.place_front(ref, xf, y, a)
@@ -373,8 +374,8 @@ def main_board(pr, parts, info, circuit):
     b = Board("Main board", pr, parts, info, W, H)
     for xf, y in HOLES_FRONT:
         b.hole_front(xf, y)
-    for ref, (xf, y) in HEADERS_FRONT.items():      # female sockets, bottom layer, same spot
-        b.place_front(ref, xf, y, 0, bottom=True)
+    for ref, (xf, y, a) in HEADERS_FRONT.items():   # female sockets, bottom layer, same spot
+        b.place_front(ref, xf, y, a, bottom=True)
     for ref, x, y, a in MB_TOP:
         b.place(ref, x, y, a)
     b.text(23, H - 3.5, "Marblesy main board", 2.0)
@@ -382,23 +383,29 @@ def main_board(pr, parts, info, circuit):
 
 
 # Front-view coordinates (x from the left as seen from the panel, y up).
-HOLES_FRONT = [(4.5, 33), (4.5, 104), (85.5, 104), (79, 84)]
-HEADERS_FRONT = {"H1": (20, 104), "H3": (45, 104), "H2": (70, 104), "H4": (33, 41), "H5": (56, 41)}
+# Holes: two on the centre line between the knobs, one each side between the
+# BIAS knob and the mode button; on the main board the side holes land
+# between the breakout's pad rows and beside the clock stages.
+HOLES_FRONT = [(45, 82), (45, 33), (79, 69), (11, 69)]
+# header: (x, y, angle); 0 = pins along x, 90 = along y. H1/H2 in the strip
+# above the big knobs, H3/H4 between the CV jacks and the JITTER/STEPS
+# knobs, H5 beside the right range button.
+HEADERS_FRONT = {"H1": (33.75, 105.5, 0), "H2": (56.5, 105.5, 0), "H3": (52, 34.5, 90), "H4": (38, 34.5, 90),
+                 "H5": (74, 47.5, 90)}
 
 # Faceplate, rear side (top layer): ref, x_front, y, angle. 0 = pins along x, 90 = along y.
+# U1/U11 in the strip between the CV jacks and the JITTER/STEPS knobs, U9/U10
+# vertical in the pockets beside LENGTH, resistors in rows beside RATE and
+# SPREAD and in columns beside the range buttons.
 FB_REAR = [
-    ("U1", 18, 34, 0), ("U11", 72, 34, 0), ("U9", 11.5, 57, 0), ("U10", 76, 57, 0),
-    ("C8", 29.5, 34, 90), ("C11", 60.8, 34, 90), ("C9", 23.5, 57, 90), ("C10", 64.5, 57, 90),
-    ("R9", 39.5, 36.5, 90), ("R10", 53, 31, 0),
-    # LED series resistors: left margin (two columns, three rows) and the left pocket
-    ("R80", 2.5, 44, 90), ("R81", 5.5, 44, 90), ("R82", 2.5, 72, 90), ("R83", 5.5, 72, 90),
-    ("R84", 2.5, 86, 90), ("R85", 5.5, 86, 90),
-    ("R86", 13.8, 75.5, 0), ("R87", 13.8, 77.9, 0), ("R88", 13.8, 82.5, 0), ("R89", 13.8, 84.9, 0),
-    ("R90", 76.2, 77.9, 0),
-    # button pull-ups: right margin and the right pocket
-    ("R100", 83.5, 44, 90), ("R101", 87, 44, 90), ("R102", 83.5, 72, 90), ("R103", 87, 72, 90),
-    ("R104", 83.5, 86, 90), ("R105", 87, 86, 90), ("R106", 76.2, 75.5, 0),
+    ("U1", 25, 33.8, 0), ("U11", 65, 33.8, 0), ("U9", 35, 62.5, 90), ("U10", 55, 62.5, 90),
+    ("C8", 13.7, 34, 90), ("C11", 76.3, 33.8, 90), ("C9", 35, 74.5, 0), ("C10", 55, 74.5, 0),
 ]
+_ROWS = [77, 79.5, 82, 84.5, 87, 89.5, 92]
+FB_REAR += [(f"R{80 + i}", 34.75, y, 0) for i, y in enumerate(_ROWS)]                       # LED resistors
+FB_REAR += [(r, 56.3, y, 0) for r, y in zip(("R87", "R88", "R89", "R90", "R100", "R101", "R102"), _ROWS)]
+FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R9", "R103", "R104", "R105"), (15.5, 18.5, 21.5, 24.5))]
+FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R10", "R106"), (65.5, 68.5))]
 
 # Main board, top (rear) layer, PCB frame: ref, x, y, angle.
 XA, XB, XC = 41.5, 54.5, 67.5      # resistor columns right of the op-amps (horizontal, 10.3 mm pitch)
@@ -428,7 +435,7 @@ MB_TOP += [("C37", 62.5, 16, 90), ("C38", 62.5, 24, 90), ("C30", 62.5, 33, 90)]
 MB_TOP += [("C39", 66, 33.5, 90), ("C40", 78, 34, 90), ("R47", 70.5, 38.8, 0), ("D21", 85, 38.5, 0)]
 # clock input stages in the right strip (vertical parts)
 MB_TOP += [("R50", 73.5, 92, 90), ("R51", 75.9, 92, 90), ("Q1", 80, 92, 90), ("D22", 85.3, 92, 90),
-           ("R52", 73.5, 72, 90), ("R53", 75.9, 72, 90), ("Q2", 80, 72, 90), ("D23", 85.3, 72, 90)]
+           ("R52", 73.5, 72, 90), ("R53", 75.9, 72, 90), ("Q2", 80, 74.5, 90), ("D23", 85.3, 72, 90)]
 
 
 def header_check(fb, mb, circuit):

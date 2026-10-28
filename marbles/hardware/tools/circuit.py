@@ -266,26 +266,37 @@ def fb_ref(ref):
 
 # ------------------------------------------------------ faceplate placement
 # Faceplate board: 90 x 108 mm, seen from the front, x to the right, y up,
-# origin at the bottom-left corner. These are footprint origins and
-# rotations for the PCB; panel.py derives the panel holes from them.
+# origin at the bottom-left corner. The 91.3 x 128.5 panel is centred on it
+# (panel x = x + 0.65, panel y from the top = 118.25 - y). The arrangement
+# follows Mutable's Marbles panel: DEJA VU knob top centre with RATE and
+# SPREAD large beside it, BIAS knobs at the sides, LENGTH centre, JITTER
+# and STEPS below, the two deja vu buttons in the top corners with their
+# LEDs, small mode and range buttons with an LED each, the EXT button under
+# LENGTH, CLOCK and BIAS jacks at the sides, five CV inputs in a row and
+# the seven outputs (t1 t2 t3 Y X1 X2 X3) in the bottom row. These are
+# footprint origins for the PCB; panel.py derives the panel holes from them.
 BOARD_W, BOARD_H = 90.0, 108.0
-JACK_PITCH = 11.0
-JACK_X0 = BOARD_W / 2 - 3.5 * JACK_PITCH          # 6.5 mm
+JACK_PITCH = 12.0
 PLACEMENT = {}
-for i, (ref, *_) in enumerate(JACKS):
-    row, col = divmod(i, 8)
-    PLACEMENT[ref] = (round(JACK_X0 + col * JACK_PITCH, 2), 22.6 if row == 0 else 7.7, 0)
-POT_XY = {"RV1": (14, 92), "RV4": (45, 92), "RV6": (76, 92),
-          "RV2": (14, 68), "RV5": (45, 68), "RV7": (76, 68),
-          "RV3": (14, 46), "RV8": (76, 46)}
+for k, ref in enumerate(("J9", "J10", "J11", "J16", "J13", "J14", "J15")):        # outputs
+    PLACEMENT[ref] = (9 + k * JACK_PITCH, 7.25, 0)
+for k, ref in enumerate(("J1", "J2", "J4", "J5", "J8", "J6", "J12")):           # clocks and CV inputs
+    PLACEMENT[ref] = (9 + k * JACK_PITCH, 21.85, 0)
+PLACEMENT["J3"], PLACEMENT["J7"] = (9, 36.25, 0), (81, 36.25, 0)              # BIAS CV inputs
+POT_XY = {"RV1": (22.65, 82.75), "RV6": (67.35, 82.75), "RV4": (45, 97.55),    # RATE, SPREAD, DEJA VU
+          "RV2": (8.85, 59.95), "RV7": (81.15, 59.95), "RV5": (45, 66.55),     # BIAS t, BIAS X, LENGTH
+          "RV3": (31.05, 44.75), "RV8": (58.95, 44.75)}                        # JITTER, STEPS
 for ref, (x, y) in POT_XY.items():
     PLACEMENT[ref] = (x, y, 90)
-BUTTON_XY = {"SW2": (30, 97), "SW3": (30, 80), "SW5": (60, 97), "SW6": (60, 80),
-             "SW1": (36, 50), "SW4": (54, 50), "SW7": (45, 36)}
+BUTTON_XY = {"SW1": (15.85, 100.65), "SW4": (74.15, 100.65),                   # t / X deja vu (large caps)
+             "SW2": (6.85, 78.25), "SW5": (83.15, 78.25),                      # t / X mode
+             "SW3": (25.95, 58.25), "SW6": (64.05, 58.25),                     # t / X range
+             "SW7": (45, 51.45)}                                               # X ext
+BIG_BUTTONS = {"SW1", "SW4"}
 for ref, (x, y) in BUTTON_XY.items():
     PLACEMENT[ref] = (x, y, 0)
-LED_XY = {"D2": (22, 97), "D3": (22, 80), "D5": (68, 97), "D6": (68, 80),
-          "D1": (36, 59), "D4": (54, 59), "D7": (55, 36)}
+LED_XY = {"D1": (15.85, 92), "D4": (74.15, 92), "D2": (6.85, 86.75), "D5": (83.15, 86.75),
+          "D3": (25.95, 64.75), "D6": (64.05, 64.75), "D7": (45, 42.05)}
 for ref, (x, y) in LED_XY.items():
     PLACEMENT[ref] = (x, y, 0)
 

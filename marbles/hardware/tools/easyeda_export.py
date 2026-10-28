@@ -9,8 +9,8 @@ pin numbers, and gets a generated through-hole footprint:
   Daisy Seed on seed_power_opamps   56 pads, 2.54 mm pitch, rows 15.24 mm apart,
                                     positions taken from Rob Heel's PCB
   MCP4922 (DIP-14), 74HC595 / 74HC165 / 74HC4051 (DIP-16), 2N3904 and
-  LM4040 (TO-92 in line), 3 mm LEDs (2 and 3 leads), the 5 x 5 mm tactile
-  switch (Thonk "Highly Tactile"), 1xN pin headers.
+  LM4040 (TO-92 in line), 3 mm LEDs (2 and 3 leads), the 6 x 6 mm tactile
+  switch, 1xN pin headers.
 
 Three A3 pages: Main board 1 (Seed, CV inputs, clock inputs, bias and
 reference), Main board 2 (DACs, output stages, gate outputs, headers),
@@ -155,12 +155,13 @@ def fp_led(leads):
 
 
 def fp_switch():
-    """5 x 5 mm pin square, 12 mm round body: Thonk 'Highly Tactile' / C&K D6R."""
-    f = Footprint("SW-TACT-5x5-D12", "SW?")
-    for num, (x, y) in enumerate(((-2.5, 2.5), (2.5, 2.5), (2.5, -2.5), (-2.5, -2.5)), 1):
-        f.pad(num, x, y, 1.1, 1.7, square=(num == 1))
-    f.circle(0, 0, 6.0)
-    f.circle(0, 0, 4.5)
+    """6 x 6 mm tactile switch (TL1105 pattern): pads 6.5 mm apart in a row
+    belong to one contact, so pads 1+4 are one side and 2+3 the other."""
+    f = Footprint("SW-TACT-6x6", "SW?")
+    for num, (x, y) in ((1, (-3.25, -2.25)), (4, (3.25, -2.25)), (2, (-3.25, 2.25)), (3, (3.25, 2.25))):
+        f.pad(num, x, y, 1.0, 1.8, square=(num == 1))
+    f.rect(-3.0, -3.0, 3.0, 3.0)
+    f.circle(0, 0, 1.75)
     return f
 
 
@@ -411,8 +412,9 @@ class MProject(Project):
             ("LED_RG", ee.led_symbol(), "LED 3mm bicolour R/G CC", "D?", fps["LED3"],
              "3 mm bicolour LED, red/green, common cathode on the middle lead, 1.27 mm pitch"),
             ("LED_G", led_single_symbol(), "LED 3mm green", "D?", fps["LED2"], "3 mm LED, 2.54 mm pitch"),
-            ("SW", button4_symbol(), "Tactile switch 5x5", "SW?", fps["SW"],
-             "Momentary tactile switch, 5 x 5 mm pins, 12 mm round body (Thonk Highly Tactile / C&K D6R)"),
+            ("SW", button4_symbol(), "Tactile switch 6x6", "SW?", fps["SW"],
+             "6 x 6 mm tactile switch, 4.5 x 6.5 mm pin pattern; pads 1+4 are one contact, 2+3 the other. "
+             "Pick a height that puts a round cap just proud of the panel (about 9.5 mm for a 7 mm panel gap)"),
         ]
         for n in (4, 6, 7, 8):
             new.append((f"HDR{n}", header_symbol(n), f"Pin header 1x{n}", "H?", fps[f"HDR{n}"],
@@ -833,7 +835,7 @@ def faceplate_page(pr, parts):
     pg.text(1440, Y(600), "C9..C11 at U9..U11 pin 16", 8)
 
     # buttons
-    pg.text(70, Y(835), "Buttons (Thonk Highly Tactile, 5x5 mm): pins 1+4 to GND_D_F, 2+3 to the 74HC165 - verify the internal pairing before soldering", 12)
+    pg.text(70, Y(835), "Buttons (6x6 mm tactile, TL1105 pattern): pads 1+4 (6.5 mm apart, one contact) to GND_D_F, pads 2+3 to the 74HC165", 12)
     for k, (ref, label, sw) in enumerate(circuit.BUTTONS):
         bx, by = 150 + k * 185, Y(935)
         s = pg.place(ref, "SW", bx, by, des=(-12, -20, "LEFT_BOTTOM"), name=False)

@@ -237,40 +237,49 @@ main board's GND.
 
 ## Faceplate placement and panel
 
-The faceplate board is 90 × 108 mm; the panel is 91.3 × 128.5 mm (18HP). The
-footprint origins are in `PLACEMENT` in `circuit.py`; `panel.py` turns them
-into `hardware/panel/marbles-panel-holes.csv` and the 1:1 drill template,
-applying the offsets measured on the Plaitsy PCB audit (jack barrel 0.78 mm
-below the WQP518MA origin, pot shaft 0.53 mm beyond the PTV09A origin).
+The faceplate board is 90 × 108 mm; the panel is 91.3 × 128.5 mm (18HP),
+centred on it. The footprint origins are in `PLACEMENT` in `circuit.py`;
+`panel.py` turns them into `hardware/panel/marbles-panel-holes.csv`, the 1:1
+drill template and the artwork, applying the offsets measured on the Plaitsy
+PCB audit (jack barrel 0.78 mm below the WQP518MA origin, pot shaft 0.53 mm
+beyond the PTV09A origin).
+
+The arrangement follows Mutable's Marbles panel (board mm, y up):
 
 ```
-   y (mm)
-   97   [t mode]  RATE          DEJA VU          SPREAD  [X mode]
-   92              o              o                o
-   80   [t range]                                          [X range]
-   68            BIAS (t)       LENGTH          BIAS (X)
-   59              [t deja vu]      [X deja vu]
-   46            JITTER                          STEPS
-   36                        [X ext]
-   22.6  T CLK  RATE  BIAS  JITTER  DEJA VU  SPREAD  BIAS  STEPS   (jack row, 11 mm pitch)
-    7.7  T1     T2    T3    X CLK   X1       X2      X3    Y
+   y
+  100.7  [t]o              DEJA VU (45)                o[X]      deja vu buttons, LEDs below
+   92      *                                          *
+   86.8   o                                            o         mode LED
+   82.75         RATE (22.65)              SPREAD (67.35)
+   78.25  o MODE                                       MODE o
+   66.55  BIAS (8.85)        LENGTH (45)        BIAS (81.15)   (BIAS knobs at y 59.95)
+   64.75          o RANGE                  RANGE o               range LED + button (58.25)
+   51.45                      o EXT  (LED at 42.05)
+   44.75        JITTER (31.05)               STEPS (58.95)
+   36.25  BIAS jack                                  BIAS jack
+   21.85  CLOCK  RATE  JITTER  DEJA VU  STEPS  SPREAD  CLOCK     x = 9 + 12 k
+    7.25  t1     t2    t3      Y        X1     X2      X3        outputs, same pitch
 ```
 
-Pots at x = 14 / 45 / 76, buttons at 30 / 60 (top) and 36 / 54 / 45,
-bicolour LEDs 8 mm beside their buttons. A clearance check in the repo's
-history found no overlapping bodies at these positions. Panel hole sizes:
-pots 7.5, jacks 6.5, LEDs 3.2, buttons 12.5 (for the 12 mm round cap; check
-your switch), mounting 3.2.
+Three large knobs (RATE, DEJA VU, SPREAD, Ø15 drawn), five small (Ø10).
+Buttons are 6 × 6 mm tactiles with round caps: 10 mm caps on the two deja
+vu buttons (11 mm hole), 6 mm caps on the rest (7 mm hole); pick a switch
+height that puts the cap just proud of the panel. Panel hole sizes: pots
+7.5, jacks 6.5, LEDs 3.2, mounting 3.2. Pads of neighbouring parts clear
+each other by 0.25 mm or more on the board (checked by the exporter).
 
 The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.
 
 ### Panel artwork
 
-`panel.py` also writes `hardware/panel/marbles-panel.svg`, a draft of the
-panel as a PCB: black solder mask, white silkscreen (title, `t` / `X`
-section letters, scale arcs with ticks, labels, dotted LED-to-button
-ticks), bare copper pills for the seven outputs, every hole, and a mockup
-layer with knobs, nuts, caps and LEDs for the preview. Colours, radii and the
+`panel.py` also writes `hardware/panel/marbles-panel.svg`, the panel as a
+PCB in the Marbles style: black solder mask, white silkscreen (title, serif
+`t` / `X` beside the deja vu buttons, scale arcs with ticks, labels under
+the knobs, dotted guides from each knob to its CV jack and from each LED to
+its button), a bare copper band behind the seven outputs with their labels
+knocked out, every hole, and a mockup layer with knobs, nuts, caps and LEDs
+for the preview. Colours, radii and the
 title are the `ART` dict at the top of the artwork section; the SVG groups
 `#holes`, `#silk` and `#copper` are the three layers an EasyEDA panel PCB
 needs (drill, top silkscreen, top solder-mask opening). Knobs are drawn at
@@ -300,12 +309,13 @@ pot pins in a column towards the left as seen from the front, button pads
 
 **Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 buttons, 7 LEDs.
 Top (rear) layer, inside the 8.5 mm header gap: U1 and U11 in the strip
-between the top jack row and the lowest pots (y 29–42), U9 and U10 in the
-pockets between the pot rows at the left and right edges (y 52–62), the
-button pull-ups in the right margin, the LED resistors in the left margin
-and the pockets at y 74–87, the probe resistors beside U1, one 100 n per IC.
-The male headers (front-view x, y): H1 (20, 104), H3 (45, 104), H2
-(70, 104), H4 (33, 41), H5 (56, 41); pin 1 towards +x in the front view.
+between the CV jacks and the JITTER/STEPS knobs (y 29–40), U9 and U10
+vertical in the pockets either side of LENGTH, the LED resistors and
+pull-ups in rows between RATE/SPREAD and the DEJA VU knob and in columns
+beside the range buttons, one 100 n per IC. The male headers (front-view
+x, y, orientation): H1 (33.75, 105.5) and H2 (56.5, 105.5) horizontal above
+the big knobs, H3 (52, 34.5) and H4 (38, 34.5) vertical between the CV
+jacks and the knobs, H5 (74, 47.5) vertical beside the X range button.
 
 **Main board.** Bottom layer: the five female sockets at the same spots.
 Top (rear) layer: the Seed breakout vertical along the left edge, centred at
@@ -317,17 +327,19 @@ above them; the clock input stages in the right strip. Every main-board
 part except the sockets is on the rear side, so the front side carries
 only sockets and standoffs.
 
-**Mounting.** Four 3.2 mm holes, front-view (4.5, 33), (4.5, 104),
-(85.5, 104), (79, 84), identical on both boards; the odd one sits between
-the breakout's two pad rows on the main board. M3 standoffs between the
-boards; the breakout and Seed hang on the main board's rear.
+**Mounting.** Four 3.2 mm holes, front-view (45, 82), (45, 33), (79, 69),
+(11, 69), identical on both boards; the side ones sit between the BIAS knob
+and the mode button on the faceplate and, on the main board, between the
+breakout's pad rows and beside the clock stages. M3 standoffs between the
+boards (a screw head needs 3 mm of free panel-side board around each hole,
+which these have); the breakout and Seed hang on the main board's rear.
 
 **Assumptions to check.** The library PTV09A footprint draws the pot body
 9 mm beyond its origin; the checks use 4 mm (the Alpha 9 mm housing ends
-about 3.3 mm beyond the shaft, as in KiCad's RD901F footprint). If your
-pots are deeper than that, the LEDs 8 mm from the pot origins (D2, D3,
-D5, D6) are the parts to watch. The 5 × 5 button pairing (item 3 of the
-Plaitsy audit) still has to be verified on a real switch.
+about 3.3 mm beyond the shaft, as in KiCad's RD901F footprint). The 6 × 6
+tactile footprint follows the TL1105 pattern: the two pads 6.5 mm apart in
+a row are one contact (pads 1+4 and 2+3), which is the convention every
+6 × 6 switch shares; the earlier 5 × 5 pairing doubt is gone with the part.
 
 ---
 
@@ -339,7 +351,7 @@ Plaitsy audit) still has to be verified on a real switch.
 | 1 | seed_power_opamps breakout, built | U2 | OSHWLab (Rob Heel) |
 | 16 | Thonkiconn PJ398SM + nut | J1–J16 | Thonk |
 | 8 | Alpha 9 mm vertical B10K (pick the shaft to match your knobs) | RV1–RV8 | Thonk |
-| 7 | Highly Tactile switch KS01-B, Ø12, 5×5 mm pins | SW1–SW7 | Thonk |
+| 7 | 6 × 6 mm tactile switch (TL1105 type, about 9.5 mm high) + round cap: 2 × 10 mm (deja vu), 5 × 6 mm | SW1–SW7 | Thonk / Tayda |
 | 3 | 3 mm green LED | D1, D4, D7 | Thonk |
 | 4 | 3 mm bicolour R/G, common cathode, 3 leads, 1.27 mm pitch | D2, D3, D5, D6 | Tayda / Kingbright (not at Thonk) |
 | 8 | Knobs: 3 large (RATE, DEJA VU, SPREAD), 5 small | | Thonk |
@@ -396,8 +408,6 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
 
 ## Open items
 
-- Verify the KS01-B switch's internal pin pairing before soldering (same
-  note as in the Plaitsy audit).
 - Verify the LM4040 TO-92 pinout for the exact part you buy; the footprint
   leaves pad 3 open.
 - Route the two PCBs: import `Marbles.epro2`, run DRC and the netlist check

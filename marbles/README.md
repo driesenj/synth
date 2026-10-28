@@ -15,7 +15,7 @@ placement, the BOM and the firmware plan.
 |---|---|---|
 | Netlist | Done, 162 parts, checked | `hardware/tools/circuit.py` |
 | EasyEDA Pro schematic | Done, three A3 pages, every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
-| Faceplate placement, panel template, panel artwork draft | Done; artwork to fine-tune, then build as a PCB panel | `hardware/panel/` |
+| Panel layout (Marbles arrangement), drill template, artwork | Done; artwork to fine-tune, then build as a PCB panel | `hardware/panel/` |
 | PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
 | PCB routing | Not started (do it in EasyEDA Pro on the imported project) | |
 | Firmware | Not started | |
