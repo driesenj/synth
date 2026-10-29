@@ -74,6 +74,16 @@ its rows is fine.
 
 ## Lessons
 
+- What the user changed when routing Marblesy (worth proposing up front next
+  time): headers moved to the side edges beside the jack rows (CV runs a
+  few cm instead of the board's height), split by function (7 short headers
+  instead of 5 long ones); the breakout centred on the main board with the
+  op-amps at the four corners; 33 resistors stood up on a 2.54 mm footprint;
+  mux channels and 595 outputs swapped to untangle the faceplate.
+- Designators can repeat across boards (Marblesy has R80–R85 on both).
+  Keep part info per board: the exporter once gave the faceplate's 470 R
+  the main board's 100k devices.
+
 - Panel first. The first Marblesy placement passed every check and looked
   nothing like Marbles; the redo cost an hour.
 - A footprint's origin is rarely the mechanical centre: jack barrel 0.78

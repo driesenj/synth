@@ -50,6 +50,28 @@ and `marbles/hardware/tools/{easyeda_export,pcb,panel_pcb}.py`.
   CCW positive). Top layer: rotate only. Verified against every routed
   track in 12 boards.
 
+## Fills with holes, pours, routed exports
+
+- A `FILL` (and a pour) path list is one complex polygon combined with the
+  **nonzero** fill rule (EasyEDA Pro API, `IPCB_ComplexPolygon`). A hole is a
+  contour wound opposite to the outline: `rounded()` in `panel_pcb.py` draws
+  clockwise (−90 arcs), so its cutouts are counter-clockwise circles (four
+  +90 arcs). A `CIRCLE` entry has no winding to rely on. A contour crossing
+  the outline adds copper outside it, so keep cutouts inside.
+- DRC wants copper 0.3 mm from a slot region (NPTH `FILL` on layer 12):
+  a copper band with holes through it needs clearance rings in both the
+  copper fill and its mask opening (mask stays on the ring: black, not bare
+  laminate).
+- `POURED` (EasyEDA's computed pour) uses 10 mil units. Each `pourFill`
+  item with `fill: true` is one island (outline first, then holes); items
+  with `fill: false` and `strokeWidth` are thermal spokes, lines from a pad
+  centre to the edge of its cutout. A pad joins the pour when a spoke's far
+  end (stepped 0.15 mm on) lies in an island.
+- Routed exports keep deleted records with an empty payload (`...||` with
+  no JSON); a parser must skip them (`pcb.routed_boards()` does,
+  `ee.parse` does not). Stale `POURED` records outlive their `POUR`: match
+  them by id.
+
 ## PCB document records (what a placed, unrouted PCB needs)
 
 Copy the preamble from a real PCB (cached in

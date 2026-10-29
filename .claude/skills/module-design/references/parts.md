@@ -45,8 +45,13 @@ missing, in the same style, with real pin numbers.
   3 (2.54, −2.54), 4 (−2.54, −2.54); contacts are 1+2 and 3+4. LED anode
   L1 = pin 5 (2.7, 0), cathode L2 = pin 6 (−2.7, 0). Feet: (−1.25, 1.75),
   (1.25, 1.75), (0, −2.25), 1.2 mm holes (Thonk's
-  `SW_Tact_Low_Profile_LED_ExtraHoles.kicad_mod`). Generated footprint
-  `SW-TACT-LP-LED-THONK`, feet as plated pads 7–9 so DRC sees pins for them.
+  `SW_Tact_Low_Profile_LED_ExtraHoles.kicad_mod`). The two upper feet sit
+  1.51 mm from pins 1 and 2: with 1.6 mm pads and 1.2 mm holes they overlap
+  (EasyEDA DRC errors on Marblesy). Generated footprint
+  `SW-TACT-LP-LED-THONK` now has pins 1–6 only and the build note says clip
+  the feet (the body then sits on the board, at Thonkiconn height). Feet
+  holes would only clear as NPTH with pins 1–4 shrunk to 1.3 mm round pads
+  (0.26 mm), and tracks between pins 1 and 2 must then go round the feet.
 - Panel hole 6.5 mm; a silk ring at r = cap + 1.6 looks like Marbles.
 - Bipolar version between two 74HC595 lines with one 470 Ω on the red
   line: red = R high/G low, green = reverse, off = equal, orange = alternate

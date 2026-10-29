@@ -45,6 +45,14 @@ look nothing like the original. Do it in this order:
 6. **Import into EasyEDA Pro** (user does this): schematic DRC, PCB DRC and
    netlist check, then routing by hand with autorouter help. Give the user
    routing notes (see `references/routing.md`).
+6b. **After routing, the routed export is the master.** The user moves parts,
+   swaps pins and renumbers while routing. Commit the export
+   (`marbles/hardware/easyeda/Marblesy-routed.epro2`), bring `circuit.py` to
+   its netlist, and let `pcb.py` read the rear-side placement from it
+   (`routed_boards()`); `routed_check()` then proves pad by pad that the
+   generator and the routed boards agree. Audit the copper (connectivity
+   with pour spokes, clearances, standoffs, analog beside digital) before
+   the user orders; the swaps change the firmware's channel tables.
 7. **Docs and BOM** in `docs/design.md` and `README.md`, updated with every
    change; the BOM lists real purchasable parts (Thonk first).
 

@@ -44,6 +44,7 @@ _spec.loader.exec_module(panel_pcb)
 
 NAME = "Marblesy"
 OUT = os.path.join(HERE, "..", "easyeda", "Marbles.epro2")
+STANDING = {title: pcb.standing_resistors(title) for title in pcb.ROUTED_TITLES}
 PREVIEW = os.path.join(HERE, "..", "easyeda", "marbles-easyeda-{}.png")
 MIL = 1 / 0.0254   # footprint units are mil
 
@@ -169,18 +170,29 @@ def fp_switch():
 
 
 def fp_led_button():
-    """Thonk low-profile LED button (7.5 mm square, 5.5 mm round cap), from
-    Thonk's KiCad footprint with the three extra holes for the feet: switch
+    """Thonk low-profile LED button (7.5 mm square, 5.5 mm round cap): switch
     pins 1-4 on a 5.08 mm square (1+2 and 3+4 are the contacts), LED anode
-    pin 5 and cathode pin 6 at x = +-2.7, feet 7-9 (plated 1.2 mm holes)."""
+    pin 5 and cathode pin 6 at x = +-2.7. No holes for the three plastic feet:
+    Thonk's (-1.25, 1.75) and (1.25, 1.75) holes overlap the 1.6 mm pads of
+    pins 1 and 2, so the feet get clipped off instead and the body sits on
+    the board, at Thonkiconn height as it would with the holes."""
     f = Footprint("SW-TACT-LP-LED-THONK", "SW?")
     for num, (x, y) in ((1, (2.54, 2.54)), (2, (-2.54, 2.54)), (3, (2.54, -2.54)), (4, (-2.54, -2.54)),
                         (5, (2.7, 0)), (6, (-2.7, 0))):
         f.pad(num, x, y, 1.0, 1.6, square=(num == 1))
-    for num, (x, y) in ((7, (-1.25, 1.75)), (8, (1.25, 1.75)), (9, (0, -2.25))):
-        f.pad(num, x, y, 1.2, 1.6)
     f.rect(-3.75, -3.75, 3.75, 3.75)
     f.circle(0, 0, 2.75)
+    return f
+
+
+def fp_res_vertical():
+    """A resistor standing up, 2.54 mm: the body over pad 1, the bent lead to pad 2. The pads and the
+    origin of the 1/4W-RESISTOR-VERTICAL footprint the routed main board uses."""
+    f = Footprint("RES-TH-VERTICAL-P2.54", "R?")
+    f.pad(1, 0, 0.48006, 0.8, 1.6)
+    f.pad(2, 0, -2.0574, 0.8, 1.6)
+    f.circle(0, 0.48006, 1.1)
+    f.line(0, -0.79, 0, -1.11)
     return f
 
 
@@ -255,10 +267,9 @@ def hc165_symbol():
 
 
 def led_button_symbol(bipolar=False):
-    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 and 6, feet 7-9."""
+    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 and 6."""
     left = [(0, "1", "1"), (1, "2", "2"), (3, "5", "LED R" if bipolar else "LED A")]
-    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED G" if bipolar else "LED K"), (4, "7", "foot"),
-             (5, "8", "foot"), (6, "9", "foot")]
+    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED G" if bipolar else "LED K")]
     if bipolar:
         return ic_symbol("LED button bipolar", "SWLEDRG.1", left, right, designator="SW?")
     return ic_symbol("LED button", "SWLED.1", left, right, designator="SW?")
@@ -345,8 +356,11 @@ C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF")}
 class MPage(Page):
     page_count = "3"
 
-    def place(self, *args, **kw):
-        p = super().place(*args, **kw)
+    def place(self, ref, dev_key, *args, **kw):
+        board = "Faceplate" if self.title.startswith("Faceplate") else "Main board"
+        if ref in STANDING[board]:       # stood up on the routed board: the same resistor, vertical footprint
+            dev_key += "V"
+        p = super().place(ref, dev_key, *args, **kw)
         # remember the schematic component id: the PCB's Channel ID attribute points at it
         self.comps[-1]["cid"] = next(h["id"] for h, _ in reversed(self.doc.recs) if h["type"] == "COMPONENT")
         return p
@@ -425,8 +439,14 @@ class MProject(Project):
         dip14 = meta(self.lib[DEV["TL074"]])["attributes"]["Footprint"]
         fps = {"SEED": self._footprint(fp_seed_breakout()), "TO92": self._footprint(fp_to92()),
                "LED3": self._footprint(fp_led(3)), "LED2": self._footprint(fp_led(2)),
-               "SW": self._footprint(fp_switch()), "SWLED": self._footprint(fp_led_button())}
-        for n in (4, 6, 7, 8):
+               "SW": self._footprint(fp_switch()), "SWLED": self._footprint(fp_led_button()),
+               "RV": self._footprint(fp_res_vertical())}
+        for key in ["R1k", "R10k"] + ["R" + v for v in R_NEW]:     # each resistor again, standing up
+            a = dict(self.device_attrs(key))
+            a["Footprint"] = fps["RV"]
+            self._device(key + "V", a["Manufacturer Part"], a, ["Resistors", "Through Hole Resistors"])
+        sizes = sorted({int(kind[3:]) for _, kind, _ in circuit.HEADERS})
+        for n in sizes:
             fps[f"HDR{n}"] = self._footprint(fp_header(n))
         new = [
             ("SEED", seed_symbol(), "Daisy Seed + seed_power_opamps", "U?", fps["SEED"],
@@ -446,12 +466,12 @@ class MProject(Project):
              "Pick a height that puts a round cap just proud of the panel (about 9.5 mm for a 7 mm panel gap)"),
             ("SWLED", led_button_symbol(), "LED button green, Thonk low profile", "SW?", fps["SWLED"],
              "Thonk low-profile LED button, green: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED anode 5, "
-             "cathode 6, feet 7-9 in 1.2 mm holes so it sits at Thonkiconn height"),
+             "cathode 6. Clip the three plastic feet off: the board has no holes for them"),
             ("SWLED_RG", led_button_symbol(True), "LED button bipolar R/G, Thonk low profile", "SW?", fps["SWLED"],
              "Thonk low-profile LED button, bipolar red/green (two leads): pin 5 red anode, pin 6 green anode; "
-             "driven between two 74HC595 lines, orange by alternating. Same body and feet as the green one"),
+             "driven between two 74HC595 lines, orange by alternating. Same body as the green one, feet clipped"),
         ]
-        for n in (4, 6, 7, 8):
+        for n in sizes:
             new.append((f"HDR{n}", header_symbol(n), f"Pin header 1x{n}", "H?", fps[f"HDR{n}"],
                         f"Board-to-board header, 1x{n}, 2.54 mm"))
         for key, sym, title, desig, fp, desc in new:
@@ -668,7 +688,7 @@ def main_page_1(pr, parts):
     pg.stub_gnd(c["2"])
 
     pg.text(40, Y(1090), "Net ports with the same name connect. The *_IN clock nets, CV_* nets, PROBE, MUX_*, SPI_*, "
-                        "LED_LATCH and BTN_LOAD are the header pins to the faceplate (page 2, H1..H5).", 10)
+                        "LED_LATCH and BTN_LOAD are the header pins to the faceplate (page 2, H1..H7).", 10)
     pg.text(40, Y(1110), "GND here is one net: AGND (Seed pin 20), DGND (pin 40) and the breakout's GND pins. "
                         "The breakout ties them too.", 10)
     return pg
@@ -743,7 +763,7 @@ def main_page_2(pr, parts):
     # headers to the faceplate
     pg.text(70, Y(740), "Board-to-board headers (female sockets on this board; pin 1 marked)", 12)
     for k, (ref, kind, pins) in enumerate(circuit.HEADERS):
-        x, y = 160 + k * 220, Y(830)
+        x, y = 160 + (k % 4) * 250, Y(830 + (k // 4) * 170)
         h = pg.place(ref, kind, x, y, des=(-10, -len(pins) * 5 - 10, "LEFT_BOTTOM"), name=False)
         nets = P[ref].nets
         for num, net in nets.items():
@@ -763,7 +783,7 @@ def main_page_2(pr, parts):
 def faceplate_page(pr, parts):
     P = {p.ref: p for p in parts}
     pg = MPage(pr, "Faceplate", 1)     # page 1 of the faceplate board's own schematic
-    probe_r = {p.nets["1"]: p for p in parts if p.kind == "R" and p.nets.get("2") == "PROBE_F"}
+    probe_r = {p.nets["1"]: p for p in parts if p.kind == "R" and p.nets.get("2", "").startswith("PROBE_F")}
 
     pg.text(70, Y(45), "Jacks (Thonkiconn). Sleeves to GND_F; CV inputs have their switch lug grounded, the two clock inputs get the probe", 12)
     for i, (ref, label, tip, tn) in enumerate(circuit.JACKS):
@@ -780,7 +800,7 @@ def faceplate_page(pr, parts):
             r = probe_r[tn]
             rp = pg.place(r.ref, r_dev(r.value), j["2"][0] + 40, j["2"][1], des=H_TXT[0], value_at=H_TXT[1])
             pg.wire([j["2"], rp["1"]], tn)
-            pg.stub_port(rp["2"], "PROBE_F", "IN", "right")
+            pg.stub_port(rp["2"], r.nets["2"], "IN", "right")
         x, y = j["3"]
         pg.wire([(x, y), (x + 120, y)], tip)
         pg.port(x + 120, y, tip, "OUT" if (tip.startswith("CV_") or tip.endswith("CLK_IN_F")) else "IN", "right")
@@ -942,10 +962,17 @@ def faceplate_page(pr, parts):
         else:
             pg.stub_port(led["1"], nets["1"], "IN", "left")
 
-    # headers
-    pg.text(1180, Y(725), "Headers to the main board (male pins here)", 12)
+    return pg
+
+
+def faceplate_headers_page(pr, parts):
+    """The seven headers have a page of their own: on page 1 they no longer fit beside the logic."""
+    P = {p.ref: p for p in parts}
+    pg = MPage(pr, "Faceplate 2: headers", 2)
+    pg.text(70, Y(45), "Headers to the main board (male pins here, female sockets on the main board; pin 1 marked). "
+                       "Net ports connect to page 1 by name.", 12)
     for k, (ref, kind, pins) in enumerate(circuit.HEADERS):
-        x, y = 1250 + k * 80, Y(800)
+        x, y = 230 + (k % 4) * 330, Y(220 + (k // 4) * 250)
         h = pg.place(circuit.fb_ref(ref), kind, x, y, des=(-10, -len(pins) * 5 - 10, "LEFT_BOTTOM"), name=False)
         nets = P[circuit.fb_ref(ref)].nets
         for num, net in nets.items():
@@ -988,16 +1015,15 @@ def main():
     mb, fb = circuit.main_board_parts(), circuit.faceplate_parts()
     MPage.page_count = "2"
     pages = [main_page_1(pr, mb), main_page_2(pr, mb)]
-    MPage.page_count = "1"
-    pages.append(faceplate_page(pr, fb))
+    pages += [faceplate_page(pr, fb), faceplate_headers_page(pr, fb)]
     bad = []
-    # the main board is drawn over two pages: check them together
-    merged = MPage.__new__(MPage)
-    merged.comps = pages[0].comps + translated(pages[1], 10000)[0]
-    merged.wires = pages[0].wires + translated(pages[1], 10000)[1]
-    merged.title = "Main board"
-    bad += check(merged, mb, pin_map)
-    bad += check(pages[2], fb, pin_map)
+    # each board is drawn over two pages: check them together
+    for (p1, p2), parts, title in (((pages[0], pages[1]), mb, "Main board"), ((pages[2], pages[3]), fb, "Faceplate")):
+        merged = MPage.__new__(MPage)
+        merged.comps = p1.comps + translated(p2, 10000)[0]
+        merged.wires = p1.wires + translated(p2, 10000)[1]
+        merged.title = title
+        bad += check(merged, parts, pin_map)
     for b in bad:
         print("PROBLEM:", b)
         if b.startswith("point ("):
@@ -1007,12 +1033,11 @@ def main():
                     for num, (x, y) in c["pins"].items():
                         if abs(x - px) < 0.01 and abs(y - py) < 0.01:
                             print("       pin", c["ref"] or c["dev"], num, "on page", pg_.number)
-    # PCBs: placed and net-assigned, not routed
-    info = part_info(pages)
-    board_fb = pcb.faceplate_board(pr, fb, info, circuit)
-    board_mb = pcb.main_board(pr, mb, info, circuit)
+    # PCBs: placed and net-assigned, not routed. Part info per board: R80-R85 exist on both.
+    board_fb = pcb.faceplate_board(pr, fb, part_info(pages[2:]), circuit)
+    board_mb = pcb.main_board(pr, mb, part_info(pages[:2]), circuit)
     pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
-               + pcb.placement_check(board_fb, circuit))
+               + pcb.placement_check(board_fb, circuit) + pcb.routed_check(board_fb, board_mb))
     for b in pcb_bad:
         print("PCB:", b)
     template = pcb.load_template(ee)

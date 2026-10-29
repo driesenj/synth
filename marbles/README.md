@@ -13,11 +13,11 @@ placement, the BOM and the firmware plan.
 
 | Part | Status | Files |
 |---|---|---|
-| Netlist | Done, 165 parts, checked | `hardware/tools/circuit.py` |
-| EasyEDA Pro schematic | Done, three A3 pages, every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
+| Netlist | Done, 169 parts, matches the routed boards pin for pin | `hardware/tools/circuit.py` |
+| EasyEDA Pro schematic | Done, four A3 pages (main board 2, faceplate 2), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
 | Panel layout (Marbles arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
-| PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
-| PCB routing | Not started (do it in EasyEDA Pro on the imported project) | |
+| PCB placement | Done, then reworked during routing; the generator now takes it from the routed project | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
+| PCB routing | Done by hand in EasyEDA Pro (2026-10-29), audited: every net complete, no shorts, 0.15 mm minimum clearance | `hardware/easyeda/Marblesy-routed.epro2` |
 | Firmware | Not started | |
 
 ## Layout
@@ -29,11 +29,12 @@ hardware/
   tools/
     circuit.py          the netlist and the faceplate placement
     easyeda_export.py   builds Marbles.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
-    pcb.py              the two PCBs: placement tables, clearance checks, the PCB documents
+    pcb.py              the two PCBs: placement from the routed project, clearance checks, the PCB documents
     panel.py            hole list, drill template and the panel artwork from the placement
     panel_pcb.py        the panel as a PCB document (holes, slots, silk, copper band), same source as the artwork
   easyeda/
-    Marbles.epro2       import this into EasyEDA Pro
+    Marblesy-routed.epro2   the routed project: order the boards from this one
+    Marbles.epro2       the generated project (schematic, placed but unrouted PCBs, panel)
     marbles-easyeda-*.png   schematic page and PCB placement previews
     pcb-template.epru   canvas, layer and rule records copied from one of your own PCBs
   panel/
@@ -48,14 +49,16 @@ python easyeda_export.py && python panel.py
 ```
 
 The exporter needs the MorrisSynth library cache in
-`plaitsy/hardware/easyeda/morrissynth-parts.epru` and Pillow for the previews.
+`plaitsy/hardware/easyeda/morrissynth-parts.epru`, the routed project (it
+reads the placement from it) and Pillow for the previews. It reports 0
+problems only when `circuit.py`, the footprints and the panel placement still
+describe the routed boards pad for pad; after editing the boards in EasyEDA,
+export the project over `Marblesy-routed.epro2` and run it again.
 
 ## Importing into EasyEDA Pro
 
-File > Import > EasyEDA (Professional) > `Marbles.epro2`. The project carries
-its own symbols and footprints, including a corrected `seed_power_opamps`
-footprint at 2.54 mm pitch (the Plaitsy project's copy is at 2.0 mm). It
-holds three boards, each with its schematic and its PCB:
+File > Import > EasyEDA (Professional) > `Marblesy-routed.epro2`. It holds
+three boards, each with its schematic and its PCB:
 
 - **Marblesy Main**: schematic pages 1 and 2, `Marblesy Main PCB`
 - **Marblesy Faceplate**: the faceplate page, `Marblesy Faceplate PCB`
@@ -63,7 +66,7 @@ holds three boards, each with its schematic and its PCB:
   (no parts: outline, slots and holes, silkscreen, bare-copper output band)
 
 Net ports with the same name connect within a board; the `_F` nets are the
-faceplate side of the headers. Both PCBs come placed and net-assigned but
-unrouted: open a PCB, run Design > Check DRC and the netlist check, then
-route. The placement conventions are in
+faceplate side of the headers. `Marbles.epro2` is the same design as the
+generator writes it: schematics (the faceplate's on two pages) and the boards
+placed but without copper. The placement conventions are in
 [docs/design.md](docs/design.md#pcb-placement).

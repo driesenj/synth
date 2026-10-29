@@ -1,6 +1,12 @@
 """Marblesy PCBs: both boards placed, net-assigned and unrouted, as EasyEDA
 Pro PCB documents inside Marbles.epro2 (easyeda_export.py calls this).
 
+The boards were then routed by hand in EasyEDA Pro (Marblesy-routed.epro2),
+moving most rear-side parts and all headers. That export is now the master
+for the layout: the rear sides and headers are placed where it has them, the
+panel parts still come from circuit.PLACEMENT, and routed_check() compares
+the generated boards with it pad by pad, position and net.
+
 Frame. Each PCB is drawn the way EasyEDA shows it, looking at the top layer.
 On both boards the top layer is the REAR of the stack (away from the panel):
 x to the right, y up, origin at the board's bottom-left corner, millimetres.
@@ -20,9 +26,10 @@ Bottom-layer parts: EasyEDA Pro mirrors the footprint about its own X axis
 MorrisSynth export). The pad records (PAD_NET) carry the net names, so the
 ratsnest, DRC and the netlist check are live as soon as the project opens.
 
-Nothing here is routed; the second pass does that in EasyEDA Pro.
+Nothing generated here is routed; the copper lives in the routed export.
 """
 import collections
+import functools
 import json
 import math
 import os
@@ -30,6 +37,9 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "..", "easyeda", "pcb-template.epru")
+ROUTED = os.path.join(HERE, "..", "easyeda", "Marblesy-routed.epro2")
+ROUTED_TITLES = {"Faceplate": "Marblesy Faceplate PCB", "Main board": "Marblesy Main PCB"}
+VERTICAL_FP = "1/4W-RESISTOR-VERTICAL"    # the routed main board stands most of its resistors up
 MIL = 1 / 0.0254
 CLEAR = 0.25          # mm, pad to pad / pad to hole, what the checker insists on
 EDGE = 0.5            # mm, pad to board edge
@@ -46,6 +56,14 @@ def mil(v):
 def rot(x, y, a):
     c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
     return x * c - y * s, x * s + y * c
+
+
+def _seg_dist(p, a, b):
+    """Distance from point p to the segment a-b."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    n = dx * dx + dy * dy
+    t = 0 if n == 0 else max(0, min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / n))
+    return math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
 
 
 # ------------------------------------------------------------- template
@@ -101,7 +119,8 @@ def footprint_geometry(doc):
         if t == "PAD":
             dp = p["defaultPad"]
             pads[str(p["num"])] = {"id": h["id"], "x": p["centerX"] * 0.0254, "y": p["centerY"] * 0.0254,
-                                   "w": dp["width"] * 0.0254, "h": dp["height"] * 0.0254}
+                                   "w": dp["width"] * 0.0254, "h": dp["height"] * 0.0254,
+                                   "angle": p.get("padAngle") or 0}
         elif t in ("POLY", "FILL") and p.get("layerId") in (3, 13, 48):
             path = p["path"]
             paths = path if (path and isinstance(path[0], list)) else [path]
@@ -125,6 +144,9 @@ def footprint_geometry(doc):
 # origin; the Alpha 9 mm pot's housing ends about 3.3 mm beyond the shaft
 # (KiCad RD901F), i.e. 4 mm beyond this footprint's origin.
 BODY = {"SW-TH_PTV09A-4015F-B502": (-5.0, -3.5, 5.0, 4.0)}
+# Bodies allowed to overlap: the Seed breakout stands on 8.5 mm sockets, and
+# these horizontal resistors (2.3 mm tall) sit under its power end.
+STACKED = {frozenset(("U2", r)) for r in ("R33", "R36", "R39")}
 
 
 # ---------------------------------------------------------------- boards
@@ -170,6 +192,17 @@ class Board:
         return {num: (*self.pad_xy(pl, pd["x"], pd["y"]), max(pd["w"], pd["h"]) / 2)
                 for num, pd in pl["geo"]["pads"].items()}
 
+    def pad_shapes(self, pl):
+        """Pads as capsules {num: (end, end, r)}: an oval's spine along its long side, a round or
+        square pad a point (a square counts as its inscribed circle, as in pads())."""
+        out = {}
+        for num, pd in pl["geo"]["pads"].items():
+            half = abs(pd["w"] - pd["h"]) / 2
+            dx, dy = rot(half, 0, pd["angle"] + (90 if pd["h"] > pd["w"] else 0))
+            out[num] = (self.pad_xy(pl, pd["x"] - dx, pd["y"] - dy), self.pad_xy(pl, pd["x"] + dx, pd["y"] + dy),
+                        min(pd["w"], pd["h"]) / 2)
+        return out
+
     def body(self, pl):
         x1, y1, x2, y2 = pl["geo"]["bbox"]
         cs = [self.pad_xy(pl, x, y) for x, y in ((x1, y1), (x2, y1), (x2, y2), (x1, y2))]
@@ -201,23 +234,28 @@ class Board:
         for ref in self.P:
             if refs[ref] != 1:
                 bad.append(f"{self.title}: {ref} placed {refs[ref]} times")
-        allpads = []
+        shapes = []
         for pl in self.placed:
             for num, (x, y, r) in self.pads(pl).items():
-                allpads.append((pl["ref"], num, x, y, r))
                 if x - r < EDGE or x + r > self.W - EDGE or y - r < EDGE or y + r > self.H - EDGE:
                     bad.append(f"{self.title}: {pl['ref']}.{num} pad at ({x:.2f}, {y:.2f}) is at the board edge")
                 for hx, hy, hd in self.holes:
                     if math.hypot(x - hx, y - hy) < r + hd / 2 + CLEAR:
                         bad.append(f"{self.title}: {pl['ref']}.{num} pad is {math.hypot(x - hx, y - hy):.2f} from the hole at ({hx}, {hy})")
-        for i, (ra, na, xa, ya, r1) in enumerate(allpads):
-            for rb, nb, xb, yb, r2 in allpads[i + 1:]:
-                if ra != rb and math.hypot(xa - xb, ya - yb) < r1 + r2 + CLEAR:
-                    bad.append(f"{self.title}: pads {ra}.{na} and {rb}.{nb} are {math.hypot(xa - xb, ya - yb) - r1 - r2:.2f} mm apart")
+            shapes += [(pl["ref"], num, *s) for num, s in self.pad_shapes(pl).items()]
+        for i, (ra, na, a1, a2, r1) in enumerate(shapes):
+            for rb, nb, b1, b2, r2 in shapes[i + 1:]:
+                if ra != rb and abs(a1[0] - b1[0]) < 5 and abs(a1[1] - b1[1]) < 5:
+                    gap = min(_seg_dist(a1, b1, b2), _seg_dist(a2, b1, b2), _seg_dist(b1, a1, a2),
+                              _seg_dist(b2, a1, a2)) - r1 - r2
+                    if gap < CLEAR:
+                        bad.append(f"{self.title}: pads {ra}.{na} and {rb}.{nb} are {gap:.2f} mm apart")
         for side in (False, True):
             bodies = [(pl["ref"], self.body(pl)) for pl in self.placed if pl["bottom"] == side]
             for i, (ra, a) in enumerate(bodies):
                 for rb, b in bodies[i + 1:]:
+                    if frozenset((ra, rb)) in STACKED:
+                        continue
                     if a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]:
                         ov = min(a[2] - b[0], b[2] - a[0], a[3] - b[1], b[3] - a[1])
                         bad.append(f"{self.title}: bodies of {ra} and {rb} overlap by {ov:.2f} mm on the "
@@ -338,11 +376,63 @@ class Board:
         img.save(path)
 
 
+# ---------------------------------------------------------- routed project
+@functools.lru_cache(maxsize=None)
+def routed_boards():
+    """The routed export, read once: {PCB title: {"parts": {ref: placement}, "holes": [(x, y, d)]}} in
+    Board's frame (mm). A placement has x, y, angle, bottom, the footprint geometry, its pads' board
+    positions and their nets."""
+    with zipfile.ZipFile(ROUTED) as z:
+        name = next(n for n in z.namelist() if n.endswith(".epru"))
+        lines = z.read(name).decode("utf-8").split("\n")
+    docs, cur = {}, None
+    for line in lines:
+        if not line:
+            continue
+        h, _, p = line.partition("||")
+        h, p = json.loads(h), p[:-1] if p.endswith("|") else p
+        p = json.loads(p) if p else None          # EasyEDA keeps deleted records with an empty payload
+        if h["type"] == "DOCHEAD":
+            cur = docs[p["uuid"]] = {"docType": p["docType"], "recs": []}
+        cur["recs"].append((h, p))
+    fps = {u: footprint_geometry(d) for u, d in docs.items() if d["docType"] == "FOOTPRINT"}
+    boards = {}
+    for d in docs.values():
+        if d["docType"] != "PCB":
+            continue
+        comps, attrs, nets, holes = {}, collections.defaultdict(dict), collections.defaultdict(dict), []
+        for h, p in d["recs"]:
+            if p is None:
+                continue
+            if h["type"] == "COMPONENT":
+                comps[h["id"]] = p
+            elif h["type"] == "ATTR" and p.get("parentId"):
+                attrs[p["parentId"]][p["key"]] = p["value"]
+            elif h["type"] == "PAD_NET":
+                _, cid, num, _ = json.loads(h["id"])
+                nets[cid][num] = p["padNet"]
+            elif h["type"] == "FILL" and p["layerId"] == 12 and p["path"][0][0] == "CIRCLE":
+                _, x, y, r = p["path"][0]
+                holes.append((x * 0.0254, y * 0.0254, 2 * r * 0.0254))
+        parts = {}
+        for cid, p in comps.items():
+            pl = {"x": p["x"] * 0.0254, "y": p["y"] * 0.0254, "angle": p["angle"] % 360, "bottom": p["layerId"] == 2,
+                  "geo": fps[attrs[cid]["Footprint"]]}
+            pl["pads"] = {num: Board.pad_xy(pl, pd["x"], pd["y"]) for num, pd in pl["geo"]["pads"].items()}
+            pl["nets"] = {num: n for num, n in nets[cid].items() if n}
+            parts[attrs[cid]["Designator"]] = pl
+        meta = next(p for h, p in d["recs"] if h["type"] == "META")
+        boards[meta["title"]] = {"parts": parts, "holes": holes}
+    return boards
+
+
+def standing_resistors(title):
+    """Resistors the routed board stands up (VERTICAL_FP); the exporter gives them a vertical footprint."""
+    return {ref for ref, pl in routed_boards()[ROUTED_TITLES[title]]["parts"].items()
+            if pl["geo"]["title"] == VERTICAL_FP}
+
+
 # ------------------------------------------------------------- placement
-def _rows(yc, n=6, pitch=2.54):
-    return [yc + (i - (n - 1) / 2) * pitch for i in range(n)]
-
-
 def faceplate_board(pr, parts, info, circuit):
     W, H = circuit.BOARD_W, circuit.BOARD_H
     b = Board("Faceplate", pr, parts, info, W, H)
@@ -366,12 +456,10 @@ def faceplate_board(pr, parts, info, circuit):
             continue
         last = "3" if kind == "RG" else "2"
         b.orient(ref, lambda r, last=last: abs(r["1"][1] - r[last][1]) < 0.01 and r["1"][0] < r[last][0])
-    # headers (male, top layer), shared with the main board
-    for ref, (xf, y, a) in HEADERS_FRONT.items():
-        b.place_front(circuit.fb_ref(ref), xf, y, a)
-    # logic on the top (rear) side: front-view coordinates, angle in the PCB frame
-    for ref, xf, y, a in FB_REAR:
-        b.place_front(ref, xf, y, a)
+    # the rear side (logic, resistors, male headers) where the routed board has it
+    for ref, pl in sorted(routed_boards()[ROUTED_TITLES[b.title]]["parts"].items()):
+        if not pl["bottom"]:
+            b.place(ref, pl["x"], pl["y"], pl["angle"])
     b.text(2, H - 3.5, "Marblesy faceplate board", 2.0)
     return b
 
@@ -381,10 +469,9 @@ def main_board(pr, parts, info, circuit):
     b = Board("Main board", pr, parts, info, W, H)
     for xf, y in HOLES_FRONT:
         b.hole_front(xf, y)
-    for ref, (xf, y, a) in HEADERS_FRONT.items():   # female sockets, bottom layer, same spot
-        b.place_front(ref, xf, y, a, bottom=True)
-    for ref, x, y, a in MB_TOP:
-        b.place(ref, x, y, a)
+    # everything where the routed board has it: female sockets on the bottom, the rest on top
+    for ref, pl in sorted(routed_boards()[ROUTED_TITLES[b.title]]["parts"].items()):
+        b.place(ref, pl["x"], pl["y"], pl["angle"], bottom=pl["bottom"])
     b.text(23, H - 3.5, "Marblesy main board", 2.0)
     return b
 
@@ -394,57 +481,6 @@ def main_board(pr, parts, info, circuit):
 # BIAS knob and the mode button; on the main board the side holes land
 # between the breakout's pad rows and beside the clock stages.
 HOLES_FRONT = [(45, 82), (45, 33), (79, 69), (11, 69)]
-# header: (x, y, angle); 0 = pins along x, 90 = along y. H1/H2 in the strip
-# above the big knobs, H3/H4 between the CV jacks and the JITTER/STEPS
-# knobs, H5 beside the right range button.
-HEADERS_FRONT = {"H1": (33.75, 105.5, 0), "H2": (56.5, 105.5, 0), "H3": (52, 34.5, 90), "H4": (38, 34.5, 90),
-                 "H5": (74, 47.5, 90)}
-
-# Faceplate, rear side (top layer): ref, x_front, y, angle. 0 = pins along x, 90 = along y.
-# U1/U11 in the strip between the CV jacks and the JITTER/STEPS knobs, U9/U10
-# vertical in the pockets beside LENGTH, resistors in rows beside RATE and
-# SPREAD and in columns beside the range buttons.
-FB_REAR = [
-    ("U1", 25, 33.8, 0), ("U11", 65, 33.8, 0), ("U9", 35, 62.5, 90), ("U10", 55, 62.5, 90),
-    ("C8", 13.7, 34, 90), ("C11", 76.3, 33.8, 90), ("C9", 35, 74.5, 0), ("C10", 55, 74.5, 0),
-]
-_ROWS = [77, 79.5, 82, 84.5, 87, 89.5, 92]
-FB_REAR += [(f"R{80 + i}", 34.75, y, 0) for i, y in enumerate(_ROWS)]                       # LED resistors
-FB_REAR += [(r, 56.3, y, 0) for r, y in zip(("R100", "R101", "R102", "R87", "R88", "R89", "R90"), _ROWS)]
-FB_REAR += [("R91", 71.5, 47.5, 90), ("R92", 40.5, 34.5, 90), ("R93", 49.5, 34.5, 90)]   # gate LED resistors
-FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R9", "R103", "R104", "R105"), (15.5, 18.5, 21.5, 24.5))]
-FB_REAR += [(r, x, 47.5, 90) for r, x in zip(("R10", "R106"), (65.5, 68.5))]
-
-# Main board, top (rear) layer, PCB frame: ref, x, y, angle.
-XA, XB, XC = 41.5, 54.5, 67.5      # resistor columns right of the op-amps (horizontal, 10.3 mm pitch)
-MB_TOP = [("U2", 11, 64, 90),        # Seed breakout along the left edge, power end down, USB end up
-          ("U3", 29, 92, 90), ("U4", 29, 72, 90), ("U5", 29, 52, 90), ("U6", 29, 20, 90),
-          ("U7", 70, 20, 90), ("U8", 82, 20, 90)]
-# each TL074's 100 n pair right beside it, in the channel between the breakout and the op-amps
-MB_TOP += [(c, 22, y, 90) for c, y in (("C31", 96), ("C32", 88), ("C33", 76), ("C34", 68), ("C35", 56), ("C36", 48),
-                                      ("C37", 24), ("C38", 16))]
-# U3: CV stages T_RATE..DEJAVU (R21-R32, C21-C24)
-MB_TOP += [(f"R{21 + i}", XA, y, 0) for i, y in enumerate(_rows(92))]
-MB_TOP += [(f"R{27 + i}", XB, y, 0) for i, y in enumerate(_rows(92))]
-MB_TOP += [("C21", 63.5, 88, 90), ("C22", 63.5, 96, 90), ("C23", 66.5, 88, 90), ("C24", 66.5, 96, 90)]
-# U4: CV stages X_SPREAD..X_STEPS (R33-R41, C25-C27), -2.5 V inverter R42/R43
-MB_TOP += [(f"R{33 + i}", XA, y, 0) for i, y in enumerate(_rows(72))]
-MB_TOP += [(f"R{39 + i}", XB, y, 0) for i, y in enumerate(_rows(72)[:5])]
-MB_TOP += [("C25", 63.5, 68, 90), ("C26", 63.5, 76, 90), ("C27", 66.5, 68, 90)]
-# U5: DAC output stages (R70-R85), bias R45/R46/C29
-MB_TOP += [(f"R{70 + i}", XA, y, 0) for i, y in enumerate(_rows(52))]
-MB_TOP += [(f"R{76 + i}", XB, y, 0) for i, y in enumerate(_rows(52))]
-MB_TOP += [(r, XC, y, 0) for r, y in zip(("R82", "R83", "R84", "R85", "R45", "R46"), _rows(52))]
-MB_TOP += [("C29", 77, 52, 90)]
-# U6: gate stages (R60-R68); reference C30 beside the DACs
-MB_TOP += [(f"R{60 + i}", XA, y, 0) for i, y in enumerate(_rows(20))]
-MB_TOP += [(f"R{66 + i}", XB, y, 0) for i, y in enumerate(_rows(20)[:3])]
-MB_TOP += [("C30", 62.5, 33, 90)]
-# DAC decoupling and the 2.5 V reference next to the DACs
-MB_TOP += [("C39", 66, 33.5, 90), ("C40", 78, 34, 90), ("R47", 70.5, 38.8, 0), ("D21", 85, 38.5, 0)]
-# clock input stages in the right strip (vertical parts)
-MB_TOP += [("R50", 73.5, 92, 90), ("R51", 75.9, 92, 90), ("Q1", 80, 92, 90), ("D22", 85.3, 92, 90),
-           ("R52", 73.5, 72, 90), ("R53", 75.9, 72, 90), ("Q2", 80, 74.5, 90), ("D23", 85.3, 72, 90)]
 
 
 def header_check(fb, mb, circuit):
@@ -463,4 +499,35 @@ def placement_check(fb, circuit):
         pl = next(p for p in fb.placed if p["ref"] == ref)
         if abs(fb.W - pl["x"] - xf) > 0.001 or abs(pl["y"] - y) > 0.001:
             bad.append(f"{ref} not at its PLACEMENT origin")
+    return bad
+
+
+def routed_check(fb, mb):
+    """The generated boards against the routed export: the same parts, every pad at the same spot (0.01 mm)
+    with the same net, the same holes. A difference means circuit.py, a footprint or PLACEMENT no longer
+    describes the routed boards."""
+    bad = []
+    for b in (fb, mb):
+        routed = routed_boards()[ROUTED_TITLES[b.title]]
+        mine = {pl["ref"]: pl for pl in b.placed}
+        for ref in sorted(set(routed["parts"]) ^ set(mine)):
+            side = "routed" if ref in routed["parts"] else "generated"
+            bad.append(f"{b.title}: {ref} is only on the {side} board")
+        for ref in sorted(set(routed["parts"]) & set(mine)):
+            rp, pads = routed["parts"][ref], b.pads(mine[ref])
+            for num in sorted(set(pads) | set(rp["pads"])):
+                if num not in pads or num not in rp["pads"]:
+                    side = "routed" if num in rp["pads"] else "generated"
+                    bad.append(f"{b.title}: {ref} pad {num} is only in the {side} footprint")
+                elif math.hypot(pads[num][0] - rp["pads"][num][0], pads[num][1] - rp["pads"][num][1]) > 0.01:
+                    bad.append(f"{b.title}: {ref}.{num} at ({pads[num][0]:.2f}, {pads[num][1]:.2f}), routed at "
+                               f"({rp['pads'][num][0]:.2f}, {rp['pads'][num][1]:.2f})")
+            nets = b.P[ref].nets
+            for num in sorted(set(nets) | set(rp["nets"])):
+                if nets.get(num) != rp["nets"].get(num):
+                    bad.append(f"{b.title}: {ref}.{num} is {nets.get(num)} here, {rp['nets'].get(num)} on the routed board")
+        def key(h):
+            return round(h[0], 2), round(h[1], 2), round(h[2], 2)
+        if sorted(map(key, b.holes)) != sorted(map(key, routed["holes"])):
+            bad.append(f"{b.title}: mounting holes differ from the routed board")
     return bad

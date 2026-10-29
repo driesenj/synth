@@ -6,9 +6,11 @@ breakout does the work, Thonk supplies the panel parts. Every reference
 designator matches `hardware/tools/circuit.py`, which generates the EasyEDA
 Pro schematic (`hardware/easyeda/Marbles.epro2`) and the panel files.
 
-Status: schematic done and checked, footprints assigned, faceplate placement
-defined, panel template generated, both PCBs placed and net-assigned (see
-[PCB placement](#pcb-placement)). PCB routing and firmware not started.
+Status: schematic done and checked, panel files and panel PCB generated, both
+PCBs routed by hand in EasyEDA Pro and audited (`hardware/easyeda/Marblesy-routed.epro2`,
+see [PCB placement](#pcb-placement) and [Routing](#routing)). `circuit.py`
+matches the routed boards pin for pin; the exporter checks that on every run.
+Firmware not started.
 
 ---
 
@@ -38,7 +40,7 @@ this design reads it once. The firmware port handles that.
  panel ─┬─ faceplate board (FB)   16 Thonkiconn jacks, 8 Alpha pots, 7 LED buttons, 7 output LEDs,
         │   90 x 108 mm            74HC4051 pot mux, 2x 74HC595 (LEDs), 74HC165 (buttons),
         │                          probe resistors, pull-ups, LED resistors
-        │      31 pins in 5 headers (male on the FB, female on the MB)
+        │      33 pins in 7 headers (male on the FB, female on the MB)
         └─ main board (MB)        Daisy Seed on the seed_power_opamps breakout,
             90 x 108 mm            7 TL074 CV input stages, 2 clock input stages,
                                    3 gate stages, 2x MCP4922 DAC + 4 output stages,
@@ -124,7 +126,8 @@ High input = collector low. Marbles reads its clock inputs inverted too, so
 the port needs no change there. Threshold about 0.7 V.
 
 **Normalization probe.** PROBE (A0) drives R9 and R10 (10k, on the
-faceplate) into the switch lugs of the T CLOCK and X CLOCK jacks. With no
+faceplate) into the switch lugs of the T CLOCK and X CLOCK jacks, each through
+its own header pin (H3.3 = PROBE_F_2 for T, H6.3 = PROBE_F_1 for X). With no
 cable, the lug touches the tip and the probe pattern reaches the
 transistor; a cable breaks the path. Marbles' `ClockInputs::ReadNormalization`
 works unchanged with that.
@@ -178,7 +181,8 @@ SCK/SDI on the shared SPI bus, /LDAC shared. 100 n at each VDD (C39, C40).
 
 - **Jacks J1–J16** (Thonkiconn, pads 1 = sleeve, 2 = switch, 3 = tip).
   Sleeves to GND_F. CV inputs: switch lug to GND_F (reads 0 V unpatched).
-  Clock inputs: switch lug through 10k to PROBE_F. Outputs: lug open.
+  Clock inputs: switch lug through 10k to PROBE_F_2 (T) / PROBE_F_1 (X).
+  Outputs: lug open.
 - **Pots RV1–RV8** (Alpha 9 mm B10k): CCW end to GND_F, CW end to 3V3A_F,
   wiper into U1 (74HC4051), channel order below. C8 100 n at U1 pin 16.
 - **LEDs**: U9 and U10 (74HC595, chained, SER from MOSI_F, SRCLK from SCK_F,
@@ -189,29 +193,32 @@ SCK/SDI on the shared SPI bus, /LDAC shared. 100 n at each VDD (C39, C40).
   on the red line: red line high and green line low gives red, the reverse
   gives green, both equal is off, and orange is the two alternated at the
   1 ms LED update. About 2.5 mA per lit LED. R80–R86.
-- **Output LEDs**: Y, X1, X2, X3 (D14–D17) on U10 QD–QG through 470 Ω
-  (R87–R90); the firmware sets their brightness by PWM at the LED update
-  rate. t1, t2, t3 (D11–D13) are passive: jack net → 3.3 kΩ (R91–R93) →
+- **Output LEDs**: Y, X1, X2, X3 (D14–D17) on U10 QG, QF, QE, QC through
+  470 Ω (R87, R88, R89, R1); the firmware sets their brightness by PWM at
+  the LED update rate. t1, t2, t3 (D11–D13) are passive: jack net → 3.3 kΩ (R91–R93) →
   LED → GND_F, about 1.5 mA, which costs 1.5 V across the gate stage's 1 kΩ
   output resistor (the gate stays above 6 V). The CV outputs cannot be
   loaded that way: any LED current through their 1 kΩ would shift the
-  pitch CV. U10 QH is the last spare line.
+  pitch CV. U10 QD is the spare line.
 - **Buttons**: U11 (74HC165, /PL from BTN_LOAD_F, CP from SCK_F, Q7 to
   MISO_F, DS and CE low). D0–D6 read the seven buttons, each with a 10k
   pull-up to 3V3D_F (R100–R106); D7 is tied low. Buttons connect pads 2+3 to
   pads 1+4 (GND_D_F).
 - C9–C11 100 n at U9–U11.
 
+The mux channels and the U10 outputs were reassigned during routing; the
+firmware must use these tables, not the panel order.
+
 | Mux channel (Y) | 4051 pin | Pot |
 |---|---|---|
 | 0 | 13 | RV1 RATE |
-| 1 | 14 | RV2 BIAS (t) |
-| 2 | 15 | RV3 JITTER |
-| 3 | 12 | RV4 DEJA VU |
-| 4 | 1 | RV5 LENGTH |
-| 5 | 5 | RV6 SPREAD |
+| 1 | 14 | RV3 JITTER |
+| 2 | 15 | RV4 DEJA VU |
+| 3 | 12 | RV2 BIAS (t) |
+| 4 | 1 | RV8 STEPS |
+| 5 | 5 | RV5 LENGTH |
 | 6 | 2 | RV7 BIAS (X) |
-| 7 | 4 | RV8 STEPS |
+| 7 | 4 | RV6 SPREAD |
 
 | 595 output | LED line | | 165 input | Button |
 |---|---|---|---|---|
@@ -221,7 +228,12 @@ SCK/SDI on the shared SPI bus, /LDAC shared. 100 n at each VDD (C39, C40).
 | U9 QF | D4 X deja vu (G) | | D3 | SW4 X deja vu |
 | U9 QG, QH | D5 X mode (R, G) | | D4 | SW5 X mode |
 | U10 QA, QB | D6 X range (R, G) | | D5 | SW6 X range |
-| U10 QC | D7 X ext (G) | | D6 | SW7 X ext |
+| U10 QC | D17 X3 output LED | | D6 | SW7 X ext |
+| U10 QD | spare | | D7 | tied low |
+| U10 QE | D16 X2 output LED | | | |
+| U10 QF | D15 X1 output LED | | | |
+| U10 QG | D14 Y output LED | | | |
+| U10 QH | D7 X ext (G) | | | |
 
 The SPI bus is shared by the DACs and the shift registers. The 595s shift on
 every clock, including DAC transfers, but only latch on LED_LATCH, and the
@@ -232,18 +244,24 @@ every clock, including DAC transfers, but only latch on LED_LATCH, and the
 
 ## Board-to-board headers
 
-| Header | Pins | Main board nets (faceplate: same name + `_F`) |
-|---|---|---|
-| H1 | 8 | CV_T_RATE, CV_T_BIAS, CV_T_JITTER, CV_DEJAVU, CV_X_SPREAD, CV_X_BIAS, CV_X_STEPS, PROBE |
-| H2 | 6 | T_CLK_IN, X_CLK_IN, T1, T2, T3, GND (GND_F) |
-| H3 | 6 | X1, X2, X3, Y, GND (GND_F), 3V3A |
-| H4 | 4 | MUX_OUT, MUX_S0, MUX_S1, MUX_S2 |
-| H5 | 7 | SPI_SCK, SPI_MOSI, SPI_MISO, LED_LATCH, BTN_LOAD, 3V3D, GND (GND_D_F) |
+As routed. Positions in the PCB frame (rear view, x from the left as
+EasyEDA shows the boards; front view x = 90 − x).
 
-Male pins on the faceplate (HF1–HF5), female sockets on the main board.
-Place each pair at the same x/y on both boards. GND_F (jacks, pots, mux) and
+| Header | Pins | Where | Main board nets, pin 1 first (faceplate: same name + `_F`) |
+|---|---|---|---|
+| H1 | 8 | x 88, y 16–34 | CV_T_BIAS, CV_DEJAVU, CV_T_JITTER, CV_T_RATE, T_CLK_IN, T3, T2, T1 |
+| H2 | 8 | x 2, y 7–25 | CV_X_BIAS, CV_X_STEPS, CV_X_SPREAD, X_CLK_IN, Y, X1, X2, X3 |
+| H3 | 3 | x 88, y 53–59 | 3V3A, GND (GND_F), PROBE (PROBE_F_2) |
+| H4 | 4 | x 74.5, y 30–37 | MUX_OUT, MUX_S0, MUX_S1, MUX_S2 |
+| H5 | 4 | x 88, y 97–105 | SPI_MISO (MISO_F), SPI_SCK (SCK_F), BTN_LOAD, GND (GND_D_F) |
+| H6 | 3 | x 2, y 43–49 | 3V3D, GND (GND_F), PROBE (PROBE_F_1) |
+| H7 | 4 | x 2, y 97–105 | SPI_MOSI (MOSI_F), LED_LATCH, open, GND (GND_F) |
+
+Male pins on the faceplate (HF1–HF7), female sockets on the main board, each
+pair at the same x/y on both boards. GND_F (jacks, pots, mux, gate LEDs) and
 GND_D_F (LEDs, buttons, logic) are separate on the faceplate and meet on the
-main board's GND.
+main board's GND: GND_F through H3.2, H6.2 and H7.4, GND_D_F through H5.4.
+The two PROBE pins join on the main board.
 
 ---
 
@@ -275,9 +293,11 @@ The arrangement follows Mutable's Marbles panel (board mm, y up):
 
 Three large knobs (RATE, DEJA VU, SPREAD, Ø15 drawn), five small (Ø10).
 All seven buttons are Thonk low-profile LED buttons (5.5 mm cap, 6.5 mm
-hole; their three plastic feet drop into 1.2 mm holes so they sit at
-Thonkiconn height, as Thonk's footprint note says): green for the deja vu
-pair and EXT, bipolar red/green for mode and range. Panel hole sizes: pots
+hole): green for the deja vu pair and EXT, bipolar red/green for mode and
+range. Thonk's footprint gives their three plastic feet 1.2 mm holes so they
+sit at Thonkiconn height, but two of those holes overlap the 1.6 mm pads of
+pins 1 and 2 (DRC errors), so the board has none: clip the feet off before
+fitting the buttons, and the body sits on the board at the same height. Panel hole sizes: pots
 7.5, jacks 6.5, buttons 6.5; mounting slots 5.5 × 3.2 mm with their centres
 3 mm from the top and bottom edge and 7.5 / 83.8 mm from the left (Eurorack). Pads of neighbouring parts clear
 each other by 0.25 mm or more on the board (checked by the exporter).
@@ -306,153 +326,106 @@ needs (drill, top silkscreen, top solder-mask opening). Knobs are drawn at
 ticks, graduations, marks, dotted guides as 0.12 mm dashes, LED-colour dots
 as small rings, button rings) and the output band as a copper fill on the top
 layer under a solder-mask opening of the same shape, so it comes out as bare
-ENIG gold; the output labels are silkscreen on top of it. Text uses the
+ENIG gold; the output labels are silkscreen on top of it. The band
+(2.6 mm from the panel sides, 86.1 × 15.2 mm) leaves a 0.4 mm ring of bare
+board under black mask around each of the 14 holes through it (EasyEDA's DRC
+wants copper 0.3 mm from a slot region): each ring is a counter-clockwise
+circle in the fill's path list, which EasyEDA fills with the nonzero rule. Text uses the
 default stroke font and estimated centring, so expect to nudge a few labels.
-Order it as a 1.6 mm board, black mask, white silk, ENIG. Two things the fab
-may ask about: silkscreen over bare copper (the band labels; some fabs drop
-it, in which case put the labels on the solder-mask layer instead and they
-come out gold on black) and non-plated holes through the copper band.
+Order it as a 1.6 mm board, black mask, white silk, ENIG. The fab may ask
+about silkscreen over bare copper (the band labels; some fabs drop it, in
+which case put the labels on the solder-mask layer instead and they come out
+gold on black).
 
 ---
 
 ## PCB placement
 
-`hardware/tools/pcb.py` places every part of both boards, assigns each pad
-its net and writes the two PCB documents into `Marbles.epro2`; the exporter
-checks the result (pads 0.25 mm apart or more, 0.5 mm from the edge, no
-bodies overlapping on one side, nothing under a standoff, header pins
-coinciding on both boards, panel parts exactly at `PLACEMENT`). Nothing is
-routed. Previews: `hardware/easyeda/marbles-easyeda-pcb-*.png`.
+The boards were placed by `hardware/tools/pcb.py`, then routed by hand in
+EasyEDA Pro, which moved most rear-side parts and every header. The routed
+project (`hardware/easyeda/Marblesy-routed.epro2`) is now the master for the
+layout: `pcb.py` reads the rear sides and the headers from it, places the
+panel parts from `PLACEMENT` as before, and `routed_check()` compares the two
+pad by pad (position and net) on every run of the exporter, together with the
+older checks (pads 0.25 mm apart, 0.5 mm from the edge, no bodies overlapping
+on one side, nothing under a standoff, header pins coinciding on both boards,
+panel parts exactly at `PLACEMENT`). Previews:
+`hardware/easyeda/marbles-easyeda-pcb-*.png`.
 
 **Frame.** Each PCB is drawn as EasyEDA shows it, looking at the top layer,
 which on both boards is the rear of the stack: x to the right, y up, origin
 at the bottom-left corner. The front view of the faceplate placement is its
 mirror image, `x_front = 90 − x`. Both boards use this one frame, so the
-five header pairs have identical coordinates on both PCBs and the stack
+seven header pairs have identical coordinates on both PCBs and the stack
 lines up pin for pin. EasyEDA mirrors a bottom-layer footprint about its own
 X axis (y → −y) before rotating it; `pcb.py` uses that rule and picks the
 panel parts' angles by it (jack sleeve pad towards the top of the board,
 pot pins in a column towards the left as seen from the front, button pads
 1/4 on the left, LED button LED pins along x with pin 5 on the right).
 
-**Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 LED buttons, 7 output LEDs between the jack rows.
-Top (rear) layer, inside the 8.5 mm header gap: U1 and U11 in the strip
-between the CV jacks and the JITTER/STEPS knobs (y 29–40), U9 and U10
-vertical in the pockets either side of LENGTH, the LED resistors and
-pull-ups in rows between RATE/SPREAD and the DEJA VU knob and in columns
-beside the range buttons, one 100 n per IC. The male headers (front-view
-x, y, orientation): H1 (33.75, 105.5) and H2 (56.5, 105.5) horizontal above
-the big knobs, H3 (52, 34.5) and H4 (38, 34.5) vertical between the CV
-jacks and the knobs, H5 (74, 47.5) vertical beside the X range button.
+**Faceplate board.** Bottom layer: the 16 jacks, 8 pots, 7 LED buttons and 7
+output LEDs, unchanged. Top (rear) layer, PCB frame: the headers along both
+side edges (table above) and H4 beside U1; U1 (mux) and U10 horizontal in
+the strip above the CV jacks, U9 and U11 vertical either side of the centre
+between the big knobs, each with its 100 n within 2.6–6.9 mm of pin 16; the
+output-LED resistors R87–R89 and R1 standing beside the output LEDs, the
+gate-LED resistors R91–R93 along the bottom edge between the output jacks,
+the pull-ups and LED resistors wherever routing wanted them.
 
-**Main board.** Bottom layer: the five female sockets at the same spots.
-Top (rear) layer: the Seed breakout vertical along the left edge, centred at
-(11, 64) in the PCB frame, power end (J1/J3) down and USB end up; the four
-TL074s vertical at x = 29 (U3 top, U6 bottom), each with its two 100 n
-right beside it in the channel between the breakout and the op-amps
-(x = 22) and its resistors in horizontal columns at x = 41.5 / 54.5 (/ 67.5)
-with the feedback capacitors beside them; the two MCP4922 at the bottom right with C39/C40, R47, D21 and C30
-above them; the clock input stages in the right strip. Every main-board
-part except the sockets is on the rear side, so the front side carries
-only sockets and standoffs.
+**Main board.** Bottom layer: the seven female sockets. Top (rear) layer: the
+Seed breakout vertical in the middle, centred at (45, 64.5), pad rows at
+x 37.4 and 52.6, power end (J1/J3, y 27–35) down, USB end up. The
+breakout's board covers x 35.6–54.4, y 3.7–100.5: under it sit R33, R36 and
+R39 (horizontal, 2.3 mm tall, under 8.5 mm sockets) and the two centre
+mounting screws, so fit those before plugging the breakout in. Around it:
+U6 (gate stages) top left, U7 and U8 (DACs) left of centre, U5 (DAC output
+stages) bottom left, U3 (T CV stages) top right, U4 (X CV stages and the
+−2.5 V inverter) bottom right, the clock stages (Q1/Q2, D22/D23, R50–R53)
+along the top right, the reference D21 with C30 at (63, 30), the bias
+divider R45/R46/C29 bottom right. 33 of the resistors stand up on a 2.54 mm
+footprint (`1/4W-RESISTOR-VERTICAL`; the exporter gives them a vertical
+device of the same value). Every TL074 supply pin has its 100 n within
+2.5–3.7 mm, both DACs theirs within 3.5 mm.
 
 **Mounting.** Four 3.2 mm holes, front-view (45, 82), (45, 33), (79, 69),
 (11, 69), identical on both boards; the side ones sit between the BIAS knob
-and the mode button on the faceplate and, on the main board, between the
-breakout's pad rows and beside the clock stages. M3 standoffs between the
-boards (a screw head needs 3 mm of free panel-side board around each hole,
-which these have); the breakout and Seed hang on the main board's rear.
+and the mode button on the faceplate, the centre ones between the breakout's
+pad rows on the main board. M3 standoffs between the boards (a screw head
+needs 3 mm of free panel-side board around each hole, which these have).
 
 **Assumptions to check.** The library PTV09A footprint draws the pot body
 9 mm beyond its origin; the checks use 4 mm (the Alpha 9 mm housing ends
-about 3.3 mm beyond the shaft, as in KiCad's RD901F footprint). The 6 × 6
-tactile footprint follows the TL1105 pattern: the two pads 6.5 mm apart in
-a row are one contact (pads 1+4 and 2+3), which is the convention every
-6 × 6 switch shares; the earlier 5 × 5 pairing doubt is gone with the part.
+about 3.3 mm beyond the shaft, as in KiCad's RD901F footprint). The
+breakout's underside at its power end must clear the three 2.3 mm resistors
+under it.
 
 ---
 
-## Routing notes
+## Routing
 
-Plan: set the rules, route the few nets that matter by hand and lock them,
-let the autorouter do the rest with the grounds excluded, clean up, pour.
+Routed by hand in EasyEDA Pro on 2026-10-29 and audited from the export:
 
-**Rules first** (Design > Design Rules; the project carries the rules copied
-from one of the MorrisSynth boards, whose clearance is a tight 0.1 mm).
-For a hand-soldered 2-layer board: clearance 0.25 mm, default track 0.3 mm,
-a POWER net class at 0.6 mm (+12V, −12V, 3V3A, 3V3D, 3V3A_F, 3V3D_F), vias
-0.8 mm with a 0.4 mm hole, copper 0.5 mm from the edge.
-
-**Keepouts before routing.** Faceplate, panel-side (bottom) layer: a 3 mm
-circle at each jack barrel, 0.78 mm below the jack origin, where the metal
-barrel sits (GND_F copper may stay). Both boards: 3.5 mm around the four
-mounting holes on the standoff side (faceplate top, main board bottom).
-
-**Autorouter** (Route > Auto Route). Layers top and bottom; preferred
-direction vertical on top and horizontal on bottom, since both boards are
-taller than wide and the long runs are vertical; 45° corners; via quantity
-"less"; priority "completion first" for the first pass, then re-run the
-ugly nets selected with "quality first". Skip (ignore) nets: GND, GND_F,
-GND_D_F and the POWER class, which are poured or hand-routed. Hand-route
-and lock before the run: the power buses, the SPI bundle, the summing
-nodes and references (below). Afterwards: remove loops, DRC, then pours.
-
-**Ground planes.**
-- Main board: one GND net. Pour it on both layers; the bottom (socket) side
-  is nearly empty and becomes the plane. It must reach the Seed's pins 20
-  and 40 and the breakout's J1-1 / J3-1; the breakout joins AGND and DGND,
-  so no split.
-- Faceplate: GND_F (jacks, pots, mux, gate LEDs) poured on the panel-side
-  (bottom) layer under everything, which also shields the CV lines.
-  GND_D_F (shift registers, 74HC165, LED buttons, CV output LEDs) as a pour
-  on the rear (top) layer confined to the logic area around U9, U10, U11
-  and the pull-ups, or plain tracks. The two never touch on this board;
-  they meet on the main board's GND through H2 pin 6 / H3 pin 5 (GND_F)
-  and H5 pin 7 (GND_D_F).
-
-**Main board, by hand and with care.**
-1. Summing nodes IN_* (op-amp pin −, R_in, R_fb, C_fb): one layer, as
-   short as the resistor columns allow, over the pour, nowhere near SPI or
-   clock lines. The ADC_* lines from the 1 kΩ resistors to the Seed's right
-   pin row likewise, routed as a group.
-2. References: BIAS from C29 as a short tree to the seven op-amp + inputs;
-   VREF from D21/C30 to the DAC VREFA/VREFB pins (U7/U8 13 and 11) and to
-   R42; NEG_REF to the four 47 kΩ. DC nets, but keep them off the digital
-   corridor.
-3. SPI bundle (SPI_SCK, SPI_MOSI, SPI_MISO, DAC_CS1, DAC_CS2, DAC_LDAC):
-   from Seed pins 8–13 down the channel between the breakout's two pad
-   rows (x 5–17, free on both layers), east along y ≈ 35 to U7/U8, picking
-   up H5 (x 25–43, y 41) on the way. Keep it out of the op-amp column.
-4. Clock inputs T_CLK_IN / X_CLK_IN from H2 (top) to the clock stages in
-   the right strip along the top edge at y ≥ 102, and T_CLK / X_CLK back
-   to Seed pins 1 and 2 the same way; U3's summing nodes sit just below at
-   y 84–99, so keep pour between.
-5. Gates: GATE_T1..3 (Seed pins 3–5 to U6) and T1..T3 (U6 to H2) carry
-   0–8 V edges; route them on the bottom layer with the pour around them.
-6. Power: +12 V from J3 (x 18.6) and −12 V from J1 (x 3.4) as 0.6 mm
-   buses up the decoupling column at x ≈ 20–22 to pins 4 and 11 of each
-   TL074; 3V3A to U7/U8 pins 1 and 9, R45, R47 and H3; 3V3D to R51, R53 and
-   H5.
-7. DAC outputs DAC_X1..Y (U7/U8 pins 14 and 10) up to the 24 kΩ in the U5
-   block: 25 mm, keep them off SCK.
-
-**Faceplate, by hand and with care.**
-1. Pot wipers POT_*_F to U1 and MUX_OUT_F / MUX_S0..2 to H4: panel-side
-   layer under the GND_F pour, away from the rear-side LED and SPI lines.
-2. CV_*_F from the jack row (y 21.85) to H1 at the top (y 105.5), the
-   longest runs on the board, plus PROBE_F: panel-side layer in the centre
-   and left corridors with GND_F around them, never alongside the LED
-   button lines.
-3. T_CLK_IN_F / X_CLK_IN_F to H2: outer margins, away from the CV lines
-   and the wipers.
-4. SCK_F, MOSI_F, MISO_F, LED_LATCH_F, BTN_LOAD_F from H5 to U9/U10/U11 and
-   SR_CHAIN between U9 and U10: rear layer, short.
-5. LED button and output LED lines (L_*, LED_*): 2.5 mA switched by PWM;
-   rear layer, bipolar pairs together, away from the wipers and CV lines.
-6. Outputs T1_F..T3_F, X1_F..Y_F from H2/H3 down to the bottom jack row:
-   rear layer down the margins; low impedance, not critical.
-7. Grounds: LED button pins 1, 2 (and 6 on the green ones) and the CV
-   output LEDs return to GND_D_F; the gate LEDs D11–D13 to GND_F.
+- **Rules.** Clearance 0.152 mm (the project's rule), signal tracks 0.3 mm,
+  power 0.6 mm (±12 V, 3V3A, 3V3D, 3V3A_F, 3V3D_F, GND_D_F), vias
+  0.61 / 0.3 mm.
+- **Grounds.** Main board: GND poured on both layers, 118 stitching vias.
+  Faceplate: GND_F poured on both layers with 166 ground vias; GND_D_F as
+  0.6 mm tracks to H5.4, never touching GND_F.
+- **Connectivity.** Every net complete on both boards, no shorts, no stray
+  copper. The closest gaps are eight track-to-pad spots at the 0.15 mm rule
+  (NEG_REF past U5 pins 3 and 12 among them): fine for the fab, keep the
+  joints neat there.
+- **Standoffs.** Only ground vias lie inside the standoffs' 3 mm radius.
+- **Sensitive nets.** No summing node, ADC line, reference or pot wiper runs
+  beside a switching line closer than 0.7 mm. The 0.7 mm cases (CV_X_BIAS
+  beside T1 for 31 mm, MUX_OUT beside MUX_S0 for 33 mm, DAC_X2 beside PROBE
+  for 22 mm, VREF and NEG_REF beside PROBE for 7–8 mm) all have a
+  low-impedance victim. Tracks under the jack bodies on the panel side are
+  fine: the Thonkiconn body is plastic and the copper is under mask.
+- **Harmless leftovers.** A 2 mm dead-end stub on OA_T_JITTER at R29
+  (60, 61.15). T1–T3 run about 185 mm round the main board (U6 is top left,
+  H1 bottom right); the TL074's edges are slow. 3V3D_F enters the faceplate
+  at H6 while GND_D_F leaves at H5, so the LED current loop spans the board.
 
 ---
 
@@ -464,8 +437,8 @@ nodes and references (below). Afterwards: remove loops, DRC, then pours.
 | 1 | seed_power_opamps breakout, built | U2 | OSHWLab (Rob Heel) |
 | 16 | Thonkiconn PJ398SM + nut | J1–J16 | Thonk |
 | 8 | Alpha 9 mm vertical B10K (pick the shaft to match your knobs) | RV1–RV8 | Thonk |
-| 3 | Thonk low-profile LED button, green (switch + LED in one, 7.5 mm body, 5.5 mm cap) | SW1, SW4, SW7 | Thonk |
-| 4 | Thonk low-profile LED button, bipolar red/green | SW2, SW3, SW5, SW6 | Thonk |
+| 3 | Thonk low-profile LED button, green (switch + LED in one, 7.5 mm body, 5.5 mm cap); clip the feet | SW1, SW4, SW7 | Thonk |
+| 4 | Thonk low-profile LED button, bipolar red/green; clip the feet | SW2, SW3, SW5, SW6 | Thonk |
 | 7 | 3 mm green LED (output indicators) | D11–D17 | Thonk |
 | 8 | Knobs: 3 large (RATE, DEJA VU, SPREAD), 5 small | | Thonk |
 | 4 | TL074 + DIP-14 socket | U3–U6 | Thonk |
@@ -486,15 +459,20 @@ nodes and references (below). Afterwards: remove loops, DRC, then pours.
 | 15 | 10k | R42, R43, R46, R51, R53, R60, R63, R66, R9, R10, R100–R106 | |
 | 14 | 1k | R23, R26, R29, R32, R35, R38, R41, R62, R65, R68, R73, R77, R81, R85 | |
 | 1 | 2.2k | R47 | |
-| 11 | 470 Ω | R80–R90 (faceplate: one per LED button, four CV output LEDs) | |
+| 11 | 470 Ω | R80–R89, R1 (faceplate: one per LED button, four CV output LEDs) | |
 | 3 | 3.3k | R91–R93 (gate output LEDs) | |
 | 7 | 1 n C0G | C21–C27 | |
 | 1 | 1 µ | C29 | |
 | 15 | 100 n | C8–C11, C30–C40 | |
-| 5 + 5 | 1×8, 1×6, 1×6, 1×4, 1×7 male pins / female sockets | H1–H5 | Thonk header bag |
-| 1 | 18HP aluminium panel, 4× M3 | | |
+| 7 + 7 | 2 × 1×8, 3 × 1×4, 2 × 1×3 male pins (faceplate) / female sockets (main board) | HF1–HF7, H1–H7 | Thonk header bag |
+| 1 | 18HP panel PCB (or aluminium), 4× M3 | | |
 
-Everything on the main board is through-hole.
+R80–R85 exist on both boards: the main board's are the DAC output stage
+resistors above, the faceplate's are LED resistors. Everything is
+through-hole; 33 of the main board's resistors stand up on a 2.54 mm
+footprint (any 1/4 W or LR1F part fits). EasyEDA's BOM of the routed project
+lists H3, H6, HF3 and HF6 as an LCSC female 1×3 (排母): fit male pins on the
+faceplate side.
 
 ---
 
@@ -502,7 +480,8 @@ Everything on the main board is through-hole.
 
 Port the Marbles sources to libDaisy, as planned for Plaitsy:
 
-- `Adc`: 7 CV channels direct, 8 pots through `AdcChannelConfig::InitMux(A10, 8, D26, D27, D28)`.
+- `Adc`: 7 CV channels direct, 8 pots through `AdcChannelConfig::InitMux(A10, 8, D26, D27, D28)`,
+  in the channel order of the mux table (not the panel order).
   Marbles' `CvReader` expects inverted, calibrated readings; keep its
   calibration routine (C1/C3 for RATE and SPREAD, offsets for the rest).
 - `ClockInputs`: GPIO D0/D1, active low; probe on D15.
@@ -511,7 +490,8 @@ Port the Marbles sources to libDaisy, as planned for Plaitsy:
   data bits), write four channels then pulse LDAC once per block. Marbles'
   16-bit DAC codes map to 12-bit by dropping the low four bits; keep
   `dac_offset`/`dac_scale` in 16-bit units so the calibration code stays.
-- `Leds`/`Switches`: shift 16 bits into the 595s and latch; load the 165 and
+- `Leds`/`Switches`: shift 16 bits into the 595s and latch (bit order per
+  the 595 table: the U10 outputs are not in panel order); load the 165 and
   read 8 bits, every millisecond.
 - Audio callback at 48 kHz, block size 8, as Marbles (`kBlockSize`).
 - Settings and scales in QSPI.
@@ -524,7 +504,10 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
 
 - Verify the LM4040 TO-92 pinout for the exact part you buy; the footprint
   leaves pad 3 open.
-- Route the two PCBs: import `Marbles.epro2`, run DRC and the netlist check
-  on each placed PCB, then route (GND / GND_F pours on the bottom layers as
-  on Plaitsy; keep copper off the jack barrels, 3 mm around the point
-  0.78 mm below each jack origin on the panel side).
+- Clip the three plastic feet off each LED button, so its body sits on the
+  board at Thonkiconn height.
+- Check that the underside of the breakout's power end clears R33, R36 and
+  R39 (2.3 mm) before soldering them flat under it.
+- Panel PCB DRC: the copper band now keeps 0.4 mm from every hole
+  (`Marblesy-routed.epro2` carries the fix); run DRC once more after
+  importing it.

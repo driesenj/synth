@@ -148,7 +148,7 @@ def main_board_parts():
     parts.append(C("C40", "100n", "3V3A", "GND"))   # U8
     # board-to-board headers (female sockets on this board)
     for ref, kind, nets in HEADERS:
-        parts.append(Part(ref, kind, "", {str(i + 1): mb for i, (mb, fb) in enumerate(nets)}))
+        parts.append(Part(ref, kind, "", {str(i + 1): mb for i, (mb, fb) in enumerate(nets) if mb}))
     return parts
 
 
@@ -157,15 +157,19 @@ def _pair(net):
     return net, {"GND": "GND_F", "GND_D": "GND_D_F"}.get(net, net + "_F")
 
 
+# As routed: H1/H2 along the board edges beside the jack rows (the t side and
+# the X side), H3/H6 power and probe at mid height, H5/H7 the SPI bus in the
+# top corners, H4 the mux beside U1. (None, None) is a pin left open.
 HEADERS = [
-    ("H1", "HDR8", [_pair(n) for n in ("CV_T_RATE", "CV_T_BIAS", "CV_T_JITTER", "CV_DEJAVU", "CV_X_SPREAD",
-                                       "CV_X_BIAS", "CV_X_STEPS", "PROBE")]),
-    ("H2", "HDR6", [_pair(n) for n in ("T_CLK_IN", "X_CLK_IN", "T1", "T2", "T3", "GND")]),
-    ("H3", "HDR6", [_pair(n) for n in ("X1", "X2", "X3", "Y", "GND", "3V3A")]),
+    ("H1", "HDR8", [_pair(n) for n in ("CV_T_BIAS", "CV_DEJAVU", "CV_T_JITTER", "CV_T_RATE", "T_CLK_IN",
+                                       "T3", "T2", "T1")]),
+    ("H2", "HDR8", [_pair(n) for n in ("CV_X_BIAS", "CV_X_STEPS", "CV_X_SPREAD", "X_CLK_IN", "Y", "X1", "X2",
+                                       "X3")]),
+    ("H3", "HDR3", [_pair("3V3A"), _pair("GND"), ("PROBE", "PROBE_F_2")]),
     ("H4", "HDR4", [_pair(n) for n in ("MUX_OUT", "MUX_S0", "MUX_S1", "MUX_S2")]),
-    ("H5", "HDR7", [("SPI_SCK", "SCK_F"), ("SPI_MOSI", "MOSI_F"), ("SPI_MISO", "MISO_F"),
-                    ("LED_LATCH", "LED_LATCH_F"), ("BTN_LOAD", "BTN_LOAD_F"), ("3V3D", "3V3D_F"),
-                    ("GND", "GND_D_F")]),
+    ("H5", "HDR4", [("SPI_MISO", "MISO_F"), ("SPI_SCK", "SCK_F"), ("BTN_LOAD", "BTN_LOAD_F"), ("GND", "GND_D_F")]),
+    ("H6", "HDR3", [("3V3D", "3V3D_F"), _pair("GND"), ("PROBE", "PROBE_F_1")]),
+    ("H7", "HDR4", [("SPI_MOSI", "MOSI_F"), ("LED_LATCH", "LED_LATCH_F"), (None, None), _pair("GND")]),
 ]
 
 # ---------------------------------------------------------------- faceplate
@@ -179,15 +183,18 @@ JACKS = [
     ("J12", "X CLOCK", "X_CLK_IN_F", "TN_XCLK"),
     ("J13", "X1", "X1_F", None), ("J14", "X2", "X2_F", None), ("J15", "X3", "X3_F", None), ("J16", "Y", "Y_F", None),
 ]
-# ref, label, wiper net, 74HC4051 input pin, mux channel
+# the two clock jacks' switch lugs each get the probe through their own header pin
+PROBE_NETS = {"TN_TCLK": "PROBE_F_2", "TN_XCLK": "PROBE_F_1"}
+# ref, label, wiper net, 74HC4051 input pin, mux channel (channels swapped during routing)
 POTS = [
-    ("RV1", "RATE", "POT_T_RATE_F", "13", 0), ("RV2", "BIAS (t)", "POT_T_BIAS_F", "14", 1),
-    ("RV3", "JITTER", "POT_T_JITTER_F", "15", 2), ("RV4", "DEJA VU", "POT_DEJAVU_F", "12", 3),
-    ("RV5", "LENGTH", "POT_LENGTH_F", "1", 4), ("RV6", "SPREAD", "POT_X_SPREAD_F", "5", 5),
-    ("RV7", "BIAS (X)", "POT_X_BIAS_F", "2", 6), ("RV8", "STEPS", "POT_X_STEPS_F", "4", 7),
+    ("RV1", "RATE", "POT_T_RATE_F", "13", 0), ("RV3", "JITTER", "POT_T_JITTER_F", "14", 1),
+    ("RV4", "DEJA VU", "POT_DEJAVU_F", "15", 2), ("RV2", "BIAS (t)", "POT_T_BIAS_F", "12", 3),
+    ("RV8", "STEPS", "POT_X_STEPS_F", "1", 4), ("RV5", "LENGTH", "POT_LENGTH_F", "5", 5),
+    ("RV7", "BIAS (X)", "POT_X_BIAS_F", "2", 6), ("RV6", "SPREAD", "POT_X_SPREAD_F", "4", 7),
 ]
 # ref, label, firmware switch. Every button is a Thonk low-profile LED button
-# (switch on pins 1+2 / 3+4, LED on pins 5 and 6, three feet on pins 7-9):
+# (switch on pins 1+2 / 3+4, LED on pins 5 and 6; the three plastic feet are
+# clipped off, because holes for them would overlap the pads of pins 1 and 2):
 # green ones for deja vu and EXT, bipolar red/green ones for mode and range.
 # The LED inside takes the place of the D1..D7 of the LEDS table; a bipolar
 # LED sits between two 74HC595 lines (one 470R), red one way, green the
@@ -203,11 +210,14 @@ LEDS = [
     ("D1", "t deja vu", "G", (None, "U9:15")), ("D2", "t mode", "RG", ("U9:1", "U9:2")),
     ("D3", "t range", "RG", ("U9:3", "U9:4")), ("D4", "X deja vu", "G", (None, "U9:5")),
     ("D5", "X mode", "RG", ("U9:6", "U9:7")), ("D6", "X range", "RG", ("U10:15", "U10:1")),
-    ("D7", "X ext", "G", (None, "U10:2")),
-    # output LEDs for the CV outputs, brightness from the firmware (PWM on the spare 74HC595 lines)
-    ("D14", "Y", "G", (None, "U10:3")), ("D15", "X1", "G", (None, "U10:4")),
-    ("D16", "X2", "G", (None, "U10:5")), ("D17", "X3", "G", (None, "U10:6")),
+    ("D7", "X ext", "G", (None, "U10:7")),
+    # output LEDs for the CV outputs, brightness from the firmware (PWM on the spare 74HC595 lines);
+    # U10 outputs swapped during routing, QD (pin 3) is the spare
+    ("D14", "Y", "G", (None, "U10:6")), ("D15", "X1", "G", (None, "U10:5")),
+    ("D16", "X2", "G", (None, "U10:4")), ("D17", "X3", "G", (None, "U10:2")),
 ]
+# designators changed in EasyEDA during routing (the LED resistors count up from R80)
+RENUMBERED = {"R90": "R1"}
 # gate output LEDs, passive: jack net -> 3.3k -> LED -> GND_F (about 1.5 mA, the 1k output resistor drops 1.5 V)
 GATE_LEDS = [("D11", "t1", "T1_F"), ("D12", "t2", "T2_F"), ("D13", "t3", "T3_F")]
 HC595_PINS = {"8": "GND_D_F", "10": "3V3D_F", "11": "SCK_F", "13": "GND_D_F", "16": "3V3D_F"}   # SRCLR high, OE low
@@ -224,7 +234,7 @@ def faceplate_parts():
             nets["2"] = tn
         parts.append(Part(ref, "JACK", "", nets, label))
         if tn and tn.startswith("TN_"):
-            parts.append(R(f"R{nr}", "10k", tn, "PROBE_F")); nr += 1
+            parts.append(R(f"R{nr}", "10k", tn, PROBE_NETS[tn])); nr += 1
     for ref, label, wiper, mpin, ch in POTS:
         parts.append(Part(ref, "POT", "B10k", {"1": "GND_F", "2": wiper, "3": "3V3A_F", "4": "GND_F", "5": "GND_F"},
                           label))
@@ -252,7 +262,7 @@ def faceplate_parts():
             if bipolar and colour == "G":    # the one 470R on the red line limits both directions
                 nets[pin_of_led] = lnet
                 continue
-            parts.append(R(f"R{nl}", "470", lnet, f"LED_{ref}_{colour}")); nl += 1
+            parts.append(R(RENUMBERED.get(f"R{nl}", f"R{nl}"), "470", lnet, f"LED_{ref}_{colour}")); nl += 1
             nets[pin_of_led] = f"LED_{ref}_{colour}"
         if ref in in_button:             # the LED sits inside the button
             button_led[in_button[ref]] = (nets["1"], nets["3"]) if bipolar else (nets["1"], "GND_D_F")
@@ -283,7 +293,7 @@ def faceplate_parts():
     parts.append(C("C11", "100n", "3V3D_F", "GND_D_F"))   # U11
     # board-to-board headers (male pins on this board)
     for ref, kind, nets in HEADERS:
-        parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets)}))
+        parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets) if fb}))
     return parts
 
 
@@ -351,5 +361,5 @@ if __name__ == "__main__":
     mb, fb = nets_of(main_board_parts()), nets_of(faceplate_parts())
     for ref, kind, pins in HEADERS:
         for a, b in pins:
-            if len(mb[a]) < 2 or len(fb[b]) < 2:
+            if a and (len(mb[a]) < 2 or len(fb[b]) < 2):
                 print("  header net not used on both boards:", a, b)
