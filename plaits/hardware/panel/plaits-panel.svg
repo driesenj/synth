@@ -140,6 +140,8 @@
 </g>
 <g id="copper">
 <rect x="37.00" y="101.70" width="20.90" height="14.6" rx="1.4" class="copper"/>
+<circle cx="41.80" cy="110.50" r="3.65" class="cu-text"/>
+<circle cx="53.30" cy="110.50" r="3.65" class="cu-text"/>
 <text x="41.80" y="104.90" font-size="2.2" text-anchor="middle" class="cu-text">OUT</text>
 <text x="53.30" y="104.90" font-size="2.2" text-anchor="middle" class="cu-text">AUX</text>
 </g>

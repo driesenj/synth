@@ -74,6 +74,25 @@ its rows is fine.
 
 ## Lessons
 
+- Do the user's routing moves before handing over (done on Plaitsy,
+  `plaits/hardware/tools/pcb.py` `_stage()` and `circuit.py`):
+  - Main board: every resistor standing (2.54 mm, `fp_res_vertical`), each
+    inverting stage a cluster at its corner of a vertical TL074 (Rf on
+    IN−/OUT, Rin and Rs one column out, Cf the next), the 100 n between two
+    stages' Rf, 3.6 mm from the supply pin. Summing nodes went from
+    23–48 mm to 8.7 mm.
+  - Order header pins, mux channels and 595 outputs by brute force for the
+    fewest crossing straight lines (pin to nearest pad of the net, both
+    boards for headers), length as tie-break, each supply pin beside its
+    ground: 8! or 9! orders run in seconds. Plaitsy's faceplate went from
+    197 ratsnest crossings to 95, the main board from 368 to 120.
+  - Bicolour LEDs in a column have red and green anodes on opposite sides:
+    give one 595 all the reds on its side and the other all the greens, and
+    point each resistor's 595 end at its chip.
+  - Measure before and after (crossings, summing-node span, decoupling
+    distance); the scripts lived in the session scratchpad, rebuild them
+    from this description.
+
 - What the user changed when routing Marblesy (worth proposing up front next
   time): headers moved to the side edges beside the jack rows (CV runs a
   few cm instead of the board's height), split by function (7 short headers

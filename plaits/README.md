@@ -24,7 +24,7 @@ PCB placement, routing notes, the BOM and the firmware plan.
 | Netlist | Done, 109 parts, checked | `hardware/tools/circuit.py` |
 | EasyEDA Pro schematic | Done, two A3 pages (main board, faceplate), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Plaits.epro2` |
 | Panel layout (Plaits arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
-| PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked | `hardware/tools/pcb.py`, previews `hardware/easyeda/plaits-easyeda-pcb-*.png` |
+| PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked. Reworked with what routing Marblesy taught: standing resistors clustered on the op-amps (summing nodes 8.7 mm), 100 n at every supply pin, header pins, mux channels and 595 outputs ordered for the fewest crossings, no LED-button foot holes, a DRC-clean copper band | `hardware/tools/pcb.py`, previews `hardware/easyeda/plaits-easyeda-pcb-*.png` |
 | PCB routing | Not started (do it in EasyEDA Pro on the imported project; notes in `docs/design.md`) | |
 | Firmware | Not started | |
 

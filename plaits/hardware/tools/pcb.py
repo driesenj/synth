@@ -14,7 +14,8 @@ their resistors, the probe resistors and the male headers on the top
 layer, inside the board-to-board gap.
 Main board: the three female sockets on the bottom layer; everything else
 on the top layer, the Seed breakout along the left edge (the right edge as
-seen from the panel).
+seen from the panel), the CV stages clustered on their op-amps with every
+resistor standing up (the exporter gives them a vertical footprint).
 
 Bottom-layer parts: EasyEDA Pro mirrors the footprint about its own X axis
 (y -> -y) and then rotates it (verified against every routed track in the
@@ -47,6 +48,14 @@ def mil(v):
 def rot(x, y, a):
     c, s = math.cos(math.radians(a)), math.sin(math.radians(a))
     return x * c - y * s, x * s + y * c
+
+
+def _seg_dist(p, a, b):
+    """Distance from point p to the segment a-b."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    n = dx * dx + dy * dy
+    t = 0 if n == 0 else max(0, min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / n))
+    return math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
 
 
 # ------------------------------------------------------------- template
@@ -102,7 +111,8 @@ def footprint_geometry(doc):
         if t == "PAD":
             dp = p["defaultPad"]
             pads[str(p["num"])] = {"id": h["id"], "x": p["centerX"] * 0.0254, "y": p["centerY"] * 0.0254,
-                                   "w": dp["width"] * 0.0254, "h": dp["height"] * 0.0254}
+                                   "w": dp["width"] * 0.0254, "h": dp["height"] * 0.0254,
+                                   "angle": p.get("padAngle") or 0}
         elif t in ("POLY", "FILL") and p.get("layerId") in (3, 13, 48):
             path = p["path"]
             paths = path if (path and isinstance(path[0], list)) else [path]
@@ -171,6 +181,17 @@ class Board:
         return {num: (*self.pad_xy(pl, pd["x"], pd["y"]), max(pd["w"], pd["h"]) / 2)
                 for num, pd in pl["geo"]["pads"].items()}
 
+    def pad_shapes(self, pl):
+        """Pads as capsules {num: (end, end, r)}: an oval's spine along its long side, a round or
+        square pad a point (a square counts as its inscribed circle, as in pads())."""
+        out = {}
+        for num, pd in pl["geo"]["pads"].items():
+            half = abs(pd["w"] - pd["h"]) / 2
+            dx, dy = rot(half, 0, pd["angle"] + (90 if pd["h"] > pd["w"] else 0))
+            out[num] = (self.pad_xy(pl, pd["x"] - dx, pd["y"] - dy), self.pad_xy(pl, pd["x"] + dx, pd["y"] + dy),
+                        min(pd["w"], pd["h"]) / 2)
+        return out
+
     def body(self, pl):
         x1, y1, x2, y2 = pl["geo"]["bbox"]
         cs = [self.pad_xy(pl, x, y) for x, y in ((x1, y1), (x2, y1), (x2, y2), (x1, y2))]
@@ -194,27 +215,30 @@ class Board:
     # -- checks
     def check(self, gap_side):
         """Problems: unplaced or unknown parts, pads too close to each other,
-        to a hole or to the edge, bodies overlapping on one side, bodies on
-        the gap side under a standoff. gap_side: 'top' or 'bottom', the side
-        that faces the other board (where the standoffs are)."""
+        to a hole or to the edge, bodies overlapping on one side, bodies under
+        a standoff (gap side) or a screw head (the other side). gap_side:
+        'top' or 'bottom', the side that faces the other board."""
         bad = []
         refs = collections.Counter(pl["ref"] for pl in self.placed)
         for ref in self.P:
             if refs[ref] != 1:
                 bad.append(f"{self.title}: {ref} placed {refs[ref]} times")
-        allpads = []
+        shapes = []
         for pl in self.placed:
             for num, (x, y, r) in self.pads(pl).items():
-                allpads.append((pl["ref"], num, x, y, r))
                 if x - r < EDGE or x + r > self.W - EDGE or y - r < EDGE or y + r > self.H - EDGE:
                     bad.append(f"{self.title}: {pl['ref']}.{num} pad at ({x:.2f}, {y:.2f}) is at the board edge")
                 for hx, hy, hd in self.holes:
                     if math.hypot(x - hx, y - hy) < r + hd / 2 + CLEAR:
                         bad.append(f"{self.title}: {pl['ref']}.{num} pad is {math.hypot(x - hx, y - hy):.2f} from the hole at ({hx}, {hy})")
-        for i, (ra, na, xa, ya, r1) in enumerate(allpads):
-            for rb, nb, xb, yb, r2 in allpads[i + 1:]:
-                if ra != rb and math.hypot(xa - xb, ya - yb) < r1 + r2 + CLEAR:
-                    bad.append(f"{self.title}: pads {ra}.{na} and {rb}.{nb} are {math.hypot(xa - xb, ya - yb) - r1 - r2:.2f} mm apart")
+            shapes += [(pl["ref"], num, *s) for num, s in self.pad_shapes(pl).items()]
+        for i, (ra, na, a1, a2, r1) in enumerate(shapes):
+            for rb, nb, b1, b2, r2 in shapes[i + 1:]:
+                if ra != rb and abs(a1[0] - b1[0]) < 5 and abs(a1[1] - b1[1]) < 5:
+                    gap = min(_seg_dist(a1, b1, b2), _seg_dist(a2, b1, b2), _seg_dist(b1, a1, a2),
+                              _seg_dist(b2, a1, a2)) - r1 - r2
+                    if gap < CLEAR:
+                        bad.append(f"{self.title}: pads {ra}.{na} and {rb}.{nb} are {gap:.2f} mm apart")
         for side in (False, True):
             bodies = [(pl["ref"], self.body(pl)) for pl in self.placed if pl["bottom"] == side]
             for i, (ra, a) in enumerate(bodies):
@@ -223,12 +247,12 @@ class Board:
                         ov = min(a[2] - b[0], b[2] - a[0], a[3] - b[1], b[3] - a[1])
                         bad.append(f"{self.title}: bodies of {ra} and {rb} overlap by {ov:.2f} mm on the "
                                    f"{'bottom' if side else 'top'} side")
-            if (side and gap_side == "bottom") or (not side and gap_side == "top"):
-                for ref, (x1, y1, x2, y2) in bodies:
-                    for hx, hy, hd in self.holes:
-                        cx, cy = min(max(hx, x1), x2), min(max(hy, y1), y2)
-                        if math.hypot(cx - hx, cy - hy) < STANDOFF_R:
-                            bad.append(f"{self.title}: body of {ref} sits under the standoff at ({hx}, {hy})")
+            what = "standoff" if (side and gap_side == "bottom") or (not side and gap_side == "top") else "screw head"
+            for ref, (x1, y1, x2, y2) in bodies:
+                for hx, hy, hd in self.holes:
+                    cx, cy = min(max(hx, x1), x2), min(max(hy, y1), y2)
+                    if math.hypot(cx - hx, cy - hy) < STANDOFF_R:
+                        bad.append(f"{self.title}: body of {ref} sits under the {what} at ({hx}, {hy})")
         return bad
 
     # -- EasyEDA document
@@ -378,7 +402,7 @@ def main_board(pr, parts, info, circuit):
         b.hole_front(xf, y)
     for ref, (xf, y, a) in HEADERS_FRONT.items():   # female sockets, bottom layer, same spot
         b.place_front(ref, xf, y, a, bottom=True)
-    for ref, x, y, a in MB_TOP:
+    for ref, x, y, a in _main_top(circuit):
         b.place(ref, x, y, a)
     b.text(24, H - 2.6, "Plaitsy main board", 1.8)
     return b
@@ -410,27 +434,68 @@ FB_REAR = [
 ]
 FB_REAR += [(r, x, 48.5, 90) for r, x in zip(("R10", "R11", "R12", "R13"), (36.0, 38.5, 41.0, 43.5))]
 _LX, _RX = (17.4, 19.8, 22.2, 24.6), (34.4, 36.8, 39.2, 41.6)
-FB_REAR += [(f"R{80 + i}", x, 88.0, 90) for i, x in enumerate(_LX)]     # D1, D2 (U9 lines)
-FB_REAR += [(f"R{84 + i}", x, 62.0, 90) for i, x in enumerate(_LX)]     # D3, D4
-FB_REAR += [(f"R{88 + i}", x, 88.0, 90) for i, x in enumerate(_RX)]     # D5, D6 (U10 lines)
-FB_REAR += [(f"R{92 + i}", x, 62.0, 90) for i, x in enumerate(_RX)]     # D7, D8
+# pad 1 (the 595 side) of every LED resistor faces its 595 between the rows, pad 2 the LEDs
+FB_REAR += [(f"R{80 + i}", x, 88.0, 90) for i, x in enumerate(_LX)]     # red D1-D4 (U9 lines)
+FB_REAR += [(f"R{84 + i}", x, 62.0, 270) for i, x in enumerate(_LX)]    # red D5-D8
+FB_REAR += [(f"R{88 + i}", x, 88.0, 90) for i, x in enumerate(_RX)]     # green D1-D4 (U10 lines)
+FB_REAR += [(f"R{92 + i}", x, 62.0, 270) for i, x in enumerate(_RX)]    # green D5-D8
 
-# Main board, top (rear) layer, PCB frame: ref, x, y, angle.
-XA = 43.5      # the resistor column right of the op-amps (horizontal parts, 2.5 mm rows)
-XC = 52.5      # the capacitor column beyond it (vertical parts)
-MB_TOP = [("U2", 10.0, 64.0, 90),      # Seed breakout along the left edge, power end down, USB end up
-          ("U3", 30.0, 86.0, 90), ("U4", 30.0, 62.0, 90)]
-# each TL074's 100 n pair beside it, in the channel between the breakout and the op-amps
-MB_TOP += [(c, 22.5, y, 90) for c, y in (("C31", 92), ("C32", 84), ("C33", 68), ("C34", 60))]
-# U3: MODEL, TIMBRE, FM, MORPH (R21-R32, C21-C24); U4: HARMO, TRIG, LEVEL, V/OCT (R33-R44, C25-C28)
-MB_TOP += [(f"R{21 + i}", XA, 97.5 - 2.5 * i, 0) for i in range(12)]
-MB_TOP += [(f"R{33 + i}", XA, 67.5 - 2.5 * i, 0) for i in range(12)]
-MB_TOP += [(c, XC, y, 90) for c, y in (("C21", 94.5), ("C22", 87), ("C23", 79.5), ("C24", 72),
-                                      ("C25", 64), ("C26", 56.5), ("C27", 49), ("C28", 30))]
-# bias dividers and the button-LED resistors below the CV header, the V/OCT clamps in the right margin
-MB_TOP += [("R45", XA, 37.5, 0), ("R46", XA, 35.0, 0), ("R47", XA, 27.5, 0), ("R48", XA, 25.0, 0),
-           ("R60", XA, 22.5, 0), ("R61", XA, 20.0, 0),
-           ("C29", XC, 20.0, 90), ("C30", XC, 11.0, 90), ("D21", 57.0, 52.0, 90), ("D22", 57.0, 62.0, 90)]
+# Main board, top (rear) layer, PCB frame. The routed Marblesy main board
+# showed the way: resistors standing up on a 2.54 mm footprint, clustered on
+# the op-amp pins they serve, so a summing node is a few mm of copper, and
+# each 100 n beside its supply pin. Both TL074s stand vertical (angle 90,
+# pins 1-7 in the +x column) in the middle of the space right of the
+# breakout, U3 level with the Seed's ADC pins, U4 above it; every stage sits
+# at its corner of the chip: Rf right against IN- and OUT, Rin and Rs in the
+# next column, Cf in the third. The bias dividers sit below U3, the V/OCT
+# clamps and the button-LED resistors in the strip along the breakout.
+VR_P1 = 0.48006       # a standing resistor's pad 1 (the body) sits this far above its origin, pad 2 2.54 below that
+XO, Y3, Y4 = 39.6, 64.0, 89.0
+
+
+def _stand(ref, p1, p2):
+    """A standing resistor with pad 1 (the body) at p1 and pad 2 one pitch from it, towards p2."""
+    a = math.degrees(math.atan2(p2[0] - p1[0], -(p2[1] - p1[1])))
+    dx, dy = rot(0, VR_P1, a)
+    return ref, p1[0] - dx, p1[1] - dy, round(a) % 360
+
+
+def _two(ref, p1, p2):
+    """A two-lead part lying flat (capacitor, DO-35 diode), pad 1 at p1, pad 2 at p2."""
+    return ref, (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, round(math.degrees(math.atan2(p2[1] - p1[1],
+                                                                                         p2[0] - p1[0]))) % 360
+
+
+def _stage(sec, x0, y0, rin, rf, rs, cf):
+    """One inverting stage at its corner of a vertical TL074 centred on (x0, y0)."""
+    sx = 1 if sec in (1, 2) else -1          # sections 1 / 2 on the pin 1-7 column, 3 / 4 on pins 8-14
+    sy = -1 if sec in (1, 4) else 1          # sections 1 / 4 at the pin 1 / pin 14 end
+    c1, c2, c3 = x0 + sx * 7.04, x0 + sx * 9.58, x0 + sx * 12.12
+    y = [y0 + sy * 2.54 * k for k in range(5)]       # y[1] IN+, y[2] IN-, y[3] OUT
+    return [_stand(rf, (c1, y[2]), (c1, y[3])),     # pin 1 IN-, pin 2 OUT
+            _stand(rin, (c2, y[1]), (c2, y[2])),    # pin 1 CV, pin 2 IN-
+            _stand(rs, (c2, y[3]), (c2, y[4])),     # pin 1 OUT, pin 2 the ADC line
+            _two(cf, (c3, y[1]), (c3, y[3]))]       # pin 1 IN-, pin 2 OUT
+
+
+def _main_top(circuit):
+    top = [("U2", 10.0, 64.0, 90),        # Seed breakout along the left edge, power end down, USB end up
+           ("U3", XO, Y3, 90), ("U4", XO, Y4, 90)]
+    for k, (u, y0) in enumerate((("U3", Y3), ("U4", Y4))):
+        top += [_two(f"C{31 + 2 * k}", (XO + 7.04, y0 + 2.54), (XO + 7.04, y0 - 2.54)),   # +12 V, 3.6 mm from pin 4
+                _two(f"C{32 + 2 * k}", (XO - 7.04, y0 + 2.54), (XO - 7.04, y0 - 2.54))]   # -12 V, from pin 11
+    for i, (name, label, u, sec, *_) in enumerate(circuit.CV_CHANNELS):
+        top += _stage(sec, XO, Y3 if u == "U3" else Y4, f"R{21 + 3 * i}", f"R{22 + 3 * i}", f"R{23 + 3 * i}",
+                      f"C{21 + i}")
+    # bias dividers below U3, clear of the centre mounting hole's screw head: A on the left, V on the right
+    top += [_stand("R45", (34.5, 48.0), (34.5, 45.46)), _stand("R46", (37.04, 45.46), (37.04, 42.92)),
+            _two("C29", (34.5, 39.5), (39.58, 39.5)),
+            _stand("R47", (44.7, 48.0), (44.7, 45.46)), _stand("R48", (47.24, 45.46), (47.24, 42.92)),
+            _two("C30", (44.7, 39.5), (49.78, 39.5))]
+    # the V/OCT clamps on ADC_VOCT's way to Seed pin 31, the button-LED resistors at the breakout's top end
+    top += [_two("D21", (21.0, 75.0), (21.0, 67.0)), _two("D22", (24.0, 67.0), (24.0, 75.0)),
+            _stand("R60", (21.5, 101.0), (21.5, 98.46)), _stand("R61", (24.5, 101.0), (24.5, 98.46))]
+    return top
 
 
 def header_check(fb, mb, circuit):

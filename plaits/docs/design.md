@@ -9,7 +9,11 @@ files.
 
 Status: schematic done and checked, footprints assigned, both PCBs placed
 and net-assigned (see [PCB placement](#pcb-placement)), the panel as the
-third board. PCB routing and firmware not started.
+third board. The placement carries what routing Marblesy taught (standing
+resistors clustered on the op-amps, decoupling at the supply pins, header
+pins, mux channels and 595 outputs ordered for the fewest crossing lines, no
+LED-button foot holes, a DRC-clean copper band). PCB routing and firmware
+not started.
 
 ---
 
@@ -130,27 +134,39 @@ free to use them (the yellow bank, button feedback) or leave them dark.
 - **LEDs D1–D8**: 3 mm red/green bicolour, common cathode (middle lead) to
   GND_D_F. U9 and U10 (74HC595, chained: U9 QH' → U10 SER; SER from
   MOSI_F, SRCLK from SCK_F, RCLK from LED_LATCH_F, /OE low, /SRCLR high)
-  drive the 16 anodes through 470 Ω each (R80–R95): about 3 mA per colour,
-  yellow is both on, brightness by PWM at the LED update rate. C9, C10
-  100 n.
+  drive the 16 anodes through 470 Ω each: about 3 mA per colour, yellow is
+  both on, brightness by PWM at the LED update rate. Split by colour: every
+  LED has its red anode on the left (front view) and its green one on the
+  right, so U9 on the left drives the eight reds (R80–R87) and U10 on the
+  right the eight greens (R88–R95), and no line has to cross the LED
+  column. C9, C10 100 n.
 - **Buttons SW1, SW2**: Thonk low-profile LED buttons; contacts 1+2 to
   GND_D_F, 3+4 to BTN_A_F / BTN_B_F (Seed internal pull-ups); LED anode
-  (pin 5) from the main board's 470 Ω, cathode (pin 6) to GND_D_F.
+  (pin 5) from the main board's 470 Ω, cathode (pin 6) to GND_D_F. Clip
+  their three plastic feet off: holes for them would overlap the pads of
+  pins 1 and 2 (that gave EasyEDA DRC errors on Marblesy), and without the
+  feet the body sits on the board at Thonkiconn height anyway.
+
+The mux channels and the 595 outputs are not in panel order: they are
+picked so the wiper lines and the LED lines do not cross (on Marblesy the
+user swapped them while routing; here it is done before). The firmware reads
+the pots and sets the LED bits by these tables.
 
 | Mux channel (Y) | 4051 pin | Pot |
 |---|---|---|
 | 0 | 13 | RV1 FREQUENCY |
 | 1 | 14 | RV2 HARMONICS |
-| 2 | 15 | RV3 TIMBRE |
-| 3 | 12 | RV4 MORPH |
-| 4 | 1 | RV5 TIMBRE attenuverter |
-| 5 | 5 | RV6 FM attenuverter |
-| 6 | 2 | RV7 MORPH attenuverter |
+| 2 | 15 | RV4 MORPH |
+| 3 | 12 | RV3 TIMBRE |
+| 4 | 1 | RV7 MORPH attenuverter |
+| 5 | 5 | RV5 TIMBRE attenuverter |
+| 6 | 2 | RV6 FM attenuverter |
 | 7 | 4 | GND_F |
 
-| 595 output | LED line | | 595 output | LED line |
-|---|---|---|---|---|
-| U9 QA..QH | D1 R, D1 G, D2 R, D2 G, D3 R, D3 G, D4 R, D4 G | | U10 QA..QH | D5 R, D5 G, D6 R, D6 G, D7 R, D7 G, D8 R, D8 G |
+| 595 | QA | QB | QC | QD | QE | QF | QG | QH |
+|---|---|---|---|---|---|---|---|---|
+| U9 (red) | D1 | D8 | D7 | D6 | D2 | D5 | D3 | D4 |
+| U10 (green) | D4 | D3 | D2 | D5 | D1 | D6 | D7 | D8 |
 
 libDaisy: `AdcChannelConfig::InitMux(A10, 8, D26, D27, D28)` for the pots;
 SPI1 at about 1 MHz for the shift registers, 16 bits per update, latch on
@@ -160,16 +176,18 @@ D13.
 
 ## Board-to-board headers
 
-| Header | Pins | Main board nets (faceplate: same name + `_F`) | Where (front view) |
+| Header | Pins | Main board nets, pin 1 first (faceplate: same name + `_F`) | Where (front view) |
 |---|---|---|---|
-| H1 | 8 | CV_MODEL, CV_TIMBRE, CV_FM, CV_MORPH, CV_HARMO, CV_TRIG, CV_LEVEL, CV_VOCT | horizontal, between the top jack row and the attenuverters |
-| H2 | 9 | OUT, AUX, PROBE, GND (GND_F), 3V3A, MUX_OUT, MUX_S0, MUX_S1, MUX_S2 | vertical in the right margin, beside the attenuverter |
-| H3 | 9 | SPI_SCK (SCK_F), SPI_MOSI (MOSI_F), LED_LATCH, 3V3D, GND (GND_D_F), BTN_A, BTN_B, BTN_LED_A, BTN_LED_B | vertical in the right margin, beside MORPH |
+| H1 | 8 | CV_HARMO, CV_MORPH, CV_VOCT, CV_FM, CV_LEVEL, CV_TIMBRE, CV_TRIG, CV_MODEL | horizontal, between the top jack row and the attenuverters |
+| H2 | 9 | AUX, GND (GND_F), 3V3A, OUT, MUX_OUT, MUX_S0, MUX_S1, MUX_S2, PROBE | vertical in the right margin, beside the attenuverter |
+| H3 | 9 | SPI_MOSI (MOSI_F), GND (GND_D_F), 3V3D, LED_LATCH, SPI_SCK (SCK_F), BTN_A, BTN_LED_A, BTN_B, BTN_LED_B | vertical in the right margin, beside MORPH |
 
-Male pins on the faceplate (HF1–HF3), female sockets on the main board, each
-pair at the same x/y on both boards. GND_F (jacks, pots, mux) and GND_D_F
-(LEDs, buttons, shift registers) are separate on the faceplate and meet on
-the main board's GND.
+The pin orders are picked for the fewest crossing lines between the pins and
+what they connect to on both boards, with each supply beside its ground and
+OUT and AUX kept apart by GND and 3V3A. Male pins on the faceplate
+(HF1–HF3), female sockets on the main board, each pair at the same x/y on
+both boards. GND_F (jacks, pots, mux) and GND_D_F (LEDs, buttons, shift
+registers) are separate on the faceplate and meet on the main board's GND.
 
 ---
 
@@ -203,7 +221,7 @@ drift apart.
 |---|---|---|
 | Pots (×7) | 7.5 | Alpha 9 mm vertical B10k (Thonk), M7 bushing |
 | Jacks (×10) | 6.5 | Thonkiconn PJ398SM |
-| Buttons (×2) | 6.5 | Thonk low-profile LED button, 5.5 mm cap; its three feet drop into 1.2 mm board holes so it sits at Thonkiconn height |
+| Buttons (×2) | 6.5 | Thonk low-profile LED button, 5.5 mm cap; feet clipped, the body on the board at Thonkiconn height |
 | LEDs (×8) | 3.2 | 3 mm red/green bicolour, 3-lead common cathode |
 
 Knobs as drawn: Ø15 for FREQUENCY and HARMONICS, Ø12 for TIMBRE and MORPH,
@@ -251,12 +269,16 @@ their glyph flattened to short lines — a thick ring for the green bank, a
 thin one for the red bank, since silk cannot knock a glyph out of a solid
 disc) and the OUT / AUX band as a copper fill on the top layer under a
 solder-mask opening of the same shape, so it comes out as bare ENIG gold;
-OUT and AUX are silkscreen on top of it. Text uses the default stroke font
-and estimated centring, so expect to nudge a few labels. Order it as a
-1.6 mm board, black mask, white silk, ENIG. Two things the fab may ask
-about: silkscreen over bare copper (the band labels; if they drop it, put
-the labels on the solder-mask layer instead and they come out gold on
-black) and non-plated holes through the copper band.
+OUT and AUX are silkscreen on top of it. Copper and mask opening both leave
+a 0.4 mm ring of masked board around the two jack holes through the band
+(EasyEDA's DRC wants copper 0.3 mm from a slot region; on Marblesy it
+flagged every hole in the band): each ring is a counter-clockwise circle in
+the fill's path list, which EasyEDA fills with the nonzero rule. Text uses
+the default stroke font and estimated centring, so expect to nudge a few
+labels. Order it as a 1.6 mm board, black mask, white silk, ENIG. The fab
+may ask about silkscreen over bare copper (the band labels; if they drop
+it, put the labels on the solder-mask layer instead and they come out gold
+on black).
 
 ### Differences from Plaits
 
@@ -279,7 +301,9 @@ its net and writes the two PCB documents into `Plaits.epro2`; the exporter
 checks the result (pads 0.25 mm apart or more, 0.5 mm from the edge, no
 bodies overlapping on one side, nothing under a standoff, header pins
 coinciding on both boards, panel parts exactly at `PLACEMENT`, no rear-side
-pad under a panel part's housing). Nothing is routed. Previews:
+pad under a panel part's housing, oval pads checked as capsules, nothing
+within a standoff's or a screw head's 3 mm on either side). Nothing is
+routed. Previews:
 `hardware/easyeda/plaits-easyeda-pcb-*.png`.
 
 **Frame.** Each PCB is drawn as EasyEDA shows it, looking at the top layer,
@@ -301,22 +325,29 @@ margin, outside the pots' lug pads; U1 at (14.5, 49.5) in the pocket left
 of the centre hole with C8 at (3.5, 57); U9 at (15.4, 75) and U10 at
 (43, 75) between the big knobs and TIMBRE / MORPH with C9 at (3.5, 70) and
 C10 under U10 at (43, 69); the LED resistors as vertical parts in rows at
-y 88 and y 62 either side of the LED column (R80–R87 left for U9, R88–R95
-right for U10); the probe resistors R10–R13 vertical in the right pocket
+y 88 and y 62 either side of the LED column (R80–R87 left for U9's reds,
+R88–R95 right for U10's greens), each with its 595 end towards the chip
+between the rows; the probe resistors R10–R13 vertical in the right pocket
 (x 36–43.5, y 48.5) and R9 horizontal in the jack strip at (7.55, 31.2).
 Rear pads never fall under a pot or jack housing, since those are soldered
 on the panel side.
 
 **Main board.** Bottom layer: the three female sockets at the same spots
 (H2 / H3 land in the channel between the breakout's pad rows). Top (rear)
-layer, PCB frame: the Seed breakout vertical along the left edge, centred
-at (10, 64), power end (J1 / J3) down and USB end up; U3 (30, 86) and U4
-(30, 62) vertical, each with its two 100 n beside it in the channel at
-x 22.5; the channel resistors horizontal in one column at x 43.5, 2.5 mm
-rows, U3's twelve from y 97.5 down, U4's from 67.5 down, then the bias
-resistors and R60 / R61; the feedback capacitors vertical at x 52.5 in
-7.5 mm steps (C28 at y 30), C29 / C30 below them; the V/OCT clamps D21 /
-D22 vertical in the right margin at x 57.
+layer, PCB frame, laid out the way the user placed Marblesy's main board
+while routing it: the Seed breakout vertical along the left edge, centred
+at (10, 64), power end (J1 / J3) down and USB end up, its ADC pin row
+(x 17.6, y 42–65) facing the op-amps. U3 (39.6, 64) and U4 (39.6, 89)
+vertical, U3 level with the ADC pins. Every resistor stands up on a 2.54 mm
+footprint and every stage is a cluster at its corner of the chip: Rf right
+against the IN− and OUT pins, Rin and Rs in the next column, Cf in the
+third, so each summing node spans 8.7 mm (it was 23–48 mm with the
+resistors in a column) and every 100 n sits 3.6 mm from its supply pin,
+between the Rf of two stages. The bias dividers stand below U3 (R45 / R46 /
+C29 left, R47 / R48 / C30 right, clear of the centre screw), the V/OCT
+clamps D21 / D22 in the strip along the breakout on ADC_VOCT's way to
+pin 31, R60 / R61 at the breakout's top end. The lower part of the board
+(y 3–36) is left free for the CV and ADC runs.
 
 **Mounting.** Four 3.2 mm holes, front-view (3.5, 104.5), (55.9, 104.5),
 (3.5, 40) and (29.9, 48.5), identical on both boards: the top corners above
@@ -328,9 +359,8 @@ the mated pair). The breakout and Seed hang on the main board's rear. The
 jack strip has no hole; the jacks' nuts hold the faceplate to the panel.
 
 **What EasyEDA's DRC will still say.** Floating pins on the Seed's unused
-pins (D4–D7, D9, D11, D12, AIN, AOUT, A7, A8, D29, D30, VIN, J5-1 / J5-3),
-on the LED buttons' feet (pins 7–9) and on the jacks' open switch lugs
-(J9, J10): all intentional.
+pins (D4–D7, D9, D11, D12, AIN, AOUT, A7, A8, D29, D30, VIN, J5-1 / J5-3)
+and on the jacks' open switch lugs (J9, J10): both intentional.
 
 ---
 
@@ -338,64 +368,69 @@ on the LED buttons' feet (pins 7–9) and on the jacks' open switch lugs
 
 Plan: set the rules, route the few nets that matter by hand and lock them,
 let the autorouter do the rest with the grounds excluded, clean up, pour.
+What the user's routing of Marblesy settled is folded in.
 
-**Rules first** (Design > Design Rules; the project carries the rules copied
-from one of the MorrisSynth boards, whose clearance is a tight 0.1 mm).
-For a hand-soldered 2-layer board: clearance 0.25 mm, default track 0.3 mm,
-a POWER net class at 0.6 mm (+12V, −12V, 3V3A, 3V3D, 3V3A_F, 3V3D_F), vias
-0.8 mm with a 0.4 mm hole, copper 0.5 mm from the edge.
+**Rules first** (Design > Design Rules). Marblesy was routed and passed its
+audit with clearance 0.152 mm, 0.3 mm signal tracks, 0.6 mm power tracks
+(+12V, −12V, 3V3A, 3V3D, 3V3A_F, 3V3D_F and GND_D_F) and 0.61 / 0.3 mm vias;
+use the same here, or 0.25 mm clearance where there is room, which is
+kinder to hand soldering.
 
-**Keepouts before routing.** Faceplate, panel-side (bottom) layer: a 3 mm
-circle at each jack barrel, 0.78 mm below the jack origin, where the metal
-barrel sits (GND_F copper may stay). Both boards: 3.5 mm around the four
-mounting holes on the standoff side (faceplate top, main board bottom).
+**Keepouts before routing.** Both boards: nothing but ground within 3 mm
+of the four mounting holes, on both sides (standoff on one side, screw
+head on the other). No keepout at the jack barrels: the Thonkiconn body is
+plastic, and tracks under it on the panel side are fine under mask.
 
 **Autorouter** (Route > Auto Route). Layers top and bottom; preferred
 direction vertical on top and horizontal on bottom; 45° corners; via
 quantity "less"; "completion first" for the first pass, then re-run the
 ugly nets selected with "quality first". Skip nets: GND, GND_F, GND_D_F
-and the POWER class, which are poured or hand-routed. Hand-route and lock
-before the run: the power buses, the SPI bundle, the summing nodes and the
-bias trees. Afterwards: remove loops, DRC, then pours.
+and the POWER class, which are poured or hand-routed. Afterwards: remove
+loops, DRC, then pours. Check that every via sits on its track, not beside
+it: on Marblesy one 3V3A via touched its track by 0.11 mm, and EasyEDA
+counted that as connected.
 
-**Ground planes.**
-- Main board: one GND net. Pour it on both layers; the bottom (socket) side
-  is nearly empty and becomes the plane. It must reach the Seed's pins 20
-  and 40 and the breakout's J1-1 / J3-1 / J4-2 / J4-4.
-- Faceplate: GND_F (jacks, pots, mux) poured on the panel-side (bottom)
-  layer under everything, which also shields the CV lines. GND_D_F (shift
-  registers, LEDs, buttons) as a pour on the rear (top) layer confined to
-  the area around U9, U10 and the LED column, or plain tracks. The two
-  never touch on this board; they meet on the main board's GND through
-  H2 pin 4 (GND_F) and H3 pin 5 (GND_D_F).
+**Ground planes.** As on the routed Marblesy: pour the ground on both
+layers of each board and stitch the layers with ground vias wherever there
+is room (Marblesy has 118 on the main board and 166 on the faceplate).
+- Main board: one GND net. It must reach the Seed's pins 20 and 40 and the
+  breakout's J1-1 / J3-1 / J4-2 / J4-4.
+- Faceplate: GND_F (jacks, pots, mux) poured on both layers; GND_D_F
+  (shift registers, LEDs, buttons) as 0.6 mm tracks to H3 pin 2. The two
+  never touch on this board; they meet on the main board's GND through H2
+  pin 2 (GND_F) and H3 pin 2 (GND_D_F), each beside its supply pin.
 
 **Main board, by hand and with care.**
-1. Summing nodes IN_* (op-amp pin −, R_in, R_fb, C_fb): one layer, short,
-   over the pour, away from the SPI lines. The ADC_* lines from the 1 kΩ
-   resistors to the Seed's right pin row (x 17.6) likewise, as a group;
-   the Seed's ADC pins face the op-amps, so these are the short runs.
-2. BIAS_A from C29 as a tree to the seven op-amp + inputs, BIAS_V from
-   C30 to U4 pin 12; ADC_VOCT past the clamps D21 / D22 on its way to
-   pin 31.
-3. SPI (SCK, MOSI, LED_LATCH) and the button lines from the Seed's left
-   pin row (x 2.4) to H3 right beside it: short, on the bottom layer in
-   the channel.
-4. OUT / AUX from J4 (top of the breakout, x 17.6) down the channel to H2
-   on the bottom layer, with pour either side; PROBE from pin 15 to H2.
-5. Power: +12 V and −12 V from J3 / J1 (bottom of the breakout) up the
-   decoupling column at x 22.5 to U3 and U4 as 0.6 mm buses; 3V3A from
-   pin 21 to the bias dividers and H2; 3V3D from pin 38 to H3.
+1. The stages are clusters: join each one's Rf, Rin, Cf and IN− pin with a
+   few mm of copper on one layer, and OUT, Rf, Rs, Cf the same way.
+2. BIAS_A from C29 up the channel between U3's and U4's pin rows to the
+   seven IN+ pins (pins 3, 5, 10, 12 of U3, 3, 5, 10 of U4); BIAS_V from
+   C30 to U4 pin 12.
+3. ADC lines from the Rs pads to the Seed's ADC row (x 17.6): the left
+   clusters' go straight across the strip along the breakout, the right
+   clusters' round the end of their chip; ADC_VOCT past D21 / D22.
+4. CV lines from H1 (y 31.2) up both side strips to the Rin pads: low
+   impedance, length does not matter, keep them off the SPI lines.
+5. SPI (SCK, MOSI, LED_LATCH) and the button lines from the Seed's left pin
+   row (x 2.4) to H3 right beside it, short, on the bottom layer in the
+   channel; OUT / AUX from J4 down the channel to H2 with ground between
+   them (H2 puts GND and 3V3A between OUT and AUX); PROBE from pin 15 to H2.
+6. Power: +12 V and −12 V from J3 / J1 (bottom of the breakout) to the two
+   100 n beside each chip as 0.6 mm tracks; 3V3A from pin 21 to the bias
+   dividers, D21 and H2; 3V3D from pin 38 to H3.
 
 **Faceplate.**
-1. Pot wipers to U1 and the mux lines to H2 on the panel side under GND_F.
-2. The eight CV_* lines from the jacks straight up to H1 (a few mm each).
-   The probe: PROBE_F from H2 across the jack strip to R9–R13 and down
-   to the switch lugs.
+1. Pot wipers to U1 and the mux lines to H2 on the panel side under GND_F:
+   with the channels as assigned, no two wiper lines cross.
+2. The eight CV_* lines from the jacks to H1 (a few mm each, no crossings
+   with H1's pin order). The probe: PROBE_F from H2 across the jack strip to
+   R9–R13 and down to the switch lugs.
 3. OUT_F / AUX_F from H2 down the right margin to J9 / J10.
 4. SPI_F from H3 to U9 then the chain to U10, short on the rear; the
-   sixteen LED lines from the 595 outputs to their resistors and on to the
-   LED column, rear layer, away from the wipers; LED cathodes and the
-   buttons to GND_D_F.
+   sixteen LED lines from the 595 outputs to their resistors (no crossings
+   within a 595's lines but one) and on to the LED column, reds on the
+   left, greens on the right, rear layer, away from the wipers; LED
+   cathodes and the buttons to GND_D_F.
 5. 3V3A_F from H2 to the pots' CW ends and U1 (0.6 mm); 3V3D_F from H3 to
    U9, U10 and C9 / C10.
 
@@ -427,11 +462,12 @@ bias trees. Afterwards: remove loops, DRC, then pours.
 | 7 | Pot B10k, Alpha 9 mm vertical (Thonk) | | RV1–RV7 |
 | 7 | Knobs | 2 large, 2 medium, 3 small | |
 | 10 | Thonkiconn PJ398SM | | J1–J10 |
-| 2 | Thonk low-profile LED button | colour to taste | SW1, SW2 |
+| 2 | Thonk low-profile LED button | colour to taste; clip the three feet | SW1, SW2 |
 | 3 | Male pin header 1×8, 1×9, 1×9 | Thonk male + female header bag | HF1–HF3 |
 | 3 | Female socket 1×8, 1×9, 1×9 | | H1–H3 |
 | 4 | M3 standoffs + screws | length = the mated headers' gap | |
 | 2 | PCBs 59.4 × 108 mm, 2 layer | `Plaitsy Main PCB`, `Plaitsy Faceplate PCB` | |
+|  | Main-board resistors stand up on a 2.54 mm footprint | any 1/4 W or LR1F part | R21–R48, R60, R61 |
 | 1 | Panel PCB 60.6 × 128.5 mm | black mask, white silk, ENIG: `Plaitsy Panel PCB` | |
 
 ---
@@ -444,13 +480,15 @@ keeping all 24 engines:
 - Audio at 48 kHz, block size 12, as on Plaits; OUT on channel 1, AUX on
   channel 2 of the Seed's codec.
 - CV and pot handling as mapped above: eight ADC channels plus the mux on
-  A10 (`InitMux(A10, 8, D26, D27, D28)`), each reading converted back to
-  the jack voltage and then to Plaits' own ADC scale.
+  A10 (`InitMux(A10, 8, D26, D27, D28)`) in the channel order of the mux
+  table, each reading converted back to the jack voltage and then to
+  Plaits' own ADC scale.
 - The normalization probe on D14 into the TIMBRE, FM, MORPH, TRIG and
   LEVEL lugs, read back on their ADC channels, with thresholds set from
   the measured swing (about 0.4 V peak to peak after the −0.13 stage).
-- The LEDs through the two 74HC595 on SPI1 (16 bits, latch on D13) at the
-  1 ms UI rate, red / green / both; the buttons on D0 / D1 with pull-ups;
+- The LEDs through the two 74HC595 on SPI1 (16 bits, latch on D13, bit
+  order per the 595 table: U9 the reds, U10 the greens) at the 1 ms UI
+  rate, red / green / both; the buttons on D0 / D1 with pull-ups;
   `ui.cc` ported so the panel behaves as the manual describes.
 - Settings and calibration in QSPI flash.
 

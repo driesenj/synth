@@ -135,6 +135,7 @@ OUTPUTS = ["J9", "J10"]
 JACK_LABELS = {"J1": "MODEL", "J5": "HARMO", "J6": "TRIG", "J7": "LEVEL", "J8": "V/OCT"}
 ATT_TO_JACK = {"RV5": "J2", "RV6": "J3", "RV7": "J4"}          # dotted guides attenuverter -> CV jack
 KNOB_TO_ATT = {"RV3": "RV5", "RV4": "RV7"}                      # dotted guides TIMBRE / MORPH -> attenuverter
+BAND_CLEAR = 0.4      # bare board (under black mask) between the copper band and a hole through it; DRC asks 0.3
 # The sixteen model icons beside the LEDs: green bank left (filled disc, glyph
 # knocked out), red bank right (ring, white glyph). Glyphs are drawn in a
 # 2.4 mm box around the disc centre as lists of primitives: ("path", d) with
@@ -167,6 +168,21 @@ GLYPHS = {
     "lpg_decay": [("path", "M -0.8 -0.6 Q -0.45 0.6 0.8 0.6")],
 }
 
+
+
+def band(pos):
+    """The bare-copper OUT / AUX band, (x, y, w, h, rx) from its top-left in the panel frame, and the
+    holes through it as clearance circles (x, y, r): copper and mask opening both leave them out."""
+    ox, ax_, jy = pos["J9"][2], pos["J10"][2], pos["J9"][3]
+    x, y, w, h = ox - 4.8, jy - 8.8, ax_ - ox + 9.4, 14.6
+    cuts = []
+    for kind, label, hx, hy in pos.values():
+        r = HOLE[kind] / 2 + BAND_CLEAR
+        if x - r < hx < x + w + r and y - r < hy < y + h + r:
+            if not (x + r < hx < x + w - r and y + r < hy < y + h - r):
+                raise ValueError(f"the hole at ({hx:.2f}, {hy:.2f}) crosses the edge of the output band")
+            cuts.append((hx, hy, r))
+    return (x, y, w, h, 1.4), cuts
 
 def glyph_svg(name, colour):
     """The glyph's primitives as SVG elements (inside a translated group)."""
@@ -394,8 +410,11 @@ def write_artwork(feats, path):
     s.append('</g>')
     # -- bare copper: the OUT / AUX band with its labels knocked out
     s.append('<g id="copper">')
-    ox, ax_, jy = pos["J9"][2], pos["J10"][2], pos["J9"][3]
-    s.append(f'<rect x="{ox - 4.8:.2f}" y="{jy - 8.8:.2f}" width="{ax_ - ox + 9.4:.2f}" height="14.6" rx="1.4" class="copper"/>')
+    jy = pos["J9"][3]
+    (bx, by, bw, bh, brx), cuts = band(pos)
+    s.append(f'<rect x="{bx:.2f}" y="{by:.2f}" width="{bw:.2f}" height="{bh}" rx="{brx}" class="copper"/>')
+    for x, y, r in cuts:                  # copper clearance around the holes, under black mask
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r:.2f}" class="cu-text"/>')
     for ref in OUTPUTS:
         text(pos[ref][2], jy - A["nut"] - 1.6, pos[ref][1], 2.2, cls="cu-text")
     s.append('</g>')

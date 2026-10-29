@@ -13,7 +13,9 @@ top layer: x to the right, y up, origin at the panel's bottom-left corner.
                  a silkscreen, so the solid discs of the artwork become rings)
   copper band    a copper fill on the top layer under a solder-mask opening of
                  the same shape (bare ENIG gold); OUT and AUX sit on it as
-                 silkscreen
+                 silkscreen. Both leave a 0.4 mm ring of masked board around
+                 each hole through the band (DRC: copper 0.3 mm from a slot
+                 region)
 
 Text uses EasyEDA's default stroke font; centring is estimated, so nudge a
 label in the editor if it sits off. Nothing electrical: the panel has no
@@ -208,9 +210,11 @@ class PanelBoard:
             self.text(pos[jack][2], pos[jack][3] - A["nut"] - 1.6, word, 2.2)
         tx, ty = pos["J6"][2], pos["J6"][3]
         self.dots([(tx + A["nut"] + 0.9, ty), (pos["J7"][2] - A["nut"] - 0.9, ty)])
-        # copper band and the output labels on it
-        ox, ax_, jy = pos["J9"][2], pos["J10"][2], pos["J9"][3]
-        self.band(ox - 4.8, jy - 8.8, ax_ - ox + 9.4, 14.6, 1.4)
+        # copper band, cleared around the holes through it, and the output labels on it
+        jy = pos["J9"][3]
+        (x, y, w, h, rx), cuts = panel.band(pos)
+        self.band(x, y, w, h, rx)
+        self.cuts = [(*self.P(cx, cy), r) for cx, cy, r in cuts]
         for ref in panel.OUTPUTS:
             self.text(pos[ref][2], jy - A["nut"] - 1.6, pos[ref][1], 2.2)
         # holes
@@ -227,10 +231,18 @@ class PanelBoard:
                              "PREFERENCE", "LAYER_PHYS", "RULE", "PANELIZE"):
                 d.add(h["type"], h["id"], p)
 
-        def fill(layer, path):
+        def fill(layer, *paths):
             d.add("FILL", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": layer, "width": 1,
-                                    "fillStyle": "SOLID", "path": [path], "locked": False, "zIndex": d.zi(),
+                                    "fillStyle": "SOLID", "path": list(paths), "locked": False, "zIndex": d.zi(),
                                     "isBridgingCopper": False, "networkList": [], "refs": []})
+
+        def cutout(x, y, r):
+            """A counter-clockwise circle. EasyEDA combines a fill's paths with the nonzero rule, so inside
+            the clockwise outline drawn by rounded() it is a hole."""
+            path = [mil(x + r), mil(y)]
+            for px, py in ((x, y + r), (x - r, y), (x, y - r), (x + r, y)):
+                path += ["ARC", 90, mil(px), mil(py)]
+            return path
 
         def rounded(x, y, w, h, r):
             """Rounded rectangle from its top-left (y up) as lines and clockwise 90-degree arcs.
@@ -251,8 +263,8 @@ class PanelBoard:
         for x, y, w, h in self.slots:
             fill(12, rounded(x - w / 2, y + h / 2, w, h, h / 2))
         for x, y, w, h, rx in self.copper:        # (x, y) is the band's top-left in the PCB frame
-            for layer in (1, 5):                  # top copper, top solder mask opening
-                fill(layer, rounded(x, y, w, h, rx))
+            for layer in (1, 5):                  # top copper, top solder mask opening; mask stays on the clearances
+                fill(layer, rounded(x, y, w, h, rx), *(cutout(*c) for c in self.cuts))
         d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 11, "width": 10,
                                 "path": ["R", 0, mil(self.H), mil(self.W), mil(self.H), 0, 0], "locked": False,
                                 "zIndex": d.zi(), "polyType": "BOARD_OUTLINE"})
@@ -286,6 +298,9 @@ class PanelBoard:
 
         for x, y, w, h, rx in self.copper:
             dr.rounded_rectangle([P(x, y), P(x + w, y - h)], radius=rx * scale, fill="#c9a227")
+        for x, y, r in self.cuts:
+            X, Y = P(x, y)
+            dr.ellipse([X - r * scale, Y - r * scale, X + r * scale, Y + r * scale], fill="#141414")
         for pts, w in self.silk_lines:
             dr.line([P(*p) for p in pts], fill="#f0efe9", width=max(1, int(w * scale)), joint="curve")
         for p0, sweep, p1, w, (cx, cy, r, b0, b1) in self.arcs:   # panel frame, from 12 o'clock

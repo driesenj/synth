@@ -125,13 +125,16 @@ def _pair(net):
     return net, {"GND": "GND_F", "GND_D": "GND_D_F"}.get(net, net + "_F")
 
 
+# Pin orders picked for the fewest crossing lines between the pins and what
+# they connect to on both boards (the user reordered Marblesy's headers the
+# same way while routing), each supply next to its ground.
 HEADERS = [
-    ("H1", "HDR8", [_pair(f"CV_{name}") for name, *_ in CV_CHANNELS]),
-    ("H2", "HDR9", [_pair(n) for n in ("OUT", "AUX", "PROBE", "GND", "3V3A", "MUX_OUT", "MUX_S0", "MUX_S1",
-                                       "MUX_S2")]),
-    ("H3", "HDR9", [("SPI_SCK", "SCK_F"), ("SPI_MOSI", "MOSI_F"), ("LED_LATCH", "LED_LATCH_F"),
-                    ("3V3D", "3V3D_F"), ("GND", "GND_D_F"), ("BTN_A", "BTN_A_F"), ("BTN_B", "BTN_B_F"),
-                    ("BTN_LED_A", "BTN_LED_A_F"), ("BTN_LED_B", "BTN_LED_B_F")]),
+    ("H1", "HDR8", [_pair(f"CV_{n}") for n in ("HARMO", "MORPH", "VOCT", "FM", "LEVEL", "TIMBRE", "TRIG", "MODEL")]),
+    ("H2", "HDR9", [_pair(n) for n in ("AUX", "GND", "3V3A", "OUT", "MUX_OUT", "MUX_S0", "MUX_S1", "MUX_S2",
+                                       "PROBE")]),
+    ("H3", "HDR9", [("SPI_MOSI", "MOSI_F"), ("GND", "GND_D_F"), ("3V3D", "3V3D_F"), ("LED_LATCH", "LED_LATCH_F"),
+                    ("SPI_SCK", "SCK_F"), ("BTN_A", "BTN_A_F"), ("BTN_LED_A", "BTN_LED_A_F"), ("BTN_B", "BTN_B_F"),
+                    ("BTN_LED_B", "BTN_LED_B_F")]),
 ]
 
 
@@ -153,24 +156,31 @@ JACKS = [
     ("J8", "V/OCT", "CV_VOCT_F", "GND_F"),
     ("J9", "OUT", "OUT_F", None), ("J10", "AUX", "AUX_F", None),
 ]
-# ref, label, wiper net, 74HC4051 input pin, mux channel (channel 7, pin 4, is grounded)
+# ref, label, wiper net, 74HC4051 input pin, mux channel (channel 7, pin 4, is grounded). The channels
+# are picked so no two wiper lines cross; the firmware reads them by this table, not in panel order.
 POTS = [
     ("RV1", "FREQUENCY", "POT_FREQ_F", "13", 0), ("RV2", "HARMONICS", "POT_HARMO_F", "14", 1),
-    ("RV3", "TIMBRE", "POT_TIMBRE_F", "15", 2), ("RV4", "MORPH", "POT_MORPH_F", "12", 3),
-    ("RV5", "TIMBRE att.", "ATT_TIMBRE_F", "1", 4), ("RV6", "FM att.", "ATT_FM_F", "5", 5),
-    ("RV7", "MORPH att.", "ATT_MORPH_F", "2", 6),
+    ("RV3", "TIMBRE", "POT_TIMBRE_F", "12", 3), ("RV4", "MORPH", "POT_MORPH_F", "15", 2),
+    ("RV5", "TIMBRE att.", "ATT_TIMBRE_F", "5", 5), ("RV6", "FM att.", "ATT_FM_F", "2", 6),
+    ("RV7", "MORPH att.", "ATT_MORPH_F", "1", 4),
 ]
 # ref, label, firmware switch. Thonk low-profile LED buttons, the Marblesy
-# part (Thonkiconn height, 5.5 mm cap). Plaits' own buttons have no LED;
-# these get a Seed GPIO each, for the firmware to use or not.
+# part (5.5 mm cap; clip its three feet, the board has no holes for them).
+# Plaits' own buttons have no LED; these get a Seed GPIO each, for the
+# firmware to use or not.
 BUTTONS = [("SW1", "model, green bank", "A"), ("SW2", "model, red bank", "B")]
 # ref, label, kind: eight 3 mm red/green bicolour LEDs (common cathode) in a
 # column; each row shows one model of the green, red and (Plaits 1.2) yellow bank.
 LEDS = [(f"D{k + 1}", f"model {k + 1} / {k + 9} / {k + 17}", "RG") for k in range(8)]
 HC595_PINS = {"8": "GND_D_F", "10": "3V3D_F", "11": "SCK_F", "13": "GND_D_F", "16": "3V3D_F"}   # SRCLR high, OE low
 HC595_OUTS = ["15", "1", "2", "3", "4", "5", "6", "7"]     # QA..QH
-# the sixteen LED lines in 595 order: U9 drives D1..D4 (red, green per LED), U10 drives D5..D8
-LED_LINES = [(f"D{k + 1}", colour) for k in range(8) for colour in ("R", "G")]
+# the sixteen LED lines, each with its 470R (R80 + line), split by colour: every LED has its red anode
+# on the left (front view) and its green one on the right, so U9 on the left drives the eight reds through
+# the left resistor rows (R80-R87) and U10 on the right the eight greens (R88-R95), and no line crosses
+# the LED column. Within each row of four resistors the LED order, and the 595 output pins below, are
+# picked for the fewest crossing lines (one per 595).
+LED_LINES = [(f"D{k}", "R") for k in (4, 3, 2, 1, 5, 6, 7, 8)] + [(f"D{k}", "G") for k in (1, 2, 3, 4, 8, 7, 6, 5)]
+SR_OUTS = {"U9": ["7", "6", "4", "15", "5", "3", "2", "1"], "U10": ["4", "2", "1", "15", "7", "6", "5", "3"]}
 
 
 def faceplate_parts():
@@ -197,7 +207,7 @@ def faceplate_parts():
           "U10": dict(HC595_PINS, **{"14": "SR_CHAIN", "12": "LED_LATCH_F"})}
     led_nets = {ref: {"2": "GND_D_F"} for ref, *_ in LEDS}
     for i, (ref, colour) in enumerate(LED_LINES):
-        u, pin = ("U9", HC595_OUTS[i]) if i < 8 else ("U10", HC595_OUTS[i - 8])
+        u, pin = ("U9", SR_OUTS["U9"][i]) if i < 8 else ("U10", SR_OUTS["U10"][i - 8])
         sr[u][pin] = f"L_{ref}_{colour}"
         parts.append(R(f"R{80 + i}", "470", f"L_{ref}_{colour}", f"LED_{ref}_{colour}"))
         led_nets[ref]["1" if colour == "R" else "3"] = f"LED_{ref}_{colour}"

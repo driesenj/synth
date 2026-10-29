@@ -145,18 +145,29 @@ def fp_led3():
 
 
 def fp_led_button():
-    """Thonk low-profile LED button (7.5 mm square, 5.5 mm round cap), from
-    Thonk's KiCad footprint with the three extra holes for the feet: switch
+    """Thonk low-profile LED button (7.5 mm square, 5.5 mm round cap): switch
     pins 1-4 on a 5.08 mm square (1+2 and 3+4 are the contacts), LED anode
-    pin 5 and cathode pin 6 at x = +-2.7, feet 7-9 (plated 1.2 mm holes)."""
+    pin 5 and cathode pin 6 at x = +-2.7. No holes for the three plastic feet:
+    Thonk's (-1.25, 1.75) and (1.25, 1.75) holes overlap the 1.6 mm pads of
+    pins 1 and 2 (EasyEDA DRC errors on Marblesy), so the feet get clipped off
+    and the body sits on the board, at Thonkiconn height as with the holes."""
     f = Footprint("SW-TACT-LP-LED-THONK", "SW?")
     for num, (x, y) in ((1, (2.54, 2.54)), (2, (-2.54, 2.54)), (3, (2.54, -2.54)), (4, (-2.54, -2.54)),
                         (5, (2.7, 0)), (6, (-2.7, 0))):
         f.pad(num, x, y, 1.0, 1.6, square=(num == 1))
-    for num, (x, y) in ((7, (-1.25, 1.75)), (8, (1.25, 1.75)), (9, (0, -2.25))):
-        f.pad(num, x, y, 1.2, 1.6)
     f.rect(-3.75, -3.75, 3.75, 3.75)
     f.circle(0, 0, 2.75)
+    return f
+
+
+def fp_res_vertical():
+    """A resistor standing up, 2.54 mm: the body over pad 1, the bent lead to pad 2. The pads and the
+    origin of the 1/4W-RESISTOR-VERTICAL footprint the routed Marblesy main board uses."""
+    f = Footprint("RES-TH-VERTICAL-P2.54", "R?")
+    f.pad(1, 0, 0.48006, 0.8, 1.6)
+    f.pad(2, 0, -2.0574, 0.8, 1.6)
+    f.circle(0, 0.48006, 1.1)
+    f.line(0, -0.79, 0, -1.11)
     return f
 
 
@@ -216,9 +227,9 @@ def hc595_symbol():
 
 
 def led_button_symbol():
-    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 and 6, feet 7-9."""
+    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 and 6."""
     left = [(0, "1", "1"), (1, "2", "2"), (3, "5", "LED A")]
-    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED K"), (4, "7", "foot"), (5, "8", "foot"), (6, "9", "foot")]
+    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED K")]
     return ic_symbol("LED button", "SWLED.2", left, right, designator="SW?")
 
 
@@ -235,13 +246,16 @@ def header_symbol(n):
 R_NEW = {"470": ("LR1F470R", "470Ω"), "12k": ("LR1F12K", "12kΩ"), "13k": ("LR1F13K", "13kΩ"),
          "15k": ("LR1F15K", "15kΩ"), "33k": ("LR1F33K", "33kΩ"), "100k": ("LR1F100K", "100kΩ")}
 C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF"), "100p": ("FG28C0G1H101JNT00", "100pF")}
+RESISTORS = {"R1k", "R10k"} | {"R" + v for v in R_NEW}
 
 
 class MPage(Page):
     page_count = "1"
 
-    def place(self, *args, **kw):
-        p = super().place(*args, **kw)
+    def place(self, ref, dev_key, *args, **kw):
+        if self.title.startswith("Main") and dev_key in RESISTORS:   # every main-board resistor stands up
+            dev_key += "V"
+        p = super().place(ref, dev_key, *args, **kw)
         # remember the schematic component id: the PCB's Channel ID attribute points at it
         self.comps[-1]["cid"] = next(h["id"] for h, _ in reversed(self.doc.recs) if h["type"] == "COMPONENT")
         return p
@@ -318,7 +332,11 @@ class MProject(Project):
         self._device("BAT85", "BAT85", a, ["Diodes", "Schottky Diodes"])
         dip16 = meta(self.lib[SRC["74HC595N"]])["attributes"]["Footprint"]
         fps = {"SEED": self._footprint(fp_seed_breakout()), "LED3": self._footprint(fp_led3()),
-               "SWLED": self._footprint(fp_led_button())}
+               "SWLED": self._footprint(fp_led_button()), "RV": self._footprint(fp_res_vertical())}
+        for key in ["R1k", "R10k"] + ["R" + v for v in R_NEW]:     # each resistor again, standing up
+            a = dict(self.device_attrs(key))
+            a["Footprint"] = fps["RV"]
+            self._device(key + "V", a["Manufacturer Part"], a, ["Resistors", "Through Hole Resistors"])
         for n in (8, 9):
             fps[f"HDR{n}"] = self._footprint(fp_header(n))
         new = [
@@ -330,7 +348,7 @@ class MProject(Project):
              "3 mm bicolour LED, red/green, common cathode on the middle lead, 1.27 mm pitch (Tayda, Kingbright)"),
             ("SWLED", led_button_symbol(), "LED button, Thonk low profile", "SW?", fps["SWLED"],
              "Thonk low-profile LED button: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED anode 5, "
-             "cathode 6, feet 7-9 in 1.2 mm holes so it sits at Thonkiconn height"),
+             "cathode 6. Clip the three plastic feet off: the board has no holes for them"),
         ]
         for n in (8, 9):
             new.append((f"HDR{n}", header_symbol(n), f"Pin header 1x{n}", "H?", fps[f"HDR{n}"],
@@ -605,7 +623,7 @@ def faceplate_page(pr, parts):
     pg.text(1535, Y(430), "C8 at U1 pin 16", 8)
 
     # shift registers and the LED resistors
-    pg.text(820, Y(495), "LEDs: two 74HC595 on the SPI bus (U9 drives D1..D4, U10 drives D5..D8), 470R per colour", 12)
+    pg.text(820, Y(495), "LEDs: two 74HC595 on the SPI bus (U9 drives the eight red anodes, U10 the eight green), 470R per colour", 12)
     for k, u in enumerate(("U9", "U10")):
         x, y = 880, Y(560 + k * 200)
         sr = pg.place(u, "HC595", x, y, des=(-50, -52, "LEFT_BOTTOM"), value_at=(-50, 58, "LEFT_BOTTOM"))
@@ -709,10 +727,9 @@ def main():
                     for num, (x, y) in c["pins"].items():
                         if abs(x - px) < 0.01 and abs(y - py) < 0.01:
                             print("       pin", c["ref"] or c["dev"], num, "on page", pg_.number)
-    # PCBs: placed and net-assigned, not routed
-    info = part_info(pages)
-    board_fb = pcb.faceplate_board(pr, fb, info, circuit)
-    board_mb = pcb.main_board(pr, mb, info, circuit)
+    # PCBs: placed and net-assigned, not routed; part info per board, as designators may repeat across boards
+    board_fb = pcb.faceplate_board(pr, fb, part_info(pages[1:]), circuit)
+    board_mb = pcb.main_board(pr, mb, part_info(pages[:1]), circuit)
     pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
                + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb, circuit))
     for b in pcb_bad:
