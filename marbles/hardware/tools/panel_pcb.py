@@ -11,7 +11,9 @@ layer: x to the right, y up, origin at the panel's bottom-left corner.
                  dots as small rings, X-mode bar icons, button rings
   copper band    a copper fill on the top layer under a solder-mask opening of
                  the same shape (bare ENIG gold); the output labels sit on it
-                 as silkscreen
+                 as silkscreen. Both leave a 0.4 mm ring of masked board
+                 around each hole through the band (DRC: copper 0.3 mm from
+                 a slot region)
 
 Text uses EasyEDA's default stroke font; centring is estimated, so nudge a
 label in the editor if it sits off. Nothing electrical: the panel has no
@@ -197,9 +199,11 @@ class PanelBoard:
         for jack in ("J1", "J12"):
             self.text(pos[jack][2], pos[jack][3] - A["nut"] - 1.6, "CLOCK", 2.2)
         self.text(pos["J5"][2], pos["J5"][3] - A["nut"] - 1.6, "DEJA VU", 2.2)
-        # copper band and the output labels on it
+        # copper band, cleared around the holes through it, and the output labels on it
         jy = pos["J9"][3]
-        self.band(3.6, jy - 8.6, W - 7.2, 14.4, 1.4)
+        (x, y, w, h, rx), cuts = panel.band(pos)
+        self.band(x, y, w, h, rx)
+        self.cuts = [(*self.P(cx, cy), r) for cx, cy, r in cuts]
         for ref in panel.OUTPUTS:
             x = pos[ref][2]
             main, sub = panel.OUT_LABELS[ref]
@@ -218,10 +222,18 @@ class PanelBoard:
                              "PREFERENCE", "LAYER_PHYS", "RULE", "PANELIZE"):
                 d.add(h["type"], h["id"], p)
 
-        def fill(layer, path):
+        def fill(layer, *paths):
             d.add("FILL", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": layer, "width": 1,
-                                    "fillStyle": "SOLID", "path": [path], "locked": False, "zIndex": d.zi(),
+                                    "fillStyle": "SOLID", "path": list(paths), "locked": False, "zIndex": d.zi(),
                                     "isBridgingCopper": False, "networkList": [], "refs": []})
+
+        def cutout(x, y, r):
+            """A counter-clockwise circle. EasyEDA combines a fill's paths with the nonzero rule, so inside
+            the clockwise outline drawn by rounded() it is a hole."""
+            path = [mil(x + r), mil(y)]
+            for px, py in ((x, y + r), (x - r, y), (x, y - r), (x + r, y)):
+                path += ["ARC", 90, mil(px), mil(py)]
+            return path
 
         def rounded(x, y, w, h, r):
             """Rounded rectangle from its top-left (y up) as lines and clockwise 90-degree arcs.
@@ -242,8 +254,8 @@ class PanelBoard:
         for x, y, w, h in self.slots:
             fill(12, rounded(x - w / 2, y + h / 2, w, h, h / 2))
         for x, y, w, h, rx in self.copper:        # (x, y) is the band's top-left in the PCB frame
-            for layer in (1, 5):                  # top copper, top solder mask opening
-                fill(layer, rounded(x, y, w, h, rx))
+            for layer in (1, 5):                  # top copper, top solder mask opening; mask stays on the clearances
+                fill(layer, rounded(x, y, w, h, rx), *(cutout(*c) for c in self.cuts))
         d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 11, "width": 10,
                                 "path": ["R", 0, mil(self.H), mil(self.W), mil(self.H), 0, 0], "locked": False,
                                 "zIndex": d.zi(), "polyType": "BOARD_OUTLINE"})
@@ -277,6 +289,9 @@ class PanelBoard:
 
         for x, y, w, h, rx in self.copper:
             dr.rounded_rectangle([P(x, y), P(x + w, y - h)], radius=rx * scale, fill="#c9a227")
+        for x, y, r in self.cuts:
+            X, Y = P(x, y)
+            dr.ellipse([X - r * scale, Y - r * scale, X + r * scale, Y + r * scale], fill="#141414")
         for pts, w in self.silk_lines:
             dr.line([P(*p) for p in pts], fill="#f0efe9", width=max(1, int(w * scale)))
         for p0, sweep, p1, w, (cx, cy, r, b0, b1) in getattr(self, "arcs", []):   # panel frame, from 12 o'clock

@@ -133,11 +133,28 @@ OUTPUTS = ["J9", "J10", "J11", "J16", "J13", "J14", "J15"]
 OUT_LABELS = {"J9": ("t", "1"), "J10": ("t", "2"), "J11": ("t", "3"), "J16": ("Y", ""), "J13": ("X", "1"),
               "J14": ("X", "2"), "J15": ("X", "3")}
 KNOB_TO_JACK = {"RV1": "J2", "RV3": "J4", "RV8": "J8", "RV6": "J6", "RV2": "J3", "RV7": "J7"}   # dotted guides
+BAND_CLEAR = 0.4      # bare board (under black mask) between the copper band and a hole through it; DRC asks 0.3
 # labels printed beside the bipolar buttons, in press order (green, orange, red)
 MODE_LABELS = {"SW2": ("COIN", "RATIO", "DRUMS"), "SW3": ("\u00f74", "\u00d71", "\u00d74"),
                "SW6": ("+2", "+5", "\u00b15")}
 LABEL_COLOURS = ("#4bd36a", "#f0a030", "#e04040")
 LENGTHS = ("1", "2", "3", "4", "6", "8", "12", "16")
+
+
+def band(pos):
+    """The bare-copper output band, (x, y, w, h, rx) from its top-left in the panel frame, and the
+    holes through it as clearance circles (x, y, r): copper and mask opening both leave them out."""
+    jy = pos["J9"][3]
+    # 2.6 from the sides and 9.4 above the jacks, so the LED clearances leave 0.85 mm of copper outside them
+    x, y, w, h = 2.6, jy - 9.4, PANEL_W - 5.2, 15.2
+    cuts = []
+    for kind, label, hx, hy in pos.values():
+        r = HOLE[kind] / 2 + BAND_CLEAR
+        if x - r < hx < x + w + r and y - r < hy < y + h + r:
+            if not (x + r < hx < x + w - r and y + r < hy < y + h - r):
+                raise ValueError(f"the hole at ({hx:.2f}, {hy:.2f}) crosses the edge of the output band")
+            cuts.append((hx, hy, r))
+    return (x, y, w, h, 1.4), cuts
 
 
 def _arc(cx, cy, r, a0, a1):
@@ -263,7 +280,10 @@ def write_artwork(feats, path):
     # -- bare copper: the output band with its labels knocked out
     s.append('<g id="copper">')
     jy = pos["J9"][3]
-    s.append(f'<rect x="3.6" y="{jy - 8.6:.2f}" width="{W - 7.2:.2f}" height="14.4" rx="1.4" class="copper"/>')
+    (bx, by, bw, bh, brx), cuts = band(pos)
+    s.append(f'<rect x="{bx}" y="{by:.2f}" width="{bw:.2f}" height="{bh}" rx="{brx}" class="copper"/>')
+    for x, y, r in cuts:                  # copper clearance around the holes, under black mask
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r:.2f}" class="cu-text"/>')
     for ref in OUTPUTS:
         x = pos[ref][2]
         main, sub = OUT_LABELS[ref]
