@@ -1,94 +1,296 @@
-"""Stereo mixer schematic as an EasyEDA Pro project (.epro2), plus PNG previews.
+"""The stereo mixer as an EasyEDA Pro project (.epro2): schematic pages,
+both PCBs placed, and the panel PCB.
 
-The netlist is netlist.py. The file format, library loading, connectivity
-check and preview renderer come from Plaitsy's exporter
-(plaitsy/hardware/tools/easyeda_export.py), so both projects stay alike.
+Builds on the Plaitsy stripboard exporter (../../../plaitsy/hardware/tools)
+for the file format, the connectivity check and the previews, the way
+Marblesy and Plaitsy do. Library parts come from two caches of your
+MorrisSynth export: plaitsy/hardware/easyeda/morrissynth-parts.epru
+(TL074ACN symbol, WQP518MA jack, PTV09A pot symbol, LR1F resistors, FG28 /
+SR305 capacitors, 1N4148, 1N5819, net ports, ground flag, sheet frame) and
+stereo-mixer-parts.epru next to this project (LR1F 10R, the 178MU0033
+10 uF, the 2x8 box header). Drawn or generated here, in the same style
+and with real pin numbers:
 
-Parts are your MorrisSynth library parts: TL074ACN, the WQP518MA jack,
-PTV09A pots (A100K and B10K), the ATE1D toggle, LR1F resistors, FG28
-capacitors, the 178MU0033 10 uF electrolytic, 1N5819, the 2x8 2.54 mm box
-header (DC3-2.54-16PAS), the net ports, the ground flag and the sheet frame.
-Values the library lacks (100k, 200k, 300k and 22 pF) are new devices on the
-same symbols and footprints. Two parts are not in the library and are drawn
-here in the same style, one unit per gang or pole and without a footprint:
-the 9 mm dual-gang pot and the ATE2D-2M3-10-Z DPDT toggle.
+  footprints  DIP-14 on the standard 7.62 mm row pitch (the TL074ACN library
+              footprint has its rows 8.89 mm apart, too wide for a socket),
+              DIP-4, Alpha 9 mm single and dual-gang pots (lugs on the shaft
+              line, as on the Alpha part; the library PTV09A is Bourns'),
+              the Thonk LED button, standing resistors, 1xN headers
+  symbols     CD4013, CD4093, AQY212EH (LED and switch as two units), the
+              dual-gang pot (one unit per gang, lugs on gang A), LED button,
+              headers
 
-Three A3 pages: mono channels, stereo channels and inputs, buses with the
-master, outputs and power. Net ports with the same name connect.
+Pages: main board (mono channels; stereo channels, buses and outputs; mute
+latch; power and headers), faceplate (jacks and pots; dual pots, buttons
+and headers), panel note. Net ports with the same name connect within a
+board; nets that cross between the boards are the header pins.
 
-Run from hardware/tools:  python easyeda_export.py
+Run from stereo-mixer/hardware/tools:  python easyeda_export.py
 """
 import collections
+import importlib.util
 import os
 import sys
-import time
-import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PLAITSY_TOOLS = os.path.normpath(os.path.join(HERE, "..", "..", "..", "plaitsy", "hardware", "tools"))
-sys.path.insert(0, PLAITSY_TOOLS)
-import easyeda_export as ee  # noqa: E402  Plaitsy's exporter
-sys.path.remove(PLAITSY_TOOLS)
+PLAITSY = os.path.normpath(os.path.join(HERE, "..", "..", "..", "plaitsy", "hardware", "tools"))
+sys.path.insert(0, PLAITSY)
+import easyeda_export as ee                      # noqa: E402  (the Plaitsy stripboard exporter)
+sys.path.remove(PLAITSY)
 
-from netlist import Part, all_parts, SECTION, MONO, STEREO, opamp_of  # noqa: E402
+from easyeda_export import (Doc, Symbol, Page, Project, meta, attr_payload, Y, render, check,   # noqa: E402
+                            new_uuid, W, H, H_TXT, V_TXT)
+
+LIBFILES = [os.path.join(PLAITSY, "..", "easyeda", "morrissynth-parts.epru"),
+            os.path.join(HERE, "..", "easyeda", "stereo-mixer-parts.epru")]
+
+
+def _load(name):
+    spec = importlib.util.spec_from_file_location("mixer_" + name, os.path.join(HERE, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+circuit = _load("circuit")
+pcb = _load("pcb")
+panel_pcb = _load("panel_pcb")
+SECTION = circuit.SECTION
 
 NAME = "StereoMixer"
-LIBFILE = os.path.join(HERE, "..", "easyeda", "stereo-mixer-parts.epru")
-OUT = os.path.join(HERE, "..", "easyeda", f"{NAME}.epro2")
-PREVIEW = os.path.join(HERE, "..", "easyeda", "stereo-mixer-{}.png")
-Y = ee.Y
+OUT = os.path.join(HERE, "..", "easyeda", "StereoMixer.epro2")
+PREVIEW = os.path.join(HERE, "..", "easyeda", "stereo-mixer-easyeda-{}.png")
+MIL = 1 / 0.0254   # footprint units are mil
 
-# ---------------------------------------------------------------- library
+# Library devices used as they are (uuids from the two caches)
 DEV = {
     "R1k": "c82a8167f1d84133bc542e652bd22433",       # LR1F1K0
     "R10k": "a9cc8fbe474242dc9110194515734c75",      # LR1F10K
     "R10R": "94e97e59e04b421d92158c6257818225",      # LR1F10R
     "C100n": "2eb0447475ac403680fd2b11e4f4c945",     # FG28X7R1H104KNT00
+    "C1u": "bf1fe821a3774bf48d0873f872221180",       # SR305C105KAR
     "C10u": "21e4ec8defc34a489f66b07134d13cd6",      # 178MU0033, 10 uF 35 V
-    "TL074": "ad23edee5d134c14aa92ae80bedf6b28",     # TL074ACN
-    "JACK": "f4a247c302d346488553de1a1eb440e9",      # WQP-WQP518MA
-    "POTA100k": "0726d333c10d472fbc05151d7c976765",  # PTV09A-4030F-A104
-    "POTB10k": "be9d2c8f5f814271a402f956f18b56f9",   # PTV09A-4025F-B103
-    "SPDT": "af39adda35bb44bdb6f208544413d6a4",      # ATE1D-2M3-10-Z
-    "HDR": "bbe47e9fd91b42bbaf0d36b9504a3a5e",       # DC3-2.54-16PAS (IDC-TH_16P-P2.54_C3406)
-    "D5819": "f1e2836d6b9a4bf1bb0838127f6aa231",     # 1N5819_C49318088
+    "TL074": "ad23edee5d134c14aa92ae80bedf6b28",     # TL074ACN (its symbol; footprint replaced below)
+    "JACK": "f4a247c302d346488553de1a1eb440e9",      # WQP-WQP518MA (Thonkiconn)
+    "POT": "be9d2c8f5f814271a402f956f18b56f9",       # PTV09A-4025F-B103 (its symbol)
+    "D5819": "f1e2836d6b9a4bf1bb0838127f6aa231",     # 1N5819
+    "HDR16": "bbe47e9fd91b42bbaf0d36b9504a3a5e",     # DC3-2.54-16PAS, 2x8 box header
     "GND": "eec77ec4c1d94de692d165be3817a3c4",       # Ground-GND
     "IN": "6a70cfa1bc80484e8decf4f8a0b61a9e",        # Netport-IN
     "OUT": "7956696325094941b2d15526d9c13967",       # Netport-OUT
     "FRAME": "93ae535dda0d4cce9b643bf06fbcd5ca",     # Drawing-Symbol_A4
 }
 ee.DEV = DEV          # Page._flag looks the ground flag up here
-R_NEW = {"100k": ("LR1F100K", "100kΩ"), "200k": ("LR1F200K", "200kΩ"), "300k": ("LR1F300K", "300kΩ")}
+D1N4148 = "c0160a3f74384e849dc1cc5a24d54846"      # library 1N4148: its DO-35 footprint and attributes
+R_NEW = {"100k": ("LR1F100K", "100kΩ"), "200k": ("LR1F200K", "200kΩ"), "300k": ("LR1F300K", "300kΩ"),
+         "1k5": ("LR1F1K5", "1.5kΩ")}
 C_NEW = {"22p": ("FG28C0G1H220JNT00", "22pF")}
 
+# ---------------------------------------------------------------- footprints
+LAYERS = [(1, "TOP", "Top Layer", "#FF0000", "#7F0000"), (2, "BOTTOM", "Bottom Layer", "#0000FF", "#00007F"),
+          (3, "TOP_SILK", "Top Silkscreen Layer", "#FFCC00", "#7F6600"),
+          (4, "BOT_SILK", "Bottom Silkscreen Layer", "#66CC33", "#336619"),
+          (7, "TOP_PASTE_MASK", "Top Paste Mask Layer", "#808080", "#404040"),
+          (8, "BOT_PASTE_MASK", "Bottom Paste Mask Layer", "#800000", "#400000"),
+          (5, "TOP_SOLDER_MASK", "Top Solder Mask Layer", "#800080", "#400040"),
+          (6, "BOT_SOLDER_MASK", "Bottom Solder Mask Layer", "#AA00FF", "#55007F"),
+          (13, "DOCUMENT", "Document Layer", "#FFFFFF", "#7F7F7F"),
+          (11, "OUTLINE", "Board Outline Layer", "#FF00FF", "#7F007F"),
+          (12, "MULTI", "Multi-Layer", "#C0C0C0", "#606060")]
 
-def load_library():
-    """The MorrisSynth docs this project needs, cached next to the project."""
-    if not os.path.exists(LIBFILE):
-        with zipfile.ZipFile(ee.EXPORT) as z:
-            name = next(n for n in z.namelist() if n.endswith(".epru"))
-            docs = ee.parse(z.read(name).decode("utf-8").split("\n"))
-        want = set(DEV.values()) | {"BLOB"}
-        for u in DEV.values():
-            a = ee.meta(docs[u])["attributes"]
-            want |= {a["Symbol"]} | ({a["Footprint"]} if a.get("Footprint") else set())
-        os.makedirs(os.path.dirname(LIBFILE), exist_ok=True)
-        with open(LIBFILE, "w", encoding="utf-8", newline="\n") as f:
-            for u, d in docs.items():
-                if u in want:
-                    f.write("\n".join(d["lines"]) + "\n")
-    return ee.parse(open(LIBFILE, encoding="utf-8").read().split("\n"))
+
+class Footprint:
+    """A through-hole footprint in mm; written as an EasyEDA Pro FOOTPRINT doc.
+    Pads are round (or square) with round holes, or oval with slot holes
+    (slot=(w, h)) like the library pots' lugs."""
+
+    def __init__(self, title, designator="U?"):
+        self.title, self.designator = title, designator
+        self.pads, self.silk = [], []
+        self.doc = Doc("FOOTPRINT")
+
+    def pad(self, num, x, y, hole=1.0, size=1.7, square=False, h=None, slot=None):
+        self.pads.append((str(num), x, y, hole, size, h or size, square, slot))
+
+    def line(self, x1, y1, x2, y2):
+        self.silk.append(("L", (x1, y1, x2, y2)))
+
+    def rect(self, x1, y1, x2, y2):
+        for a, b in (((x1, y1), (x2, y1)), ((x2, y1), (x2, y2)), ((x2, y2), (x1, y2)), ((x1, y2), (x1, y1))):
+            self.line(*a, *b)
+
+    def circle(self, x, y, r):
+        self.silk.append(("C", (x, y, r)))
+
+    def build(self):
+        d = self.doc
+        for i, (lid, typ, name, c1, c2) in enumerate(LAYERS):
+            d.add("LAYER", f'["LAYER",{lid}]', {"layerType": typ, "layerName": name, "use": True, "show": True,
+                                                 "locked": False, "activeColor": c1, "activateTransparency": 1,
+                                                 "inactiveColor": c2, "inactiveTransparency": 1})
+        d.add("ACTIVE_LAYER", "ACTIVE_LAYER", {"layerId": 1})
+        d.add("CANVAS", "CANVAS", {"originX": 0, "originY": 0, "unit": "mm", "gridXSize": 10, "gridYSize": 10,
+                                   "snapXSize": 10, "snapYSize": 10, "gridType": "NONE", "multiGridType": "NONE",
+                                   "highlightValue": 0.5})
+        m = lambda v: round(v * MIL, 3)   # noqa: E731
+        for kind, data in self.silk:
+            if kind == "L":
+                x1, y1, x2, y2 = data
+                path = [m(x1), m(y1), "L", m(x2), m(y2)]
+            else:
+                x, y, r = data
+                path = ["CIRCLE", m(x), m(y), m(r)]
+            d.add("POLY", d.nid(), {"groupId": 0, "netName": "", "layerId": 3, "width": 8, "path": path,
+                                    "locked": False, "zIndex": d.zi(), "polyType": "NORMAL"})
+        for num, x, y, hole, pw, ph, square, slot in self.pads:
+            if slot:
+                pad = {"padType": "OVAL", "width": m(pw), "height": m(ph)}
+                hl = {"holeType": "SLOT", "width": m(slot[0]), "height": m(slot[1])}
+            else:
+                pad = {"padType": "RECT", "width": m(pw), "height": m(ph), "radius": 0} if square else \
+                      {"padType": "ELLIPSE", "width": m(pw), "height": m(ph)}
+                hl = {"holeType": "ROUND", "width": m(hole), "height": m(hole)}
+            d.add("PAD", d.nid(), {"groupId": 0, "netName": "", "layerId": 12, "num": num, "centerX": m(x),
+                                   "centerY": m(y), "padAngle": 0, "hole": hl,
+                                   "defaultPad": pad, "specialPad": [], "padOffsetX": 0, "padOffsetY": 0,
+                                   "relativeAngle": 0, "plated": True, "padType": "NORMAL",
+                                   "topSolderExpansion": None, "bottomSolderExpansion": None,
+                                   "topPasteExpansion": None, "bottomPasteExpansion": None, "locked": False,
+                                   "zIndex": d.zi(), "connectMode": None, "spokeSpace": None, "spokeWidth": None,
+                                   "spokeAngle": None, "padLen": 0})
+        for key, val in (("Footprint", self.title), ("Designator", self.designator)):
+            d.add("ATTR", d.nid(), {"groupId": 0, "parentId": "", "layerId": 3, "x": None, "y": None, "key": key,
+                                    "value": val, "keyVisible": False, "valueVisible": False,
+                                    "fontFamily": "default", "fontSize": 67.5, "strokeWidth": 6, "bold": False,
+                                    "italic": False, "origin": "LEFT_BOTTOM", "angle": 0, "reverse": False,
+                                    "expansion": 0, "mirror": False, "locked": False, "zIndex": d.zi()})
+        d.add("NET", '["NET",""]', {"netType": None, "specialColor": None, "retLine": True, "differentialName": None,
+                                    "isPositiveNet": False, "equalLengthGroupName": None})
+        return d.lines({"title": self.title, "description": "", "tags": [NAME],
+                        "source": f"{new_uuid()}|{ee.USER['uuid']}"})
+
+
+def fp_header(n):
+    f = Footprint(f"HDR-1x{n}-P2.54", "H?")
+    x0 = -(n - 1) * 1.27
+    for i in range(n):
+        f.pad(i + 1, x0 + i * 2.54, 0, 1.0, 1.7, square=(i == 0))
+    f.rect(x0 - 1.27, -1.27, x0 + (n - 1) * 2.54 + 1.27, 1.27)
+    return f
+
+
+def fp_led_button():
+    """Thonk low-profile LED button (the Plaitsy footprint): switch pins 1-4
+    on a 5.08 mm square (1+2 and 3+4 are the contacts), LED anode 5 and
+    cathode 6 at x = +-2.7. No holes for the plastic feet: clip them off."""
+    f = Footprint("SW-TACT-LP-LED-THONK", "SW?")
+    for num, (x, y) in ((1, (2.54, 2.54)), (2, (-2.54, 2.54)), (3, (2.54, -2.54)), (4, (-2.54, -2.54)),
+                        (5, (2.7, 0)), (6, (-2.7, 0))):
+        f.pad(num, x, y, 1.0, 1.6, square=(num == 1))
+    f.rect(-3.75, -3.75, 3.75, 3.75)
+    f.circle(0, 0, 2.75)
+    return f
+
+
+def fp_res_vertical():
+    """A resistor standing up, 2.54 mm: the body over pad 1, the bent lead to pad 2 (the Plaitsy footprint)."""
+    f = Footprint("RES-TH-VERTICAL-P2.54", "R?")
+    f.pad(1, 0, 0.48006, 0.8, 1.6)
+    f.pad(2, 0, -2.0574, 0.8, 1.6)
+    f.circle(0, 0.48006, 1.1)
+    f.line(0, -0.79, 0, -1.11)
+    return f
+
+
+def fp_dip(n, title):
+    """DIP on the standard 300 mil (7.62 mm) row pitch, pin 1 bottom-left, counting anticlockwise."""
+    f = Footprint(title, "U?")
+    half = n // 2
+    x0 = -(half - 1) * 1.27
+    for i in range(half):
+        f.pad(i + 1, x0 + i * 2.54, -3.81, 0.9, 1.6, square=(i == 0))
+        f.pad(n - i, x0 + i * 2.54, 3.81, 0.9, 1.6)
+    hx = half * 1.27 + (0.7 if half > 2 else -0.24)      # body: 19.2 mm long for DIP-14, 4.6 for DIP-4
+    hy = 3.25                                            # 6.5 mm wide
+    f.rect(-hx, -hy, hx, hy)
+    f.circle(-hx + 0.9, -hy + 0.9, 0.3)
+    return f
+
+
+def fp_alpha_pot(dual):
+    """Alpha 9 mm vertical pot, single (RD901F) or dual-gang (RD902F), in the
+    frame of the library PTV09A footprint: pins 1-3 at y = -3.5, x = -2.5 /
+    0 / 2.5, the shaft 7.5 mm from them at y = +4.0, the two mounting lugs on
+    the shaft line (KiCad: +-4.8 single, +-4.75 dual) as oval pads with
+    slots. The dual's second gang (pins 4-6) is the row 2.5 mm further from
+    the shaft. Lugs are pads 4 / 5 (single) or 7 / 8 (dual)."""
+    f = Footprint("POT-ALPHA-9MM-" + ("RD902F-DUAL" if dual else "RD901F"), "RV?")
+    for i, x in enumerate((-2.5, 0.0, 2.5)):
+        f.pad(i + 1, x, -3.5, 1.0, 1.8, square=(i == 0))
+        if dual:
+            f.pad(i + 4, x, -6.0, 1.0, 1.8)
+    lx = 4.75 if dual else 4.8
+    lugs = ("7", "8") if dual else ("4", "5")
+    for num, x in zip(lugs, (-lx, lx)):
+        f.pad(num, x, 4.0, size=2.7, h=3.2, slot=(1.1, 1.8))
+    f.rect(-4.75, -2.5, 4.75, 8.85)       # body, 9.5 wide, from 1 mm off the pin row to 4.85 mm past the shaft
+    f.circle(0, 4.0, 3.5)
+    return f
+
+
+# ------------------------------------------------------------------ symbols
+def ic_symbol(title, part_id, left, right, designator="U?", w=50):
+    """Rectangular IC symbol; left/right = [(row, num, name)], rows 10 apart."""
+    rows = max([r for r, _, _ in left + right]) + 1
+    half = rows * 5
+    s = Symbol(title, part_id, designator, [NAME])
+    s.rect(-w, -half - 5, w, half + 5)
+    for row, num, name in left:
+        s.pin(num, name, -w - 10, -half + 5 + 10 * row, 0, show=True, edge=-w)
+    for row, num, name in right:
+        s.pin(num, name, w + 10, -half + 5 + 10 * row, 180, show=True, edge=w)
+    return s
+
+
+def cd4013_symbol():
+    left = [(0, "5", "D1"), (1, "3", "CLK1"), (2, "6", "SET1"), (3, "4", "RST1"),
+            (5, "9", "D2"), (6, "11", "CLK2"), (7, "8", "SET2"), (8, "10", "RST2")]
+    right = [(0, "1", "Q1"), (1, "2", "/Q1"), (5, "13", "Q2"), (6, "12", "/Q2"), (8, "14", "VDD"), (9, "7", "VSS")]
+    return ic_symbol("CD4013B", "CD4013.1", left, right)
+
+
+def cd4093_symbol():
+    left = [(0, "1", "A1"), (1, "2", "B1"), (2, "5", "A2"), (3, "6", "B2"), (4, "8", "A3"), (5, "9", "B3"),
+            (6, "12", "A4"), (7, "13", "B4")]
+    right = [(0, "3", "Y1"), (2, "4", "Y2"), (4, "10", "Y3"), (6, "11", "Y4"), (8, "14", "VDD"), (9, "7", "VSS")]
+    return ic_symbol("CD4093B", "CD4093.1", left, right)
+
+
+def led_button_symbol():
+    """Tactile switch with a built-in LED: contacts 1+2 and 3+4, LED on 5 and 6."""
+    left = [(0, "1", "1"), (1, "2", "2"), (3, "5", "LED A")]
+    right = [(0, "3", "3"), (1, "4", "4"), (3, "6", "LED K")]
+    return ic_symbol("LED button", "SWLED.2", left, right, designator="SW?")
+
+
+def header_symbol(n):
+    s = Symbol(f"Pin header 1x{n}", f"HDR{n}.2", "H?", [NAME])
+    half = n * 5
+    s.rect(-10, -half - 5, 10, half + 5)
+    for i in range(n):
+        s.pin(str(i + 1), str(i + 1), -20, -half + 5 + 10 * i, 0, show=True, edge=-10)
+    return s
 
 
 class MultiSymbol:
-    """A symbol with several units (gangs, poles), in the library's style."""
+    """A symbol with several units (gangs, poles, LED / switch), in the library's style."""
 
     def __init__(self, title, prefix, designator, units, tags=()):
         self.title, self.designator, self.tags = title, designator, list(tags)
         self.parts = [f"{prefix}.{i + 1}" for i in range(units)]
         self.items = {p: [] for p in self.parts}
         self.cur = self.parts[0]
-        self.doc = ee.Doc("SYMBOL")
+        self.doc = Doc("SYMBOL")
 
     def unit(self, n):
         self.cur = self.parts[n - 1]
@@ -118,9 +320,9 @@ class MultiSymbol:
             d.add("PART", part, {"BBOX": self.bbox(part), "title": part})
         style = {"strokeColor": None, "strokeStyle": None, "fillColor": None, "strokeWidth": None, "fillStyle": None}
         for part in self.parts:
-            d.add("ATTR", d.nid(), ee.attr_payload(d.zi(), "", "Symbol", self.title, align="LEFT_BOTTOM", part=part))
-            d.add("ATTR", d.nid(), ee.attr_payload(d.zi(), "", "Designator", self.designator, align="LEFT_BOTTOM",
-                                                   part=part))
+            d.add("ATTR", d.nid(), attr_payload(d.zi(), "", "Symbol", self.title, align="LEFT_BOTTOM", part=part))
+            d.add("ATTR", d.nid(), attr_payload(d.zi(), "", "Designator", self.designator, align="LEFT_BOTTOM",
+                                                part=part))
             for t, it in self.items[part]:
                 if t == "POLY":
                     d.add("POLY", d.nid(), {"partId": part, "groupId": "", "locked": False, "zIndex": d.zi(),
@@ -143,20 +345,21 @@ class MultiSymbol:
                         nx, ny = x + (length / 2 if rot == 0 else -length / 2) - 2, y - 1
                     else:                  # beside the middle of a vertical pin
                         nx, ny = x + 2, y + (length / 2 if rot == 270 else -length / 2) + 3
-                    d.add("ATTR", d.nid(), ee.attr_payload(d.zi(), pid, "Pin Name", name, x=x, y=y,
-                                                           align="LEFT_BOTTOM", part=part))
-                    d.add("ATTR", d.nid(), ee.attr_payload(d.zi(), pid, "Pin Number", num, vv=True, x=nx, y=ny,
-                                                           fs=6, align="LEFT_BOTTOM", part=part))
-                    d.add("ATTR", d.nid(), ee.attr_payload(d.zi(), pid, "Pin Type", "Undefined", x=x, y=y,
-                                                           align="LEFT_BOTTOM", part=part))
-        source = f"{ee.new_uuid()}|{ee.USER['uuid']}"
+                    d.add("ATTR", d.nid(), attr_payload(d.zi(), pid, "Pin Name", name, x=x, y=y,
+                                                        align="LEFT_BOTTOM", part=part))
+                    d.add("ATTR", d.nid(), attr_payload(d.zi(), pid, "Pin Number", num, vv=True, x=nx, y=ny,
+                                                        fs=6, align="LEFT_BOTTOM", part=part))
+                    d.add("ATTR", d.nid(), attr_payload(d.zi(), pid, "Pin Type", "Undefined", x=x, y=y,
+                                                        align="LEFT_BOTTOM", part=part))
+        source = f"{new_uuid()}|{ee.USER['uuid']}"
         return d.lines({"title": self.title, "description": "", "tags": self.tags, "docType": 2, "source": source})
 
 
 def dual_pot_symbol():
-    """Two gangs drawn like the library pot standing up: CW end on top,
-    CCW end below, wiper from the right. Gang A pins 3/2/1, gang B 6/5/4."""
-    s = MultiSymbol("Pot 9mm dual-gang", "POT_DUAL", "RV?", 2, ["StereoMixer"])
+    """Two gangs drawn like the library pot standing up: CW end on top, CCW
+    end below, wiper from the right. Gang A pins 3/2/1 with the two mounting
+    lugs 7 / 8 on its left, gang B 6/5/4."""
+    s = MultiSymbol("Pot 9mm dual-gang", "POT_DUAL", "RV?", 2, [NAME])
     for unit, (cw, w, ccw, letter) in enumerate((("3", "2", "1", "A"), ("6", "5", "4", "B")), start=1):
         s.unit(unit)
         s.poly([(0, -12), (3, -10), (-3, -6), (3, -2), (-3, 2), (3, 6), (-3, 10), (0, 12)])
@@ -166,50 +369,125 @@ def dual_pot_symbol():
         s.pin(cw, "CW", 0, -20, 270, 8)
         s.pin(ccw, "CCW", 0, 20, 90, 8)
         s.pin(w, "W", 20, 0, 180, 10)
+        if unit == 1:
+            s.poly([(-14, -14), (-14, 14)])
+            s.pin("7", "MT", -30, -10, 0, 16)
+            s.pin("8", "MT", -30, 10, 0, 16)
     return s
 
 
-def dpdt_symbol():
-    """Two poles: throws on the left (upper, lower), common on the right.
-    Pole A pins 1/3 and common 2, pole B 4/6 and common 5."""
-    s = MultiSymbol("Toggle DPDT on-on", "DPDT", "SW?", 2, ["StereoMixer"])
-    for unit, (up, com, low, letter) in enumerate((("1", "2", "3", "A"), ("4", "5", "6", "B")), start=1):
-        s.unit(unit)
-        s.poly([(12, 0), (-10, -8)])
-        s.poly([(-12, -12), (-12, -8)])
-        s.poly([(-12, 8), (-12, 12)])
-        s.poly([(12, -2), (12, 2)])
-        s.text(-2, 13, letter, 8)
-        s.pin(up, "1", -20, -10, 0, 8)
-        s.pin(low, "3", -20, 10, 0, 8)
-        s.pin(com, "C", 20, 0, 180, 8)
+def photomos_symbol():
+    """AQY212EH as two units: the LED (1 anode on top, 2 cathode below) and the
+    switch (3 on top, 4 below)."""
+    s = MultiSymbol("AQY212EH", "AQY212", "K?", 2, [NAME])
+    s.unit(1)
+    s.poly([(-5, -4), (5, -4), (0, 4), (-5, -4)], closed=True)
+    s.poly([(-5, 4), (5, 4)])
+    s.poly([(7, -2), (11, 2)])
+    s.poly([(7, 2), (11, 6)])
+    s.pin("1", "A", 0, -20, 270, 16)
+    s.pin("2", "K", 0, 20, 90, 16)
+    s.unit(2)
+    s.poly([(0, -12), (0, -6)])
+    s.poly([(0, 6), (0, 12)])
+    s.poly([(0, 6), (-6, -5)])
+    s.poly([(-12, -2), (-8, 2)])
+    s.poly([(-12, 2), (-8, 6)])
+    s.pin("3", "D", 0, -20, 270, 8)
+    s.pin("4", "D", 0, 20, 90, 8)
     return s
 
 
-class MixerProject(ee.Project):
-    def __init__(self):  # noqa: super().__init__ would load Plaitsy's library
-        self.lib = load_library()
+# ------------------------------------------------------------------ project
+RV_KEYS = ["R1k", "R10k", "R10R"] + ["R" + v for v in R_NEW]
+
+
+class MPage(Page):
+    page_count = "6"
+
+    def place(self, ref, dev_key, *args, **kw):
+        if self.title.startswith("Main") and dev_key in RV_KEYS:   # every main-board resistor stands up
+            dev_key += "V"
+        p = super().place(ref, dev_key, *args, **kw)
+        # remember the schematic component id: the PCB's Channel ID attribute points at it
+        self.comps[-1]["cid"] = next(h["id"] for h, _ in reversed(self.doc.recs) if h["type"] == "COMPONENT")
+        return p
+
+    def frame(self):
+        d, pr = self.doc, self.pr
+        cid = d.nid()
+        sym = pr.sym_of("FRAME")
+        d.add("COMPONENT", cid, {"locked": False, "zIndex": d.zi(), "partId": pr.symgeo[sym]["parts"][0],
+                                 "groupId": "", "x": 0, "y": 0, "rotation": 0, "isMirror": False, "attrs": {}})
+        today = ee.time.strftime("%Y-%m-%d")
+        vals = [("Symbol", sym), ("@Project Name", "Stereo Mixer"), ("@Page Count", self.page_count),
+                ("@Update Date", today), ("@Create Date", today), ("@Schematic Name", "Stereo Mixer"),
+                ("@Page No", str(self.number)), ("@Page Name", self.title), ("Company", ""), ("Reviewed", ""),
+                ("Version", "V0.2"), ("Page Size", "A3"), ("Drawn", ""), ("Name", ""), ("@Create Time", ""),
+                ("@Update Time", ""), ("Border", "1"), ("Width", W), ("Height", H), ("Region Start", "1"),
+                ("X Region Count", "6"), ("Y Region Count", "4"), ("Blade Width", "10"), ("Color", ""),
+                ("Title Block Position", "3"), ("Title Block", "1"), ("@Board Name", "Stereo Mixer"),
+                ("Footprint", ""), ("Description", ""), ("Device", DEV["FRAME"])]
+        for k, v in vals:
+            d.add("ATTR", d.nid(), attr_payload(d.zi(), cid, k, v))
+
+    def flag(self, x, y, rot, net):
+        """Ground-style flag carrying a named net (GND_F)."""
+        self._flag("GND", x, y, rot, net, True)
+
+    def stub_flag(self, pin, net, direction="down", length=10):
+        x, y = pin
+        end = {"down": (x, y + length), "right": (x + length, y), "left": (x - length, y), "up": (x, y - length)}
+        x2, y2 = end[direction]
+        self.wire([(x, y), (x2, y2)], net)
+        self.flag(x2, y2, {"down": 0, "right": 90, "left": 270, "up": 180}[direction], net)
+
+
+class MProject(Project):
+    def __init__(self):     # noqa: super().__init__ would load only Plaitsy's library
+        self.lib = {}
+        for f in LIBFILES:
+            self.lib.update(ee.parse(open(f, encoding="utf-8").read().split("\n")))
         self.symgeo = {u: ee.symbol_geometry(d) for u, d in self.lib.items() if d["docType"] == "SYMBOL"}
-        self.devices = {k: (u, ee.meta(self.lib[u])) for k, u in DEV.items()}
+        self.devices = {k: (u, meta(self.lib[u])) for k, u in DEV.items()}
         self.new_docs = []
         self.uids, self.next_uid = {}, 2
         self._new_devices()
 
     def device_attrs(self, key):
-        a = self.devices[key][1]["attributes"]
-        if key == "POTA100k":         # the library device has an empty Name; show its value in previews
-            a = dict(a, Name="={Value}")
-        return a
+        return self.devices[key][1]["attributes"]
+
+    def _footprint(self, fp):
+        lines = fp.build()
+        self.new_docs.append(("FOOTPRINT", lines))
+        return fp.doc.uuid
+
+    def footprint_geo(self, uid):
+        """Pads and body box of a library or generated footprint, by uuid."""
+        if not hasattr(self, "_fpgeo"):
+            self._fpgeo = {}
+            docs = {u: d for u, d in self.lib.items() if d["docType"] == "FOOTPRINT"}
+            for typ, lines in self.new_docs:
+                if typ == "FOOTPRINT":
+                    docs.update(ee.parse(lines))
+            for u, d in docs.items():
+                self._fpgeo[u] = pcb.footprint_geometry(d)
+        return self._fpgeo[uid]
+
+    def _copy(self, key, src, title, tags, **changes):
+        a = dict(self.device_attrs(src))
+        a.update(changes)
+        self._device(key, title, a, tags)
 
     def _new_devices(self):
-        r1k = ee.meta(self.lib[DEV["R1k"]])["attributes"]
+        r1k = meta(self.lib[DEV["R1k"]])["attributes"]
         for val, (mpn, value) in R_NEW.items():
             a = dict(r1k)
             a.update({"Manufacturer Part": mpn, "Value": value, "Supplier Part": "", "Datasheet": "",
                       "LCSC Part Name": f"Metal film resistor {value} ±1% 600mW",
                       "Description": f"Metal film resistor {value} ±1% 600mW (TE LR1F series)"})
             self._device("R" + val, mpn, a, ["Resistors", "Through Hole Resistors"])
-        c100n = ee.meta(self.lib[DEV["C100n"]])["attributes"]
+        c100n = meta(self.lib[DEV["C100n"]])["attributes"]
         for val, (mpn, value) in C_NEW.items():
             a = dict(c100n)
             a.update({"Manufacturer Part": mpn, "Value": value, "Supplier Part": "", "Datasheet": "",
@@ -217,22 +495,55 @@ class MixerProject(ee.Project):
                       "LCSC Part Name": f"{value} ±5% 50V C0G",
                       "Description": f"Capacitance:{value} Tolerance:±5% Voltage Rating:50V Temperature Coefficient:C0G"})
             self._device("C" + val, mpn, a, ["Capacitors", "Multilayer Ceramic Capacitors MLCC - Leaded"])
+        fps = {"RV": self._footprint(fp_res_vertical()), "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
+               "DIP4": self._footprint(fp_dip(4, "DIP-4-W7.62-P2.54")), "SWLED": self._footprint(fp_led_button()),
+               "POT": self._footprint(fp_alpha_pot(False)), "POT2": self._footprint(fp_alpha_pot(True))}
+        for n in (8, 12):
+            fps[f"HDR{n}"] = self._footprint(fp_header(n))
+        for key in RV_KEYS:                                       # each resistor again, standing up
+            a = self.device_attrs(key)
+            self._copy(key + "V", key, a["Manufacturer Part"], ["Resistors", "Through Hole Resistors"],
+                       Footprint=fps["RV"])
+        a = dict(meta(self.lib[D1N4148])["attributes"])            # its own symbol is not cached: the 1N5819's
+        a["Symbol"] = self.device_attrs("D5819")["Symbol"]
+        self._device("D4148S", "1N4148", a, ["Diodes"])
+        self._copy("TL074N", "TL074", "TL074ACN", ["Amplifiers"], Footprint=fps["DIP14"],
+                   Description="Quad JFET op-amp, DIP-14 on the 7.62 mm row pitch")
+        for value in ("A100k", "B10k"):                           # your pot symbol on the Alpha footprint
+            self._copy("POT" + value, "POT", f"Alpha 9mm {value}", ["Potentiometers"], Footprint=fps["POT"],
+                       Name="={Value}", Value=value, **{"Manufacturer Part": f"Alpha RD901F-40-15R1 {value}",
+                                                        "Supplier Part": "", "Datasheet": "",
+                                                        "Description": f"Alpha 9 mm vertical pot {value}, T18 "
+                                                                       "shaft (Thonk). Pin 3 = CW end"})
+        new = [
+            ("CD4013", cd4013_symbol(), "CD4013B", "U?", fps["DIP14"], "Dual D flip-flop, DIP-14"),
+            ("CD4093", cd4093_symbol(), "CD4093B", "U?", fps["DIP14"], "Quad 2-input Schmitt NAND, DIP-14"),
+            ("SWLED", led_button_symbol(), "LED button, Thonk low profile", "SW?", fps["SWLED"],
+             "Thonk low-profile LED button: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED anode 5, "
+             "cathode 6. Clip the three plastic feet off: the board has no holes for them"),
+        ]
+        for n in (8, 12):
+            new.append((f"HDR{n}", header_symbol(n), f"Pin header 1x{n}", "H?", fps[f"HDR{n}"],
+                        f"Board-to-board header, 1x{n}, 2.54 mm"))
+        for key, sym, title, desig, fp, desc in new:
+            su = self._symbol(sym)
+            attrs = {"Name": "={Manufacturer Part}", "Manufacturer Part": title, "Designator": desig,
+                     "Add into BOM": "yes", "Convert to PCB": "yes", "Symbol": su, "Footprint": fp,
+                     "3D Model": "", "3D Model Title": "", "3D Model Transform": "", "Description": desc}
+            self._device(key, title, attrs)
         su = self._symbol(dual_pot_symbol())
-        for value in ("A100k", "A10k"):
-            self._device("POT2_" + value, f"Pot 9mm dual-gang {value}", {
-                "Name": "={Value}", "Value": value, "Manufacturer Part": f"9mm dual-gang vertical pot {value}",
-                "Designator": "RV?", "Add into BOM": "yes", "Convert to PCB": "yes", "Symbol": su, "Footprint": "",
-                "3D Model": "", "3D Model Title": "", "3D Model Transform": "",
-                "Description": f"9 mm dual-gang vertical pot, {value} (audio taper), e.g. Alpha RD902F series. "
-                               "Gang A pins 1-2-3, gang B 4-5-6, 2 and 5 wipers."})
-        sd = self._symbol(dpdt_symbol())
-        self._device("DPDT", "ATE2D-2M3-10-Z", {
-            "Name": "={Manufacturer Part}", "Manufacturer": "NIDEC COPAL", "Manufacturer Part": "ATE2D-2M3-10-Z",
-            "Supplier": "LCSC", "Supplier Part": "C2921532", "Designator": "SW?", "Add into BOM": "yes",
-            "Convert to PCB": "yes", "Symbol": sd, "Footprint": "", "3D Model": "", "3D Model Title": "",
-            "3D Model Transform": "",
-            "Description": "Toggle switch DPDT on-on, 2.54 mm pins: the two-pole version of the ATE1D. "
-                           "Check the datasheet pinout: poles 1-2-3 and 4-5-6, commons 2 and 5."})
+        self._device("POT2", "Alpha 9mm dual-gang A100k", {
+            "Name": "={Value}", "Value": "A100k", "Manufacturer Part": "Alpha RD902F-40-15R1 A100K",
+            "Designator": "RV?", "Add into BOM": "yes", "Convert to PCB": "yes", "Symbol": su,
+            "Footprint": fps["POT2"], "3D Model": "", "3D Model Title": "", "3D Model Transform": "",
+            "Description": "Alpha 9 mm vertical dual-gang pot, A100K (audio). Gang A pins 1-2-3 (the row nearer "
+                           "the shaft), gang B 4-5-6, wipers 2 and 5, mounting lugs 7 / 8"})
+        su = self._symbol(photomos_symbol())
+        self._device("PHOTOMOS", "AQY212EH", {
+            "Name": "={Manufacturer Part}", "Manufacturer": "Panasonic", "Manufacturer Part": "AQY212EH",
+            "Designator": "K?", "Add into BOM": "yes", "Convert to PCB": "yes", "Symbol": su,
+            "Footprint": fps["DIP4"], "3D Model": "", "3D Model Title": "", "3D Model Transform": "",
+            "Description": "PhotoMOS relay, 1 form A, 60 V 0.5 A, DIP-4: LED 1 (anode) / 2, switch 3 / 4"})
 
     def _symbol(self, sym):
         lines = sym.build()
@@ -240,8 +551,8 @@ class MixerProject(ee.Project):
         self.lib_symbol(sym.doc.uuid, lines)
         return sym.doc.uuid
 
-    def write(self, pages, path):
-        board, sch = ee.Doc("BOARD", ee.new_uuid()[:16]), ee.Doc("SCH")
+    def write(self, boards, path, template):
+        """boards: [(title, pages, pcb.Board)]; each gets a BOARD doc holding its schematic pages and its PCB."""
         used = {u for u, m in self.devices.values()}
         refs = {m["attributes"].get(k) for u, m in self.devices.values() for k in ("Symbol", "Footprint")}
         keep = {"FOOTPRINT": refs, "SYMBOL": refs, "DEVICE": used}
@@ -251,118 +562,90 @@ class MixerProject(ee.Project):
                 if d["docType"] == typ and u in keep[typ]:
                     lines += d["lines"]
             lines += [l for t, ls in self.new_docs if t == typ for l in ls]
-        lines += board.lines({"title": NAME, "zIndex": 1})
-        lines += sch.lines({"title": f"{NAME} Schema", "board": board.uuid, "zIndex": None})
-        for pg in pages:
-            lines += pg.lines(sch.uuid)
-        lines += ee.Doc("CONFIG", "CONFIG").lines({"defaultSheet": ""})
-        lines += [l for u, d in self.lib.items() if d["docType"] == "BLOB" for l in d["lines"]]
+        for k, (title, pages, pcb_board) in enumerate(boards):
+            board, sch = Doc("BOARD", new_uuid()[:16]), Doc("SCH")
+            lines += board.lines({"title": title, "zIndex": k + 1})
+            lines += sch.lines({"title": f"{title} Schema", "board": board.uuid, "zIndex": None})
+            for pg in pages:
+                lines += pg.lines(sch.uuid)
+            lines += pcb_board.doc(ee, template, board.uuid, f"{title} PCB")
+        lines += Doc("CONFIG", "CONFIG").lines({"defaultSheet": ""})
+        lines += next(d for d in self.lib.values() if d["docType"] == "BLOB")["lines"]   # one BLOB doc, both caches have it
         project = {"title": NAME, "cbb_project": False, "editorVersion": ee.EDIT, "introduction": "",
                    "description": "Stereo master mixer for the Eurorack voice case: 6 mono channels with pan, "
-                                  "2 stereo channels, Clouds return, drum input, one send. 4x TL074.",
+                                  "2 stereo channels, LED-button mutes, Clouds send and return, drum input. "
+                                  "4x TL074; two stacked PCBs and a PCB panel, 28HP.",
                    "tags": "[]"}
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        with ee.zipfile.ZipFile(path, "w", ee.zipfile.ZIP_DEFLATED) as z:
             z.writestr("IMAGE/", "")
             z.writestr("project2.json", ee.json.dumps(project, indent=2, ensure_ascii=False))
             z.writestr(f"{NAME}.epru", "\n".join(lines) + "\n")
+        return lines
 
 
-PAGE_COUNT = 3
-
-
-class MixerPage(ee.Page):
-    def frame(self):
-        d, pr = self.doc, self.pr
-        cid = d.nid()
-        sym = pr.sym_of("FRAME")
-        d.add("COMPONENT", cid, {"locked": False, "zIndex": d.zi(), "partId": pr.symgeo[sym]["parts"][0],
-                                 "groupId": "", "x": 0, "y": 0, "rotation": 0, "isMirror": False, "attrs": {}})
-        today = time.strftime("%Y-%m-%d")
-        vals = [("Symbol", sym), ("@Project Name", "Stereo Mixer"), ("@Page Count", str(PAGE_COUNT)),
-                ("@Update Date", today), ("@Create Date", today), ("@Schematic Name", "Stereo Mixer"),
-                ("@Page No", str(self.number)), ("@Page Name", self.title), ("Company", ""), ("Reviewed", ""),
-                ("Version", "V1.0"), ("Page Size", "A3"), ("Drawn", ""), ("Name", ""), ("@Create Time", ""),
-                ("@Update Time", ""), ("Border", "1"), ("Width", ee.W), ("Height", ee.H), ("Region Start", "1"),
-                ("X Region Count", "6"), ("Y Region Count", "4"), ("Blade Width", "10"), ("Color", ""),
-                ("Title Block Position", "3"), ("Title Block", "1"), ("@Board Name", "Stereo Mixer"),
-                ("Footprint", ""), ("Description", ""), ("Device", DEV["FRAME"])]
-        for k, v in vals:
-            d.add("ATTR", d.nid(), ee.attr_payload(d.zi(), cid, k, v))
-
-
-# ---------------------------------------------------------------- drawing helpers
 def dev_of(part):
     if part.kind == "R":
         return {"1k": "R1k", "10k": "R10k", "10R": "R10R"}.get(part.value, "R" + part.value)
     if part.kind == "C":
-        return {"100n": "C100n"}.get(part.value, "C" + part.value)
+        return {"100n": "C100n", "1u": "C1u"}.get(part.value, "C" + part.value)
     if part.kind == "POT":
         return "POT" + part.value
-    if part.kind == "POT2":
-        return "POT2_" + part.value
-    return {"CP": "C10u", "D": "D5819", "JACK": "JACK", "SPDT": "SPDT", "DPDT": "DPDT", "TL074": "TL074",
-            "HDR": "HDR"}[part.kind]
+    return {"CP": "C10u", "D5819": "D5819", "D4148": "D4148S", "JACK": "JACK", "TL074": "TL074N",
+            "CD4013": "CD4013", "CD4093": "CD4093", "PHOTOMOS": "PHOTOMOS", "POT2": "POT2", "SWLED": "SWLED",
+            "HDR8": "HDR8", "HDR12": "HDR12", "HDR16": "HDR16"}[part.kind]
 
 
+
+# ---------------------------------------------------------------- drawing helpers
 def hpart(pg, part, x1, y, left_pin="1"):
     """Two-pin part drawn horizontally with `left_pin` at (x1, y), the other pin at (x1 + 40, y)."""
     rot = 0 if left_pin == "1" else 180
-    return pg.place(part.ref, dev_of(part), x1 + 20, y, rot, des=ee.H_TXT[0], value_at=ee.H_TXT[1])
+    return pg.place(part.ref, dev_of(part), x1 + 20, y, rot, des=H_TXT[0], value_at=H_TXT[1])
 
 
 def vpart(pg, part, x, y1, top_pin="1", texts_left=False):
     """Two-pin part drawn vertically with `top_pin` at (x, y1), the other pin at (x, y1 + 40)."""
     rot = 270 if top_pin == "1" else 90
-    txt = ((-8, -2, "RIGHT_BOTTOM"), (-8, 8, "RIGHT_BOTTOM")) if texts_left else ee.V_TXT
+    txt = ((-8, -2, "RIGHT_BOTTOM"), (-8, 8, "RIGHT_BOTTOM")) if texts_left else V_TXT
     return pg.place(part.ref, dev_of(part), x, y1 + 20, rot, *txt)
 
 
-def pot(pg, part, x, y, label=None):
-    """Pot standing up: CW end (pin 3) at (x, y), CCW end (pin 1) at (x, y + 40),
-    wiper (pin 2) at (x + 20, y + 20). Texts go on the left."""
-    if part.value == "B10k":     # library symbol PTV09A-4025F-B103
-        ox, oy, mirror = x + 5, y + 22, False
-    else:                        # library symbol PTV09A-4030F-A104, mirrored
-        ox, oy, mirror = x - 5, y + 18, True
-    p = pg.place(part.ref, dev_of(part), ox, oy, 270, mirror=mirror,
-                 des=(x - 8 - ox, y + 14 - oy, "RIGHT_BOTTOM"), value_at=(x - 8 - ox, y + 24 - oy, "RIGHT_BOTTOM"))
-    if label:
-        pg.text(x - 10 - 5.6 * len(label), y + 36, label, 9)
-    return p
+def down_port(pg, pin, net, kind="OUT", length=20):
+    """A wire down from pin and a net port at its end, flag to the right."""
+    x, y = pin
+    pg.wire([(x, y), (x, y + length)], net)
+    pg.port(x, y + length, net, kind, "right")
 
 
-def pot2(pg, part, unit, x, y, label=None):
-    """One gang of a dual pot: same geometry as pot()."""
-    p = pg.place(part.ref, dev_of(part), x, y + 20, 0, unit=unit,
-                 des=(-8, -6, "RIGHT_BOTTOM"), value_at=(-8, 4, "RIGHT_BOTTOM"))
-    if label:
-        pg.text(x - 10 - 5.6 * len(label), y + 36, label, 9)
-    return p
+def supply(pg, amp, sec):
+    if sec == 1:   # this unit carries the supply pins
+        vcc, vee = amp["4"], amp["11"]
+        pg.wire([vcc, vcc], "+12V", label=(vcc[0] + 3, vcc[1] - 2, "LEFT_BOTTOM"))
+        pg.wire([vee, vee], "-12V", label=(vee[0] + 3, vee[1] + 8, "LEFT_BOTTOM"))
 
 
 def follower(pg, ref, sec, x, y, net):
-    """TL074 section as a voltage follower with its + input at (x, y).
-    Returns the junction point right of the output (row y - 10)."""
+    """TL074 section as a voltage follower with its + input at (x, y). Returns
+    the amp and the junction right of the output (row y - 10)."""
     ox, oy = x + 40, y - 10
-    amp = pg.place(ref, "TL074", ox, oy, unit=sec, des=(-6, 32, "LEFT_BOTTOM"), name=False)
+    amp = pg.place(ref, "TL074N", ox, oy, unit=sec, des=(-6, 32, "LEFT_BOTTOM"), name=False)
     out, inm, _ = SECTION[sec]
     node = (ox + 55, oy)
     pg.wire([amp[out], node], net)
     pg.wire([node, (ox + 55, oy - 35), (ox - 55, oy - 35), (ox - 55, oy - 10), amp[inm]], net)
-    return node
+    supply(pg, amp, sec)
+    return amp, node
 
 
 def inverting(pg, ref, sec, x, y, rf, cf=None):
-    """TL074 section as an inverting stage. Its - input is at (x + 15, y);
-    the summing junction is at (x, y). Feedback resistor (and cap) above it.
+    """TL074 section as an inverting stage; summing junction at (x, y), feedback above.
     Returns (amp, junction, output node)."""
     ox, oy = x + 55, y + 10
-    amp = pg.place(ref, "TL074", ox, oy, unit=sec, des=(14, 30, "LEFT_BOTTOM"), name=False)
+    amp = pg.place(ref, "TL074N", ox, oy, unit=sec, des=(14, 30, "LEFT_BOTTOM"), name=False)
     out, inm, inp = SECTION[sec]
     jx, kx = x, ox + 60
-    nin = rf.nets["1"]
-    nout = rf.nets["2"]
+    nin, nout = rf.nets["1"], rf.nets["2"]
     a_rf = hpart(pg, rf, ox - 20, oy - 60)
     pg.wire([(jx, y), amp[inm]], nin)
     pg.wire([(jx, y), (jx, oy - 60)], nin)
@@ -375,293 +658,263 @@ def inverting(pg, ref, sec, x, y, rf, cf=None):
         pg.wire([(jx, oy - 60), (jx, oy - 90), a_cf["1"]], nin)
         pg.wire([(kx, oy - 60), (kx, oy - 90), a_cf["2"]], nout)
     pg.stub_gnd(amp[inp], "left", 10)
-    if sec == 1:   # this unit carries the supply pins
-        vcc, vee = amp["4"], amp["11"]
-        pg.wire([vcc, vcc], "+12V", label=(vcc[0] + 3, vcc[1] - 2, "LEFT_BOTTOM"))
-        pg.wire([vee, vee], "-12V", label=(vee[0] + 3, vee[1] + 8, "LEFT_BOTTOM"))
+    supply(pg, amp, sec)
     return amp, (jx, y), (kx, oy)
 
 
-def jack_in(pg, part, x, y_tip):
-    """Input jack, tip (pin 3) at (x + 25, y_tip) pointing right. Sleeve to GND;
-    the switch lug to GND or to a net port."""
-    j = pg.place(part.ref, "JACK", x, y_tip - 10, des=(-25, -22, "LEFT_BOTTOM"), name=False)
-    pg.text(x - 25, y_tip + 20, part.label, 10)
-    s = j["1"]
-    pg.wire([s, (s[0], s[1] - 20), (s[0] + 20, s[1] - 20)], "GND")
-    pg.gnd(s[0] + 20, s[1] - 20, 90)
-    tn = part.nets.get("2")
-    if tn == "GND":
-        pg.stub_gnd(j["2"], "right", 20)
-    elif tn:
-        pg.stub_port(j["2"], tn, "IN", "right", 20)
+def find(P, kind, pin, net):
+    return next(p for p in P.values() if p.kind == kind and p.nets.get(pin) == net)
+
+
+def mute_input(pg, P, s, x, y):
+    """Port LV -> 10k (pin 1 at (x, y)) -> FI junction at (x + 60, y) -> PhotoMOS switch to GND below it.
+    Returns the junction."""
+    rs = find(P, "R", "2", f"FI{s}")
+    km = find(P, "PHOTOMOS", "3", f"FI{s}")
+    a = hpart(pg, rs, x, y)
+    pg.wire([(x - 20, y), a["1"]], f"LV{s}")
+    pg.port(x - 20, y, f"LV{s}", "IN", "left")
+    j = (x + 60, y)
+    pg.wire([a["2"], j], f"FI{s}")
+    sw = pg.place(km.ref, "PHOTOMOS", x + 60, y + 40, unit=2, des=(8, 4, "LEFT_BOTTOM"), name=False)
+    pg.wire([j, sw["3"]], f"FI{s}")
+    pg.stub_gnd(sw["4"], "down", 10)
     return j
 
 
-def jack_out(pg, part, x, y_tip):
-    """Output jack, mirrored: tip at (x - 25, y_tip) pointing left; switch lug open."""
-    j = pg.place(part.ref, "JACK", x, y_tip - 10, mirror=True, des=(6, -22, "LEFT_BOTTOM"), name=False)
-    pg.text(x - 5, y_tip + 20, part.label, 10)
-    s = j["1"]
-    pg.wire([s, (s[0], s[1] - 20), (s[0] - 20, s[1] - 20)], "GND")
-    pg.gnd(s[0] - 20, s[1] - 20, 270)
-    return j
+def channel_input(pg, P, s, x0, y):
+    """Mute input and follower of one channel side; returns the follower's output junction."""
+    j = mute_input(pg, P, s, x0 + 40, y)
+    u, sec = circuit.opamp_of("FOL", s)
+    pg.wire([j, (x0 + 140, y)], f"FI{s}")
+    amp, node = follower(pg, u, sec, x0 + 140, y, f"CH{s}")
+    return node
 
 
-# ---------------------------------------------------------------- pages
-def mono_strip(pg, P, k, x0, t0):
-    """Mono channel k. x0: left edge; t0: row of the follower output, from the top."""
-    yu = Y(t0)
-    rv, r = 3 * k - 2, 5 * k - 4
-    jp, lv, pan, snd, sw = P[f"J{k}"], P[f"RV{rv}"], P[f"RV{rv + 1}"], P[f"RV{rv + 2}"], P[f"SW{k}"]
-    ra, rb, rc, rd, re = (P[f"R{r + i}"] for i in range(5))
-    u, sec = opamp_of("FOL", str(k))
-    pg.text(x0, yu - 112, f"Channel {k} (mono)", 12)
-
-    xj = x0 + 30
-    j = jack_in(pg, jp, xj, yu - 40)
-    xp = xj + 85
-    lvp = pot(pg, lv, xp, yu - 10, lv.label)
-    pg.wire([j["3"], (xp, yu - 40), lvp["3"]], f"IN{k}")
-    pg.stub_gnd(lvp["1"], "down", 10)
-    node = follower(pg, u, sec, xp + 50, yu + 10, f"BF{k}")
-    pg.wire([lvp["2"], (xp + 50, yu + 10)], f"LV{k}")
-
-    # mute: ATE1D upside down, pins up; pin 3 = ON (follower), 1 = MUTE (GND), 2 = common
-    xs = node[0] + 45
-    swp = pg.place(sw.ref, "SPDT", xs, yu + 50, 180, des=(-22, 34, "LEFT_BOTTOM"), name=False)
-    pg.text(xs - 22, yu + 92, sw.label, 9)
-    pg.wire([node, (xs - 10, yu), swp["3"]], f"BF{k}")
-    pg.wire([swp["1"], (xs + 30, yu + 20)], "GND")
-    pg.gnd(xs + 30, yu + 20, 0)
-    yc = yu - 20
-    s0 = (xs + 80, yc)
-    pg.wire([swp["2"], (xs, yc), s0], f"CH{k}")
-
-    # send, after the mute
-    sp = pot(pg, snd, xs + 80, yc + 40)
-    pg.text(xs + 86, yc + 112, snd.label, 9)
-    pg.wire([s0, sp["3"]], f"CH{k}")
-    pg.stub_gnd(sp["1"], "down", 10)
-    a_re = hpart(pg, re, xs + 130, yc + 60)
-    pg.wire([sp["2"], a_re["1"]], f"SD{k}")
-    pg.stub_port(a_re["2"], "SUM_S", "OUT", "right")
-
-    # pan network
-    xc = xs + 270
-    pg.wire([s0, (xc, yc)], f"CH{k}")
-    a_ra = vpart(pg, ra, xc, yc - 60, top_pin="2")    # pin 1 at the bottom, on CH
-    a_rb = vpart(pg, rb, xc, yc + 20, top_pin="1")    # pin 1 on top, on CH
-    pg.wire([(xc, yc), a_ra["1"]], f"CH{k}")
-    pg.wire([(xc, yc), a_rb["1"]], f"CH{k}")
-    pl, pr_ = (xc + 60, yc - 60), (xc + 60, yc + 60)
-    pg.wire([a_ra["2"], pl], f"PL{k}")
-    pg.wire([a_rb["2"], pr_], f"PR{k}")
-    pp = pot(pg, pan, xc + 60, yc - 20)
-    pg.text(xc + 68, yc + 40, pan.label, 9)
-    pg.wire([pl, pp["3"]], f"PL{k}")
-    pg.wire([pr_, pp["1"]], f"PR{k}")
-    pg.stub_gnd(pp["2"], "right", 15)
-    a_rc = hpart(pg, rc, xc + 80, yc - 60)
-    a_rd = hpart(pg, rd, xc + 80, yc + 60)
-    pg.wire([pl, a_rc["1"]], f"PL{k}")
-    pg.wire([pr_, a_rd["1"]], f"PR{k}")
-    pg.stub_port(a_rc["2"], "SUM_L", "OUT", "right")
-    pg.stub_port(a_rd["2"], "SUM_R", "OUT", "right")
+# ------------------------------------------------------------------ main board pages
+def mono_block(pg, P, k, x0, t0):
+    """One mono channel: mute, follower, CH to the header, pan feeds, bus resistors."""
+    r = 100 * k
+    pg.text(x0, Y(t0), f"Channel {k} (mono)", 12)
+    nx, ny = channel_input(pg, P, str(k), x0, Y(t0 + 70))
+    xc = nx + 40
+    pg.wire([(nx, ny), (xc, ny)], f"CH{k}")
+    pg.wire([(xc, ny), (xc + 40, ny)], f"CH{k}")
+    pg.port(xc + 40, ny, f"CH{k}", "OUT", "right")
+    pg.wire([(xc, ny), (xc, ny + 30)], f"CH{k}")
+    a_pl = vpart(pg, P[f"R{r + 2}"], xc, ny + 60)
+    a_pr = vpart(pg, P[f"R{r + 3}"], xc + 110, ny + 60)
+    pg.wire([(xc, ny + 30), a_pl["1"]], f"CH{k}")
+    pg.wire([(xc, ny + 30), (xc + 110, ny + 30), a_pr["1"]], f"CH{k}")
+    for a, net, bus, rb, x, side in ((a_pl, f"PL{k}", "SUM_L", r + 4, xc, "left"),
+                                     (a_pr, f"PR{k}", "SUM_R", r + 5, xc + 110, "right")):
+        jn = (x, ny + 130)
+        pg.wire([a["2"], jn], net)
+        ab = vpart(pg, P[f"R{rb}"], x, ny + 160)
+        pg.wire([jn, ab["1"]], net)
+        px = x - 40 if side == "left" else x + 40
+        pg.wire([jn, (px, ny + 130)], net)
+        pg.port(px, ny + 130, net, "OUT", side)
+        down_port(pg, ab["2"], bus)
+    a_sd = hpart(pg, P[f"R{r + 6}"], x0 + 40, ny + 210)
+    pg.wire([(x0 + 20, ny + 210), a_sd["1"]], f"SD{k}")
+    pg.port(x0 + 20, ny + 210, f"SD{k}", "IN", "left")
+    pg.stub_port(a_sd["2"], "SUM_S", "OUT", "right")
 
 
 def mono_page(pr, P):
-    pg = MixerPage(pr, "Mono channels", 1)
-    for i, k in enumerate(MONO):
-        col, row = divmod(i, 3)
-        mono_strip(pg, P, k, 20 + col * 810, 150 + row * 300)
-    pg.text(40, Y(1060), "Every mono channel: LEVEL -> follower -> MUTE -> pan network (10k + B10k + 10k, wiper "
-                         "to GND) -> 100k into the L and R buses; SEND taps after the mute (post-fader).", 10)
-    pg.text(40, Y(1080), "MUTE: ATE1D toggle, common = pin 2, pin 3 = ON, pin 1 = MUTE. PAN: fully CCW = left. "
-                         "Net ports with the same name connect (SUM_L, SUM_R, SUM_S: page 3).", 10)
+    pg = MPage(pr, "Main board: mono channels", 1)
+    pg.page_count = "4"
+    pg.text(40, Y(30), "Mono channels: LEVEL wiper (LV, from the faceplate) -> 10k -> follower; the PhotoMOS from the "
+                       "follower input to GND is the mute. CH goes to the SEND pot and into the pan network.", 12)
+    for i, k in enumerate(circuit.MONO):
+        col, row = i % 2, i // 2
+        mono_block(pg, P, k, 60 + col * 820, 70 + row * 330)
+    pg.text(40, Y(1080), "Pan: 10k from CH to each end of the B10k PAN pot (PL, PR, on the faceplate), wiper to GND, "
+                         "each end through 100k into its bus. SEND taps CH after the mute (post-fader).", 10)
+    pg.text(40, Y(1100), "LV, CH, PL, PR, SD are header pins to the faceplate; SUM_L, SUM_R, SUM_S are the bus summing "
+                         "nodes on the next page.", 10)
     return pg
 
 
-def stereo_strip(pg, P, c, x0, t0):
-    """Stereo channel c (7 or 8): L row at t0, R row 160 below."""
-    i = c - 7
-    jl, jr, rv, r = P[f"J{7 + 2 * i}"], P[f"J{8 + 2 * i}"], P[f"RV{19 + 2 * i}"], 31 + 5 * i
-    snd, sw = P[f"RV{20 + 2 * i}"], P[f"SW{c}"]
-    r_l, r_r, r_al, r_ar, r_s = (P[f"R{r + k}"] for k in range(5))
-    yl = Y(t0)
-    yr = yl + 160
-    pg.text(x0, yl - 112, f"Channel {c} (stereo)", 12)
-    xj = x0 + 30
-    xp = xj + 85
-    xs = xp + 200
-    for row, (jack, unit, side) in enumerate(((jl, 1, "L"), (jr, 2, "R"))):
-        yu = yl + 160 * row
-        j = jack_in(pg, jack, xj, yu - 40)
-        g = pot2(pg, rv, unit, xp, yu - 10, rv.label if row == 0 else None)
-        pg.wire([j["3"], (xp, yu - 40), g["3" if unit == 1 else "6"]], f"IN{c}{side}")
-        pg.stub_gnd(g["1" if unit == 1 else "4"], "down", 10)
-        u, sec = opamp_of("FOL", f"{c}{side}")
-        node = follower(pg, u, sec, xp + 60, yu + 10, f"BF{c}{side}")
-        pg.wire([g["2" if unit == 1 else "5"], (xp + 60, yu + 10)], f"LV{c}{side}")
-        s = pg.place(sw.ref, "DPDT", xs, yu + 10, 0, unit=unit, des=(-14, -16, "LEFT_BOTTOM"), name=False)
-        on, com, mute = ("1", "2", "3") if unit == 1 else ("4", "5", "6")
-        pg.wire([node, s[on]], f"BF{c}{side}")
-        pg.wire([s[mute], (xs - 30, yu + 20)], "GND")
-        pg.gnd(xs - 30, yu + 20, 0)
-    pg.text(xs - 40, yl + 58, sw.label, 9)
-    # bus resistors and the send average
-    yc_l, yc_r = yl + 10, yr + 10
-    jl_, jr_ = (xs + 50, yc_l), (xs + 50, yc_r)
-    com_a = _pin(pg, sw.ref, "2")
-    com_b = _pin(pg, sw.ref, "5")
-    pg.wire([com_a, jl_], f"CH{c}L")
-    pg.wire([com_b, jr_], f"CH{c}R")
-    a_al = vpart(pg, r_al, xs + 50, yc_l + 20, top_pin="1", texts_left=True)
-    a_ar = vpart(pg, r_ar, xs + 50, yc_r - 60, top_pin="2", texts_left=True)
-    pg.wire([jl_, a_al["1"]], f"CH{c}L")
-    pg.wire([jr_, a_ar["1"]], f"CH{c}R")
-    av = (xs + 50, yc_l + 80)
-    pg.wire([a_al["2"], av], f"AV{c}")
-    pg.wire([a_ar["2"], av], f"AV{c}")
-    sp = pot(pg, snd, xs + 90, yc_l + 90)        # enter the CW pin from above: the tab pin sits left of it
-    pg.text(xs + 98, yc_l + 140, snd.label, 9)
-    pg.wire([av, (xs + 90, yc_l + 80), sp["3"]], f"AV{c}")
-    pg.stub_gnd(sp["1"], "down", 10)
-    a_s = hpart(pg, r_s, xs + 140, yc_l + 110)
-    pg.wire([sp["2"], a_s["1"]], f"SD{c}")
-    pg.stub_port(a_s["2"], "SUM_S", "OUT", "right")
-    a_l = hpart(pg, r_l, xs + 230, yc_l)
-    a_r = hpart(pg, r_r, xs + 230, yc_r)
-    pg.wire([jl_, a_l["1"]], f"CH{c}L")
-    pg.wire([jr_, a_r["1"]], f"CH{c}R")
-    pg.stub_port(a_l["2"], "SUM_L", "OUT", "right")
-    pg.stub_port(a_r["2"], "SUM_R", "OUT", "right")
+def stereo_block(pg, P, c, x0, t0):
+    """Stereo channel c: two mute inputs and followers, 200k into each bus, (L + R) / 2 to the SEND pot."""
+    r = 100 * c
+    pg.text(x0, Y(t0), f"Channel {c} (stereo)", 12)
+    yl = Y(t0 + 70)
+    nodes = {}
+    for side, y in (("L", yl), ("R", yl + 130)):
+        nodes[side] = channel_input(pg, P, f"{c}{side}", x0, y)
+    xc = nodes["L"][0] + 40
+    for side, rb, bus in (("L", r + 3, "SUM_L"), ("R", r + 4, "SUM_R")):
+        nx, ny = nodes[side]
+        pg.wire([(nx, ny), (xc, ny)], f"CH{c}{side}")
+        a = hpart(pg, P[f"R{rb}"], xc, ny)
+        pg.stub_port(a["2"], bus, "OUT", "right")
+    nyl, nyr = nodes["L"][1], nodes["R"][1]
+    a_l = vpart(pg, P[f"R{r + 5}"], xc, nyl + 20, top_pin="1")
+    a_r = vpart(pg, P[f"R{r + 6}"], xc, nyr - 60, top_pin="2")
+    pg.wire([(xc, nyl), a_l["1"]], f"CH{c}L")
+    pg.wire([a_r["1"], (xc, nyr)], f"CH{c}R")
+    av = (xc, (nyl + nyr) // 2)
+    pg.wire([a_l["2"], av], f"AV{c}")
+    pg.wire([a_r["2"], av], f"AV{c}")
+    pg.wire([av, (xc + 60, av[1])], f"AV{c}")
+    pg.port(xc + 60, av[1], f"AV{c}", "OUT", "right")
+    a_sd = hpart(pg, P[f"R{r + 7}"], x0 + 40, nyr + 130)
+    pg.wire([(x0 + 20, nyr + 130), a_sd["1"]], f"SD{c}")
+    pg.port(x0 + 20, nyr + 130, f"SD{c}", "IN", "left")
+    pg.stub_port(a_sd["2"], "SUM_S", "OUT", "right")
 
 
-def _pin(pg, ref, num):
-    for c in pg.comps:
-        if c["ref"] == ref and num in c["pins"]:
-            return c["pins"][num]
-    raise KeyError((ref, num))
+def bus_rows(pg, P):
+    """Summers, the MASTER loop through the faceplate and the output stages."""
+    x_in = 760
+    pg.text(x_in - 80, Y(40), "Buses: inverting summers (100k || 22p); MASTER (dual pot on the faceplate) between MIX "
+                              "and MST; output stages x2 (L, R) and x1 (SEND), 1k to the jacks", 12)
+    for side, t, (rf, cf), (rin, rfb, rs), out in (
+            ("L", 200, ("R901", "C901"), ("R904", "R905", "R906"), "OUT_L"),
+            ("R", 470, ("R902", "C902"), ("R907", "R908", "R909"), "OUT_R"),
+            ("S", 740, ("R903", "C903"), ("R910", "R911", "R912"), "SEND")):
+        y = Y(t)
+        u, sec = circuit.opamp_of("SUM", side)
+        amp, jn, kn = inverting(pg, u, sec, x_in, y, P[rf], P[cf])
+        pg.wire([(x_in - 40, y), jn], f"SUM_{side}")
+        pg.port(x_in - 40, y, f"SUM_{side}", "IN", "left")
+        a_in = hpart(pg, P[rin], kn[0] + 150, kn[1] + 30)
+        if side == "S":                      # the send bus feeds its inverter directly
+            pg.wire([kn, (kn[0] + 130, kn[1]), (kn[0] + 130, kn[1] + 30), a_in["1"]], "MIX_S")
+        else:                                # MIX out to the MASTER pot top, MST back from its wiper
+            pg.wire([kn, (kn[0] + 40, kn[1])], f"MIX_{side}")
+            pg.port(kn[0] + 40, kn[1], f"MIX_{side}", "OUT", "right")
+            pg.wire([(kn[0] + 130, kn[1] + 30), a_in["1"]], f"MST_{side}")
+            pg.port(kn[0] + 130, kn[1] + 30, f"MST_{side}", "IN", "left")
+        uo, so = circuit.opamp_of("OUT", side)
+        amp2, jn2, kn2 = inverting(pg, uo, so, kn[0] + 210, kn[1] + 30, P[rfb])
+        pg.wire([a_in["2"], jn2], f"NO_{side}")
+        a_s = hpart(pg, P[rs], kn2[0] + 20, kn2[1])
+        pg.wire([kn2, a_s["1"]], f"OA_{side}")
+        pg.stub_port(a_s["2"], out, "OUT", "right")
+
+
+def inputs_block(pg, P, x0, t0):
+    pg.text(x0, Y(t0), "Return, drums, FX IN (from the faceplate) into the buses", 12)
+    for i, (ref, a, b) in enumerate((("R913", "RW_L", "SUM_L"), ("R914", "RW_R", "SUM_R"), ("R915", "DRW", "SUM_L"),
+                                     ("R916", "DRW", "SUM_R"), ("R917", "FXI", "SUM_S"))):
+        y = Y(t0 + 40 + 40 * i)
+        p = hpart(pg, P[ref], x0 + 80, y)
+        pg.stub_port(p["1"], a, "IN", "left")
+        pg.stub_port(p["2"], b, "OUT", "right")
 
 
 def stereo_page(pr, P):
-    pg = MixerPage(pr, "Stereo channels and inputs", 2)
-    stereo_strip(pg, P, 7, 20, 160)
-    stereo_strip(pg, P, 8, 20, 590)
-
-    # Clouds return: dual-gang level straight into the buses
-    x0, t0 = 840, 160
-    yl = Y(t0)
-    pg.text(x0, yl - 112, "Return (Clouds L/R)", 12)
-    xj, xp = x0 + 30, x0 + 115
-    for row, (ref, unit, side, rr) in enumerate((("J11", 1, "L", "R41"), ("J12", 2, "R", "R42"))):
-        yu = yl + 130 * row
-        j = jack_in(pg, P[ref], xj, yu - 40)
-        g = pot2(pg, P["RV23"], unit, xp, yu - 10, P["RV23"].label if row == 0 else None)
-        pg.wire([j["3"], (xp, yu - 40), g["3" if unit == 1 else "6"]], f"RT_{side}")
-        pg.stub_gnd(g["1" if unit == 1 else "4"], "down", 10)
-        a = hpart(pg, P[rr], xp + 60, yu + 10)
-        pg.wire([g["2" if unit == 1 else "5"], a["1"]], f"RW_{side}")
-        pg.stub_port(a["2"], f"SUM_{side}", "OUT", "right")
-
-    # drum mixer in: centred, 300k into each bus
-    t0 = 520
-    yu = Y(t0)
-    pg.text(x0, yu - 112, "Drums (drum mixer output, centred)", 12)
-    j = jack_in(pg, P["J13"], xj, yu - 40)
-    dp = pot(pg, P["RV24"], xp, yu - 10, P["RV24"].label)
-    pg.wire([j["3"], (xp, yu - 40), dp["3"]], "DRM")
-    pg.stub_gnd(dp["1"], "down", 10)
-    jn = (xp + 50, yu + 10)
-    pg.wire([dp["2"], jn], "DRW")
-    a = hpart(pg, P["R43"], xp + 80, yu + 10)
-    pg.wire([jn, a["1"]], "DRW")
-    pg.stub_port(a["2"], "SUM_L", "OUT", "right")
-    b = hpart(pg, P["R44"], xp + 80, yu + 70)
-    pg.wire([jn, (xp + 50, yu + 70), b["1"]], "DRW")
-    pg.stub_port(b["2"], "SUM_R", "OUT", "right")
-
-    # FX IN: the drum mixer's send joins the send bus
-    t0 = 760
-    yu = Y(t0)
-    pg.text(x0, yu - 112, "FX IN (drum mixer send -> send bus)", 12)
-    j = jack_in(pg, P["J14"], xj, yu - 40)
-    a = hpart(pg, P["R45"], xp + 40, yu - 40)
-    pg.wire([j["3"], a["1"]], "FXI")
-    pg.stub_port(a["2"], "SUM_S", "OUT", "right")
-
-    pg.text(40, Y(1060), "Stereo channels: R input takes L when unpatched. Dual-gang LEVEL, two followers, DPDT MUTE "
-                         "(pins 1/4 = ON, 3/6 = MUTE), 200k into each bus; SEND gets (L+R)/2.", 10)
-    pg.text(40, Y(1080), "RETURN R takes RETURN L when unpatched. DRUMS sits in the centre at -3.5 dB per side, "
-                         "like a centred mono channel. No send on RETURN or DRUMS.", 10)
+    pg = MPage(pr, "Main board: stereo channels, buses, outputs", 2)
+    pg.page_count = "4"
+    stereo_block(pg, P, 7, 40, 60)
+    stereo_block(pg, P, 8, 40, 440)
+    inputs_block(pg, P, 40, 840)
+    bus_rows(pg, P)
+    pg.text(40, Y(1080), "Stereo channels: IN R takes IN L when unpatched (faceplate). One button mutes both sides "
+                         "(two PhotoMOS, LEDs in series). SEND gets (L + R) / 2 through the two 10k.", 10)
+    pg.text(40, Y(1100), "Every path inverts twice: all outputs are in phase with all inputs, so Clouds' wet signal "
+                         "returns in phase with the dry channel.", 10)
     return pg
 
 
-def bus_page(pr, P):
-    pg = MixerPage(pr, "Buses, master, outputs, power", 3)
-    pg.text(60, Y(55), "Buses (inverting summers, 100k || 22p), MASTER (dual A10k), output stages (gain -2)", 12)
-    x_in = 160
-    rows = {"L": 230, "R": 450}
-    for side, t in rows.items():
-        y = Y(t)
-        u, sec = opamp_of("SUM", side)
-        amp, jn, kn = inverting(pg, u, sec, x_in, y, P[{"L": "R46", "R": "R47"}[side]],
-                                P[{"L": "C1", "R": "C2"}[side]])
-        pg.wire([(x_in - 40, y), jn], f"SUM_{side}")
-        pg.port(x_in - 40, y, f"SUM_{side}", "IN", "left")
-        # master gang
-        xm = kn[0] + 80
-        unit = 1 if side == "L" else 2
-        g = pot2(pg, P["RV25"], unit, xm, kn[1], P["RV25"].label if side == "L" else None)
-        pg.wire([kn, g["3" if unit == 1 else "6"]], f"MIX_{side}")
-        pg.stub_gnd(g["1" if unit == 1 else "4"], "down", 10)
-        # output stage
-        rin, rfb, rser = (P[r] for r in {"L": ("R49", "R50", "R51"), "R": ("R52", "R53", "R54")}[side])
-        a_in = hpart(pg, rin, xm + 40, kn[1] + 20)
-        pg.wire([g["2" if unit == 1 else "5"], a_in["1"]], f"MST_{side}")
-        uo, so = opamp_of("OUT", side)
-        amp2, jn2, kn2 = inverting(pg, uo, so, xm + 100, kn[1] + 20, rfb)
-        pg.wire([a_in["2"], jn2], f"NO_{side}")
-        a_s = hpart(pg, rser, kn2[0] + 20, kn2[1])
-        pg.wire([kn2, a_s["1"]], f"OA_{side}")
-        jo = jack_out(pg, P[{"L": "J16", "R": "J17"}[side]], a_s["2"][0] + 60, kn2[1])
-        pg.wire([a_s["2"], jo["3"]], f"OUT_{side}")
+def latch_block(pg, P, k, x0, t0):
+    """Pull-up, debounce, LED / PhotoMOS current path of channel k."""
+    pg.text(x0, Y(t0), f"MUTE {k}", 11)
+    y = Y(t0 + 40)
+    rp = find(P, "R", "2", f"BTN{k}")
+    rd = find(P, "R", "1", f"BTN{k}")
+    cd = find(P, "C", "1", f"DB{k}")
+    rl = find(P, "R", "1", f"QK{k}")
+    a = hpart(pg, rp, x0 + 40, y)
+    pg.stub_port(a["1"], "+12V", "IN", "left")
+    jb = (x0 + 100, y)
+    pg.wire([a["2"], jb], f"BTN{k}")
+    b = hpart(pg, rd, x0 + 120, y)
+    pg.wire([jb, b["1"]], f"BTN{k}")
+    pg.wire([jb, (x0 + 100, y - 25), (x0 + 120, y - 25)], f"BTN{k}")
+    pg.port(x0 + 120, y - 25, f"BTN{k}", "IN", "right")
+    jd = (x0 + 180, y)
+    pg.wire([b["2"], jd], f"DB{k}")
+    c = vpart(pg, cd, x0 + 180, y + 20)
+    pg.wire([jd, c["1"]], f"DB{k}")
+    pg.stub_gnd(c["2"], "down", 10)
+    pg.wire([jd, (x0 + 220, y)], f"DB{k}")
+    pg.port(x0 + 220, y, f"DB{k}", "OUT", "right")
+    yl = y + 100
+    d = hpart(pg, rl, x0 + 40, yl)
+    pg.stub_port(d["1"], f"QK{k}", "IN", "left")
+    ks = circuit.PHOTOMOS[k]
+    led = pg.place(ks[0], "PHOTOMOS", x0 + 100, yl + 20, unit=1, des=(8, 4, "LEFT_BOTTOM"), name=False)
+    pg.wire([d["2"], (x0 + 100, yl)], f"LA{k}")
+    last = led["2"]
+    if len(ks) == 2:
+        led2 = pg.place(ks[1], "PHOTOMOS", x0 + 100, yl + 80, unit=1, des=(8, 4, "LEFT_BOTTOM"), name=False)
+        pg.wire([last, led2["1"]], f"LM{k}")
+        last = led2["2"]
+    pg.wire([last, (last[0], last[1] + 20), (last[0] + 40, last[1] + 20)], f"LED{k}")
+    pg.port(last[0] + 40, last[1] + 20, f"LED{k}", "OUT", "right")
 
-    # send bus
-    t = 690
-    y = Y(t)
-    pg.text(60, y - 125, "Send bus -> inverter -> SEND (to Clouds IN L)", 12)
-    u, sec = opamp_of("SUM", "S")
-    amp, jn, kn = inverting(pg, u, sec, x_in, y, P["R48"], P["C3"])
-    pg.wire([(x_in - 40, y), jn], "SUM_S")
-    pg.port(x_in - 40, y, "SUM_S", "IN", "left")
-    a_in = hpart(pg, P["R55"], kn[0] + 40, kn[1] + 20)
-    pg.wire([kn, (kn[0] + 20, kn[1]), (kn[0] + 20, kn[1] + 20), a_in["1"]], "MIX_S")
-    uo, so = opamp_of("OUT", "S")
-    amp2, jn2, kn2 = inverting(pg, uo, so, kn[0] + 100, kn[1] + 20, P["R56"])
-    pg.wire([a_in["2"], jn2], "NO_S")
-    a_s = hpart(pg, P["R57"], kn2[0] + 20, kn2[1])
-    pg.wire([kn2, a_s["1"]], "OA_S")
-    jo = jack_out(pg, P["J15"], a_s["2"][0] + 60, kn2[1])
-    pg.wire([a_s["2"], jo["3"]], "SEND")
 
-    power(pg, P)
-    pg.text(40, Y(1040), "Gains at full LEVEL: mono hard-panned 0.95, centred 0.65 per side (-3.4 dB); stereo, "
-                         "RETURN 1.0; DRUMS 0.67 per side; sends 1.0. MASTER at full = those values.", 10)
-    pg.text(40, Y(1060), "Op-amps: section 1 of each TL074 has the supply pins, so it does a summer or output "
-                         "stage. Followers: U1 2-4 = ch 1-3, U2 2-4 = ch 4-6, U3 2-4 = 7L, 7R, 8L, U4.2 = 8R.", 10)
-    pg.text(40, Y(1080), "Power: series 1N5819 per rail (-12 V: cathode to the header), 10R, 10 uF bulk, "
-                         "100n per TL074 per rail. Header pins 13-16 (+5V, CV, gate) unused.", 10)
+def chip(pg, P, ref, x, y):
+    """A logic chip with every pin on a net port."""
+    dev = dev_of(P[ref])
+    s = pg.place(ref, dev, x, y, des=(-50, -62, "LEFT_BOTTOM"), value_at=(-50, 68, "LEFT_BOTTOM"))
+    geo = pg.pr.symgeo[pg.pr.sym_of(dev)]
+    outputs = ("3", "4", "10", "11") if ref in ("U5", "U6") else ("1", "2", "12", "13")
+    for p in geo["pins"]:
+        num = p["num"]
+        net = P[ref].nets[num]
+        side = "left" if p["x"] < 0 else "right"
+        # GND pins as net ports too (ports connect by name): ground flags would crowd the next pins
+        pg.stub_port(s[num], net, "OUT" if num in outputs else "IN", side)
+
+
+def latch_page(pr, P):
+    pg = MPage(pr, "Main board: mute latch", 3)
+    pg.page_count = "4"
+    pg.text(40, Y(30), "Mute latch, per channel: button (to GND_F on the faceplate) with a 100k pull-up, 10k / 100n "
+                       "debounce, CD4093 Schmitt NAND, CD4013 toggle (D = /Q). Q high = muted: Q -> 1k5 -> "
+                       "PhotoMOS LED(s) -> button LED -> GND_F, about 4-5 mA.", 11)
+    for i, k in enumerate(circuit.MONO + circuit.STEREO):
+        col, row = i % 2, i // 2
+        latch_block(pg, P, k, 50 + col * 380, 80 + row * 250)
+    for i, ref in enumerate(("U5", "U6", "U7", "U8", "U9", "U10")):
+        col, row = i % 2, i // 2
+        chip(pg, P, ref, 1000 + col * 330, Y(170 + row * 290))
+    # power-on reset: C906 from +12 V, R920 to GND, D903 empties C906 at power-off
+    x0, t0 = 1000, 950
+    pg.text(x0 - 60, Y(t0 - 50), "Power-on reset: POR high for ~100 ms, every channel starts unmuted", 11)
+    y = Y(t0)
+    c = vpart(pg, P["C906"], x0, y)
+    pg.wire([c["1"], (x0, y - 15), (x0 - 20, y - 15)], "+12V")
+    pg.port(x0 - 20, y - 15, "+12V", "IN", "left")
+    jp = (x0, y + 60)
+    pg.wire([c["2"], jp], "POR")
+    r = vpart(pg, P["R920"], x0, y + 80)
+    pg.wire([jp, r["1"]], "POR")
+    pg.stub_gnd(r["2"], "down", 10)
+    dd = vpart(pg, P["D903"], x0 + 80, y + 10, top_pin="1")
+    pg.wire([dd["1"], (x0 + 80, y - 15), (x0 + 100, y - 15)], "+12V")
+    pg.port(x0 + 100, y - 15, "+12V", "IN", "right")
+    pg.wire([jp, (x0 + 80, y + 60), dd["2"]], "POR")
+    pg.wire([jp, (x0 - 40, y + 60)], "POR")
+    pg.port(x0 - 40, y + 60, "POR", "OUT", "left")
     return pg
 
 
-def power(pg, P):
-    x0, t0 = 980, 120
-    pg.text(x0 - 40, Y(t0 - 65), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V)", 12)
+def power_page(pr, P):
+    pg = MPage(pr, "Main board: power, decoupling, headers", 4)
+    pg.page_count = "4"
+    x0, t0 = 80, 120
+    pg.text(x0 - 40, Y(t0 - 70), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V), series 1N5819 per rail, "
+                                 "10R, 10 uF", 12)
     yh = Y(t0 + 40)
     xh = x0 + 60
-    h = pg.place("J18", "HDR", xh, yh, des=(-30, -45, "LEFT_BOTTOM"), value_at=(-30, 52, "LEFT_BOTTOM"))
+    h = pg.place("J18", "HDR16", xh, yh, des=(-30, -45, "LEFT_BOTTOM"), value_at=(-30, 52, "LEFT_BOTTOM"))
     for side, pins, sgn in (("left", ("3", "5", "7", "9"), -1), ("right", ("4", "6", "8", "10"), 1)):
         bx = xh + sgn * 45
         pts = []
@@ -678,54 +931,179 @@ def power(pg, P):
     pg.stub_port(h["2"], "N12_IN", "OUT", "right", 30)
     pg.stub_port(h["11"], "P12_IN", "OUT", "left", 30)
     pg.stub_port(h["12"], "P12_IN", "OUT", "right", 30)
-
-    # protection: header -> 1N5819 -> 10R -> rail, 10 uF to GND
     xa = x0 + 330
-    for k, (port, d, r, c, rail, gnd_top) in enumerate((("P12_IN", "D1", "R58", "C4", "+12V", False),
-                                                        ("N12_IN", "D2", "R59", "C5", "-12V", True))):
+    for k, (port, d, r, c, rail) in enumerate((("P12_IN", "D901", "R918", "C904", "+12V"),
+                                               ("N12_IN", "D902", "R919", "C905", "-12V"))):
         y = Y(t0 + 10 + 120 * k)
-        dp = hpart(pg, P[d], xa, y, left_pin="2" if rail == "+12V" else "1")
-        pg.wire([(xa - 20, y), dp["2" if rail == "+12V" else "1"]], port)
+        plus = rail == "+12V"
+        dp = hpart(pg, P[d], xa, y, left_pin="2" if plus else "1")
+        pg.wire([(xa - 20, y), dp["2" if plus else "1"]], port)
         pg.port(xa - 20, y, port, "IN", "left")
-        mid = "P12_D" if rail == "+12V" else "N12_D"
+        mid = "P12_D" if plus else "N12_D"
         rp = hpart(pg, P[r], xa + 60, y)
-        pg.wire([dp["1" if rail == "+12V" else "2"], rp["1"]], mid)
+        pg.wire([dp["1" if plus else "2"], rp["1"]], mid)
         jn = (xa + 130, y)
         pg.wire([rp["2"], jn], rail)
         pg.wire([jn, (xa + 160, y)], rail)
         pg.port(xa + 160, y, rail, "OUT", "right")
-        cp = vpart(pg, P[c], xa + 130, y + 20, top_pin="2" if rail == "+12V" else "1")
-        pg.wire([jn, cp["2" if rail == "+12V" else "1"]], rail)
-        pg.stub_gnd(cp["1" if rail == "+12V" else "2"], "down", 10)
-
-    # decoupling, one pair per TL074
-    pg.text(x0 - 40, Y(t0 + 280), "Decoupling: 100n per TL074 per rail, next to the chip", 12)
-    for i in range(4):
-        x, top = x0 + 40 + i * 120, Y(t0 + 330)
-        cp, cn = P[f"C{6 + 2 * i}"], P[f"C{7 + 2 * i}"]
-        a = vpart(pg, cp, x, top + 20, top_pin="1")     # pin 1 = +12V on top
-        b = vpart(pg, cn, x, top + 80, top_pin="1")     # pin 1 = GND on top
-        node = (x, top + 70)
-        pg.wire([a["2"], node], "GND")
-        pg.wire([node, b["1"]], "GND")
-        pg.wire([node, (x - 15, top + 70)], "GND")
-        pg.gnd(x - 15, top + 70, 270)
+        cp = vpart(pg, P[c], xa + 130, y + 20, top_pin="2" if plus else "1")
+        pg.wire([jn, cp["2" if plus else "1"]], rail)
+        pg.stub_gnd(cp["1" if plus else "2"], "down", 10)
+    # decoupling: a pair per TL074, one cap per CMOS chip
+    pg.text(x0 - 40, Y(t0 + 300), "Decoupling: 100n per TL074 per rail, 100n per CMOS chip, each beside its chip", 12)
+    caps = [(f"U{i + 1}", f"C{911 + 2 * i}", f"C{912 + 2 * i}") for i in range(4)]
+    caps += [(f"U{5 + i}", f"C{921 + i}", None) for i in range(6)]
+    for i, (u, cp, cn) in enumerate(caps):
+        x, top = x0 + 20 + i * 90, Y(t0 + 350)
+        a = vpart(pg, P[cp], x, top + 20)
         pg.wire([a["1"], (x, top + 5), (x - 20, top + 5)], "+12V")
         pg.port(x - 20, top + 5, "+12V", "IN", "left")
-        pg.wire([b["2"], (x, top + 135), (x - 20, top + 135)], "-12V")
-        pg.port(x - 20, top + 135, "-12V", "IN", "left")
-        pg.text(x + 8, top + 160, f"U{i + 1}", 10)
+        if cn:
+            b = vpart(pg, P[cn], x, top + 80)
+            node = (x, top + 70)
+            pg.wire([a["2"], node], "GND")
+            pg.wire([node, b["1"]], "GND")
+            pg.wire([node, (x - 15, top + 70)], "GND")
+            pg.gnd(x - 15, top + 70, 270)
+            pg.wire([b["2"], (x, top + 135), (x - 20, top + 135)], "-12V")
+            pg.port(x - 20, top + 135, "-12V", "IN", "left")
+        else:
+            pg.stub_gnd(a["2"], "down", 10)
+        pg.text(x + 8, top + 160, u, 10)
+    # headers (female sockets on this board)
+    pg.text(x0 - 40, Y(700), "Board-to-board headers, female sockets on this board (pin 1 marked); the faceplate "
+                             "has the male pins", 12)
+    for k, (ref, kind, pins) in enumerate(circuit.HEADERS):
+        x, y = 140 + k * 165, Y(830 + (20 if len(pins) > 8 else 0))
+        hh = pg.place(ref, kind, x, y, des=(-10, -len(pins) * 5 - 10, "LEFT_BOTTOM"), name=False)
+        for num, net in P[ref].nets.items():
+            if net == "GND":
+                pg.stub_gnd(hh[num], "left", 15)
+            else:
+                pg.stub_port(hh[num], net, "IN", "left")
+    return pg
 
 
-# ---------------------------------------------------------------- checks
+# ------------------------------------------------------------------ faceplate pages
+def single_pot(pg, part, px, py, label):
+    """Library pot symbol, Plaitsy-style: lugs 4 / 5 joined to GND_F underneath."""
+    p = pg.place(part.ref, dev_of(part), px, py, des=(8, -22, "LEFT_BOTTOM"), value_at=(8, -12, "LEFT_BOTTOM"))
+    pg.text(px - 40, py + 36, label, 10)
+    nets = part.nets
+    for num, side in (("3", "left"), ("1", "right")):
+        if nets[num] == "GND_F":
+            pg.stub_flag(p[num], "GND_F", side, 15)
+        else:
+            pg.stub_port(p[num], nets[num], "IN", side)
+    pg.wire([p["4"], (p["4"][0] - 10, p["4"][1]), (p["4"][0] - 10, p["4"][1] + 15), (p["5"][0] + 10, p["5"][1] + 15),
+             (p["5"][0] + 10, p["5"][1]), p["5"]], "GND_F")
+    pg.wire([(p["5"][0] + 10, p["5"][1] + 15), (p["5"][0] + 10, p["5"][1] + 25)], "GND_F")
+    pg.flag(p["5"][0] + 10, p["5"][1] + 25, 0, "GND_F")
+    w = p["2"]
+    pg.wire([w, (w[0], w[1] - 15), (w[0] - 20, w[1] - 15)], nets["2"])
+    if nets["2"] == "GND_F":
+        pg.flag(w[0] - 20, w[1] - 15, 270, "GND_F")
+    else:
+        pg.port(w[0] - 20, w[1] - 15, nets["2"], "OUT", "left")
+    return p
+
+
+def jack_drawn(pg, part, jx, jy):
+    j = pg.place(part.ref, "JACK", jx, jy, des=(-25, -22, "LEFT_BOTTOM"), name=False)
+    pg.text(jx - 25, jy + 30, part.label, 10)
+    s = j["1"]
+    pg.wire([s, (s[0], s[1] - 20), (s[0] + 20, s[1] - 20)], "GND_F")
+    pg.flag(s[0] + 20, s[1] - 20, 90, "GND_F")
+    tn = part.nets.get("2")
+    if tn == "GND_F":
+        pg.stub_flag(j["2"], "GND_F", "right", 20)
+    elif tn:
+        pg.stub_port(j["2"], tn, "IN", "right")
+    x, y = j["3"]
+    pg.wire([(x, y), (x + 100, y)], part.nets["3"])
+    pg.port(x + 100, y, part.nets["3"], "IN" if tn is None else "OUT", "right")
+
+
+def faceplate_jacks_page(pr, P):
+    pg = MPage(pr, "Faceplate: jacks and pots", 1)
+    pg.page_count = "2"
+    pg.text(60, Y(40), "Jacks (Thonkiconn): sleeves to GND_F, unpatched inputs grounded by the switch lug; IN 7 R, "
+                       "IN 8 R and RETURN R follow their L input; outputs leave the lug open", 12)
+    jacks = sorted((p for p in P.values() if p.kind == "JACK"), key=lambda p: int(p.ref[1:]))
+    for i, part in enumerate(jacks):
+        col, row = divmod(i, 6)
+        jack_drawn(pg, part, 100 + col * 250, Y(130 + row * 105))
+    pg.text(930, Y(40), "Pots (Alpha 9 mm): pin 3 = CW end, lugs to GND_F", 12)
+    pots = sorted((p for p in P.values() if p.kind == "POT"), key=lambda p: int(p.ref[2:]))
+    for i, part in enumerate(pots):
+        col, row = divmod(i, 7)
+        single_pot(pg, part, 990 + col * 225, Y(140 + row * 130), part.label)
+    return pg
+
+
+def faceplate_controls_page(pr, P):
+    pg = MPage(pr, "Faceplate: dual pots, mute buttons, headers", 2)
+    pg.page_count = "2"
+    pg.text(60, Y(40), "Dual-gang pots (Alpha 9 mm, A100k): gang A = L (pins 1-3, nearer the shaft), gang B = R "
+                       "(4-6), lugs 7 / 8 to GND_F", 12)
+    for i, part in enumerate(p for p in P.values() if p.kind == "POT2"):
+        x, y = 160 + i * 380, Y(150)
+        pg.text(x - 60, y - 50, part.label, 11)
+        for unit, dx in ((1, 0), (2, 170)):
+            p = pg.place(part.ref, "POT2", x + dx, y, unit=unit, des=(8, -30, "LEFT_BOTTOM"),
+                         value_at=(8, -40, "LEFT_BOTTOM"))
+            cw, w, ccw = ("3", "2", "1") if unit == 1 else ("6", "5", "4")
+            pg.wire([p[cw], (p[cw][0], p[cw][1] - 10), (p[cw][0] + 30, p[cw][1] - 10)], part.nets[cw])
+            pg.port(p[cw][0] + 30, p[cw][1] - 10, part.nets[cw], "IN", "right")
+            pg.stub_port(p[w], part.nets[w], "OUT", "right")
+            pg.stub_flag(p[ccw], "GND_F", "down", 10)
+            if unit == 1:
+                for lug in ("7", "8"):
+                    pg.stub_flag(p[lug], "GND_F", "left", 10)
+    pg.text(60, Y(330), "Mute buttons: Thonk low-profile LED buttons. Contacts 1+2 to GND_F, 3+4 to the pull-up on "
+                        "the main board; the LED (5 / 6) lights when the channel is muted", 12)
+    for i, (ref, label, k) in enumerate(circuit.BUTTONS):
+        col, row = i % 4, i // 4
+        bx, by = 160 + col * 380, Y(430 + row * 150)
+        s = pg.place(ref, "SWLED", bx, by, des=(-50, -42, "LEFT_BOTTOM"), name=False)
+        pg.text(bx - 50, by + 48, label, 9)
+        gx = s["1"][0] - 15
+        pg.wire([s["1"], (gx, s["1"][1])], "GND_F")
+        pg.wire([s["2"], (gx, s["2"][1])], "GND_F")
+        pg.wire([(gx, s["1"][1]), (gx, s["2"][1])], "GND_F")
+        pg.wire([(gx, s["1"][1]), (gx, s["1"][1] - 10)], "GND_F")
+        pg.flag(gx, s["1"][1] - 10, 180, "GND_F")
+        net = P[ref].nets["3"]
+        nx = s["3"][0] + 15
+        pg.wire([s["3"], (nx, s["3"][1])], net)
+        pg.wire([s["4"], (nx, s["4"][1])], net)
+        pg.wire([(nx, s["3"][1]), (nx, s["4"][1])], net)
+        pg.wire([(nx, s["4"][1]), (nx + 20, s["4"][1])], net)
+        pg.port(nx + 20, s["4"][1], net, "OUT", "right")
+        pg.stub_port(s["5"], P[ref].nets["5"], "IN", "left")
+        pg.stub_flag(s["6"], "GND_F", "right", 15)
+    pg.text(60, Y(760), "Headers to the main board (male pins here); pin 1 at the top", 12)
+    for k, (ref, kind, pins) in enumerate(circuit.HEADERS):
+        fr = circuit.fb_ref(ref)
+        x, y = 140 + k * 165, Y(890 + (20 if len(pins) > 8 else 0))
+        h = pg.place(fr, kind, x, y, des=(-10, -len(pins) * 5 - 10, "LEFT_BOTTOM"), name=False)
+        for num, net in P[fr].nets.items():
+            if net == "GND_F":
+                pg.stub_flag(h[num], "GND_F", "left", 15)
+            else:
+                pg.stub_port(h[num], net, "IN", "left")
+    return pg
+
+
+# ------------------------------------------------------------------ checks
 def page_check(pg, parts):
     drawn = {(c["ref"], num) for c in pg.comps if c["ref"] for num in c["pins"]}
     sub = []
     for p in parts:
         nets = {pid: n for pid, n in p.nets.items() if (p.ref, pid) in drawn}
         if nets:
-            sub.append(Part(p.ref, p.kind, p.value, nets))
-    return ee.check(pg, sub, lambda part, pid: pid)
+            sub.append(circuit.Part(p.ref, p.kind, p.value, nets))
+    return check(pg, sub, lambda part, pid: pid)
 
 
 def coverage(pages, parts):
@@ -738,21 +1116,58 @@ def coverage(pages, parts):
     return problems
 
 
-def main():
-    pr = MixerProject()
-    parts = all_parts()
-    P = {p.ref: p for p in parts}
-    pages = [mono_page(pr, P), stereo_page(pr, P), bus_page(pr, P)]
-    bad = coverage(pages, parts)
+def part_info(pages):
+    """ref -> device key, schematic Unique ID and the PCB's Channel ID ('$' + page number + id of the
+    part's first schematic component)."""
+    info = {}
     for pg in pages:
+        for c in pg.comps:
+            if c["ref"] and c["ref"] not in info:
+                info[c["ref"]] = {"dev": c["dev"], "uid": pg.pr.unique_id(c["ref"]),
+                                  "channel": f"${pg.number}{c['cid']}"}
+    return info
+
+
+def preview_name(title):
+    board, _, rest = title.partition(": ")
+    return (board.split()[0] + "-" + rest.split(",")[0]).lower().replace(" ", "-")
+
+
+def main():
+    pr = MProject()
+    mb, fb = circuit.main_board_parts(), circuit.faceplate_parts()
+    PM, PF = {p.ref: p for p in mb}, {p.ref: p for p in fb}
+    main_pages = [mono_page(pr, PM), stereo_page(pr, PM), latch_page(pr, PM), power_page(pr, PM)]
+    fp_pages = [faceplate_jacks_page(pr, PF), faceplate_controls_page(pr, PF)]
+    bad = coverage(main_pages, mb) + coverage(fp_pages, fb)
+    for pg, parts in [(p, mb) for p in main_pages] + [(p, fb) for p in fp_pages]:
         bad += [f"{pg.title}: {b}" for b in page_check(pg, parts)]
     for b in bad:
         print("PROBLEM:", b)
-    pr.write(pages, OUT)
-    for pg in pages:
-        ee.render(pr, pg, PREVIEW.format(pg.title.lower().replace(",", "").replace(" ", "-")))
-    n = sum(1 for pg in pages for c in pg.comps if c["ref"])
-    print(f"{OUT}: {n} part units on {len(pages)} pages, {len(bad)} problems")
+    board_fb = pcb.faceplate_board(pr, fb, part_info(fp_pages), circuit)
+    board_mb = pcb.main_board(pr, mb, part_info(main_pages), circuit)
+    pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
+               + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb, circuit))
+    for b in pcb_bad:
+        print("PCB:", b)
+    template = pcb.load_template(ee)
+    panel_page = MPage(pr, "Panel", 1)
+    panel_page.page_count = "1"
+    panel_page.text(70, Y(60), "Stereo mixer 28HP panel as a PCB: no parts, no nets. Holes, slots, silkscreen and the "
+                               "bare-copper output band are in the PCB document; the art is "
+                               "hardware/panel/stereo-mixer-panel.svg.", 12)
+    board_panel = panel_pcb.PanelBoard()
+    pr.write([("Mixer Main", main_pages, board_mb), ("Mixer Faceplate", fp_pages, board_fb),
+              ("Mixer Panel", [panel_page], board_panel)], OUT, template)
+    for pg in main_pages + fp_pages:
+        render(pr, pg, PREVIEW.format(preview_name(pg.title)))
+    board_mb.render(PREVIEW.format("pcb-main-board"))
+    board_fb.render(PREVIEW.format("pcb-faceplate"))
+    board_panel.render(PREVIEW.format("pcb-panel"))
+    n = sum(1 for pg in main_pages + fp_pages for c in pg.comps if c["ref"])
+    print(f"{os.path.normpath(OUT)}: {n} part units on {len(main_pages) + len(fp_pages)} pages, "
+          f"{len(bad)} schematic problems; {len(board_mb.placed)} + {len(board_fb.placed)} parts placed on the "
+          f"PCBs, {len(pcb_bad)} PCB problems")
 
 
 if __name__ == "__main__":

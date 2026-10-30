@@ -1,220 +1,380 @@
-"""28HP panel for the stereo mixer: a layout illustration, a 1:1 drill template
-and the hole list. Every position comes from FEATURES below, so the three
-files always agree. Same conventions as Plaitsy's panel.py.
+"""28HP panel for the stereo mixer: hole list (CSV), a 1:1 drill template
+(SVG) and the panel artwork (SVG, as a PCB panel). Everything is computed
+from PLACEMENT in circuit.py, so board and panel agree.
 
-Layout: channel strips as columns, like a mixing console (SEND, PAN, LEVEL,
-MUTE from the top, input jacks at the bottom so cables hang away from the
-knobs). The master section on the right reads top to bottom: send and
-return (the FX loop), drums, MASTER, outputs.
+Conventions (the Marblesy ones): the faceplate board is seen from the
+front, x to the right, y up, origin at the board's bottom-left corner.
+Panel-facing parts sit on the board's bottom layer.
+  jack   sleeve pad towards the top of the board; the barrel sits 0.78 mm
+         below the WQP518MA footprint origin
+  pot    pins down; the Alpha shaft is 7.5 mm from the pin row, 4.0 mm
+         above the PTV09A origin (the dual-gang footprint uses the same frame)
+  button Thonk low-profile LED button, 5.5 mm cap centred on the origin
+Run from stereo-mixer/hardware/tools:  python panel.py
 """
 import csv
+import importlib.util
+import math
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUTDIR = os.path.join(HERE, "..", "panel")
+_spec = importlib.util.spec_from_file_location("mixer_circuit", os.path.join(HERE, "circuit.py"))
+circuit = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(circuit)
 
-HP = 28
-W, H = 141.9, 128.5                     # Eurorack 3U, 28HP (Doepfer: 141.9 mm)
-HOLE = {"pot": 7.5, "jack": 6.5, "toggle": 5.0, "mount": 3.2}
-KNOB = {"small": 10.0, "big": 14.0}     # knob diameters, for the illustration only
-
-# columns (mm from the left edge) and rows (mm from the top edge)
-CH_X = [15.0 + 13.0 * i for i in range(8)]          # channels 1-8
-M1, M2 = 120.5, 132.5                                # master section, two columns
-MC = (M1 + M2) / 2
-ROW = {"send": 23.0, "pan": 38.0, "level": 54.0, "mute": 69.0, "in": 86.0, "in_r": 101.0}
+PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 28HP
+HP = circuit.HP
+BOARD_X0 = (PANEL_W - circuit.BOARD_W) / 2
+BOARD_Y0 = (PANEL_H - circuit.BOARD_H) / 2   # board centred on the panel
+HOLE = {"pot": 7.5, "jack": 6.5, "ledbutton": 6.5}
+JACK_BARREL = circuit.JACK_BARREL
+POT_SHAFT = circuit.POT_SHAFT
+OUT = os.path.join(HERE, "..", "panel")
 
 
 def features():
-    """[(kind, label, x, y, ref, knob)]"""
-    f = []
-    for i, x in enumerate(CH_X):
-        k = i + 1
-        if k <= 6:
-            f += [("pot", f"SEND {k}", x, ROW["send"], f"RV{3 * k}", "small"),
-                  ("pot", f"PAN {k}", x, ROW["pan"], f"RV{3 * k - 1}", "small"),
-                  ("pot", f"LEVEL {k}", x, ROW["level"], f"RV{3 * k - 2}", "small"),
-                  ("toggle", f"MUTE {k}", x, ROW["mute"], f"SW{k}", None),
-                  ("jack", f"IN {k}", x, ROW["in"], f"J{k}", None)]
-        else:
-            s = k - 7
-            f += [("pot", f"SEND {k}", x, ROW["send"], f"RV{20 + 2 * s}", "small"),
-                  ("pot", f"LEVEL {k}", x, ROW["level"], f"RV{19 + 2 * s} (dual)", "small"),
-                  ("toggle", f"MUTE {k}", x, ROW["mute"], f"SW{k} (DPDT)", None),
-                  ("jack", f"IN {k} L", x, ROW["in"], f"J{7 + 2 * s}", None),
-                  ("jack", f"IN {k} R", x, ROW["in_r"], f"J{8 + 2 * s}", None)]
-    f += [("jack", "SEND", M1, ROW["send"], "J15", None),
-          ("jack", "FX IN", M2, ROW["send"], "J14", None),
-          ("jack", "RETURN L", M1, ROW["pan"], "J11", None),
-          ("jack", "RETURN R", M2, ROW["pan"], "J12", None),
-          ("pot", "RETURN", MC, ROW["level"], "RV23 (dual)", "small"),
-          ("pot", "DRUMS", M1, ROW["mute"], "RV24", "small"),
-          ("jack", "DRUMS IN", M2, ROW["mute"], "J13", None),
-          ("pot", "MASTER", MC, ROW["in"], "RV25 (dual)", "big"),
-          ("jack", "OUT L", M1, ROW["in_r"], "J16", None),
-          ("jack", "OUT R", M2, ROW["in_r"], "J17", None)]
-    for x in (7.5, 7.5 + (HP - 3) * 5.08):
-        for y in (3.0, H - 3.0):
-            f.append(("mount", "mounting", x, y, "", None))
-    return f
+    """[(kind, ref, label, origin_x, origin_y, hole_x, hole_y)] in board mm, y up."""
+    labels = {r: lbl for r, lbl, *_ in circuit.JACKS}
+    labels.update({r: lbl for r, lbl, *_ in circuit.POTS + circuit.POTS2})
+    labels.update({r: lbl for r, lbl, *_ in circuit.BUTTONS})
+    out = []
+    for ref, (x, y, rot) in circuit.PLACEMENT.items():
+        if ref.startswith("J"):
+            out.append(("jack", ref, labels[ref], x, y, x, y + JACK_BARREL))
+        elif ref.startswith("RV"):
+            out.append(("pot", ref, labels[ref], x, y, x, y + POT_SHAFT))
+        elif ref.startswith("SW"):
+            out.append(("ledbutton", ref, labels[ref], x, y, x, y))
+    return out
 
 
-def header(title, pad=(20, 15)):
-    px, py = pad
-    return [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W + 2 * px}mm" height="{H + 2 * py}mm" '
-            f'viewBox="{-px} {-py} {W + 2 * px} {H + 2 * py}">',
-            f'<title>{title}</title>',
-            '<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.5px;fill:#444}</style>']
+def panel_xy(bx, by):
+    """Board mm (y up) -> panel mm from the top-left corner (y down)."""
+    return BOARD_X0 + bx, PANEL_H - (BOARD_Y0 + by)
 
 
-def text(s, x, y, t, size=2.2, anchor="middle", weight="bold", fill="#111", extra=""):
-    s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="{anchor}" '
-             f'font-weight="{weight}" fill="{fill}"{extra}>{t}</text>')
+# Eurorack mounting: centres 3 mm from the top and bottom edge, 7.5 mm from the left edge and
+# (HP - 3) * 5.08 further right; slots 5.5 x 3.2 mm (horizontal) give side-to-side play
+MOUNTS = [(x, y) for x in (7.5, 7.5 + (HP - 3) * 5.08) for y in (3.0, PANEL_H - 3.0)]
+SLOT_W, SLOT_H = 5.5, 3.2
 
 
-def layout_svg(feats, path):
-    """The proposal: holes, knob sizes, labels, output boxes, normals."""
-    s = header("Stereo mixer 28HP panel - layout")
-    s.append('<rect x="-20" y="-15" width="181.9" height="158.5" fill="#ffffff"/>')
-    s.append(f'<rect x="0" y="0" width="{W}" height="{H}" rx="0.6" fill="#e9eae6" stroke="#222" stroke-width="0.3"/>')
-    # rail zones (the case rails sit behind these bands)
-    for y0 in (0, H - 10):
-        s.append(f'<rect x="0" y="{y0}" width="{W}" height="10" fill="#000" opacity="0.04"/>')
-    f = {lab: (x, y) for _, lab, x, y, _, _ in feats if lab != "mounting"}
-
-    # outputs boxed (drawn first, under the parts)
-    def box(x0, y0, x1, y1, fill="#2a2d2b"):
-        s.append(f'<rect x="{x0:.2f}" y="{y0:.2f}" width="{x1 - x0:.2f}" height="{y1 - y0:.2f}" rx="1.2" '
-                 f'fill="{fill}"/>')
-    sx, sy = f["SEND"]
-    box(sx - 5.7, sy - 8.6, sx + 5.7, sy + 5.6)
-    ox, oy = f["OUT L"]
-    rx_, _ = f["OUT R"]
-    box(ox - 5.7, oy - 5.6, rx_ + 5.7, oy + 9.2)
-
-    # separators: mono | stereo | master
-    for x in ((CH_X[5] + CH_X[6]) / 2, (CH_X[7] + M1) / 2):
-        s.append(f'<line x1="{x:.2f}" y1="12.5" x2="{x:.2f}" y2="108" stroke="#666" stroke-width="0.25"/>')
-    for y in (ROW["level"] + 5.9, ROW["mute"] + 5.6):    # master section: FX loop | drums | master
-        s.append(f'<line x1="{(CH_X[7] + M1) / 2 + 1.5:.2f}" y1="{y:.2f}" x2="{W - 2:.2f}" y2="{y:.2f}" '
-                 'stroke="#666" stroke-width="0.25"/>')
-
-    for kind, lab, x, y, ref, knob in feats:
-        if kind == "mount":
-            s.append(f'<ellipse cx="{x:.2f}" cy="{y:.2f}" rx="2.0" ry="1.6" fill="#fff" stroke="#888" stroke-width="0.2"/>')
-            continue
-        on_dark = lab in ("SEND", "OUT L", "OUT R")
-        if kind == "pot":
-            r = KNOB[knob] / 2
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r:.2f}" fill="#1d1f1e" stroke="#000" stroke-width="0.2"/>')
-            # pointer at 7 o'clock (fully CCW)
-            s.append(f'<line x1="{x:.2f}" y1="{y:.2f}" x2="{x - 0.64 * r:.2f}" y2="{y + 0.77 * r:.2f}" '
-                     'stroke="#eee" stroke-width="0.5" stroke-linecap="round"/>')
-        elif kind == "jack":
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="4.1" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>')
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="1.75" fill="#111"/>')
-        elif kind == "toggle":
-            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.5" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>')
-            s.append(f'<line x1="{x:.2f}" y1="{y:.2f}" x2="{x:.2f}" y2="{y - 3.6:.2f}" stroke="#333" '
-                     'stroke-width="1.3" stroke-linecap="round"/>')
-
-    # title and column headers
-    text(s, W / 2, 8.6, "STEREO MIXER", 3.6)
-    for i, x in enumerate(CH_X):
-        text(s, x, 15.0, str(i + 1), 2.8)
-    text(s, (CH_X[6] + CH_X[7]) / 2, 11.6, "STEREO", 1.9, weight="normal")
-    # row labels, left margin
-    for key, lab in (("send", "SEND"), ("pan", "PAN"), ("level", "LEVEL"), ("mute", "MUTE")):
-        text(s, 1.6, ROW[key] + 0.7, lab, 1.9, anchor="start")
-    text(s, 1.6, ROW["in"] + 0.7, "IN / L", 1.9, anchor="start")
-    text(s, 1.6, ROW["in_r"] + 0.7, "R", 1.9, anchor="start")
-    # mute toggles: lever up = on
-    for x in CH_X:
-        text(s, x + 3.2, ROW["mute"] - 3.0, "ON", 1.3, anchor="start", weight="normal", fill="#333")
-    # stereo normals: R takes L when unpatched
-    for x in CH_X[6:]:
-        s.append(f'<line x1="{x:.2f}" y1="{ROW["in"] + 4.6:.2f}" x2="{x:.2f}" y2="{ROW["in_r"] - 4.6:.2f}" '
-                 'stroke="#111" stroke-width="0.45" stroke-dasharray="0.1 1.0" stroke-linecap="round"/>')
-    lx, ly = f["RETURN L"]
-    rxx, _ = f["RETURN R"]
-    s.append(f'<line x1="{lx + 4.6:.2f}" y1="{ly:.2f}" x2="{rxx - 4.6:.2f}" y2="{ly:.2f}" stroke="#111" '
-             'stroke-width="0.45" stroke-dasharray="0.1 1.0" stroke-linecap="round"/>')
-    # master section labels
-    text(s, sx, sy - 6.0, "SEND", 2.0, fill="#fff")
-    text(s, f["FX IN"][0], sy - 6.0, "FX IN", 2.0)
-    text(s, lx, ly - 5.4, "RET L", 2.0)
-    text(s, rxx, ly - 5.4, "RET R", 2.0)
-    text(s, MC, ROW["level"] - 6.4, "RETURN", 2.0)
-    text(s, MC, ROW["mute"] - 5.9, "DRUMS", 2.0)
-    text(s, MC, ROW["in"] - 8.0, "MASTER", 2.2)
-    text(s, ox, oy + 7.6, "OUT L", 2.0, fill="#fff")
-    text(s, rx_, oy + 7.6, "OUT R", 2.0, fill="#fff")
-    text(s, W / 2, H - 4.2, "mono 1-6: IN · stereo 7-8: L, R (R follows L) · lever up = on", 1.6,
-         weight="normal", fill="#444")
-
-    # dimensions outside the panel
-    text(s, W / 2, H + 7.5, f"{HP}HP · {W} × {H} mm · 1:1 when printed at 100 %", 2.2, weight="normal")
-    s.append('</svg>')
-    open(path, "w", encoding="utf-8").write("\n".join(s))
+def slot(x, y, cls=None, stroke=None):
+    c = f' class="{cls}"' if cls else ""
+    st = f' fill="none" stroke="{stroke}" stroke-width="0.2"' if stroke else ""
+    return (f'<rect x="{x - SLOT_W / 2:.2f}" y="{y - SLOT_H / 2:.2f}" width="{SLOT_W}" height="{SLOT_H}" '
+            f'rx="{SLOT_H / 2}"{c}{st}/>')
 
 
-def drill_svg(feats, path):
-    s = header("Stereo mixer 28HP panel - drill template (print at 100%)")
-    s.append(f'<rect x="0" y="0" width="{W}" height="{H}" fill="none" stroke="#000" stroke-width="0.25"/>')
-    for kind, lab, x, y, ref, _ in feats:
+def write_csv(feats, path):
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["kind", "ref", "label", "board_origin_x", "board_origin_y", "panel_x_from_left",
+                    "panel_y_from_top", "hole_mm"])
+        for kind, ref, label, ox, oy, hx, hy in feats:
+            px, py = panel_xy(hx, hy)
+            w.writerow([kind, ref, label, f"{ox:.2f}", f"{oy:.2f}", f"{px:.2f}", f"{py:.2f}", HOLE[kind]])
+        for x, y in MOUNTS:
+            w.writerow(["mount", "", "mounting slot", "", "", f"{x:.2f}", f"{y:.2f}", f"{SLOT_W} x {SLOT_H} slot"])
+
+
+def write_svg(feats, path):
+    W, H = PANEL_W, PANEL_H
+    s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W + 40}mm" height="{H + 30}mm" '
+         f'viewBox="-20 -15 {W + 40} {H + 30}">',
+         '<title>Stereo mixer 28HP panel - drill template (print at 100%)</title>',
+         '<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444} '
+         '.lbl{font-size:1.8px;fill:#06c}</style>',
+         f'<rect x="-20" y="-15" width="{W + 40}" height="{H + 30}" fill="#ffffff"/>',
+         f'<rect x="0" y="0" width="{W}" height="{H}" fill="none" stroke="#000" stroke-width="0.25"/>',
+         f'<rect x="{BOARD_X0:.2f}" y="{PANEL_H - BOARD_Y0 - circuit.BOARD_H:.2f}" width="{circuit.BOARD_W}" '
+         f'height="{circuit.BOARD_H}" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>']
+    rows = [(k, lbl, *panel_xy(hx, hy)) for k, ref, lbl, ox, oy, hx, hy in feats]
+    for x, y in MOUNTS:
+        s.append(slot(x, y, stroke="#c00"))
+        s.append(f'<text class="dim" x="{x + SLOT_W / 2 + 0.5:.2f}" y="{y - SLOT_H / 2 - 0.3:.2f}">{SLOT_W}x{SLOT_H}</text>')
+    for kind, label, x, y in rows:
         d = HOLE[kind]
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{d / 2:.2f}" fill="none" stroke="#c00" stroke-width="0.2"/>')
         s.append(f'<line x1="{x - 1.5:.2f}" y1="{y:.2f}" x2="{x + 1.5:.2f}" y2="{y:.2f}" stroke="#000" stroke-width="0.12"/>')
         s.append(f'<line x1="{x:.2f}" y1="{y - 1.5:.2f}" x2="{x:.2f}" y2="{y + 1.5:.2f}" stroke="#000" stroke-width="0.12"/>')
-        if kind != "mount":
-            s.append(f'<text class="dim" x="{x + d / 2 + 0.5:.2f}" y="{y - d / 2 - 0.2:.2f}">Ø{d}</text>')
-            s.append(f'<text class="dim" x="{x:.2f}" y="{y + d / 2 + 1.9:.2f}" text-anchor="middle">{ref.split(" ")[0]}</text>')
+        s.append(f'<text class="dim" x="{x + d / 2 + 0.4:.2f}" y="{y - d / 2 - 0.2:.2f}">Ø{d}</text>')
+        s.append(f'<text class="lbl" x="{x:.2f}" y="{y + d / 2 + 2.2:.2f}" text-anchor="middle">{label}</text>')
     s.append('<line x1="5" y1="-8" x2="55" y2="-8" stroke="#000" stroke-width="0.3"/>')
     for x in (5, 55):
         s.append(f'<line x1="{x}" y1="-9.5" x2="{x}" y2="-6.5" stroke="#000" stroke-width="0.3"/>')
     s.append('<text x="30" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>')
     s.append(f'<text x="{W / 2}" y="{H + 8}" font-size="2" text-anchor="middle">Stereo mixer 28HP panel, front view. '
-             'Red circles: final hole size. Centre-punch the crosses, pilot-drill 2 mm, then step up.</text>')
-    s.append(f'<text x="{W / 2}" y="{H + 11}" font-size="2" text-anchor="middle">Toggles (ATE1D/ATE2D) have no '
-             'panel nut: the board holds them. Check the lever swings freely in 5 mm; open up if it rubs.</text>')
+             'Red circles: final hole size. Dashed: the faceplate board. Button holes suit the Thonk LED button.</text>')
+    s.append('</svg>')
+    open(path, "w", encoding="utf-8").write("\n".join(s))
+
+
+# ------------------------------------------------------------------ artwork
+# The panel as a PCB, in the Marblesy style: black solder mask, white
+# silkscreen, bare (ENIG) copper for the outputs. SVG groups: #silk,
+# #copper, #holes and #mockup (knobs, nuts, button caps, preview only).
+# Tune ART, run, look at stereo-mixer-panel.svg.
+ART = {
+    "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227", "lit": "#d94040",
+    "knob": {"small": 5.0, "mid": 6.0},       # radii, mm: channel / RETURN / DRUMS knobs, MASTER
+    "scale": {"small": 6.0, "mid": 7.5},
+    "cap_led": 2.75, "nut": 4.0, "ring": 4.35,
+    "title": "Mixer", "subtitle": "Stereo voice mixer", "maker": "Seedable Instruments",
+    "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
+    "label": 1.9,                             # knob, button and jack labels
+}
+KNOB_SIZE = {ref: "small" for ref, *_ in circuit.POTS + circuit.POTS2}
+KNOB_SIZE["RV25"] = "mid"
+PAN_POTS = [f"RV{3 * k - 1}" for k in circuit.MONO]
+MASTER_POTS = ["RV23", "RV24", "RV25"]          # labelled one by one; the channel rows share one word per row
+MONO_INS = [f"J{k}" for k in circuit.MONO]
+ROW_WORD_X = 2.4                                # where the row words start, from the panel's left edge
+CHAR_W = 0.68                                   # estimated advance per character (bold sans), x font size
+OUTPUTS = ["J16", "J17"]
+# labels: knobs take their row word, jacks a short word above them
+KNOB_WORD = {ref: lbl.split(" ")[0] for ref, lbl, *_ in circuit.POTS + circuit.POTS2}
+JACK_WORD = {f"J{k}": "IN" for k in circuit.MONO}
+JACK_WORD.update({"J7": "L", "J8": "R", "J9": "L", "J10": "R", "J11": "L", "J12": "R", "J13": "DRUM IN",
+                  "J14": "FX IN", "J15": "SEND", "J16": "OUT L", "J17": "OUT R"})
+NORMALS = [("J7", "J8"), ("J9", "J10"), ("J11", "J12")]      # R follows L: dotted line between them
+BAND_CLEAR = 0.4      # bare board (under black mask) between a copper band and a hole through it; DRC asks 0.3
+
+
+def bands(pos):
+    """The bare-copper patches: (x, y, w, h, rx) from the top-left in the panel frame, with the holes
+    through each as clearance circles (x, y, r). One band round OUT L / R, one patch round SEND."""
+    out = []
+    ox, rx_, jy = pos["J16"][2], pos["J17"][2], pos["J16"][3]
+    sx, sy = pos["J15"][2], pos["J15"][3]
+    for x, y, w, h in ((ox - 4.8, jy - 8.8, rx_ - ox + 9.6, 14.6), (sx - 4.8, sy - 8.8, 9.6, 14.6)):
+        cuts = []
+        for kind, label, hx, hy in pos.values():
+            r = HOLE[kind] / 2 + BAND_CLEAR
+            if x - r < hx < x + w + r and y - r < hy < y + h + r:
+                if not (x + r < hx < x + w - r and y + r < hy < y + h - r):
+                    raise ValueError(f"the hole at ({hx:.2f}, {hy:.2f}) crosses the edge of a copper band")
+                cuts.append((hx, hy, r))
+        out.append(((x, y, w, h, 1.4), cuts))
+    return out
+
+
+def knob_label_y(pos, ref):
+    """Baseline of the label under a knob."""
+    return pos[ref][3] + ART["scale"][KNOB_SIZE[ref]] + 2.6
+
+
+def jack_label_y(pos, ref):
+    return pos[ref][3] - ART["nut"] - 1.6
+
+
+def _arc(cx, cy, r, a0, a1):
+    """SVG path of an arc from angle a0 to a1 (degrees, clockwise from 12 o'clock)."""
+    p0 = (cx + r * math.sin(math.radians(a0)), cy - r * math.cos(math.radians(a0)))
+    p1 = (cx + r * math.sin(math.radians(a1)), cy - r * math.cos(math.radians(a1)))
+    large = 1 if (a1 - a0) % 360 > 180 else 0
+    return f"M {p0[0]:.2f} {p0[1]:.2f} A {r} {r} 0 {large} 1 {p1[0]:.2f} {p1[1]:.2f}"
+
+
+def scale_ticks(size):
+    """Tick angles (degrees from 12 o'clock) and lengths of a knob's scale."""
+    n = {"small": 3, "mid": 7}[size]
+    return [(-135 + 270 * i / (n - 1), 1.0 if i in (0, n - 1, (n - 1) // 2) else 0.6) for i in range(n)]
+
+
+def layout(pos):
+    """Everything the artwork and the panel PCB draw, in one list, so the two never drift apart:
+    ("text", x, y, s, size, anchor, cls), ("line", pts, w), ("dots", pts), ("arc", cx, cy, r, a0, a1, w),
+    ("ring", cx, cy, r, w), ("serif", x, y, s, size, anchor)."""
+    A = ART
+    W = PANEL_W
+    out = []
+
+    def text(x, y, s, size, anchor="middle"):
+        out.append(("text", x, y, s, size, anchor))
+
+    # title band, maker line
+    out.append(("serif", 12.0, 7.6, A["title"], 5.2, "start"))
+    text(W - 12.0, 6.8, A["subtitle"], 2.1, "end")
+    out.append(("dots", [(3, 9.6), (W - 3, 9.6)]))
+    out.append(("dots", [(3, 10.6), (W - 3, 10.6)]))
+    text(W / 2, 122.4, A["maker"], 2.2)
+    out.append(("line", [(3, 118.6), (W - 3, 118.6)], 0.3))
+    # channel numbers over the columns; the stereo pair gets a bracket and STEREO in its empty PAN row
+    for k in range(1, 9):
+        text(circuit.CH_X[k - 1], 16.0, str(k), 3.0)
+    x7, x8 = circuit.CH_X[6], circuit.CH_X[7]
+    yp = circuit.ROW["pan"]
+    text((x7 + x8) / 2, yp + 0.8, "STEREO", 2.1)
+    for x0, x1 in ((x7 - 3.5, (x7 + x8) / 2 - 5.4), ((x7 + x8) / 2 + 5.4, x8 + 3.5)):
+        out.append(("line", [(x0, yp), (x1, yp)], 0.3))
+    out.append(("line", [(x7 - 3.5, yp - 1.6), (x7 - 3.5, yp + 1.6)], 0.3))
+    out.append(("line", [(x8 + 3.5, yp - 1.6), (x8 + 3.5, yp + 1.6)], 0.3))
+    # the master section, set off by a rule
+    xs = (circuit.CH_X[7] + circuit.M1) / 2
+    out.append(("line", [(xs, 13.0), (xs, 110.0)], 0.3))
+    # knobs: scale arcs with ticks; the master section's knobs get their word underneath, the channel rows
+    # get theirs once (row_words below); L / R just under the ends of each pan scale
+    for ref, (kind, label, x, y) in pos.items():
+        if kind != "pot":
+            continue
+        size = KNOB_SIZE[ref]
+        r = A["scale"][size]
+        out.append(("arc", x, y, r, -135, 135, 0.3))
+        for a, ln in scale_ticks(size):
+            ra = math.radians(a)
+            out.append(("line", [(x + r * math.sin(ra), y - r * math.cos(ra)),
+                                 (x + (r + ln) * math.sin(ra), y - (r + ln) * math.cos(ra))], 0.3))
+        if ref in MASTER_POTS:
+            text(x, knob_label_y(pos, ref), KNOB_WORD[ref], A["label"] if size == "small" else 2.2)
+        if ref in PAN_POTS:
+            text(x - 4.9, y + 6.4, "L", 1.6)
+            text(x + 4.9, y + 6.4, "R", 1.6)
+    # mute buttons: a ring round each cap
+    for ref, (kind, label, x, y) in pos.items():
+        if kind == "ledbutton":
+            out.append(("ring", x, y, A["ring"], 0.3))
+    # the channel rows' words, once each at the left edge, with a dotted line along the row to the last
+    # column it applies to (PAN and IN stop at channel 6: the stereo pair has no pan and labels its jacks L / R)
+    for y, word, last in row_words(pos):
+        size = A["label"]
+        text(ROW_WORD_X, y, word, size, "start")
+        x0 = ROW_WORD_X + CHAR_W * size * len(word) + 1.2
+        out.append(("dots", [(x0, y - 0.65), (circuit.CH_X[last - 1] + 5.5, y - 0.65)]))
+    # jack labels (the outputs' go on their copper, see bands; the mono INs share the IN row word),
+    # dotted normals R <- L
+    for ref, (kind, label, x, y) in pos.items():
+        if kind == "jack" and ref not in OUTPUTS + ["J15"] + MONO_INS:
+            text(x, jack_label_y(pos, ref), JACK_WORD[ref], A["label"])
+    for a, b in NORMALS:
+        ax, ay = pos[a][2], pos[a][3]
+        bx, by = pos[b][2], pos[b][3]
+        if abs(ax - bx) < 0.1:          # one above the other: from under L's nut to above R's label
+            out.append(("dots", [(ax, ay + A["nut"] + 0.9), (bx, jack_label_y(pos, b) - 2.6)]))
+        else:                           # side by side: between the two nuts
+            out.append(("dots", [(ax + A["nut"] + 0.9, ay), (bx - A["nut"] - 0.9, by)]))
+    return out
+
+
+def row_words(pos):
+    """(baseline y, word, last channel) of each channel row's single label: under the first column's knob,
+    button or above its jack, where the per-column labels used to be."""
+    ys = {"send": knob_label_y(pos, "RV3"), "pan": knob_label_y(pos, "RV2"), "level": knob_label_y(pos, "RV1")}
+    return [(ys["send"], "SEND", 8), (ys["pan"], "PAN", 6), (ys["level"], "LEVEL", 8),
+            (pos["SW1"][3] + ART["ring"] + 2.4, "MUTE", 8), (jack_label_y(pos, "J1"), "IN", 6)]
+
+
+def write_artwork(feats, path):
+    A = ART
+    W, H = PANEL_W, PANEL_H
+    s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="0 0 {W} {H}">',
+         '<title>Stereo mixer 28HP panel - artwork</title>',
+         f'<style>text{{font-family:{A["font"]};font-weight:bold;fill:{A["silk"]}}} '
+         f'.serif{{font-family:{A["serif"]};font-style:italic;font-weight:normal}} '
+         f'.silk{{stroke:{A["silk"]};fill:none;stroke-linecap:round;stroke-linejoin:round}} '
+         f'.dots{{stroke-dasharray:0.1 1.0;stroke-width:0.45}} '
+         f'.copper{{fill:{A["copper"]}}} .cu-text{{fill:{A["panel"]}}} .hole{{fill:#ffffff;stroke:none}}</style>',
+         f'<rect x="0" y="0" width="{W}" height="{H}" fill="{A["panel"]}"/>']
+    pos = {ref: (kind, label, *panel_xy(hx, hy)) for kind, ref, label, ox, oy, hx, hy in feats}
+
+    def text(x, y, t, size, anchor="middle", cls="", colour=None):
+        c = f' class="{cls}"' if cls else ""
+        st = f' style="fill:{colour}"' if colour else ""
+        s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="{anchor}"{c}{st}>{t}</text>')
+
+    # -- bare copper: the output band and the SEND patch, labels knocked out
+    s.append('<g id="copper">')
+    for (bx, by, bw, bh, brx), cuts in bands(pos):
+        s.append(f'<rect x="{bx:.2f}" y="{by:.2f}" width="{bw:.2f}" height="{bh}" rx="{brx}" class="copper"/>')
+        for x, y, r in cuts:
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r:.2f}" class="cu-text"/>')
+    for ref in OUTPUTS + ["J15"]:
+        text(pos[ref][2], jack_label_y(pos, ref), JACK_WORD[ref], A["label"], cls="cu-text")
+    s.append('</g>')
+    # -- silkscreen
+    s.append('<g id="silk">')
+    for item in layout(pos):
+        kind = item[0]
+        if kind == "text":
+            _, x, y, t, size, anchor = item
+            text(x, y, t, size, anchor)
+        elif kind == "serif":
+            _, x, y, t, size, anchor = item
+            text(x, y, t, size, anchor, cls="serif")
+        elif kind == "line":
+            _, pts, w = item
+            s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts)
+                     + f'" class="silk" stroke-width="{w}"/>')
+        elif kind == "dots":
+            s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in item[1]) + '" class="silk dots"/>')
+        elif kind == "arc":
+            _, x, y, r, a0, a1, w = item
+            s.append(f'<path d="{_arc(x, y, r, a0, a1)}" class="silk" stroke-width="{w}"/>')
+        elif kind == "ring":
+            _, x, y, r, w = item
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r}" class="silk" stroke-width="{w}"/>')
+    s.append('</g>')
+    # -- holes
+    s.append('<g id="holes">')
+    for ref, (kind, label, x, y) in pos.items():
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HOLE[kind] / 2:.2f}" class="hole"/>')
+    for x, y in MOUNTS:
+        s.append(slot(x, y, cls="hole"))
+    s.append('</g>')
+    # -- mockup of the fitted parts (preview only); MUTE 3 shown lit
+    s.append('<g id="mockup">')
+    for ref, (kind, label, x, y) in pos.items():
+        if kind == "pot":
+            r = A["knob"][KNOB_SIZE[ref]]
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r}" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{r * 0.62:.2f}" fill="#e8e8e4"/>')
+            a = math.radians(0 if ref in PAN_POTS else -135)
+            s.append(f'<line x1="{x + 0.3 * r * math.sin(a):.2f}" y1="{y - 0.3 * r * math.cos(a):.2f}" '
+                     f'x2="{x + 0.95 * r * math.sin(a):.2f}" y2="{y - 0.95 * r * math.cos(a):.2f}" '
+                     f'stroke="#555" stroke-width="0.6" stroke-linecap="round"/>')
+        elif kind == "jack":
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["nut"]}" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="1.75" fill="#111"/>')
+        elif kind == "ledbutton":
+            fill = A["lit"] if ref == "SW3" else "#2b2b2b"
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["cap_led"]}" fill="{fill}" stroke="#000" stroke-width="0.4"/>')
+    for x, y in MOUNTS:                  # M3 screw head
+        s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>')
+    s.append('</g>')
     s.append('</svg>')
     open(path, "w", encoding="utf-8").write("\n".join(s))
 
 
 def check(feats):
-    """Clearances between neighbouring parts, using knob and nut sizes."""
-    size = {"pot": None, "jack": 8.5, "toggle": 6.0, "mount": 4.0}
+    """Panel clearances: knob scales, button rings and jack nuts must not touch each other or the
+    edges; reports gaps under 1 mm."""
+    pos = {ref: (kind, label, *panel_xy(hx, hy)) for kind, ref, label, ox, oy, hx, hy in feats}
     items = []
-    for kind, lab, x, y, ref, knob in feats:
-        d = KNOB[knob] if kind == "pot" else size[kind]
-        items.append((lab, x, y, d))
-    worst = []
-    for i, (a, xa, ya, da) in enumerate(items):
-        for b, xb, yb, db in items[i + 1:]:
-            gap = ((xa - xb) ** 2 + (ya - yb) ** 2) ** 0.5 - (da + db) / 2
-            if gap < 2.0:
-                worst.append((round(gap, 2), a, b))
-        edge = min(xa, W - xa) - da / 2
-        if edge < 2.5 and a != "mounting":
-            worst.append((round(edge, 2), a, "panel edge"))
-    return sorted(worst)
+    for ref, (kind, label, x, y) in pos.items():
+        r = {"pot": ART["scale"].get(KNOB_SIZE.get(ref, "small"), 6.0) + 0.6 if kind == "pot" else 0,
+             "jack": ART["nut"], "ledbutton": ART["ring"]}[kind]
+        items.append((ref, x, y, r))
+    bad = []
+    for i, (a, xa, ya, ra) in enumerate(items):
+        for b, xb, yb, rb in items[i + 1:]:
+            gap = math.hypot(xa - xb, ya - yb) - ra - rb
+            if gap < 1.0:
+                bad.append(f"{a} - {b}: {gap:.2f} mm")
+        edge = min(xa, PANEL_W - xa) - ra
+        if edge < 2.0:
+            bad.append(f"{a} - panel edge: {edge:.2f} mm")
+    return bad
 
 
 def main():
-    os.makedirs(OUTDIR, exist_ok=True)
+    os.makedirs(OUT, exist_ok=True)
     feats = features()
-    layout_svg(feats, os.path.join(OUTDIR, "stereo-mixer-panel.svg"))
-    drill_svg(feats, os.path.join(OUTDIR, "stereo-mixer-panel-drill.svg"))
-    with open(os.path.join(OUTDIR, "stereo-mixer-panel-holes.csv"), "w", newline="") as fh:
-        w = csv.writer(fh)
-        w.writerow(["part", "label", "ref", "x_mm_from_left", "y_mm_from_top", "hole_mm"])
-        for kind, lab, x, y, ref, _ in feats:
-            w.writerow([kind, lab, ref, f"{x:.2f}", f"{y:.2f}", HOLE[kind]])
-    tight = check(feats)
-    for gap, a, b in tight:
-        print(f"tight: {a} - {b}: {gap} mm")
-    n = {k: sum(1 for f in feats if f[0] == k) for k in HOLE}
-    print(f"{HP}HP panel: {n}; {len(tight)} tight spots (< 2 mm between knob/nut edges)")
+    write_csv(feats, os.path.join(OUT, "stereo-mixer-panel-holes.csv"))
+    write_svg(feats, os.path.join(OUT, "stereo-mixer-panel-drill.svg"))
+    write_artwork(feats, os.path.join(OUT, "stereo-mixer-panel.svg"))
+    for b in check(feats):
+        print("tight:", b)
+    print(f"{len(feats)} features + 4 mounting slots written to {os.path.normpath(OUT)}")
 
 
 if __name__ == "__main__":

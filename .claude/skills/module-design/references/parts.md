@@ -22,14 +22,25 @@ missing, in the same style, with real pin numbers.
 - Sleeve to the analog ground; CV inputs get the switch lug grounded, clock
   inputs get the normalization probe through 10 kΩ; outputs leave it open.
 
-## Alpha 9 mm vertical pot (PTV09A, Thonk B10K etc.)
+## Alpha 9 mm vertical pot (RD901F single, RD902F dual-gang; Thonk)
 
-- Footprint `SW-TH_PTV09A-4015F-B502`: pins 1/2/3 at x = −2.5/0/+2.5,
-  y = −3.5; lugs 4/5 at (±4.3, +3.5), pads 2.8 × 3.0. Origin 6.97 mm behind
-  the pin row; the shaft is 7.5 mm behind it, so shaft = origin + 0.53 mm
-  away from the pins. Panel hole 7.5 mm.
-- Housing: 9.5 mm wide, ends about 4 mm beyond the origin (KiCad RD901F);
-  the library drawing's 9 mm is far too long, override it.
+- The Alpha part (KiCad `Potentiometer_Alpha_RD901F-40-00D_Single_Vertical`
+  and `RD902F-40-00D_Dual_Vertical`): pins 2.5 mm apart in a row, the shaft
+  **7.5 mm** from the pin row, the two mounting lugs on the shaft line at
+  ±4.8 mm (dual ±4.75), housing 9.5 mm wide from 1 mm off the pin row to
+  4.85 mm past the shaft. The dual's second gang is a second pin row 2.5 mm
+  further from the shaft; both stand 9.5–10 mm tall, Thonkiconn height.
+- Library footprint `SW-TH_PTV09A-4015F-B502` is Bourns' PTV09A: pins at
+  y = −3.5, lug slots at (±4.3, +3.5), its own silk shows the shaft at
+  +3.5. Its pin row is **3.5 mm** from the origin, so an Alpha shaft sits
+  at origin **+4.0 mm** away from the pins, not +0.53. The 0.53 / 6.97 mm
+  figures in Marblesy's and Plaitsy's `panel.py` / `circuit.py` were wrong
+  (their panel holes come out ~3.5 mm off the shafts, and `pcb.BODY`'s
+  4 mm housing too short): fix those before ordering. The library's 9 mm
+  drawing was about right.
+- `stereo-mixer/hardware/tools/easyeda_export.py` `fp_alpha_pot()` generates
+  Alpha single and dual footprints in the PTV09A's frame (lugs where the
+  Alpha has them, real housing); use those. Panel hole 7.5 mm.
 - CW rotation drives the wiper towards pin 3; put 3V3A on pin 3 and ground
   on pin 1 and the panel reads the right way round.
 - Bring schematic wires into the lug pins 4/5 vertically or they cross a
@@ -103,7 +114,10 @@ too big for a dense panel.
   2.5; pads 1.8, body 6.9 × 2.3. Vertical caps in a column need 7.5 mm
   steps.
 - SR305 1 µ: 5.08 mm pitch, body 7.6 × 3.8.
-- PDIP-14 pads 2.0 × 1.5 at ±4.44; DIP-16 pads 1.6 at ±3.81, body 20 × 6.6.
+- PDIP-14 (the TL074ACN library footprint) has its pad rows at ±4.445,
+  8.89 mm apart: too wide for a 7.62 mm DIP socket. The mixer generates a
+  standard 7.62 mm DIP-14 (`fp_dip`); Marblesy and Plaitsy still use the
+  library one. DIP-16 pads 1.6 at ±3.81, body 20 × 6.6.
 - DO-35: pads at ±4.0 (8 mm pitch), r 0.8.
 
 ## Chips

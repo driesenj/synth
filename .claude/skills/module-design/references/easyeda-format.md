@@ -114,8 +114,9 @@ LAYER list, ACTIVE_LAYER, CANVAS (mm, grid 10), `POLY` silk on layer 3,
 12), `ATTR` Footprint and Designator, an empty `NET`. Library footprints also
 carry courtyard (layer 48), 3D (49–51) and document (13) layers; the drawn
 housing is the union of layers 3 and 13 and is what the overlap check uses.
-The PTV09A pot's drawing runs 9 mm beyond its origin; override its body to
-4 mm (`pcb.BODY`).
+The PTV09A pot's drawing runs 9 mm beyond its origin, which matches an Alpha
+pot's housing (4.85 mm past a shaft at +4.0); the 4 mm `pcb.BODY` override
+Marblesy and Plaitsy use is too short. See parts.md.
 
 ## Schematic facts
 

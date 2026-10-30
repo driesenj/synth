@@ -1,13 +1,19 @@
 # Stereo mixer: master mixer for the Eurorack voice case
 
-The voice case's stereo master. It mixes six mono channels with pan, two
-stereo channels, the Clouds return and the drum mixer's output. Clouds is fed
-from one send. The L/R outputs go to the output module, so the whole rig ends
-in stereo, with the drums and the low end in the centre.
+The voice case's stereo master, 28HP. It mixes six mono channels with pan,
+two stereo channels, the Clouds return and the drum mixer's output, with
+one send for Clouds. Every channel has an LED-button mute (lit = muted,
+all open at power-up). OUT L / R go to the output module, so the rig ends
+in stereo with the drums and the low end in the centre.
 
-Analog throughout: 4× TL074, DC-coupled, ±12 V.
+Analog audio path (4× TL074, DC-coupled, ±12 V), a CMOS latch for the
+mutes, PhotoMOS switches. Built like Marblesy and Plaitsy: two stacked
+PCBs behind a PCB panel, Thonk panel parts.
 
-The circuit, values and reasoning are in [docs/design.md](docs/design.md).
+![panel](hardware/panel/stereo-mixer-panel-preview.png)
+
+The circuit, values, placement, routing notes and BOM are in
+[docs/design.md](docs/design.md).
 
 ---
 
@@ -15,35 +21,25 @@ The circuit, values and reasoning are in [docs/design.md](docs/design.md).
 
 | Section | Controls | Jacks |
 |---|---|---|
-| Channels 1–6 (mono) | LEVEL, PAN, SEND, MUTE toggle | IN |
-| Channels 7–8 (stereo) | LEVEL (dual-gang), SEND, MUTE toggle (DPDT) | IN L, IN R (R takes L when unpatched) |
-| Return | RETURN level (dual-gang) | RETURN L, RETURN R (R takes L when unpatched) |
-| Drums | DRUMS level | DRUMS (drum mixer output, centred) |
-| Send | — | FX IN (drum mixer send, adds into the send bus), SEND |
+| Channels 1–6 (mono) | SEND, PAN, LEVEL, MUTE (LED button) | IN |
+| Channels 7–8 (stereo) | SEND, LEVEL (dual-gang), MUTE (both sides) | IN L, IN R (R takes L when unpatched) |
+| Return | RETURN (dual-gang) | L, R (R takes L when unpatched) |
+| Drums | DRUMS | DRUM IN (drum mixer output, centred) |
+| Send | — | FX IN (drum mixer send, into the send bus), SEND |
 | Master | MASTER (dual-gang) | OUT L, OUT R |
 
-That is 25 knobs (4 of them dual-gang), 8 toggles and 17 jacks, on a 28HP
-panel. The proposed layout is in `hardware/panel/`:
-
-- Channels are columns like on a mixing console: SEND, PAN, LEVEL and MUTE
-  from the top, with the input jacks at the bottom so cables hang away from
-  the knobs.
-- On the right, the master section reads top to bottom: send and return,
-  drums, MASTER, then the outputs.
+25 knobs (4 dual-gang), 8 LED buttons, 17 jacks.
 
 ## Hooking it up
 
-- **OUT L / OUT R** go to the output module's IN 1 and IN 2, with their pans
-  hard left and hard right and the IN knobs at noon or below. Those input
-  stages have a gain of 2 and clip at about ±5.4 V in.
-- **Mono check:** turn both of the output module's pan knobs to the centre.
-  That replaces a MONO switch on this panel.
-- **SEND** goes to Clouds IN L; IN R follows L when unpatched. Clouds OUT L/R
-  go to **RETURN L/R**. Keep Clouds' own blend at full wet if you want the
-  dry signal only from the channel strips.
-- **Drum mixer:** its main output goes to **DRUMS** and its send to
-  **FX IN**, so the drums share Clouds' reverb. The drum mixer's return stays
-  free for the compressor.
+- **OUT L / OUT R** to the output module's IN 1 and IN 2, pans hard left
+  and right, IN at noon or below (those stages have a gain of 2).
+- **Mono check:** turn both of the output module's pans to the centre.
+- **SEND** to Clouds IN L (IN R follows L); Clouds OUT L / R to **RETURN
+  L / R**. Clouds' blend at full wet if the dry signal should come only
+  from the channel strips.
+- **Drum mixer:** its main output to **DRUM IN**, its send to **FX IN**,
+  so the drums share Clouds' reverb.
 
 ---
 
@@ -51,58 +47,41 @@ panel. The proposed layout is in `hardware/panel/`:
 
 | Part | Status | Files |
 |---|---|---|
-| Netlist | Done: 129 parts, 93 nets, no single-pin nets | `hardware/tools/netlist.py` |
-| EasyEDA Pro schematic | Done: 3 A3 pages from your MorrisSynth library parts. The drawing was checked against the netlist: 0 problems. Not yet opened in EasyEDA itself | `hardware/easyeda/StereoMixer.epro2` |
-| Panel | Proposed: 28HP, at least 2 mm between neighbouring knob and jack-nut edges. Layout, 1:1 drill template, hole list | `hardware/panel/`, `hardware/tools/panel.py` |
-| Layout (stripboard or PCB) | Not started | — |
+| Netlist | Done: main board 155 parts, faceplate 59, no single-pin nets, every header net used on both boards | `hardware/tools/circuit.py` |
+| EasyEDA Pro project | Done: 6 schematic pages, 0 problems; both PCBs placed and net-assigned, 0 placement problems; the panel PCB. Not yet opened in EasyEDA | `hardware/easyeda/StereoMixer.epro2` |
+| Panel | Done: hole list, 1:1 drill template, artwork | `hardware/panel/`, `hardware/tools/panel.py` |
+| Routing | Not started (yours, in EasyEDA Pro; notes in design.md) | — |
 
 ## Files
 
 ```
 README.md
-docs/design.md                       circuit, gains, pan law, op-amp map, power, BOM
+docs/design.md                          circuit, mutes, gains, headers, panel, placement, routing, BOM
 hardware/
   tools/
-    netlist.py                       the whole circuit; the single source of truth
-    easyeda_export.py                draws netlist.py as an EasyEDA Pro project + previews
-    panel.py                         the panel: layout, drill template and hole list
-  panel/
-    stereo-mixer-panel.svg           proposed 28HP layout, 1:1 in mm
-    stereo-mixer-panel-drill.svg     drill template, print at 100 %
-    stereo-mixer-panel-holes.csv     every hole: x/y in mm from the top-left, diameter, designator
+    circuit.py                          the whole circuit and the panel positions: the single source of truth
+    easyeda_export.py                   schematic pages, footprints, devices, project writer (+ PNG previews)
+    pcb.py                              both PCBs: placement, checks, PCB documents, previews
+    panel.py                            hole list, drill template, artwork
+    panel_pcb.py                        the panel as the project's third PCB
   easyeda/
-    StereoMixer.epro2                EasyEDA Pro 3.x project, 3 pages
-    stereo-mixer-*.png               previews of the three pages
-    stereo-mixer-parts.epru          library parts copied from the MorrisSynth export
+    StereoMixer.epro2                   EasyEDA Pro 3.x project: Mixer Main, Mixer Faceplate, Mixer Panel
+    stereo-mixer-easyeda-*.png          previews of the six pages and the three PCBs
+    stereo-mixer-parts.epru             library parts from your MorrisSynth export (10R, 10 uF, box header)
+  panel/
+    stereo-mixer-panel.svg              artwork, 1:1 in mm
+    stereo-mixer-panel-preview.png      the same as a picture
+    stereo-mixer-panel-drill.svg        drill template, print at 100 %
+    stereo-mixer-panel-holes.csv        every hole: board origin, panel x/y from the top-left, diameter
 ```
 
 In EasyEDA Pro, import `hardware/easyeda/StereoMixer.epro2` as a project.
-Net ports with the same name connect across pages. The bus nets are SUM_L,
-SUM_R and SUM_S; the stereo normals are IN7L, IN8L and RT_L.
-
-To regenerate after editing `netlist.py`, run this from `hardware/tools`:
+To regenerate after editing `circuit.py`, run from `hardware/tools`:
 
 ```bash
-python easyeda_export.py
+python easyeda_export.py && python panel.py
 ```
 
-It imports Plaitsy's exporter (`plaitsy/hardware/tools/easyeda_export.py`)
-for the file format, the connectivity check and the previews, and needs
-Python with Pillow. The library cache is in the repo, so the MorrisSynth
-export in Downloads is only read if `stereo-mixer-parts.epru` is missing.
-
-### Parts not in your library
-
-Most parts are your MorrisSynth library parts, including the A100K and B10K
-9 mm pots, the ATE1D toggle and the 2×8 box header. Values the library lacks
-(100k, 200k and 300k LR1F resistors, and a 22 pF C0G cap) are new devices on
-the same symbols and footprints.
-
-Two parts are drawn in the same style, one unit per gang or pole. They have
-no footprint, so swap them with **Replace Component** before a PCB layout:
-
-- **9 mm dual-gang pot**, A100k (×3) and A10k (×1). Gang A is pins 1-2-3,
-  gang B pins 4-5-6.
-- **ATE2D-2M3-10-Z** (LCSC C2921532), the DPDT version of your ATE1D. Poles
-  are 1-2-3 and 4-5-6, with 2 and 5 as the commons. Check the datasheet
-  pinout before wiring it.
+It needs Python with Pillow, and reads the library caches in the repo
+(`plaitsy/hardware/easyeda/morrissynth-parts.epru`,
+`stereo-mixer-parts.epru`, `marbles/hardware/easyeda/pcb-template.epru`).

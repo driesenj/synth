@@ -78,8 +78,8 @@ Read `references/placement.md` before placing anything. The short version:
   headers on its top; sockets on the main board's bottom, everything else
   on its top. Nothing but sockets and standoffs on the main board's front.
 - Jack barrel = sleeve pad + 6.48 mm towards the tip = 0.78 mm below the
-  WQP518MA origin; Alpha pot shaft = PTV09A origin + 0.53 mm away from the
-  pins. The panel hole table applies these; the artwork and the panel PCB
+  WQP518MA origin; Alpha pot shaft = PTV09A origin + 4.0 mm away from the
+  pins (7.5 mm from the pin row; the 0.53 mm Marblesy used was wrong). The panel hole table applies these; the artwork and the panel PCB
   use the same functions.
 
 ## The generators, and what to copy

@@ -106,8 +106,13 @@ its rows is fine.
 - Panel first. The first Marblesy placement passed every check and looked
   nothing like Marbles; the redo cost an hour.
 - A footprint's origin is rarely the mechanical centre: jack barrel 0.78
-  mm, pot shaft 0.53 mm, 3-lead LED on pad 2. Encode offsets once in
-  `panel.py`.
+  mm, Alpha pot shaft 4.0 mm from the PTV09A origin (Marblesy's 0.53 was
+  wrong), 3-lead LED on pad 2. Encode offsets once in `panel.py`, and check
+  them against the part's KiCad footprint or datasheet, not a footprint
+  drawing alone.
+- Dense console-style panels (the stereo mixer, 13.5 mm columns): pots pins
+  down, headers standing in the strips between the columns, label each row
+  once with a dotted line along it rather than every knob (the user's call).
 - Keep decoupling next to the chip even when a tidy capacitor column looks
   neater.
 - When a clearance report shows 0.05 mm overlaps between rows of parts,
