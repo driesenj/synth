@@ -351,6 +351,13 @@ about silkscreen over bare copper (the band labels; some fabs drop it, in
 which case put the labels on the solder-mask layer instead and they come out
 gold on black).
 
+`Marblesy-routed.epro2` carries the same drawing: its panel board's
+holes, slots, silkscreen, copper and outline were replaced with the
+generated ones on 2026-10-31, keeping that board's own rules and settings.
+After a change to the panel, put the regenerated drawing in again the same
+way, or the routed project's panel goes stale (it had kept the pot holes
+0.53 mm right of the shafts from 2026-10-29 until then).
+
 ---
 
 ## PCB placement
@@ -594,9 +601,6 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
-- The panel PCB inside `Marblesy-routed.epro2` still has its holes at the
-  old 0.53 mm spots. Replace it with the one in the regenerated
-  `Marbles.epro2`, or make the panel's Gerbers from an import of that file.
-- Panel PCB DRC: the copper band now keeps 0.4 mm from every hole
-  (`Marblesy-routed.epro2` carries the fix); run DRC once more after
-  importing it.
+- Panel PCB: import `Marblesy-routed.epro2` again (its panel board is now
+  the corrected one), run DRC on the panel, and make the panel's Gerbers
+  from that import.
