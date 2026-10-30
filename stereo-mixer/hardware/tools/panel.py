@@ -199,8 +199,8 @@ def layout(pos):
         out.append(("text", x, y, s, size, anchor))
 
     # title band, maker line
-    out.append(("serif", 12.0, 7.6, A["title"], 5.2, "start"))
-    text(W - 12.0, 6.8, A["subtitle"], 2.1, "end")
+    out.append(("serif", 12.0, 7.4, A["title"], 5.2, "start"))     # the same spots on every module's panel
+    text(W - 12.0, 6.6, A["subtitle"], 2.1, "end")
     out.append(("dots", [(3, 9.6), (W - 3, 9.6)]))
     out.append(("dots", [(3, 10.6), (W - 3, 10.6)]))
     text(W / 2, 122.4, A["maker"], 2.2)

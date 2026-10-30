@@ -132,10 +132,10 @@ def footprint_geometry(doc):
 
 
 # Body boxes that override a footprint's drawn outline (x1, y1, x2, y2 in the
-# footprint's own frame). The library PTV09A drawing runs 9 mm beyond the
-# origin; the Alpha 9 mm pot's housing ends about 3.3 mm beyond the shaft
-# (KiCad RD901F), i.e. 4 mm beyond this footprint's origin.
-BODY = {"SW-TH_PTV09A-4015F-B502": (-5.0, -3.5, 5.0, 4.0)}
+# footprint's own frame). The library PTV09A carries Alpha 9 mm pots: pins at
+# y = -3.5, the shaft 7.5 mm from them at y = +4.0, the housing 9.5 mm wide
+# from 1 mm off the pin row to 4.85 mm past the shaft (KiCad RD901F).
+BODY = {"SW-TH_PTV09A-4015F-B502": (-4.75, -2.5, 4.75, 8.85)}
 
 
 # ---------------------------------------------------------------- boards
@@ -379,8 +379,8 @@ def faceplate_board(pr, parts, info, circuit):
         b.place_front(ref, xf, y, 0, bottom=True)
     for ref, *_ in circuit.JACKS:        # sleeve pad above the tip pad, pins in a column
         b.orient(ref, lambda r: abs(r["1"][0] - r["3"][0]) < 0.01 and r["1"][1] > r["3"][1])
-    for ref, *_ in circuit.POTS:         # pins in a column towards -x (pin 1 then lands above pin 3)
-        b.orient(ref, lambda r: r["1"][0] < r["4"][0] and abs(r["1"][0] - r["3"][0]) < 0.01)
+    for ref, *_ in circuit.POTS:         # the pin row on the side circuit.pot_pins says (-x unless turned)
+        b.orient(ref, lambda r, u=circuit.pot_pins(ref): r["2"][0] * u[0] + r["2"][1] * u[1] > 3)
     for ref, *_ in circuit.BUTTONS:      # LED button: LED pins in a row along x, anode on the right
         b.orient(ref, lambda r: abs(r["5"][1] - r["6"][1]) < 0.01 and r["5"][0] > r["6"][0] and r["1"][1] > r["3"][1])
     for ref, _, kind in circuit.LEDS:    # three leads in a row along x, red anode (pad 1) on the left
@@ -409,31 +409,33 @@ def main_board(pr, parts, info, circuit):
 
 
 # Front-view coordinates (x from the left as seen from the panel, y up).
-# Holes: two in the top corners above the big knobs, one in the left pocket
-# beside the TIMBRE attenuverter, one in the centre of the strip between the
+# Holes: two in the top corners above the big knobs, one at the left end of
+# the strip between the top jack row and the TIMBRE attenuverter (its pins
+# fill the margin above), one in the centre of the strip between the
 # attenuverters and the lowest LED. On the main board the corner holes sit
 # beyond the breakout's ends, the left one in the right margin, the centre
 # one below U4.
-HOLES_FRONT = [(3.5, 104.5), (55.9, 104.5), (3.5, 40.0), (29.9, 48.5)]
+HOLES_FRONT = [(3.5, 104.5), (55.9, 104.5), (3.5, 30.0), (29.9, 48.5)]
 # header: (x, y, angle); 0 = pins along x, 90 = along y. H1 (the eight CVs)
 # lies in the strip between the top jack row and the attenuverters; H2 and
-# H3 stand in the right margin, outside the pots' lug pads; on the main
+# H3 stand in the right margin, clear of the MORPH attenuverter's housing; on the main
 # board that margin is the channel between the breakout's pad rows.
-HEADERS_FRONT = {"H1": (29.0, 31.2, 0), "H2": (54.3, 42.0, 90), "H3": (54.3, 65.0, 90)}
+HEADERS_FRONT = {"H1": (29.0, 31.2, 0), "H2": (54.7, 42.0, 90), "H3": (54.7, 65.0, 90)}
 
 # Faceplate, rear side (top layer): ref, x_front, y, angle. 0 = pins along x, 90 = along y.
 # U1 in the pocket left of the centre hole, U9 / U10 between the big knobs
 # and TIMBRE / MORPH, the LED resistors in rows of vertical parts either side
-# of the LED column, the probe resistors in the right pocket and one in the
-# jack strip, decoupling beside each chip.
+# of the LED column (clear of the pot housings and of the HARMONICS / MORPH
+# lugs), the probe resistors in the right pocket and one in the jack strip,
+# decoupling beside each chip.
 FB_REAR = [
-    ("U1", 14.5, 49.5, 0), ("C8", 3.5, 57.0, 90),
+    ("U1", 14.5, 49.5, 0), ("C8", 3.0, 50.0, 270),
     ("U9", 15.4, 75.0, 0), ("C9", 3.5, 70.0, 90),
-    ("U10", 43.0, 75.0, 0), ("C10", 43.0, 69.0, 0),
-    ("R9", 7.55, 31.2, 0),
+    ("U10", 43.0, 75.0, 0), ("C10", 44.2, 69.0, 0),
+    ("R9", 12.9, 31.2, 0),
 ]
-FB_REAR += [(r, x, 48.5, 90) for r, x in zip(("R10", "R11", "R12", "R13"), (36.0, 38.5, 41.0, 43.5))]
-_LX, _RX = (17.4, 19.8, 22.2, 24.6), (34.4, 36.8, 39.2, 41.6)
+FB_REAR += [(r, x, 49.2, 90) for r, x in zip(("R10", "R11", "R12", "R13"), (35.5, 38.0, 40.5, 43.0))]
+_LX, _RX = (17.8, 20.2, 22.6, 25.0), (33.3, 35.7, 38.1, 40.5)
 # pad 1 (the 595 side) of every LED resistor faces its 595 between the rows, pad 2 the LEDs
 FB_REAR += [(f"R{80 + i}", x, 88.0, 90) for i, x in enumerate(_LX)]     # red D1-D4 (U9 lines)
 FB_REAR += [(f"R{84 + i}", x, 62.0, 270) for i, x in enumerate(_LX)]    # red D5-D8

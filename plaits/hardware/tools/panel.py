@@ -7,8 +7,9 @@ front, x to the right, y up, origin at the board's bottom-left corner.
 Panel-facing parts sit on the board's bottom layer.
   jack   angle 0, sleeve pad towards the top of the board; the barrel sits
          0.78 mm below the WQP518MA footprint origin
-  pot    angle 90, pins towards -x; the shaft is 0.53 mm from the PTV09A
-         origin, away from the pins
+  pot    pins towards -x (angle 90) unless circuit.POT_PINS turns them; the
+         shaft is 4.0 mm from the PTV09A origin, away from the pins (7.5 mm
+         from the pin row)
   LED    3 mm bicolour LED, body centred on the origin
   button Thonk low-profile LED button, 5.5 mm cap centred on the origin
 Run from plaits/hardware/tools:  python panel.py
@@ -45,7 +46,8 @@ def features():
         if ref.startswith("J"):
             out.append(("jack", ref, labels[ref], x, y, x, y + JACK_BARREL))
         elif ref.startswith("RV"):
-            out.append(("pot", ref, labels[ref], x, y, x + POT_SHAFT, y))
+            ux, uy = circuit.pot_pins(ref)
+            out.append(("pot", ref, labels[ref], x, y, x - POT_SHAFT * ux, y - POT_SHAFT * uy))
         elif ref.startswith("SW"):
             out.append(("ledbutton", ref, labels[ref], x, y, x, y))
         elif ref.startswith("D"):

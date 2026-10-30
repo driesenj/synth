@@ -25,6 +25,19 @@ LED left of each label, title top-left, function name top-right, maker
 bottom centre. Compare the draft with a photo of the original before
 touching the PCB.
 
+The frame is the same on every module (the user asked for it; keep it in
+both `panel.py` and `panel_pcb.py`), in panel mm from the top-left:
+
+| Item | Where |
+|---|---|
+| Title | serif italic 5.2, anchor start at x 12.0, baseline 7.4 |
+| Subtitle (function) | 2.1, anchor end at x W − 12.0, baseline 6.6 |
+| Dotted band | two dotted lines, y 9.6 and 10.6, x 3 to W − 3 |
+| Bottom rule | 0.3 mm line, y 118.6, x 3 to W − 3 |
+| Maker | 2.2, centred at x W / 2, baseline 122.4 |
+
+Panel content goes between the band and the rule (y 10.6–118.6).
+
 ## Rows of identical controls (the stereo mixer)
 
 Do not repeat a word under every knob of a row. Label each row once in the

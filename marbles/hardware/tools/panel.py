@@ -8,8 +8,8 @@ Panel-facing parts sit on the board's bottom layer.
   jack   angle 0, sleeve pad towards the top of the board; the barrel sits
          6.48 mm from the sleeve pad towards the tip pad (KiCad PJ398SM),
          i.e. 0.78 mm below the footprint origin of the WQP518MA footprint
-  pot    angle 90, pins towards -x; the shaft is 7.5 mm from the pin row,
-         the PTV09A footprint origin is 6.97 mm from it: shaft = origin + 0.53 in x
+  pot    angle 90, pins towards -x; the Alpha shaft is 7.5 mm from the pin row,
+         the PTV09A footprint's pin row 3.5 mm from its origin: shaft = origin + 4.0 in x
   LED    3-lead LED in the generated LED-3MM-3P footprint: body centred on the origin
   switch 6 x 6 mm tactile or Thonk LED button, cap centred on the origin; hole = cap + 1 mm
 Run from marbles/hardware/tools:  python panel.py
@@ -30,7 +30,7 @@ BOARD_Y0 = (PANEL_H - circuit.BOARD_H) / 2   # board centred on the panel; move 
 # hole diameters; buttons: cap diameter + 1 mm (6 mm caps; the Thonk LED button has a 5.5 mm cap)
 HOLE = {"pot": 7.5, "jack": 6.5, "led": 3.2, "button": 7.0, "ledbutton": 6.5, "mount": 3.2}
 JACK_BARREL = -0.78
-POT_SHAFT = 0.53
+POT_SHAFT = 4.0
 OUT = os.path.join(HERE, "..", "panel")
 
 
@@ -195,11 +195,13 @@ def write_artwork(feats, path):
 
     # -- silkscreen
     s.append('<g id="silk">')
+    # title, band, rule and maker: the same spots on every module's panel
     text(12.0, 7.4, A["title"], 5.2, anchor="start", cls="serif")            # between the screw and the centre
-    text(W - 12.0, 6.6, A["subtitle"], 2.4, anchor="end")
-    text(W / 2, 121.9, A["maker"], 2.4)
+    text(W - 12.0, 6.6, A["subtitle"], 2.1, anchor="end")
     s.append(f'<line x1="3" y1="9.6" x2="{W - 3}" y2="9.6" class="silk dots"/>')   # band under the title
     s.append(f'<line x1="3" y1="10.6" x2="{W - 3}" y2="10.6" class="silk dots"/>')
+    text(W / 2, 122.4, A["maker"], 2.2)
+    s.append(f'<line x1="3" y1="118.6" x2="{W - 3}" y2="118.6" class="silk" stroke-width="0.3"/>')
     text(pos["SW1"][2] - A["cap_led"] - 4.6, pos["SW1"][3] + 2.2, "t", 7.0, cls="serif")
     text(pos["SW4"][2] + A["cap_led"] + 4.6, pos["SW4"][3] + 2.2, "X", 7.0, cls="serif")
     for sw in ("SW1", "SW4"):            # ring around the deja vu buttons, as on Marbles

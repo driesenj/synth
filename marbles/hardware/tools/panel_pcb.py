@@ -110,12 +110,13 @@ class PanelBoard:
             r = A["scale_big"] if ref in panel.BIG_POTS else A["scale_small"]
             return x, y + r + 3.0
 
-        # titles and the band under them
+        # titles, the dotted band under them, the maker line and the rule above it (as on every module)
         self.text(12.0, 7.4, A["title"], 5.2, "start")
-        self.text(W - 12.0, 6.6, A["subtitle"], 2.4, "end")
-        self.text(W / 2, 121.9, A["maker"], 2.4)
+        self.text(W - 12.0, 6.6, A["subtitle"], 2.1, "end")
         self.dots([(3, 9.6), (W - 3, 9.6)])
         self.dots([(3, 10.6), (W - 3, 10.6)])
+        self.text(W / 2, 122.4, A["maker"], 2.2)
+        self.line([(3, 118.6), (W - 3, 118.6)])
         # t / X beside the deja vu buttons, rings around them
         self.text(pos["SW1"][2] - A["cap_led"] - 4.6, pos["SW1"][3] + 2.2, "t", 7.0)
         self.text(pos["SW4"][2] + A["cap_led"] + 4.6, pos["SW4"][3] + 2.2, "X", 7.0)

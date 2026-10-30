@@ -13,8 +13,8 @@
 <text x="126.75" y="16.40" font-size="1.9" text-anchor="middle" class="cu-text">SEND</text>
 </g>
 <g id="silk">
-<text x="12.00" y="7.60" font-size="5.2" text-anchor="start" class="serif">Mixer</text>
-<text x="129.90" y="6.80" font-size="2.1" text-anchor="end">Stereo voice mixer</text>
+<text x="12.00" y="7.40" font-size="5.2" text-anchor="start" class="serif">Mixer</text>
+<text x="129.90" y="6.60" font-size="2.1" text-anchor="end">Stereo voice mixer</text>
 <polyline points="3.00,9.60 138.90,9.60" class="silk dots"/>
 <polyline points="3.00,10.60 138.90,10.60" class="silk dots"/>
 <text x="70.95" y="122.40" font-size="2.2" text-anchor="middle">Seedable Instruments</text>

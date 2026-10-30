@@ -233,8 +233,18 @@ PANEL_W, PANEL_H = 60.6, 128.5
 BOARD_W, BOARD_H = 59.4, 108.0
 # Footprint origins are not the mechanical centres: the Thonkiconn barrel is
 # 0.78 mm below the WQP518MA origin (sleeve pad up), the Alpha pot's shaft
-# 0.53 mm beyond the PTV09A origin, away from the pins (+x at angle 90).
-JACK_BARREL, POT_SHAFT = -0.78, 0.53
+# 4.0 mm beyond the PTV09A origin, away from the pins (+x at angle 90): the
+# footprint's pin row is 3.5 mm from its origin, the shaft 7.5 mm from the pins.
+JACK_BARREL, POT_SHAFT = -0.78, 4.0
+# Which way a pot's pin row lies from its shaft (front view, unit vector); -x
+# unless listed. HARMONICS turns its pins up and MORPH down: pointing at the
+# LED column, they would take the strip the green LED resistors stand in.
+POT_PINS = {"RV2": (0, 1), "RV4": (0, -1)}
+POT_ANGLE = {(-1, 0): 90, (0, 1): 180, (0, -1): 0}   # PLACEMENT's angle: 90 = pins towards -x, as on Marblesy
+
+
+def pot_pins(ref):
+    return POT_PINS.get(ref, (-1, 0))
 
 # What the user sees, in panel mm from the top-left corner (y down): the
 # knob shafts, jack barrels, button caps and LED bodies. The arrangement is
@@ -272,7 +282,8 @@ for ref, (px, py) in PANEL_XY.items():
     if ref.startswith("J"):
         PLACEMENT[ref] = (round(x, 2), round(y - JACK_BARREL, 2), 0)
     elif ref.startswith("RV"):
-        PLACEMENT[ref] = (round(x - POT_SHAFT, 2), round(y, 2), 90)
+        ux, uy = pot_pins(ref)
+        PLACEMENT[ref] = (round(x + POT_SHAFT * ux, 2), round(y + POT_SHAFT * uy, 2), POT_ANGLE[(ux, uy)])
     else:
         PLACEMENT[ref] = (round(x, 2), round(y, 2), 0)
 

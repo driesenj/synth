@@ -140,10 +140,10 @@ def footprint_geometry(doc):
 
 
 # Body boxes that override a footprint's drawn outline (x1, y1, x2, y2 in the
-# footprint's own frame). The library PTV09A drawing runs 9 mm beyond the
-# origin; the Alpha 9 mm pot's housing ends about 3.3 mm beyond the shaft
-# (KiCad RD901F), i.e. 4 mm beyond this footprint's origin.
-BODY = {"SW-TH_PTV09A-4015F-B502": (-5.0, -3.5, 5.0, 4.0)}
+# footprint's own frame). The library PTV09A carries Alpha 9 mm pots: pins at
+# y = -3.5, the shaft 7.5 mm from them at y = +4.0, the housing 9.5 mm wide
+# from 1 mm off the pin row to 4.85 mm past the shaft (KiCad RD901F).
+BODY = {"SW-TH_PTV09A-4015F-B502": (-4.75, -2.5, 4.75, 8.85)}
 # Bodies allowed to overlap: the Seed breakout stands on 8.5 mm sockets, and
 # these horizontal resistors (2.3 mm tall) sit under its power end.
 STACKED = {frozenset(("U2", r)) for r in ("R33", "R36", "R39")}

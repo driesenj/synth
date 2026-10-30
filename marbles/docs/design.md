@@ -270,14 +270,34 @@ The two PROBE pins join on the main board.
 The faceplate board is 90 × 108 mm; the panel is 91.3 × 128.5 mm (18HP),
 centred on it. The footprint origins are in `PLACEMENT` in `circuit.py`;
 `panel.py` turns them into `hardware/panel/marbles-panel-holes.csv`, the 1:1
-drill template and the artwork, applying the offsets measured on the Plaitsy
-PCB audit (jack barrel 0.78 mm below the WQP518MA origin, pot shaft 0.53 mm
-beyond the PTV09A origin).
+drill template and the artwork, applying the offsets of the footprints (jack
+barrel 0.78 mm below the WQP518MA origin; Alpha pot shaft 4.0 mm beyond the
+PTV09A origin, away from the pins, since the footprint's pin row is 3.5 mm
+from its origin and the Alpha's shaft 7.5 mm from its pins).
+
+**The knob field is 3.47 mm right of where it was drawn.** Until 2026-10-30
+`panel.py` put the pot holes at origin + 0.53 mm, which is where the knobs in
+the diagram below were meant to be. The real shafts are at origin + 4.0, and
+the routed faceplate keeps its pots where they are, so the holes, the
+artwork and the panel PCB moved with the shafts: every knob sits 3.47 mm to
+the right, while the jacks, buttons and title stay symmetric. Knob
+clearances on the panel: BIAS X's 10 mm knob ends 0.5 mm from the panel's
+right edge, SPREAD's 15 mm knob is 2.4 mm from the X MODE cap; everything
+else keeps 3 mm or more. What the artwork still has to resolve (see
+`hardware/panel/marbles-panel-preview.png`): BIAS X's scale runs off the
+right edge; SPREAD's scale runs over the X MODE button's ring and its three
+mode icons; LENGTH's 12 and 16 sit on the X RANGE labels (+2, ±5); DEJA VU
+and LENGTH no longer line up with EXT and the title's centre line. The other
+way out is to move the eight pots 3.47 mm left on the faceplate and re-route
+them: then U9 sits under SPREAD's housing (pins 11–14) and against its pins,
+HF3 against BIAS t's pins (they would land 1.9 mm from the board edge) and
+C10 under DEJA VU's housing, so U9, HF3 (with its main-board socket) and C10
+move too. That choice is open (see Open items).
 
 The arrangement follows Mutable's Marbles panel (board mm, y up):
 
 ```
-   y
+   y     (footprint origins; each knob is 4.0 mm right of the number given)
   100.7  [t]o              DEJA VU (45)                o[X]      deja vu LED buttons
    82.75         RATE (22.65)              SPREAD (67.35)
    78.25  o MODE                                       MODE o
@@ -318,7 +338,11 @@ for the preview. Colours, radii and the
 title are the `ART` dict at the top of the artwork section; the SVG groups
 `#holes`, `#silk` and `#copper` are the three layers an EasyEDA panel PCB
 needs (drill, top silkscreen, top solder-mask opening). Knobs are drawn at
-Ø15 (RATE, DEJA VU, SPREAD) and Ø10; the scale arcs assume those.
+Ø15 (RATE, DEJA VU, SPREAD) and Ø10; the scale arcs assume those. The
+title (serif 5.2 at x 12, baseline 7.4), the subtitle (2.1, right end
+12 mm from the edge, baseline 6.6), the dotted band (y 9.6 and 10.6), the
+rule (y 118.6) and the maker (2.2, centred, baseline 122.4) sit at the same
+spots on every module's panel.
 
 `panel_pcb.py` builds the same drawing as the project's third board,
 `Marblesy Panel PCB`: 91.3 × 128.5 outline, every hole and the four
@@ -393,11 +417,21 @@ and the mode button on the faceplate, the centre ones between the breakout's
 pad rows on the main board. M3 standoffs between the boards (a screw head
 needs 3 mm of free panel-side board around each hole, which these have).
 
-**Assumptions to check.** The library PTV09A footprint draws the pot body
-9 mm beyond its origin; the checks use 4 mm (the Alpha 9 mm housing ends
-about 3.3 mm beyond the shaft, as in KiCad's RD901F footprint). The
-breakout's underside at its power end must clear the three 2.3 mm resistors
-under it.
+**Pot housings.** The checks use the Alpha 9 mm housing (KiCad RD901F):
+9.5 mm wide, from 1 mm off the pin row to 4.85 mm past the shaft, i.e.
+−2.5 to +8.85 mm in the PTV09A footprint's frame (`pcb.BODY`). With it no
+routed rear-side pad lies under a pot (U11 pin 8 is clear of LENGTH now that
+the housing starts 1 mm off the pin row), and no rear-side body sits over a
+pot pin. Rear pads whose ring only touches a jack or LED body edge (the
+centre stays 0.6–0.75 mm outside): R91–R93 at the t1–t3 jacks, R87–R89 and
+R1 at the output LEDs; R91's body also reaches J9's tip pad at the board's
+bottom edge. All were like this before the pot fix.
+
+**Assumptions to check.** The breakout's underside at its power end must
+clear the three 2.3 mm resistors under it. The PTV09A footprint's lug slots
+(2.2 × 2.0 mm at ±4.3 mm, 0.5 mm towards the pins from the shaft line) are
+not where the Alpha's lugs are (±4.8 mm on the shaft line): check that an
+Alpha pot drops in before soldering a batch.
 
 ---
 
@@ -508,6 +542,13 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
+- Panel layout after the pot-shaft fix (2026-10-30): keep the routed
+  faceplate and rework the artwork round the knobs 3.47 mm further right
+  (BIAS X 0.5 mm from the edge), or move the pots back and re-route them
+  with U9, HF3 and C10 (see "Faceplate placement and panel"). Do not order
+  the panel before deciding. The panel PCB inside `Marblesy-routed.epro2`
+  still has the holes at the old 0.53 mm spots; take the panel board from
+  the regenerated `Marbles.epro2` once the layout is settled.
 - Panel PCB DRC: the copper band now keeps 0.4 mm from every hole
   (`Marblesy-routed.epro2` carries the fix); run DRC once more after
   importing it.

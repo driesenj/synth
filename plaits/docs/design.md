@@ -202,9 +202,13 @@ The arrangement is Plaits' own, measured off the panel photo. `PANEL_XY` in
 `circuit.py` holds what you see (knob shafts, jack barrels, button caps, LED
 bodies, in panel mm from the top-left corner, y down); `PLACEMENT` derives
 the footprint origins from it (jack barrel 0.78 mm below the WQP518MA
-origin, pot shaft 0.53 mm beyond the PTV09A origin), and `panel.py` turns
-those back into the hole table, so the panel and the faceplate PCB cannot
-drift apart.
+origin; Alpha pot shaft 4.0 mm beyond the PTV09A origin, away from the pins,
+since the footprint's pin row is 3.5 mm from its origin and the Alpha's
+shaft 7.5 mm from its pins), and `panel.py` turns those back into the hole
+table, so the panel and the faceplate PCB cannot drift apart. Until
+2026-10-30 the shaft offset was taken as 0.53 mm, which put every pot
+footprint 3.47 mm too far right; the panel itself did not move when that was
+fixed, the pots and the rear side of the faceplate did.
 
 ```
   y from top
@@ -314,23 +318,29 @@ three header pairs have identical coordinates on both PCBs. EasyEDA mirrors
 a bottom-layer footprint about its own X axis (y → −y) before rotating it;
 `pcb.py` uses that rule and picks the panel parts' angles by it (jack
 sleeve pad towards the top of the board, pot pins in a column towards the
-left as seen from the front, LED button LED pins along x with pin 5 on the
-right, LED leads along x with the red anode on the left).
+left as seen from the front except where `circuit.POT_PINS` turns them,
+LED button LED pins along x with pin 5 on the right, LED leads along x with
+the red anode on the left). HARMONICS has its pins up and MORPH down: with
+the pins towards the left they would land in the 8 mm strip between them
+and the LED column that the green LED resistors stand in.
 
 **Faceplate board.** Bottom layer: the 10 jacks, 7 pots, 2 LED buttons and
 the 8 LEDs. Top (rear) layer, inside the header gap (front-view x, y):
 H1 horizontal at (29.0, 31.2) between the top jack row and the
-attenuverters; H2 (54.3, 42) and H3 (54.3, 65) vertical in the right
-margin, outside the pots' lug pads; U1 at (14.5, 49.5) in the pocket left
-of the centre hole with C8 at (3.5, 57); U9 at (15.4, 75) and U10 at
-(43, 75) between the big knobs and TIMBRE / MORPH with C9 at (3.5, 70) and
-C10 under U10 at (43, 69); the LED resistors as vertical parts in rows at
-y 88 and y 62 either side of the LED column (R80–R87 left for U9's reds,
-R88–R95 right for U10's greens), each with its 595 end towards the chip
-between the rows; the probe resistors R10–R13 vertical in the right pocket
-(x 36–43.5, y 48.5) and R9 horizontal in the jack strip at (7.55, 31.2).
+attenuverters; H2 (54.7, 42) and H3 (54.7, 65) vertical in the right
+margin, clear of the MORPH attenuverter's housing; U1 at (14.5, 49.5) in the
+pocket left of the centre hole with C8 standing at its left end (3.0, 50);
+U9 at (15.4, 75) and U10 at (43, 75) between the big knobs and TIMBRE /
+MORPH with C9 at (3.5, 70) and C10 under U10 at (44.2, 69); the LED
+resistors as vertical parts in rows at y 88 and y 62 either side of the LED
+column (R80–R87 left for U9's reds at x 17.8–25, R88–R95 right for U10's
+greens at x 33.3–40.5), each with its 595 end towards the chip between the
+rows; the probe resistors R10–R13 vertical in the right pocket
+(x 35.5–43, y 49.2) and R9 horizontal in the jack strip at (12.9, 31.2).
 Rear pads never fall under a pot or jack housing, since those are soldered
-on the panel side.
+on the panel side, and no rear body sits over a panel part's pins. The pot
+housing in the checks is the Alpha's (`pcb.BODY`: −2.5 to +8.85 mm in the
+PTV09A's frame, 9.5 mm wide).
 
 **Main board.** Bottom layer: the three female sockets at the same spots
 (H2 / H3 land in the channel between the breakout's pad rows). Top (rear)
@@ -350,8 +360,9 @@ pin 31, R60 / R61 at the breakout's top end. The lower part of the board
 (y 3–36) is left free for the CV and ADC runs.
 
 **Mounting.** Four 3.2 mm holes, front-view (3.5, 104.5), (55.9, 104.5),
-(3.5, 40) and (29.9, 48.5), identical on both boards: the top corners above
-the big knobs, the left pocket beside the TIMBRE attenuverter, the centre
+(3.5, 30) and (29.9, 48.5), identical on both boards: the top corners above
+the big knobs, the left end of the strip between the top jack row and the
+TIMBRE attenuverter (whose pins now take the old spot at y 40), the centre
 of the strip between the attenuverters and the lowest LED. M3 standoffs
 between the boards, as long as the mated headers make the gap (a standard
 8.5 mm socket plus the male header's 2.5 mm spacer, about 11 mm; measure
