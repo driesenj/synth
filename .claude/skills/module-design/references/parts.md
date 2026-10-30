@@ -37,14 +37,14 @@ missing, in the same style, with real pin numbers.
   figures Marblesy and Plaitsy used were wrong (panel holes ~3.5 mm off the
   shafts, `pcb.BODY`'s 4 mm housing too short); fixed on 2026-10-30
   (`POT_SHAFT = 4.0`, `BODY` = the Alpha housing −4.75, −2.5, 4.75, 8.85).
-  Marblesy's routed pots stayed put, so its knob field moved 3.47 mm right
-  on the panel; Plaitsy's panel stayed put and its pots moved. The
+  Marblesy's pots were re-routed onto the drawn layout (2026-10-30);
+  Plaitsy's panel stayed put and its pots moved. The
   library's 9 mm drawing was about right. Its lug slots (2.2 × 2.0 mm at
   ±4.3, 0.5 mm towards the pins from the shaft line) are not where the
   Alpha's lugs are (±4.8 on the shaft line, KiCad: 2.72 × 3.24 pads, slots
   1.1 × 1.8 long towards the shaft), so a lug's corner overhangs the slot.
   None of the user's built boards has Alpha pots. Use the Alpha footprint:
-  Plaitsy and the mixer draw it, Marblesy's re-route switches to it.
+  Plaitsy and the mixer draw it, Marblesy's re-routed boards carry it.
 - `stereo-mixer/hardware/tools/easyeda_export.py` `fp_alpha_pot()` generates
   Alpha single and dual footprints in the PTV09A's frame (lugs where the
   Alpha has them, real housing); use those. Panel hole 7.5 mm.

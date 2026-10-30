@@ -17,7 +17,7 @@ placement, the BOM and the firmware plan.
 | EasyEDA Pro schematic | Done, four A3 pages (main board 2, faceplate 2), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
 | Panel layout (Marbles arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
 | PCB placement | Done, then reworked during routing; the generator now takes it from the routed project | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
-| PCB routing | Done by hand in EasyEDA Pro (2026-10-29), audited: every net complete, no shorts, 0.15 mm minimum clearance | `hardware/easyeda/Marblesy-routed.epro2` |
+| PCB routing | Done by hand in EasyEDA Pro (2026-10-29, pots re-routed onto the drawn layout 2026-10-30), audited: every net complete, no shorts, 0.152 mm minimum clearance. JITTER still moves back 0.75 mm before ordering | `hardware/easyeda/Marblesy-routed.epro2` |
 | Firmware | Not started | |
 
 ## Layout
@@ -33,17 +33,13 @@ hardware/
     panel.py            hole list, drill template and the panel artwork from the placement
     panel_pcb.py        the panel as a PCB document (holes, slots, silk, copper band), same source as the artwork
   easyeda/
-    Marblesy-routed.epro2   the routed project, the layout master (re-route the pots before ordering)
-    Marblesy-reroute-start.epro2  that project with the pots moved back on the Alpha footprint, U3-U8 on
-                            7.62 mm rows and the copper in their way deleted: route from here
-                            (docs/design.md, "Re-route plan")
+    Marblesy-routed.epro2   the routed project, the layout master
     Marbles.epro2       the generated project (schematic, placed but unrouted PCBs, panel)
-    marbles-easyeda-*.png   schematic page and PCB placement previews; marbles-reroute-plan(-main).png the plan
+    marbles-easyeda-*.png   schematic page and PCB placement previews
     pcb-template.epru   canvas, layer and rule records copied from one of your own PCBs
   panel/
     marbles-panel-holes.csv, marbles-panel-drill.svg
     marbles-panel.svg       panel artwork (groups: holes, silk, copper, mockup), marbles-panel-preview.png
-    marbles-panel-after-reroute.png   the panel once the pots are back on the drawn layout
 ```
 
 Regenerate everything from `hardware/tools`:

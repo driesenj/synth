@@ -324,15 +324,15 @@ PLACEMENT["J3"], PLACEMENT["J7"] = (9, 36.25, 0), (81, 36.25, 0)              # 
 # Pots: the knob shafts, and the way each pot's pin row points from its shaft
 # (unit vector, -x unless listed). The footprint origin is 4.0 mm from the
 # shaft towards the pins: the PTV09A's pin row is 3.5 mm from its origin, the
-# Alpha's shaft 7.5 mm from its pins. As routed on 2026-10-29 every pot has
-# its pins towards -x and the shafts sit 3.47 mm right of the symmetric
-# layout the panel was drawn for; docs/design.md has the re-route plan that
-# puts them back (shafts at x 22.65 / 67.35 / 45 / 8.85 / 81.15 / 45 / 31.05 / 58.95).
+# Alpha's shaft 7.5 mm from its pins. These are the shafts of the re-routed
+# boards (2026-10-30): the symmetric layout the panel was drawn for, except
+# JITTER, which the re-route left 0.05 mm left of and 0.75 mm below its plan
+# (31.05, 44.75), the mirror of STEPS.
 POT_SHAFT = 4.0
-POT_XY = {"RV1": (26.65, 82.75), "RV6": (71.35, 82.75), "RV4": (49.0, 97.55),  # RATE, SPREAD, DEJA VU
-          "RV2": (12.85, 59.95), "RV7": (85.15, 59.95), "RV5": (49.0, 66.55),  # BIAS t, BIAS X, LENGTH
-          "RV3": (35.05, 44.75), "RV8": (62.95, 44.75)}                        # JITTER, STEPS
-POT_PINS = {}
+POT_XY = {"RV1": (22.65, 82.75), "RV6": (67.35, 82.75), "RV4": (45.0, 97.55),  # RATE, SPREAD, DEJA VU
+          "RV2": (8.85, 59.95), "RV7": (81.15, 59.95), "RV5": (45.0, 66.55),   # BIAS t, BIAS X, LENGTH
+          "RV3": (31.0, 44.0), "RV8": (58.95, 44.75)}                          # JITTER, STEPS
+POT_PINS = {"RV1": (0, 1), "RV4": (0, 1), "RV3": (0, 1), "RV6": (1, 0), "RV2": (1, 0)}
 POT_ANGLE = {(-1, 0): 90, (1, 0): 270, (0, 1): 180, (0, -1): 0}   # PLACEMENT's angle: 90 = pins towards -x
 
 
