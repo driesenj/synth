@@ -11,8 +11,7 @@ PCBs routed by hand in EasyEDA Pro (2026-10-29, the pots re-routed on
 2026-10-30) and audited (`hardware/easyeda/Marblesy-routed.epro2`,
 see [PCB placement](#pcb-placement) and [Routing](#routing)). `circuit.py`
 matches the routed boards pin for pin; the exporter checks that on every run.
-One knob (JITTER) still has to move back 0.75 mm before ordering (see
-[Open items](#open-items)). Firmware not started.
+Firmware not started.
 
 ---
 
@@ -283,15 +282,12 @@ placed the pots for that figure. The real shafts are at origin + 4.0, which
 put every knob 3.47 mm right of the drawing. The 2026-10-30 re-route moved
 the pots until their shafts landed on the symmetric layout below (see
 "Re-route" under Routing), so the panel needs no change
-(`hardware/panel/marbles-panel-preview.png`). One knob is still off: JITTER
-(RV3) came back from the re-route 0.05 mm left of and 0.75 mm below its
-planned (31.05, 44.75), the mirror of STEPS. Its knob, scale and label
-follow it, 0.75 mm lower than STEPS', until it moves back (Open items).
+(`hardware/panel/marbles-panel-preview.png`).
 
 The arrangement follows Mutable's Marbles panel (board mm, y up):
 
 ```
-   y     (knob shafts; JITTER at 31.0, 44.0 until it moves back)
+   y     (knob shafts)
   100.7  [t]o              DEJA VU (45)                o[X]      deja vu LED buttons
    82.75         RATE (22.65)              SPREAD (67.35)
    78.25  o MODE                                       MODE o
@@ -440,7 +436,7 @@ re-route.**
 ## Routing
 
 Routed by hand in EasyEDA Pro on 2026-10-29, the pots re-routed on
-2026-10-30 (below), and audited from the 2026-10-30 export (tracks, vias,
+2026-10-30 (below), and audited from the final export (tracks, vias,
 pads and the computed pour islands with their thermal spokes):
 
 - **Rules.** Clearance 0.152 mm (the project's rule), signal tracks 0.3 mm,
@@ -457,10 +453,8 @@ pads and the computed pour islands with their thermal spokes):
   joints neat there.
 - **Standoffs.** Within the standoffs' 3 mm radius on the standoff side lie
   ground vias, U11 pin 4 (2.9 mm from the (45, 82) hole's centre, as
-  before), BTN_X_MODE_F at 2.85 mm from it, and the STEPS wiper
-  (POT_X_STEPS_F) at 2.35 mm from the (45, 33) one: under the standoff's
-  foot, beside two GND_F vias, with only the solder mask between. It moves
-  out with the JITTER fix (Open items).
+  before) and BTN_X_MODE_F at 2.85 mm from it, both at the edge of a 5 mm
+  standoff's corners. The STEPS wiper keeps 3.35 mm from the (45, 33) one.
 - **Sensitive nets.** On the main board no summing node, ADC line, reference
   or pot wiper runs beside a switching line closer than 0.7 mm. The 0.7 mm
   cases (CV_X_BIAS beside T1 for 31 mm, MUX_OUT beside MUX_S0 for 33 mm,
@@ -471,8 +465,7 @@ pads and the computed pour islands with their thermal spokes):
   on the panel side are fine: the Thonkiconn body is plastic and the copper
   is under mask.
 - **Harmless leftovers.** A 2 mm dead-end stub on OA_T_JITTER at R29
-  (60, 61.15). Two GND_F vias at (20.7, 91.8) and (25.8, 91.8) reach only the
-  top pour; a NEG_REF via at (22.7, 35) and an ADC_T_BIAS via at (63, 49)
+  (60, 61.15). A NEG_REF via at (22.7, 35) and an ADC_T_BIAS via at (63, 49)
   have copper on the bottom layer only. T1–T3 run about 185 mm round the main
   board (U6 is top left, H1 bottom right); the TL074's edges are slow. 3V3D_F
   enters the faceplate at H6 while GND_D_F leaves at H5, so the LED current
@@ -498,7 +491,7 @@ during routing.
 | RV2 | BIAS t | 8.85, 59.95 | right | 77.15, 59.95 | 90 |
 | RV7 | BIAS X | 81.15, 59.95 | left | 12.85, 59.95 | 270 |
 | RV5 | LENGTH | 45, 66.55 | left | 49.0, 66.55 | 270 |
-| RV3 | JITTER | 31.05, 44.75 | up | 58.95, 48.75 (exported at 59.0, 48.0) | 0 |
+| RV3 | JITTER | 31.05, 44.75 | up | 58.95, 48.75 | 0 |
 | RV8 | STEPS | 58.95, 44.75 | left | 35.05, 44.75 | 270 |
 | C10 | | | | 53.25, 92.5 (was 52.5) | 0 |
 
@@ -601,14 +594,6 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
-- Move JITTER back before ordering. In EasyEDA, on the faceplate, set RV3 to
-  x 58.95, y 48.75 (it is at 59.0, 48.0; its pin tracks still end inside the
-  pads afterwards). While there, move the top-layer STEPS wiper
-  (POT_X_STEPS_F, the run at x 47.5 from y 31 to 44) to x 48.2: 3.05 mm from
-  the (45, 33) hole's centre, 0.5 mm from the LENGTH wiper. Rebuild the
-  pours, run DRC, export over `Marblesy-routed.epro2`; then set
-  `POT_XY["RV3"] = (31.05, 44.75)` in `circuit.py` and rerun the exporter
-  and `panel.py`.
 - The panel PCB inside `Marblesy-routed.epro2` still has its holes at the
   old 0.53 mm spots. Replace it with the one in the regenerated
   `Marbles.epro2`, or make the panel's Gerbers from an import of that file.

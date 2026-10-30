@@ -17,7 +17,7 @@ placement, the BOM and the firmware plan.
 | EasyEDA Pro schematic | Done, four A3 pages (main board 2, faceplate 2), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
 | Panel layout (Marbles arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
 | PCB placement | Done, then reworked during routing; the generator now takes it from the routed project | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
-| PCB routing | Done by hand in EasyEDA Pro (2026-10-29, pots re-routed onto the drawn layout 2026-10-30), audited: every net complete, no shorts, 0.152 mm minimum clearance. JITTER still moves back 0.75 mm before ordering | `hardware/easyeda/Marblesy-routed.epro2` |
+| PCB routing | Done by hand in EasyEDA Pro (2026-10-29, pots re-routed onto the drawn layout 2026-10-30), audited: every net complete, no shorts, 0.152 mm minimum clearance | `hardware/easyeda/Marblesy-routed.epro2` |
 | Firmware | Not started | |
 
 ## Layout

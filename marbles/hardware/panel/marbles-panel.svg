@@ -54,8 +54,8 @@
 <path d="M 50.00 81.30 h 1.0 c 1.0 0 0.6 -2.0 1.6 -2.0 h 1.0" class="silk" stroke-width="0.4"/>
 <path d="M 57.80 65.50 h 0.9 v -0.9 h 0.9 v -0.9 h 0.9 v -0.9 h 0.9" class="silk" stroke-width="0.4"/>
 <path d="M 65.20 81.10 h 1.2 v -1.6 h 1.2 v -1.6 h 1.2" class="silk" stroke-width="0.4"/>
-<path d="M 22.45 81.45 h 3.4" class="silk" stroke-width="0.4"/>
-<path d="M 37.45 81.85 l 0.6 -2.2 l 0.7 1.6 l 0.6 -2.4 l 0.7 1.8 l 0.8 -1.2" class="silk" stroke-width="0.4"/>
+<path d="M 22.50 80.70 h 3.4" class="silk" stroke-width="0.4"/>
+<path d="M 37.50 81.10 l 0.6 -2.2 l 0.7 1.6 l 0.6 -2.4 l 0.7 1.8 l 0.8 -1.2" class="silk" stroke-width="0.4"/>
 <path d="M 16.94 41.86 A 9.0 9.0 0 1 1 29.66 41.86" class="silk" stroke-width="0.3"/>
 <line x1="16.94" y1="41.86" x2="16.09" y2="42.71" class="silk" stroke-width="0.3"/>
 <line x1="14.74" y1="38.28" x2="14.07" y2="38.50" class="silk" stroke-width="0.3"/>
@@ -116,13 +116,13 @@
 <line x1="51.47" y1="49.29" x2="52.12" y2="49.02" class="silk" stroke-width="0.3"/>
 <line x1="50.10" y1="56.15" x2="50.95" y2="57.00" class="silk" stroke-width="0.3"/>
 <text x="45.65" y="61.00" font-size="2.4" text-anchor="middle">LENGTH</text>
-<path d="M 27.20 78.70 A 6.3 6.3 0 1 1 36.10 78.70" class="silk" stroke-width="0.3"/>
-<line x1="27.20" y1="78.70" x2="26.35" y2="79.55" class="silk" stroke-width="0.3"/>
-<line x1="25.83" y1="71.84" x2="25.18" y2="71.57" class="silk" stroke-width="0.3"/>
-<line x1="31.65" y1="67.95" x2="31.65" y2="66.75" class="silk" stroke-width="0.3"/>
-<line x1="37.47" y1="71.84" x2="38.12" y2="71.57" class="silk" stroke-width="0.3"/>
-<line x1="36.10" y1="78.70" x2="36.95" y2="79.55" class="silk" stroke-width="0.3"/>
-<text x="31.65" y="83.55" font-size="2.4" text-anchor="middle">JITTER</text>
+<path d="M 27.25 77.95 A 6.3 6.3 0 1 1 36.15 77.95" class="silk" stroke-width="0.3"/>
+<line x1="27.25" y1="77.95" x2="26.40" y2="78.80" class="silk" stroke-width="0.3"/>
+<line x1="25.88" y1="71.09" x2="25.23" y2="70.82" class="silk" stroke-width="0.3"/>
+<line x1="31.70" y1="67.20" x2="31.70" y2="66.00" class="silk" stroke-width="0.3"/>
+<line x1="37.52" y1="71.09" x2="38.17" y2="70.82" class="silk" stroke-width="0.3"/>
+<line x1="36.15" y1="77.95" x2="37.00" y2="78.80" class="silk" stroke-width="0.3"/>
+<text x="31.70" y="82.80" font-size="2.4" text-anchor="middle">JITTER</text>
 <path d="M 55.15 77.95 A 6.3 6.3 0 1 1 64.05 77.95" class="silk" stroke-width="0.3"/>
 <line x1="55.15" y1="77.95" x2="54.30" y2="78.80" class="silk" stroke-width="0.3"/>
 <line x1="53.78" y1="71.09" x2="53.13" y2="70.82" class="silk" stroke-width="0.3"/>
@@ -131,7 +131,7 @@
 <line x1="64.05" y1="77.95" x2="64.90" y2="78.80" class="silk" stroke-width="0.3"/>
 <text x="59.60" y="82.80" font-size="2.4" text-anchor="middle">STEPS</text>
 <polyline points="23.30,48.70 23.30,51.00 21.65,53.50 21.65,92.28" class="silk dots"/>
-<polyline points="31.65,84.75 31.65,87.05 33.65,89.55 33.65,92.28" class="silk dots"/>
+<polyline points="31.70,84.00 31.70,86.30 33.65,88.80 33.65,92.28" class="silk dots"/>
 <polyline points="59.60,84.00 59.60,86.30 57.65,88.80 57.65,92.28" class="silk dots"/>
 <polyline points="68.00,48.70 68.00,51.00 69.65,53.50 69.65,92.28" class="silk dots"/>
 <polyline points="9.50,68.80 9.50,77.88" class="silk dots"/>
@@ -192,7 +192,7 @@
 <circle cx="9.50" cy="58.30" r="3.75" class="hole"/>
 <circle cx="81.80" cy="58.30" r="3.75" class="hole"/>
 <circle cx="45.65" cy="51.70" r="3.75" class="hole"/>
-<circle cx="31.65" cy="74.25" r="3.75" class="hole"/>
+<circle cx="31.70" cy="73.50" r="3.75" class="hole"/>
 <circle cx="59.60" cy="73.50" r="3.75" class="hole"/>
 <circle cx="16.50" cy="17.60" r="3.25" class="hole"/>
 <circle cx="74.80" cy="17.60" r="3.25" class="hole"/>
@@ -264,9 +264,9 @@
 <circle cx="45.65" cy="51.70" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
 <circle cx="45.65" cy="51.70" r="3.10" fill="#e8e8e4"/>
 <line x1="44.59" y1="52.76" x2="42.29" y2="55.06" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
-<circle cx="31.65" cy="74.25" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
-<circle cx="31.65" cy="74.25" r="3.10" fill="#e8e8e4"/>
-<line x1="30.59" y1="75.31" x2="28.29" y2="77.61" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="31.70" cy="73.50" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="31.70" cy="73.50" r="3.10" fill="#e8e8e4"/>
+<line x1="30.64" y1="74.56" x2="28.34" y2="76.86" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
 <circle cx="59.60" cy="73.50" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
 <circle cx="59.60" cy="73.50" r="3.10" fill="#e8e8e4"/>
 <line x1="58.54" y1="74.56" x2="56.24" y2="76.86" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>

@@ -121,11 +121,11 @@
 <line x1="45.65" y1="50.20" x2="45.65" y2="53.20" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="49.90" y="47.65">Ø7.5</text>
 <text class="lbl" x="45.65" y="57.85" text-anchor="middle">LENGTH</text>
-<circle cx="31.65" cy="74.25" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="30.15" y1="74.25" x2="33.15" y2="74.25" stroke="#000" stroke-width="0.12"/>
-<line x1="31.65" y1="72.75" x2="31.65" y2="75.75" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="35.90" y="70.20">Ø7.5</text>
-<text class="lbl" x="31.65" y="80.40" text-anchor="middle">JITTER</text>
+<circle cx="31.70" cy="73.50" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="30.20" y1="73.50" x2="33.20" y2="73.50" stroke="#000" stroke-width="0.12"/>
+<line x1="31.70" y1="72.00" x2="31.70" y2="75.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="35.95" y="69.45">Ø7.5</text>
+<text class="lbl" x="31.70" y="79.65" text-anchor="middle">JITTER</text>
 <circle cx="59.60" cy="73.50" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="58.10" y1="73.50" x2="61.10" y2="73.50" stroke="#000" stroke-width="0.12"/>
 <line x1="59.60" y1="72.00" x2="59.60" y2="75.00" stroke="#000" stroke-width="0.12"/>
