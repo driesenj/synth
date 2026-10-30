@@ -275,29 +275,25 @@ barrel 0.78 mm below the WQP518MA origin; Alpha pot shaft 4.0 mm beyond the
 PTV09A origin, away from the pins, since the footprint's pin row is 3.5 mm
 from its origin and the Alpha's shaft 7.5 mm from its pins).
 
-**The knob field is 3.47 mm right of where it was drawn.** Until 2026-10-30
-`panel.py` put the pot holes at origin + 0.53 mm, which is where the knobs in
-the diagram below were meant to be. The real shafts are at origin + 4.0, and
-the routed faceplate keeps its pots where they are, so the holes, the
-artwork and the panel PCB moved with the shafts: every knob sits 3.47 mm to
-the right, while the jacks, buttons and title stay symmetric. Knob
-clearances on the panel: BIAS X's 10 mm knob ends 0.5 mm from the panel's
-right edge, SPREAD's 15 mm knob is 2.4 mm from the X MODE cap; everything
-else keeps 3 mm or more. What the artwork still has to resolve (see
-`hardware/panel/marbles-panel-preview.png`): BIAS X's scale runs off the
-right edge; SPREAD's scale runs over the X MODE button's ring and its three
-mode icons; LENGTH's 12 and 16 sit on the X RANGE labels (+2, ±5); DEJA VU
-and LENGTH no longer line up with EXT and the title's centre line. The other
-way out is to move the eight pots 3.47 mm left on the faceplate and re-route
-them: then U9 sits under SPREAD's housing (pins 11–14) and against its pins,
-HF3 against BIAS t's pins (they would land 1.9 mm from the board edge) and
-C10 under DEJA VU's housing, so U9, HF3 (with its main-board socket) and C10
-move too. That choice is open (see Open items).
+**The knob field is 3.47 mm right of where it was drawn, until the
+re-route.** Until 2026-10-30 `panel.py` put the pot holes at origin +
+0.53 mm. The real shafts are at origin + 4.0, and the routed faceplate keeps
+its pots where they are, so the holes, the artwork and the panel PCB follow
+the real shafts: every knob sits 3.47 mm to the right, while the jacks,
+buttons and title stay symmetric (`hardware/panel/marbles-panel-preview.png`).
+That panel does not work: BIAS X's knob ends 0.5 mm from the right edge with
+its scale off the panel, SPREAD's scale runs over the X MODE button and its
+icons, LENGTH's 12 and 16 sit on the X RANGE labels. The decision is to move
+the pots back on the faceplate and re-route them; see "Re-route plan" under
+Routing. Afterwards the knobs sit exactly on the symmetric layout below
+(shafts at the `POT_XY` numbers of the diagram, 0.53 mm left of the old
+drawing) and the artwork needs no change
+(`hardware/panel/marbles-panel-after-reroute.png`).
 
 The arrangement follows Mutable's Marbles panel (board mm, y up):
 
 ```
-   y     (footprint origins; each knob is 4.0 mm right of the number given)
+   y     (knob shafts after the re-route; until then each knob is 3.47 mm further right)
   100.7  [t]o              DEJA VU (45)                o[X]      deja vu LED buttons
    82.75         RATE (22.65)              SPREAD (67.35)
    78.25  o MODE                                       MODE o
@@ -461,6 +457,59 @@ Routed by hand in EasyEDA Pro on 2026-10-29 and audited from the export:
   H1 bottom right); the TL074's edges are slow. 3V3D_F enters the faceplate
   at H6 while GND_D_F leaves at H5, so the LED current loop spans the board.
 
+### Re-route plan: the pots back on the drawn layout (2026-10-30)
+
+The eight pots move so their shafts land on the symmetric layout
+(`POT_XY` in the diagram above). Each pot's pin direction was picked against
+the routed copper, as the one that needs no other part moved and cuts the
+fewest foreign tracks. RATE, DEJA VU and JITTER turn their pins up, SPREAD
+and BIAS t to the right (front view), BIAS X, LENGTH and STEPS keep them to
+the left. Only C10 moves besides them: 0.75 mm, out from under DEJA VU's
+housing. With this placement every check passes, including the
+rear-pad-under-housing and the rear-body-over-pins checks.
+
+| Part | Knob | Shaft (front) | Pins (front) | EasyEDA x, y (mm, top-layer view) | Rotation (bottom layer) |
+|---|---|---|---|---|---|
+| RV1 | RATE | 22.65, 82.75 | up | 67.35, 86.75 | 0 |
+| RV6 | SPREAD | 67.35, 82.75 | right | 18.65, 82.75 | 90 |
+| RV4 | DEJA VU | 45, 97.55 | up | 45.0, 101.55 | 0 |
+| RV2 | BIAS t | 8.85, 59.95 | right | 77.15, 59.95 | 90 |
+| RV7 | BIAS X | 81.15, 59.95 | left | 12.85, 59.95 | 270 |
+| RV5 | LENGTH | 45, 66.55 | left | 49.0, 66.55 | 270 |
+| RV3 | JITTER | 31.05, 44.75 | up | 58.95, 48.75 | 0 |
+| RV8 | STEPS | 58.95, 44.75 | left | 35.05, 44.75 | 270 |
+| C10 | | | | 53.25, 92.5 (was 52.5) | 0 |
+
+**Start file.** `hardware/easyeda/Marblesy-reroute-start.epro2` is the
+routed export with those nine parts moved and the copper that no longer
+fits deleted: 212 tracks and 28 vias, 1.3 m of the faceplate's 3.2 m. The
+main board and the panel board are untouched. Deleted: the eight wiper
+nets (400 mm) and most of 3V3A_F (250 mm). Also deleted, the stretches of
+3V3D_F, GND_D_F, LED_LATCH_F, SCK_F, SR_CHAIN, the five button lines
+(BTN_T_DEJAVU, BTN_T_RANGE, BTN_X_MODE, BTN_X_RANGE, BTN_X_EXT) and the LED
+lines L_D3_G, L_D5_G and LED_D2_R that ran over a new pad or ended on an old
+one, each back to the nearest pad, via or junction. Three GND_F stitching
+vias under new pads go too. No loose track end is left. Read back the way
+`routed_check()` reads an export, every faceplate pad is at its planned spot
+with its net, and no foreign copper lies within 0.2 mm of a moved pad.
+Picture: `hardware/easyeda/marbles-reroute-plan.png`.
+
+**In EasyEDA.** Open the start file the way the routed export was opened;
+`Marblesy-routed.epro2` stays the master until the new export replaces it.
+Rebuild the pours first, because the file still carries the old pour
+outline. Then route the ratsnest with the rules above: the wipers to U11,
+3V3A_F, and the broken logic and LED lines. Run DRC and the netlist check,
+and export over `Marblesy-routed.epro2`.
+
+**Sync the repo after the export.** In `circuit.py`, set `POT_XY` to the
+shafts in the table (the diagram's numbers) and `POT_PINS = {"RV1": (0, 1),
+"RV4": (0, 1), "RV3": (0, 1), "RV6": (1, 0), "RV2": (1, 0)}`. Then run
+`python easyeda_export.py && python panel.py`. Run against the start file,
+that already gives 0 problems, `routed_check()` included; moving a part
+while routing changes it, as before. Replace the panel board in the
+EasyEDA project with the one from the regenerated `Marbles.epro2`, delete
+the start file, and the after-re-route preview becomes the panel preview.
+
 ---
 
 ## BOM
@@ -542,13 +591,11 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
-- Panel layout after the pot-shaft fix (2026-10-30): keep the routed
-  faceplate and rework the artwork round the knobs 3.47 mm further right
-  (BIAS X 0.5 mm from the edge), or move the pots back and re-route them
-  with U9, HF3 and C10 (see "Faceplate placement and panel"). Do not order
-  the panel before deciding. The panel PCB inside `Marblesy-routed.epro2`
-  still has the holes at the old 0.53 mm spots; take the panel board from
-  the regenerated `Marbles.epro2` once the layout is settled.
+- Re-route the faceplate's pots from `Marblesy-reroute-start.epro2` (see
+  "Re-route plan" under Routing), then sync the repo. Order neither the
+  faceplate nor the panel before that. The panel PCB inside
+  `Marblesy-routed.epro2` still has its holes at the old 0.53 mm spots;
+  replace it from the regenerated `Marbles.epro2` after the sync.
 - Panel PCB DRC: the copper band now keeps 0.4 mm from every hole
   (`Marblesy-routed.epro2` carries the fix); run DRC once more after
   importing it.

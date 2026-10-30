@@ -8,8 +8,9 @@ Panel-facing parts sit on the board's bottom layer.
   jack   angle 0, sleeve pad towards the top of the board; the barrel sits
          6.48 mm from the sleeve pad towards the tip pad (KiCad PJ398SM),
          i.e. 0.78 mm below the footprint origin of the WQP518MA footprint
-  pot    angle 90, pins towards -x; the Alpha shaft is 7.5 mm from the pin row,
-         the PTV09A footprint's pin row 3.5 mm from its origin: shaft = origin + 4.0 in x
+  pot    pins towards -x (angle 90) unless circuit.POT_PINS turns them; the Alpha
+         shaft is 7.5 mm from the pin row, the PTV09A footprint's pin row 3.5 mm
+         from its origin: the shaft is 4.0 mm from the origin, away from the pins
   LED    3-lead LED in the generated LED-3MM-3P footprint: body centred on the origin
   switch 6 x 6 mm tactile or Thonk LED button, cap centred on the origin; hole = cap + 1 mm
 Run from marbles/hardware/tools:  python panel.py
@@ -30,7 +31,7 @@ BOARD_Y0 = (PANEL_H - circuit.BOARD_H) / 2   # board centred on the panel; move 
 # hole diameters; buttons: cap diameter + 1 mm (6 mm caps; the Thonk LED button has a 5.5 mm cap)
 HOLE = {"pot": 7.5, "jack": 6.5, "led": 3.2, "button": 7.0, "ledbutton": 6.5, "mount": 3.2}
 JACK_BARREL = -0.78
-POT_SHAFT = 4.0
+POT_SHAFT = circuit.POT_SHAFT
 OUT = os.path.join(HERE, "..", "panel")
 
 
@@ -46,7 +47,8 @@ def features():
         if ref.startswith("J"):
             out.append(("jack", ref, labels[ref], x, y, x, y + JACK_BARREL))
         elif ref.startswith("RV"):
-            out.append(("pot", ref, labels[ref], x, y, x + POT_SHAFT, y))
+            ux, uy = circuit.pot_pins(ref)
+            out.append(("pot", ref, labels[ref], x, y, x - POT_SHAFT * ux, y - POT_SHAFT * uy))
         elif ref.startswith("SW"):
             out.append(("ledbutton", ref, labels[ref], x, y, x, y))
         elif ref.startswith("D"):

@@ -321,11 +321,28 @@ for k, ref in enumerate(("J9", "J10", "J11", "J16", "J13", "J14", "J15")):      
 for k, ref in enumerate(("J1", "J2", "J4", "J5", "J8", "J6", "J12")):           # clocks and CV inputs
     PLACEMENT[ref] = (9 + k * JACK_PITCH, 21.85, 0)
 PLACEMENT["J3"], PLACEMENT["J7"] = (9, 36.25, 0), (81, 36.25, 0)              # BIAS CV inputs
-POT_XY = {"RV1": (22.65, 82.75), "RV6": (67.35, 82.75), "RV4": (45, 97.55),    # RATE, SPREAD, DEJA VU
-          "RV2": (8.85, 59.95), "RV7": (81.15, 59.95), "RV5": (45, 66.55),     # BIAS t, BIAS X, LENGTH
-          "RV3": (31.05, 44.75), "RV8": (58.95, 44.75)}                        # JITTER, STEPS
+# Pots: the knob shafts, and the way each pot's pin row points from its shaft
+# (unit vector, -x unless listed). The footprint origin is 4.0 mm from the
+# shaft towards the pins: the PTV09A's pin row is 3.5 mm from its origin, the
+# Alpha's shaft 7.5 mm from its pins. As routed on 2026-10-29 every pot has
+# its pins towards -x and the shafts sit 3.47 mm right of the symmetric
+# layout the panel was drawn for; docs/design.md has the re-route plan that
+# puts them back (shafts at x 22.65 / 67.35 / 45 / 8.85 / 81.15 / 45 / 31.05 / 58.95).
+POT_SHAFT = 4.0
+POT_XY = {"RV1": (26.65, 82.75), "RV6": (71.35, 82.75), "RV4": (49.0, 97.55),  # RATE, SPREAD, DEJA VU
+          "RV2": (12.85, 59.95), "RV7": (85.15, 59.95), "RV5": (49.0, 66.55),  # BIAS t, BIAS X, LENGTH
+          "RV3": (35.05, 44.75), "RV8": (62.95, 44.75)}                        # JITTER, STEPS
+POT_PINS = {}
+POT_ANGLE = {(-1, 0): 90, (1, 0): 270, (0, 1): 180, (0, -1): 0}   # PLACEMENT's angle: 90 = pins towards -x
+
+
+def pot_pins(ref):
+    return POT_PINS.get(ref, (-1, 0))
+
+
 for ref, (x, y) in POT_XY.items():
-    PLACEMENT[ref] = (x, y, 90)
+    ux, uy = pot_pins(ref)
+    PLACEMENT[ref] = (round(x + POT_SHAFT * ux, 2), round(y + POT_SHAFT * uy, 2), POT_ANGLE[(ux, uy)])
 BUTTON_XY = {"SW1": (15.85, 100.65), "SW4": (74.15, 100.65),                   # t / X deja vu (green)
              "SW2": (6.85, 78.25), "SW5": (83.15, 78.25),                      # t / X mode (bipolar)
              "SW3": (25.0, 61.75), "SW6": (65.0, 61.75),                       # t / X range (bipolar)

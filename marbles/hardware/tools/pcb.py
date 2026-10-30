@@ -444,8 +444,8 @@ def faceplate_board(pr, parts, info, circuit):
         b.place_front(ref, xf, y, 0, bottom=True)
     for ref, *_ in circuit.JACKS:        # sleeve pad above the tip pad, pins in a column
         b.orient(ref, lambda r: abs(r["1"][0] - r["3"][0]) < 0.01 and r["1"][1] > r["3"][1])
-    for ref, *_ in circuit.POTS:         # pins in a column towards -x (pin 1 then lands above pin 3)
-        b.orient(ref, lambda r: r["1"][0] < r["4"][0] and abs(r["1"][0] - r["3"][0]) < 0.01)
+    for ref, *_ in circuit.POTS:         # the pin row on the side circuit.pot_pins says (-x unless turned)
+        b.orient(ref, lambda r, u=circuit.pot_pins(ref): r["2"][0] * u[0] + r["2"][1] * u[1] > 3)
     for ref, *_ in circuit.BUTTONS:
         if ref in circuit.LED_BUTTONS:   # LED button: LED pins in a row along x, anode on the right
             b.orient(ref, lambda r: abs(r["5"][1] - r["6"][1]) < 0.01 and r["5"][0] > r["6"][0] and r["1"][1] > r["3"][1])
