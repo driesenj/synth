@@ -326,21 +326,33 @@ and the LED column that the green LED resistors stand in.
 
 **Faceplate board.** Bottom layer: the 10 jacks, 7 pots, 2 LED buttons and
 the 8 LEDs. Top (rear) layer, inside the header gap (front-view x, y):
-H1 horizontal at (29.0, 31.2) between the top jack row and the
-attenuverters; H2 (54.7, 42) and H3 (54.7, 65) vertical in the right
-margin, clear of the MORPH attenuverter's housing; U1 at (14.5, 49.5) in the
+H1 horizontal at (29.0, 30.9) between the top jack row and the
+attenuverters; H2 (55.0, 42) and H3 (55.0, 65) vertical in the right
+margin, clear of the MORPH attenuverter's housing and of MORPH's lug; U1 at (14.5, 49.5) in the
 pocket left of the centre hole with C8 standing at its left end (3.0, 50);
 U9 at (15.4, 75) and U10 at (43, 75) between the big knobs and TIMBRE /
 MORPH with C9 at (3.5, 70) and C10 under U10 at (44.2, 69); the LED
 resistors as vertical parts in rows at y 88 and y 62 either side of the LED
 column (R80–R87 left for U9's reds at x 17.8–25, R88–R95 right for U10's
-greens at x 33.3–40.5), each with its 595 end towards the chip between the
-rows; the probe resistors R10–R13 vertical in the right pocket
-(x 35.5–43, y 49.2) and R9 horizontal in the jack strip at (12.9, 31.2).
-Rear pads never fall under a pot or jack housing, since those are soldered
-on the panel side, and no rear body sits over a panel part's pins. The pot
-housing in the checks is the Alpha's (`pcb.BODY`: −2.5 to +8.85 mm in the
-PTV09A's frame, 9.5 mm wide).
+greens at x 32.8–40, clear of the HARMONICS / MORPH lugs), each with its
+595 end towards the chip between the rows; the probe resistors R10–R13
+vertical in the right pocket (x 35.5–43, y 49.2) and R9 horizontal in the
+jack strip at (12.9, 30.7), below the TIMBRE attenuverter's lug. Rear pads
+never fall under a pot or jack housing, since those are soldered on the
+panel side, and no rear body sits over a panel part's pins or lugs. The one
+touch: HF3's plastic strip covers the outer 0.03 mm of MORPH's lug pad
+ring, 0.78 mm from the lug itself; H2 / H3 cannot move further out without
+crowding the breakout's pads on the main board.
+
+**Footprints.** The pots are on `POT-ALPHA-9MM-RD901F`, drawn by the
+exporter as in KiCad's RD901F-40-00D. It sits in the frame of the library
+PTV09A, with the lugs on the shaft line at ±4.8, and its outline is the
+real housing. The library PTV09A is Bourns' part: its lug slots sit 0.5 mm
+off both ways from an Alpha's lugs, and none of the user's built boards has
+Alpha pots to prove a fit. The TL074s are on `DIP-14-W7.62-P2.54`, also
+drawn. The library TL074ACN footprint has its rows 8.89 mm apart: no
+socket fits, and on the Kick, Mixer and Output boards the chips' legs had
+to be bent. The stereo mixer uses the same two footprints.
 
 **Main board.** Bottom layer: the three female sockets at the same spots
 (H2 / H3 land in the channel between the breakout's pad rows). Top (rear)
@@ -348,7 +360,7 @@ layer, PCB frame, laid out the way the user placed Marblesy's main board
 while routing it: the Seed breakout vertical along the left edge, centred
 at (10, 64), power end (J1 / J3) down and USB end up, its ADC pin row
 (x 17.6, y 42–65) facing the op-amps. U3 (39.6, 64) and U4 (39.6, 89)
-vertical, U3 level with the ADC pins. Every resistor stands up on a 2.54 mm
+vertical on 7.62 mm rows, U3 level with the ADC pins. Every resistor stands up on a 2.54 mm
 footprint and every stage is a cluster at its corner of the chip: Rf right
 against the IN− and OUT pins, Rin and Rs in the next column, Cf in the
 third, so each summing node spans 8.7 mm (it was 23–48 mm with the

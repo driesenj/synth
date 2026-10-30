@@ -62,15 +62,16 @@ LAYERS = [(1, "TOP", "Top Layer", "#FF0000", "#7F0000"), (2, "BOTTOM", "Bottom L
 
 
 class Footprint:
-    """A through-hole footprint in mm; written as an EasyEDA Pro FOOTPRINT doc."""
+    """A through-hole footprint in mm; written as an EasyEDA Pro FOOTPRINT doc. Pads are round (or square)
+    with round holes, or oval with slot holes (slot=(w, h)) like a pot's lugs."""
 
     def __init__(self, title, designator="U?"):
         self.title, self.designator = title, designator
-        self.pads, self.silk = [], []        # (num, x, y, hole, pad_w, pad_h, square), [(kind, data)]
+        self.pads, self.silk = [], []        # (num, x, y, hole, pad_w, pad_h, square, slot), [(kind, data)]
         self.doc = Doc("FOOTPRINT")
 
-    def pad(self, num, x, y, hole=1.0, size=1.7, square=False, h=None):
-        self.pads.append((str(num), x, y, hole, size, h or size, square))
+    def pad(self, num, x, y, hole=1.0, size=1.7, square=False, h=None, slot=None):
+        self.pads.append((str(num), x, y, hole, size, h or size, square, slot))
 
     def line(self, x1, y1, x2, y2):
         self.silk.append(("L", (x1, y1, x2, y2)))
@@ -102,12 +103,16 @@ class Footprint:
                 path = ["CIRCLE", m(x), m(y), m(r)]
             d.add("POLY", d.nid(), {"groupId": 0, "netName": "", "layerId": 3, "width": 8, "path": path,
                                     "locked": False, "zIndex": d.zi(), "polyType": "NORMAL"})
-        for num, x, y, hole, pw, ph, square in self.pads:
-            pad = {"padType": "RECT", "width": m(pw), "height": m(ph), "radius": 0} if square else \
-                  {"padType": "ELLIPSE", "width": m(pw), "height": m(ph)}
+        for num, x, y, hole, pw, ph, square, slot in self.pads:
+            if slot:
+                pad = {"padType": "OVAL", "width": m(pw), "height": m(ph)}
+                hl = {"holeType": "SLOT", "width": m(slot[0]), "height": m(slot[1])}
+            else:
+                pad = {"padType": "RECT", "width": m(pw), "height": m(ph), "radius": 0} if square else \
+                      {"padType": "ELLIPSE", "width": m(pw), "height": m(ph)}
+                hl = {"holeType": "ROUND", "width": m(hole), "height": m(hole)}
             d.add("PAD", d.nid(), {"groupId": 0, "netName": "", "layerId": 12, "num": num, "centerX": m(x),
-                                   "centerY": m(y), "padAngle": 0,
-                                   "hole": {"holeType": "ROUND", "width": m(hole), "height": m(hole)},
+                                   "centerY": m(y), "padAngle": 0, "hole": hl,
                                    "defaultPad": pad, "specialPad": [], "padOffsetX": 0, "padOffsetY": 0,
                                    "relativeAngle": 0, "plated": True, "padType": "NORMAL",
                                    "topSolderExpansion": None, "bottomSolderExpansion": None,
@@ -168,6 +173,35 @@ def fp_res_vertical():
     f.pad(2, 0, -2.0574, 0.8, 1.6)
     f.circle(0, 0.48006, 1.1)
     f.line(0, -0.79, 0, -1.11)
+    return f
+
+
+def fp_dip(n, title):
+    """DIP on the standard 300 mil (7.62 mm) row pitch, pin 1 bottom-left, counting anticlockwise. The library
+    TL074ACN footprint has its rows 8.89 mm apart: no socket fits it and the chip's legs have to be bent."""
+    f = Footprint(title, "U?")
+    half = n // 2
+    x0 = -(half - 1) * 1.27
+    for i in range(half):
+        f.pad(i + 1, x0 + i * 2.54, -3.81, 0.9, 1.6, square=(i == 0))
+        f.pad(n - i, x0 + i * 2.54, 3.81, 0.9, 1.6)
+    hx, hy = half * 1.27 + 0.7, 3.25       # body: 19.2 x 6.5 mm for DIP-14
+    f.rect(-hx, -hy, hx, hy)
+    f.circle(-hx + 0.9, -hy + 0.9, 0.3)
+    return f
+
+
+def fp_alpha_pot():
+    """Alpha 9 mm vertical pot (RD901F) in the frame of the library PTV09A footprint (Bourns' part, its lugs
+    0.5 mm off the Alpha's): pins 1-3 at y = -3.5, x = -2.5 / 0 / 2.5, the shaft 7.5 mm from them at y = +4.0,
+    the mounting lugs (pads 4 / 5) on the shaft line at x = -+4.8 as oval pads with slots (KiCad RD901F-40-00D)."""
+    f = Footprint("POT-ALPHA-9MM-RD901F", "RV?")
+    for i, x in enumerate((-2.5, 0.0, 2.5)):
+        f.pad(i + 1, x, -3.5, 1.0, 1.8, square=(i == 0))
+    for num, x in (("4", -4.8), ("5", 4.8)):
+        f.pad(num, x, 4.0, size=2.72, h=3.24, slot=(1.1, 1.8))
+    f.rect(-4.75, -2.5, 4.75, 8.85)       # body, 9.5 wide, from 1 mm off the pin row to 4.85 mm past the shaft
+    f.circle(0, 4.0, 3.5)
     return f
 
 
@@ -331,6 +365,14 @@ class MProject(Project):
                   "Description": "Schottky diode 30 V 200 mA, DO-35"})
         self._device("BAT85", "BAT85", a, ["Diodes", "Schottky Diodes"])
         dip16 = meta(self.lib[SRC["74HC595N"]])["attributes"]["Footprint"]
+        # your TL074 and pot devices on standard footprints: DIP-14 on 7.62 mm rows, the Alpha RD901F
+        a = dict(self.device_attrs("TL074"))
+        a.update(Footprint=self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
+                 Description="Quad JFET op-amp, DIP-14 on the 7.62 mm row pitch")
+        self._device("TL074", "TL074ACN", a, ["Amplifiers"])
+        a = dict(self.device_attrs("POT"))
+        a.update(Footprint=self._footprint(fp_alpha_pot()), Description="Alpha 9 mm vertical pot (Thonk)")
+        self._device("POT", "Alpha 9mm B10k", a, ["Potentiometers"])
         fps = {"SEED": self._footprint(fp_seed_breakout()), "LED3": self._footprint(fp_led3()),
                "SWLED": self._footprint(fp_led_button()), "RV": self._footprint(fp_res_vertical())}
         for key in ["R1k", "R10k"] + ["R" + v for v in R_NEW]:     # each resistor again, standing up

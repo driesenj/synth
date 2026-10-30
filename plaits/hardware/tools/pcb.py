@@ -132,10 +132,10 @@ def footprint_geometry(doc):
 
 
 # Body boxes that override a footprint's drawn outline (x1, y1, x2, y2 in the
-# footprint's own frame). The library PTV09A carries Alpha 9 mm pots: pins at
-# y = -3.5, the shaft 7.5 mm from them at y = +4.0, the housing 9.5 mm wide
-# from 1 mm off the pin row to 4.85 mm past the shaft (KiCad RD901F).
-BODY = {"SW-TH_PTV09A-4015F-B502": (-4.75, -2.5, 4.75, 8.85)}
+# footprint's own frame). None needed now: the generated Alpha footprint draws
+# the real housing (9.5 mm wide, from 1 mm off the pin row to 4.85 mm past the
+# shaft, which is 7.5 mm from the pins).
+BODY = {}
 
 
 # ---------------------------------------------------------------- boards
@@ -420,7 +420,7 @@ HOLES_FRONT = [(3.5, 104.5), (55.9, 104.5), (3.5, 30.0), (29.9, 48.5)]
 # lies in the strip between the top jack row and the attenuverters; H2 and
 # H3 stand in the right margin, clear of the MORPH attenuverter's housing; on the main
 # board that margin is the channel between the breakout's pad rows.
-HEADERS_FRONT = {"H1": (29.0, 31.2, 0), "H2": (54.7, 42.0, 90), "H3": (54.7, 65.0, 90)}
+HEADERS_FRONT = {"H1": (29.0, 30.9, 0), "H2": (55.0, 42.0, 90), "H3": (55.0, 65.0, 90)}
 
 # Faceplate, rear side (top layer): ref, x_front, y, angle. 0 = pins along x, 90 = along y.
 # U1 in the pocket left of the centre hole, U9 / U10 between the big knobs
@@ -432,10 +432,10 @@ FB_REAR = [
     ("U1", 14.5, 49.5, 0), ("C8", 3.0, 50.0, 270),
     ("U9", 15.4, 75.0, 0), ("C9", 3.5, 70.0, 90),
     ("U10", 43.0, 75.0, 0), ("C10", 44.2, 69.0, 0),
-    ("R9", 12.9, 31.2, 0),
+    ("R9", 12.9, 30.7, 0),
 ]
 FB_REAR += [(r, x, 49.2, 90) for r, x in zip(("R10", "R11", "R12", "R13"), (35.5, 38.0, 40.5, 43.0))]
-_LX, _RX = (17.8, 20.2, 22.6, 25.0), (33.3, 35.7, 38.1, 40.5)
+_LX, _RX = (17.8, 20.2, 22.6, 25.0), (32.8, 35.2, 37.6, 40.0)
 # pad 1 (the 595 side) of every LED resistor faces its 595 between the rows, pad 2 the LEDs
 FB_REAR += [(f"R{80 + i}", x, 88.0, 90) for i, x in enumerate(_LX)]     # red D1-D4 (U9 lines)
 FB_REAR += [(f"R{84 + i}", x, 62.0, 270) for i, x in enumerate(_LX)]    # red D5-D8
@@ -453,6 +453,8 @@ FB_REAR += [(f"R{92 + i}", x, 62.0, 270) for i, x in enumerate(_RX)]    # green 
 # clamps and the button-LED resistors in the strip along the breakout.
 VR_P1 = 0.48006       # a standing resistor's pad 1 (the body) sits this far above its origin, pad 2 2.54 below that
 XO, Y3, Y4 = 39.6, 64.0, 89.0
+ROW = 3.81            # a DIP-14 pin row's distance from the chip's centre line (7.62 mm rows)
+C1 = ROW + 2.595      # the first column beside a pin row: Rf and the 100 n caps, 0.8 mm of clearance to the pins
 
 
 def _stand(ref, p1, p2):
@@ -472,7 +474,7 @@ def _stage(sec, x0, y0, rin, rf, rs, cf):
     """One inverting stage at its corner of a vertical TL074 centred on (x0, y0)."""
     sx = 1 if sec in (1, 2) else -1          # sections 1 / 2 on the pin 1-7 column, 3 / 4 on pins 8-14
     sy = -1 if sec in (1, 4) else 1          # sections 1 / 4 at the pin 1 / pin 14 end
-    c1, c2, c3 = x0 + sx * 7.04, x0 + sx * 9.58, x0 + sx * 12.12
+    c1, c2, c3 = x0 + sx * C1, x0 + sx * (C1 + 2.54), x0 + sx * (C1 + 5.08)
     y = [y0 + sy * 2.54 * k for k in range(5)]       # y[1] IN+, y[2] IN-, y[3] OUT
     return [_stand(rf, (c1, y[2]), (c1, y[3])),     # pin 1 IN-, pin 2 OUT
             _stand(rin, (c2, y[1]), (c2, y[2])),    # pin 1 CV, pin 2 IN-
@@ -484,8 +486,8 @@ def _main_top(circuit):
     top = [("U2", 10.0, 64.0, 90),        # Seed breakout along the left edge, power end down, USB end up
            ("U3", XO, Y3, 90), ("U4", XO, Y4, 90)]
     for k, (u, y0) in enumerate((("U3", Y3), ("U4", Y4))):
-        top += [_two(f"C{31 + 2 * k}", (XO + 7.04, y0 + 2.54), (XO + 7.04, y0 - 2.54)),   # +12 V, 3.6 mm from pin 4
-                _two(f"C{32 + 2 * k}", (XO - 7.04, y0 + 2.54), (XO - 7.04, y0 - 2.54))]   # -12 V, from pin 11
+        top += [_two(f"C{31 + 2 * k}", (XO + C1, y0 + 2.54), (XO + C1, y0 - 2.54)),   # +12 V, 3.6 mm from pin 4
+                _two(f"C{32 + 2 * k}", (XO - C1, y0 + 2.54), (XO - C1, y0 - 2.54))]   # -12 V, from pin 11
     for i, (name, label, u, sec, *_) in enumerate(circuit.CV_CHANNELS):
         top += _stage(sec, XO, Y3 if u == "U3" else Y4, f"R{21 + 3 * i}", f"R{22 + 3 * i}", f"R{23 + 3 * i}",
                       f"C{21 + i}")

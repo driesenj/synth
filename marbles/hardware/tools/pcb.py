@@ -116,6 +116,8 @@ def footprint_geometry(doc):
     pads, pts = {}, []
     for h, p in doc["recs"]:
         t = h["type"]
+        if p is None:                    # a record deleted in EasyEDA (routed exports keep them, empty)
+            continue
         if t == "PAD":
             dp = p["defaultPad"]
             pads[str(p["num"])] = {"id": h["id"], "x": p["centerX"] * 0.0254, "y": p["centerY"] * 0.0254,

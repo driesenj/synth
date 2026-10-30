@@ -41,7 +41,10 @@ missing, in the same style, with real pin numbers.
   on the panel; Plaitsy's panel stayed put and its pots moved. The
   library's 9 mm drawing was about right. Its lug slots (2.2 × 2.0 mm at
   ±4.3, 0.5 mm towards the pins from the shaft line) are not where the
-  Alpha's lugs are (±4.8 on the shaft line): test-fit one pot.
+  Alpha's lugs are (±4.8 on the shaft line, KiCad: 2.72 × 3.24 pads, slots
+  1.1 × 1.8 long towards the shaft), so a lug's corner overhangs the slot.
+  None of the user's built boards has Alpha pots. Use the Alpha footprint:
+  Plaitsy and the mixer draw it, Marblesy's re-route switches to it.
 - `stereo-mixer/hardware/tools/easyeda_export.py` `fp_alpha_pot()` generates
   Alpha single and dual footprints in the PTV09A's frame (lugs where the
   Alpha has them, real housing); use those. Panel hole 7.5 mm.
@@ -118,10 +121,13 @@ too big for a dense panel.
   2.5; pads 1.8, body 6.9 × 2.3. Vertical caps in a column need 7.5 mm
   steps.
 - SR305 1 µ: 5.08 mm pitch, body 7.6 × 3.8.
-- PDIP-14 (the TL074ACN library footprint) has its pad rows at ±4.445,
-  8.89 mm apart: too wide for a 7.62 mm DIP socket. The mixer generates a
-  standard 7.62 mm DIP-14 (`fp_dip`); Marblesy and Plaitsy still use the
-  library one. DIP-16 pads 1.6 at ±3.81, body 20 × 6.6.
+- PDIP-14 (the TL074ACN library footprint, `...LS9.0-BL`) has its pad rows
+  at ±4.445, 8.89 mm apart: no DIP socket fits, and the user had to bend
+  the chips' legs on the Kick, Mixer and Output boards. The MorrisSynth
+  project also has `PDIP-14_..._LS7.6` (rows 7.62, on FM, Snare, Tom, Hi-hat),
+  but it is not in the cached library. Use `fp_dip(14, "DIP-14-W7.62-P2.54")`
+  (mixer, Plaitsy, Marblesy after its re-route). DIP-16 pads 1.6 at ±3.81,
+  body 20 × 6.6.
 - DO-35: pads at ±4.0 (8 mm pitch), r 0.8.
 
 ## Chips

@@ -420,14 +420,22 @@ routed rear-side pad lies under a pot (U11 pin 8 is clear of LENGTH now that
 the housing starts 1 mm off the pin row), and no rear-side body sits over a
 pot pin. Rear pads whose ring only touches a jack or LED body edge (the
 centre stays 0.6–0.75 mm outside): R91–R93 at the t1–t3 jacks, R87–R89 and
-R1 at the output LEDs; R91's body also reaches J9's tip pad at the board's
-bottom edge. All were like this before the pot fix.
+R1 at the output LEDs. They were like this before the pot fix.
 
 **Assumptions to check.** The breakout's underside at its power end must
-clear the three 2.3 mm resistors under it. The PTV09A footprint's lug slots
-(2.2 × 2.0 mm at ±4.3 mm, 0.5 mm towards the pins from the shaft line) are
-not where the Alpha's lugs are (±4.8 mm on the shaft line): check that an
-Alpha pot drops in before soldering a batch.
+clear the three 2.3 mm resistors under it.
+
+**Two library footprints that do not fit the parts, fixed by the re-route.**
+- The TL074ACN footprint (`PDIP-14_L19.3-W6.4-P2.54-LS9.0-BL`, used for
+  U3–U8, the four TL074s and both MCP4922s) has its pin rows 8.89 mm apart
+  instead of 7.62. No DIP socket fits, and a chip only goes in with its legs
+  bent (the user had to on the Kick, Mixer and Output boards, which use the
+  same footprint).
+- The library pot footprint is Bourns' PTV09A: its lug slots (2.2 × 2.0 mm
+  at ±4.3, 0.5 mm towards the pins from the shaft line) sit 0.5 mm off both
+  ways from an Alpha pot's lugs (±4.8 on the shaft line, KiCad
+  RD901F-40-00D), so a lug's outer corner overhangs the slot. None of the
+  user's built boards has Alpha pots, so it was never tried.
 
 ---
 
@@ -457,16 +465,18 @@ Routed by hand in EasyEDA Pro on 2026-10-29 and audited from the export:
   H1 bottom right); the TL074's edges are slow. 3V3D_F enters the faceplate
   at H6 while GND_D_F leaves at H5, so the LED current loop spans the board.
 
-### Re-route plan: the pots back on the drawn layout (2026-10-30)
+### Re-route plan: pots back on the drawn layout, standard footprints (2026-10-30)
 
 The eight pots move so their shafts land on the symmetric layout
-(`POT_XY` in the diagram above). Each pot's pin direction was picked against
-the routed copper, as the one that needs no other part moved and cuts the
-fewest foreign tracks. RATE, DEJA VU and JITTER turn their pins up, SPREAD
-and BIAS t to the right (front view), BIAS X, LENGTH and STEPS keep them to
-the left. Only C10 moves besides them: 0.75 mm, out from under DEJA VU's
-housing. With this placement every check passes, including the
-rear-pad-under-housing and the rear-body-over-pins checks.
+(`POT_XY` in the diagram above), on the Alpha pot's own footprint. U3–U8 on
+the main board get a 7.62 mm DIP-14 so sockets fit. Each pot's pin
+direction was picked against the routed copper, as the one that needs no
+other part moved and cuts the fewest foreign tracks (the same picks with the
+Alpha lugs as with the PTV09A's). RATE, DEJA VU and JITTER turn their pins
+up, SPREAD and BIAS t to the right (front view), BIAS X, LENGTH and STEPS
+keep them to the left. Only C10 moves besides them: 0.75 mm, out from under
+DEJA VU's housing. With this placement every check passes, and no rear-side
+pad or body sits on a pot's housing, pins or lugs.
 
 | Part | Knob | Shaft (front) | Pins (front) | EasyEDA x, y (mm, top-layer view) | Rotation (bottom layer) |
 |---|---|---|---|---|---|
@@ -481,34 +491,55 @@ rear-pad-under-housing and the rear-body-over-pins checks.
 | C10 | | | | 53.25, 92.5 (was 52.5) | 0 |
 
 **Start file.** `hardware/easyeda/Marblesy-reroute-start.epro2` is the
-routed export with those nine parts moved and the copper that no longer
-fits deleted: 212 tracks and 28 vias, 1.3 m of the faceplate's 3.2 m. The
-main board and the panel board are untouched. Deleted: the eight wiper
-nets (400 mm) and most of 3V3A_F (250 mm). Also deleted, the stretches of
-3V3D_F, GND_D_F, LED_LATCH_F, SCK_F, SR_CHAIN, the five button lines
-(BTN_T_DEJAVU, BTN_T_RANGE, BTN_X_MODE, BTN_X_RANGE, BTN_X_EXT) and the LED
-lines L_D3_G, L_D5_G and LED_D2_R that ran over a new pad or ended on an old
-one, each back to the nearest pad, via or junction. Three GND_F stitching
-vias under new pads go too. No loose track end is left. Read back the way
-`routed_check()` reads an export, every faceplate pad is at its planned spot
-with its net, and no foreign copper lies within 0.2 mm of a moved pad.
-Picture: `hardware/easyeda/marbles-reroute-plan.png`.
+routed export with these changes made:
+- **Footprints.** The project's two footprint copies are edited in place,
+  keeping every pad id, so every pad keeps its net. The pot footprint
+  becomes `POT-ALPHA-9MM-RD901F`: lugs at ±4.8 on the shaft line, KiCad's
+  2.72 × 3.24 mm pads with 1.1 × 1.8 mm slots, and the Alpha housing as its
+  outline. The DIP-14 becomes `DIP-14-W7.62-P2.54`, with rows ±3.81 and
+  1.6 mm pads. Your EasyEDA library is untouched, so do not update these
+  footprints from the library in this project.
+- **Faceplate.** The nine parts in the table are moved. 212 tracks and 27
+  vias are deleted, 1.3 m of the faceplate's 3.2 m of track:
+  - the eight wiper nets (400 mm) and most of 3V3A_F (250 mm);
+  - the stretches of 3V3D_F, GND_D_F, LED_LATCH_F, SCK_F and SR_CHAIN, the
+    five button lines (BTN_T_DEJAVU, BTN_T_RANGE, BTN_X_MODE, BTN_X_RANGE,
+    BTN_X_EXT) and the LED lines L_D3_G, L_D5_G and LED_D2_R that ran over a
+    new pad or ended on an old one, each back to the nearest pad, via or
+    junction;
+  - three GND_F stitching vias under new pads.
+- **Main board.** 121 track ends are moved onto the new pin centres (each
+  0.635 mm in). 15 tracks and 2 vias that came too close are deleted, 46 mm
+  in all: stretches of 3V3A, BIAS, DAC_Y and VREF beside U3 and U8.
+- **Panel board:** untouched.
+
+Read back the way `routed_check()` reads an export, the file has every pad
+of both boards at its planned spot with its net. No copper of another net
+lies within the 0.152 mm rule of a changed pad, and no new loose end
+appears (the old 2 mm OA_T_JITTER stub at R29 is still there). Pictures:
+`hardware/easyeda/marbles-reroute-plan.png` (faceplate) and
+`marbles-reroute-plan-main.png` (main board).
 
 **In EasyEDA.** Open the start file the way the routed export was opened;
 `Marblesy-routed.epro2` stays the master until the new export replaces it.
-Rebuild the pours first, because the file still carries the old pour
-outline. Then route the ratsnest with the rules above: the wipers to U11,
-3V3A_F, and the broken logic and LED lines. Run DRC and the netlist check,
-and export over `Marblesy-routed.epro2`.
+1. Rebuild the pours first, because the file still carries the old pour
+   outline.
+2. Route the ratsnest with the rules above: on the faceplate the wipers to
+   U11, 3V3A_F and the broken logic and LED lines; on the main board the
+   four short gaps by U3 and U8.
+3. Run DRC and the netlist check, and export over `Marblesy-routed.epro2`.
 
 **Sync the repo after the export.** In `circuit.py`, set `POT_XY` to the
 shafts in the table (the diagram's numbers) and `POT_PINS = {"RV1": (0, 1),
-"RV4": (0, 1), "RV3": (0, 1), "RV6": (1, 0), "RV2": (1, 0)}`. Then run
-`python easyeda_export.py && python panel.py`. Run against the start file,
-that already gives 0 problems, `routed_check()` included; moving a part
-while routing changes it, as before. Replace the panel board in the
-EasyEDA project with the one from the regenerated `Marbles.epro2`, delete
-the start file, and the after-re-route preview becomes the panel preview.
+"RV4": (0, 1), "RV3": (0, 1), "RV6": (1, 0), "RV2": (1, 0)}`. The exporter
+switches the TL074, MCP4922 and pot devices to the drawn 7.62 mm DIP-14 and
+Alpha footprints by itself, as soon as the routed export carries them. Then
+run `python easyeda_export.py && python panel.py`. Run against the start
+file, that already gives 0 problems, `routed_check()` included; if you move
+a part while routing, the sync has to follow it, as before. Replace the
+panel board in the EasyEDA project with the one from the regenerated
+`Marbles.epro2`, delete the start file, and the after-re-route preview
+becomes the panel preview.
 
 ---
 
@@ -591,9 +622,9 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
-- Re-route the faceplate's pots from `Marblesy-reroute-start.epro2` (see
-  "Re-route plan" under Routing), then sync the repo. Order neither the
-  faceplate nor the panel before that. The panel PCB inside
+- Re-route from `Marblesy-reroute-start.epro2` (pots back on the drawn
+  layout on the Alpha footprint, U3–U8 on 7.62 mm rows; see "Re-route plan"
+  under Routing), then sync the repo. Order no board before that. The panel PCB inside
   `Marblesy-routed.epro2` still has its holes at the old 0.53 mm spots;
   replace it from the regenerated `Marbles.epro2` after the sync.
 - Panel PCB DRC: the copper band now keeps 0.4 mm from every hole

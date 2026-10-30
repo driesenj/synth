@@ -34,10 +34,11 @@ hardware/
     panel_pcb.py        the panel as a PCB document (holes, slots, silk, copper band), same source as the artwork
   easyeda/
     Marblesy-routed.epro2   the routed project, the layout master (re-route the pots before ordering)
-    Marblesy-reroute-start.epro2  that project with the pots moved back and the copper in their way
-                            deleted: route the faceplate from here (docs/design.md, "Re-route plan")
+    Marblesy-reroute-start.epro2  that project with the pots moved back on the Alpha footprint, U3-U8 on
+                            7.62 mm rows and the copper in their way deleted: route from here
+                            (docs/design.md, "Re-route plan")
     Marbles.epro2       the generated project (schematic, placed but unrouted PCBs, panel)
-    marbles-easyeda-*.png   schematic page and PCB placement previews; marbles-reroute-plan.png the plan
+    marbles-easyeda-*.png   schematic page and PCB placement previews; marbles-reroute-plan(-main).png the plan
     pcb-template.epru   canvas, layer and rule records copied from one of your own PCBs
   panel/
     marbles-panel-holes.csv, marbles-panel-drill.svg
