@@ -25,6 +25,19 @@ LED left of each label, title top-left, function name top-right, maker
 bottom centre. Compare the draft with a photo of the original before
 touching the PCB.
 
+## Rows of identical controls (the stereo mixer)
+
+Do not repeat a word under every knob of a row. Label each row once in the
+left margin: the word turned 90° (reading bottom to top) on a bracket as
+tall as the row, serifs pointing at the controls, the line broken round the
+word (`row_words` and the `vtext` item in `stereo-mixer/.../panel.py`). The
+user picked this from five drawn options (side rail, strips, gold tabs,
+brackets, column 1 only) over the first fix, a word under column 1 with a
+dotted line along the row: a word between two rows reads as belonging to
+either, and the dotted lines looked like dividers. Small per-knob scale
+marks (L / R on pans) stay. When the label placement is in doubt, draw
+the options side by side as SVG before reworking the generator.
+
 ## Artwork SVG (`panel.py write_artwork`)
 
 Groups `#silk`, `#copper`, `#holes`, `#mockup` (knobs, nuts, caps, LEDs
@@ -54,7 +67,9 @@ project's own BOARD with a note page and a PCB.
   rectangles.
 - Silk: STRING (default stroke font, estimated centring), POLY lines, arcs
   as ≤ 90° ARC pieces, dotted guides as 0.12 mm dashes, colour dots as
-  rings.
+  rings. Vertical words: STRING `angle` 90 with the LEFT_BOTTOM origin at
+  the bottom end of the baseline (`panel_pcb.vtext`), assuming text turns
+  CCW like component angles; not yet confirmed in an EasyEDA import.
 - Copper band: FILL on layer 1 plus the same FILL on layer 5 (mask
   opening) = ENIG gold. Labels on it as silk; if the fab refuses silk on
   bare copper, put the labels on the mask layer instead (gold letters on

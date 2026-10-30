@@ -129,7 +129,11 @@ KNOB_SIZE["RV25"] = "mid"
 PAN_POTS = [f"RV{3 * k - 1}" for k in circuit.MONO]
 MASTER_POTS = ["RV23", "RV24", "RV25"]          # labelled one by one; the channel rows share one word per row
 MONO_INS = [f"J{k}" for k in circuit.MONO]
-ROW_WORD_X = 2.4                                # where the row words start, from the panel's left edge
+# the channel rows' words: turned 90 degrees in the left margin, each on a bracket that spans its row (the
+# STEREO bracket on its side): a line at BRACKET_X broken round the word, serifs pointing at the row
+WORD_X = 3.65                                   # baseline of the vertical words; the letters reach ~1.4 mm left
+BRACKET_X, SERIF = 2.9, 1.6
+BRACKET_GAP, BRACKET_MIN = 0.7, 2.0             # gap between word and line; shortest line piece
 CHAR_W = 0.68                                   # estimated advance per character (bold sans), x font size
 OUTPUTS = ["J16", "J17"]
 # labels: knobs take their row word, jacks a short word above them
@@ -185,7 +189,8 @@ def scale_ticks(size):
 def layout(pos):
     """Everything the artwork and the panel PCB draw, in one list, so the two never drift apart:
     ("text", x, y, s, size, anchor, cls), ("line", pts, w), ("dots", pts), ("arc", cx, cy, r, a0, a1, w),
-    ("ring", cx, cy, r, w), ("serif", x, y, s, size, anchor)."""
+    ("ring", cx, cy, r, w), ("serif", x, y, s, size, anchor), and ("vtext", x, y, s, size): a word reading
+    bottom to top, centred on y, with its baseline at x."""
     A = ART
     W = PANEL_W
     out = []
@@ -234,13 +239,14 @@ def layout(pos):
     for ref, (kind, label, x, y) in pos.items():
         if kind == "ledbutton":
             out.append(("ring", x, y, A["ring"], 0.3))
-    # the channel rows' words, once each at the left edge, with a dotted line along the row to the last
-    # column it applies to (PAN and IN stop at channel 6: the stereo pair has no pan and labels its jacks L / R)
-    for y, word, last in row_words(pos):
+    # the channel rows' words, once each in the left margin on a bracket as tall as the row
+    for word, y, h in row_words(pos):
         size = A["label"]
-        text(ROW_WORD_X, y, word, size, "start")
-        x0 = ROW_WORD_X + CHAR_W * size * len(word) + 1.2
-        out.append(("dots", [(x0, y - 0.65), (circuit.CH_X[last - 1] + 5.5, y - 0.65)]))
+        gap = CHAR_W * size * len(word) / 2 + BRACKET_GAP
+        half = max(h, gap + BRACKET_MIN)
+        out.append(("vtext", WORD_X, y, word, size))
+        out.append(("line", [(BRACKET_X + SERIF, y - half), (BRACKET_X, y - half), (BRACKET_X, y - gap)], 0.3))
+        out.append(("line", [(BRACKET_X, y + gap), (BRACKET_X, y + half), (BRACKET_X + SERIF, y + half)], 0.3))
     # jack labels (the outputs' go on their copper, see bands; the mono INs share the IN row word),
     # dotted normals R <- L
     for ref, (kind, label, x, y) in pos.items():
@@ -257,11 +263,11 @@ def layout(pos):
 
 
 def row_words(pos):
-    """(baseline y, word, last channel) of each channel row's single label: under the first column's knob,
-    button or above its jack, where the per-column labels used to be."""
-    ys = {"send": knob_label_y(pos, "RV3"), "pan": knob_label_y(pos, "RV2"), "level": knob_label_y(pos, "RV1")}
-    return [(ys["send"], "SEND", 8), (ys["pan"], "PAN", 6), (ys["level"], "LEVEL", 8),
-            (pos["SW1"][3] + ART["ring"] + 2.4, "MUTE", 8), (jack_label_y(pos, "J1"), "IN", 6)]
+    """(word, centre y, half height) of each channel row: the bracket spans the first column's knob scale
+    with its ticks, button ring or jack nut."""
+    knob = ART["scale"]["small"] + 1.0
+    return [("SEND", pos["RV3"][3], knob), ("PAN", pos["RV2"][3], knob), ("LEVEL", pos["RV1"][3], knob),
+            ("MUTE", pos["SW1"][3], ART["ring"]), ("IN", pos["J1"][3], ART["nut"])]
 
 
 def write_artwork(feats, path):
@@ -301,6 +307,10 @@ def write_artwork(feats, path):
         elif kind == "serif":
             _, x, y, t, size, anchor = item
             text(x, y, t, size, anchor, cls="serif")
+        elif kind == "vtext":
+            _, x, y, t, size = item
+            s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="middle" '
+                     f'transform="rotate(-90 {x:.2f} {y:.2f})">{t}</text>')
         elif kind == "line":
             _, pts, w = item
             s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts)

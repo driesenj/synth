@@ -160,16 +160,21 @@
 <circle cx="79.00" cy="72.00" r="4.35" class="silk" stroke-width="0.3"/>
 <circle cx="92.50" cy="72.00" r="4.35" class="silk" stroke-width="0.3"/>
 <circle cx="106.00" cy="72.00" r="4.35" class="silk" stroke-width="0.3"/>
-<text x="2.40" y="32.60" font-size="1.9" text-anchor="start">SEND</text>
-<polyline points="8.77,31.95 111.50,31.95" class="silk dots"/>
-<text x="2.40" y="49.10" font-size="1.9" text-anchor="start">PAN</text>
-<polyline points="7.48,48.45 84.50,48.45" class="silk dots"/>
-<text x="2.40" y="65.60" font-size="1.9" text-anchor="start">LEVEL</text>
-<polyline points="10.06,64.95 111.50,64.95" class="silk dots"/>
-<text x="2.40" y="78.75" font-size="1.9" text-anchor="start">MUTE</text>
-<polyline points="8.77,78.10 111.50,78.10" class="silk dots"/>
-<text x="2.40" y="97.40" font-size="1.9" text-anchor="start">IN</text>
-<polyline points="6.18,96.75 84.50,96.75" class="silk dots"/>
+<text x="3.65" y="24.00" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 24.00)">SEND</text>
+<polyline points="4.50,17.00 2.90,17.00 2.90,20.72" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,27.28 2.90,31.00 4.50,31.00" class="silk" stroke-width="0.3"/>
+<text x="3.65" y="40.50" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 40.50)">PAN</text>
+<polyline points="4.50,33.50 2.90,33.50 2.90,37.86" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,43.14 2.90,47.50 4.50,47.50" class="silk" stroke-width="0.3"/>
+<text x="3.65" y="57.00" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 57.00)">LEVEL</text>
+<polyline points="4.50,50.00 2.90,50.00 2.90,53.07" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,60.93 2.90,64.00 4.50,64.00" class="silk" stroke-width="0.3"/>
+<text x="3.65" y="72.00" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 72.00)">MUTE</text>
+<polyline points="4.50,66.72 2.90,66.72 2.90,68.72" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,75.28 2.90,77.28 4.50,77.28" class="silk" stroke-width="0.3"/>
+<text x="3.65" y="103.00" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 103.00)">IN</text>
+<polyline points="4.50,99.00 2.90,99.00 2.90,101.01" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,104.99 2.90,107.00 4.50,107.00" class="silk" stroke-width="0.3"/>
 <text x="92.50" y="82.40" font-size="1.9" text-anchor="middle">L</text>
 <text x="92.50" y="97.40" font-size="1.9" text-anchor="middle">R</text>
 <text x="106.00" y="82.40" font-size="1.9" text-anchor="middle">L</text>

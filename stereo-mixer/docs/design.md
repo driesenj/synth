@@ -202,11 +202,14 @@ join the faceplate's ground to the main board's.
 - **Master section** (columns at 120 and 133.5): SEND out at the top on a
   gold patch; RETURN L / R; the RETURN and DRUMS knobs; FX IN and DRUM IN
   (both from the drum mixer); MASTER; OUT L / R on the gold band.
-- **Labels:** each channel row is labelled once, at the left edge under
-  channel 1 (SEND, PAN, LEVEL, MUTE, IN), with a dotted line along the
-  row to the last column it applies to; PAN and IN stop at channel 6. The
-  pans carry a small L and R at the ends of their scales, the stereo jacks
-  their own L / R, the master section a word per knob and jack.
+- **Labels:** each channel row is labelled once, in the left margin: the
+  word (SEND, PAN, LEVEL, MUTE, IN) turned 90° to read bottom to top, on a
+  bracket as tall as the row with its serifs pointing at the controls, the
+  STEREO bracket on its side. Nothing sits between the rows. The pans
+  carry a small L and R at the ends of their scales, the stereo jacks
+  their own L / R, the master section a word per knob and jack. On the
+  panel PCB the words are STRINGs at angle 90; check after import that
+  they read bottom to top (if not, the angle is 270).
 - **Style:** the Marblesy / Plaitsy one: black mask, white silk, title
   "Mixer" in serif italic, subtitle top right, dotted double rule, scale
   arcs on every knob, rings round the buttons, outputs on bare ENIG

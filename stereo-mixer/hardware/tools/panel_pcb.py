@@ -63,7 +63,13 @@ class PanelBoard:
         """x, y: baseline point in the panel frame; anchor middle / start / end."""
         width = CHAR_W * size * len(s)
         x0 = {"middle": x - width / 2, "start": x, "end": x - width}[anchor]
-        self.strings.append((*self.P(x0, y), s, size, w or size / 9))
+        self.strings.append((*self.P(x0, y), s, size, w or size / 9, 0))
+
+    def vtext(self, x, y, s, size, w=None):
+        """A word reading bottom to top (angle 90, CCW like EasyEDA's component angles), centred on y, with
+        its baseline at x; the LEFT_BOTTOM origin is the bottom end of the baseline."""
+        width = CHAR_W * size * len(s)
+        self.strings.append((*self.P(x, y + width / 2), s, size, w or size / 9, 90))
 
     def dots(self, pts, pitch=1.0, dash=0.12, w=0.45):
         """A dotted polyline as short dashes (EasyEDA has no dashed silk)."""
@@ -108,6 +114,9 @@ class PanelBoard:
             if kind in ("text", "serif"):
                 _, x, y, s, size, anchor = item
                 self.text(x, y, s, size, anchor)
+            elif kind == "vtext":
+                _, x, y, s, size = item
+                self.vtext(x, y, s, size)
             elif kind == "line":
                 self.line(item[1], item[2])
             elif kind == "dots":
@@ -186,11 +195,11 @@ class PanelBoard:
             d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 3, "width": mil(w),
                                     "path": [mil(p0[0]), mil(p0[1]), "ARC", round(sweep, 3), mil(p1[0]), mil(p1[1])],
                                     "locked": False, "zIndex": d.zi(), "polyType": "NORMAL"})
-        for x, y, s, size, w in self.strings:
+        for x, y, s, size, w, angle in self.strings:
             d.add("STRING", d.nid(), {"partitionId": "", "groupId": 0, "layerId": 3, "x": mil(x), "y": mil(y),
                                       "text": s, "fontFamily": "default", "fontSize": mil(size * 0.9),
                                       "strokeWidth": mil(w), "bold": False, "italic": False, "origin": "LEFT_BOTTOM",
-                                      "angle": 0, "reverse": False, "expansion": 0, "mirror": False, "locked": False,
+                                      "angle": angle, "reverse": False, "expansion": 0, "mirror": False, "locked": False,
                                       "zIndex": d.zi()})
         return d.lines({"title": title, "parent": "", "board": board_uuid, "zIndex": None})
 
@@ -225,9 +234,17 @@ class PanelBoard:
         except OSError:
             def font(size):
                 return ImageFont.load_default()
-        for x, y, s, size, w in self.strings:
+        for x, y, s, size, w, angle in self.strings:
             X, Y = P(x, y)
-            dr.text((X, Y - size * scale * 0.9), s, fill="#f0efe9", font=font(size))
+            if angle == 0:
+                dr.text((X, Y - size * scale * 0.9), s, fill="#f0efe9", font=font(size))
+                continue
+            f = font(size)          # turned text: draw it flat on its own tile, rotate, paste above the origin
+            tw, th = int(f.getlength(s)) + 2, int(size * scale * 1.2)
+            tile = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
+            ImageDraw.Draw(tile).text((0, th - size * scale * 0.9 - 2), s, fill="#f0efe9", font=f)
+            tile = tile.rotate(angle, expand=True)
+            img.paste(tile, (int(X - tile.width + 2), int(Y - tile.height)), tile)
         for x, y, dia in self.holes:
             X, Y = P(x, y)
             r = dia / 2 * scale
