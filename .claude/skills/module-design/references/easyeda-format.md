@@ -66,7 +66,10 @@ and `marbles/hardware/tools/{easyeda_export,pcb,panel_pcb}.py`.
   item with `fill: true` is one island (outline first, then holes); items
   with `fill: false` and `strokeWidth` are thermal spokes, lines from a pad
   centre to the edge of its cutout. A pad joins the pour when a spoke's far
-  end (stepped 0.15 mm on) lies in an island.
+  end (stepped 0.15 mm on) lies in an island. In a path, `"ARC", sweep, x, y`
+  runs from the previous point to (x, y), a positive sweep counter-clockwise
+  in the y-up board frame (checked on 1300 pour-hole arcs centred on pads
+  and vias of the Marblesy boards).
 - Routed exports keep deleted records with an empty payload (`...||` with
   no JSON); a parser must skip them (`pcb.routed_boards()` does,
   `ee.parse` does not). Stale `POURED` records outlive their `POUR`: match
