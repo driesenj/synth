@@ -3,7 +3,7 @@
 A clone of Vostok Instruments' Atlas (2024): four analog multimode filters
 in 16HP, each with LP / HP / BP, CV over cutoff and resonance, and a fifth
 section, the interpolating scanner, that morphs from filter 1 to filter 4
-under a fader and a CV. The IN and FREQ jacks are normalled down the rows,
+under a knob and a CV. The IN and FREQ jacks are normalled down the rows,
 so one input and one CV can feed all four filters. Atlas builds its filters
 from SSI2164 gain cells "inspired by 80s Japanese synths", and its scanner
 from AS3360 VCAs after Haible's and Tillman's scanners. The clone uses the
@@ -17,9 +17,10 @@ parts where Thonk has them.
 
 | Part | Status | Files |
 |---|---|---|
-| Panel layout, hole table, drill template, artwork | Draft, waiting for review | `hardware/tools/panel.py`, `hardware/panel/` |
-| Circuit plan | Draft, waiting for review | `docs/design.md` |
-| Netlist, schematic, PCBs, panel PCB | Not started | |
+| Panel layout, hole table, drill template, artwork | Agreed 2026-10-31 (toggles, no LEDs, SCAN knob) | `hardware/tools/panel.py`, `hardware/panel/` |
+| Netlist | Done, `check()` 0 problems; levels and the scanner checked by `sim.py` | `hardware/tools/circuit.py`, `hardware/tools/sim.py` |
+| Circuit description | Done | `docs/design.md` |
+| Schematic, PCBs, panel PCB | Waiting for the board-count decision (through-hole on four boards or SMD on two) | |
 
 ## Panel
 
@@ -32,15 +33,15 @@ line as every other module, outputs on gold.
 | Control | Part | Notes |
 |---|---|---|
 | IN 1–4 | Thonkiconn | Each normalled from the row above (IN 1 from ground) |
-| FREQ 1–4 (jacks) | Thonkiconn | Cutoff CV, normalled from the row above like IN |
+| FREQ 1–4 (jacks) | Thonkiconn | Cutoff CV, 1 V/oct nominal, normalled from the row above like IN |
 | FM2/RES 1–4 | Thonkiconn | A second cutoff CV or a resonance CV, by the switch |
 | OUT 1–4, scanner OUT | Thonkiconn | 1 kΩ out, on the gold column / patch |
-| SCAN (jack) | Thonkiconn | Sums with the fader |
+| SCAN (jack) | Thonkiconn | Adds to the knob; ±5 V moves about 1.6 channels |
 | FREQ, RES 1–4 (knobs) | Alpha 9 mm B100k, 10 mm caps | |
+| SCAN (knob) | Alpha 9 mm B10k | Marks 1–4 where each channel is alone |
 | Mode 1–4 | Dailywell 2M sub-mini toggle, DPDT ON-ON-ON (2MD6-T1-B1-M2-Q-E-S; Tayda) | Up LP, middle HP, down BP. Atlas has a 3-way slide switch |
 | FM2/RES 1–4 | Dailywell 2M sub-mini toggle, SPDT ON-ON (2MS1T1B1M2QES; Thonk) | Up FM2, down RES. Atlas has a slide switch |
-| Channel numerals | 3 × 5 grid of 0.8 mm holes in gold rings, a 3 mm red LED behind | Lights with the channel's output level |
-| SCAN fader | 20 mm travel slide pot, B10k (Bourns PTA2043 or Alpha RA2045F) | 22.4 × 2.4 mm slot; lever height fixed in the PCB step |
+| Channel numerals | 3 × 5 gold dots | Artwork only |
 
 Differences from Atlas, all on purpose:
 
@@ -52,17 +53,26 @@ Differences from Atlas, all on purpose:
 - **Toggles instead of slide switches.** Panel slide switches with a long
   enough actuator are hard to get; sub-mini toggles are not. Same places,
   same positions.
+- **No LEDs.** Atlas lights its numerals with the input; here they are gold
+  dots (see `docs/design.md`).
+- **A knob instead of the SCAN fader.**
 - **Jacks 10 mm apart** instead of about 9.3, the most 16HP allows next to
   two knob columns.
-- **The numerals show the output**, not the input as on Atlas: with the
-  scanner you see which filter is ringing, and with the inputs chained all
-  four would light the same.
 
 `hardware/panel/atlas-panel-holes.csv` lists every hole in panel
 coordinates (from the top-left, y down) next to its footprint origin on the
 faceplate board.
 
-## Open questions
+## Circuit
 
-See the end of `docs/design.md`: mode toggles or LED buttons, output or input
-LEDs, fader or knob for SCAN, and a likely third board.
+`docs/design.md` has the whole circuit: four SSI2164 poles per channel,
+LP / HP / BP by pole mixing, resonance fed back from the 4-pole bandpass so
+no mode loses its passband, a fifth SSI2164 for the four resonance VCAs,
+precision-clamped CV summers, and a scanner whose stacked PNP current line
+keeps the four VCA gains summing to one. Run from `hardware/tools`:
+
+```
+python circuit.py     # netlist check, part counts, board-area estimate
+python sim.py         # filter levels, resonance loop, scanner crossfade
+python panel.py       # hole table, drill template, artwork
+```
