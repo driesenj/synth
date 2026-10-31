@@ -151,3 +151,26 @@ along their nets. Place panel parts, headers, holes and chips by hand,
 decoupling pairs at the supply pins (`place_decoupling`), then the rest in
 netlist order (`place_all`). `Board.check()` also flags an SMD body over a
 through-hole pad; `front_housing_check()` only looks at through-hole pads.
+
+## One board (Offset, the user's default since 2026-10-31)
+
+"One board is always simpler and cheaper if possible." Panel parts go on
+the front (bottom layer), everything else on the rear (top layer). There
+are no headers or standoffs: the panel nuts hold the board.
+`attenuverter/hardware/tools/pcb.py` is the template.
+- **The binding rule:** no rear pad under a front part's body, because rear
+  leads are soldered on the front. Pot, jack and toggle bodies cover most of
+  a 10HP board. Only full-width strips between rows of front parts can take
+  a DIP, which needs about 9.2 mm of height free of bodies.
+- **Count DIPs per strip before promising a chip count:** on Offset, two
+  DIP-14s in the top strip, and only DIP-8s between the LEDs. That is why
+  channel 3 has two TL072s.
+- **Small parts:** `place_grid()` puts standing resistors and 5.08 mm caps
+  on a 2.54 mm grid of the free points nearest the pads they connect to:
+  - decoupling pairs first, anchored to their own chip's supply pins
+  - summing nodes weighted ×3, GND ×0.2
+  - grid points kept 1.2 mm from rear bodies, since a standing resistor's
+    body reaches 1.1 mm past its pad
+- **DO-41 diodes:** the library footprint's drawing reaches 2.84 mm to one
+  side. In a narrow margin, pick the side by the diode's polarity, or the
+  body pokes off the board.
