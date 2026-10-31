@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="110.8mm" height="158.5mm" viewBox="-20 -15 110.8 158.5">
+<title>Ringsy 14HP panel - drill template (print at 100%)</title>
+<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444} .lbl{font-size:1.8px;fill:#06c}</style>
+<rect x="-20" y="-15" width="110.8" height="158.5" fill="#ffffff"/>
+<rect x="0" y="0" width="70.8" height="128.5" fill="none" stroke="#000" stroke-width="0.25"/>
+<rect x="0.60" y="10.25" width="69.6" height="108.0" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>
+<rect x="4.75" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="1.10">5.5x3.2</text>
+<rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="123.60">5.5x3.2</text>
+<rect x="60.63" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="66.63" y="1.10">5.5x3.2</text>
+<rect x="60.63" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="66.63" y="123.60">5.5x3.2</text>
+<circle cx="7.50" cy="16.12" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="6.00" y1="16.12" x2="9.00" y2="16.12" stroke="#000" stroke-width="0.12"/>
+<line x1="7.50" y1="14.62" x2="7.50" y2="17.62" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="11.15" y="12.67">Ø6.5</text>
+<text class="lbl" x="7.50" y="21.57" text-anchor="middle">polyphony</text>
+<circle cx="63.30" cy="16.12" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="61.80" y1="16.12" x2="64.80" y2="16.12" stroke="#000" stroke-width="0.12"/>
+<line x1="63.30" y1="14.62" x2="63.30" y2="17.62" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="66.95" y="12.67">Ø6.5</text>
+<text class="lbl" x="63.30" y="21.57" text-anchor="middle">resonator model</text>
+<circle cx="13.80" cy="16.12" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="12.30" y1="16.12" x2="15.30" y2="16.12" stroke="#000" stroke-width="0.12"/>
+<line x1="13.80" y1="14.62" x2="13.80" y2="17.62" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="15.80" y="14.32">Ø3.2</text>
+<circle cx="57.00" cy="16.12" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="55.50" y1="16.12" x2="58.50" y2="16.12" stroke="#000" stroke-width="0.12"/>
+<line x1="57.00" y1="14.62" x2="57.00" y2="17.62" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="59.00" y="14.32">Ø3.2</text>
+<circle cx="18.90" cy="33.43" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="17.40" y1="33.43" x2="20.40" y2="33.43" stroke="#000" stroke-width="0.12"/>
+<line x1="18.90" y1="31.93" x2="18.90" y2="34.93" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="23.05" y="29.48">Ø7.5</text>
+<text class="lbl" x="18.90" y="39.38" text-anchor="middle">FREQUENCY</text>
+<circle cx="51.90" cy="33.43" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="50.40" y1="33.43" x2="53.40" y2="33.43" stroke="#000" stroke-width="0.12"/>
+<line x1="51.90" y1="31.93" x2="51.90" y2="34.93" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="56.05" y="29.48">Ø7.5</text>
+<text class="lbl" x="51.90" y="39.38" text-anchor="middle">STRUCTURE</text>
+<circle cx="11.60" cy="60.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="10.10" y1="60.63" x2="13.10" y2="60.63" stroke="#000" stroke-width="0.12"/>
+<line x1="11.60" y1="59.13" x2="11.60" y2="62.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="15.75" y="56.68">Ø7.5</text>
+<text class="lbl" x="11.60" y="66.58" text-anchor="middle">BRIGHTNESS</text>
+<circle cx="35.40" cy="60.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="33.90" y1="60.63" x2="36.90" y2="60.63" stroke="#000" stroke-width="0.12"/>
+<line x1="35.40" y1="59.13" x2="35.40" y2="62.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="39.55" y="56.68">Ø7.5</text>
+<text class="lbl" x="35.40" y="66.58" text-anchor="middle">DAMPING</text>
+<circle cx="59.20" cy="60.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="57.70" y1="60.63" x2="60.70" y2="60.63" stroke="#000" stroke-width="0.12"/>
+<line x1="59.20" y1="59.13" x2="59.20" y2="62.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="63.35" y="56.68">Ø7.5</text>
+<text class="lbl" x="59.20" y="66.58" text-anchor="middle">POSITION</text>
+<circle cx="9.40" cy="80.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="7.90" y1="80.63" x2="10.90" y2="80.63" stroke="#000" stroke-width="0.12"/>
+<line x1="9.40" y1="79.13" x2="9.40" y2="82.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="13.55" y="76.68">Ø7.5</text>
+<text class="lbl" x="9.40" y="86.58" text-anchor="middle">BRIGHTNESS att.</text>
+<circle cx="22.40" cy="80.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="20.90" y1="80.63" x2="23.90" y2="80.63" stroke="#000" stroke-width="0.12"/>
+<line x1="22.40" y1="79.13" x2="22.40" y2="82.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="26.55" y="76.68">Ø7.5</text>
+<text class="lbl" x="22.40" y="86.58" text-anchor="middle">FREQUENCY att.</text>
+<circle cx="35.40" cy="80.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="33.90" y1="80.63" x2="36.90" y2="80.63" stroke="#000" stroke-width="0.12"/>
+<line x1="35.40" y1="79.13" x2="35.40" y2="82.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="39.55" y="76.68">Ø7.5</text>
+<text class="lbl" x="35.40" y="86.58" text-anchor="middle">DAMPING att.</text>
+<circle cx="48.40" cy="80.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="46.90" y1="80.63" x2="49.90" y2="80.63" stroke="#000" stroke-width="0.12"/>
+<line x1="48.40" y1="79.13" x2="48.40" y2="82.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="52.55" y="76.68">Ø7.5</text>
+<text class="lbl" x="48.40" y="86.58" text-anchor="middle">STRUCTURE att.</text>
+<circle cx="61.40" cy="80.63" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="59.90" y1="80.63" x2="62.90" y2="80.63" stroke="#000" stroke-width="0.12"/>
+<line x1="61.40" y1="79.13" x2="61.40" y2="82.13" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="65.55" y="76.68">Ø7.5</text>
+<text class="lbl" x="61.40" y="86.58" text-anchor="middle">POSITION att.</text>
+<circle cx="9.40" cy="96.48" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="7.90" y1="96.48" x2="10.90" y2="96.48" stroke="#000" stroke-width="0.12"/>
+<line x1="9.40" y1="94.98" x2="9.40" y2="97.98" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="13.05" y="93.03">Ø6.5</text>
+<text class="lbl" x="9.40" y="101.93" text-anchor="middle">BRIGHTNESS CV</text>
+<circle cx="22.40" cy="96.48" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="20.90" y1="96.48" x2="23.90" y2="96.48" stroke="#000" stroke-width="0.12"/>
+<line x1="22.40" y1="94.98" x2="22.40" y2="97.98" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="26.05" y="93.03">Ø6.5</text>
+<text class="lbl" x="22.40" y="101.93" text-anchor="middle">FREQUENCY CV</text>
+<circle cx="35.40" cy="96.48" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="33.90" y1="96.48" x2="36.90" y2="96.48" stroke="#000" stroke-width="0.12"/>
+<line x1="35.40" y1="94.98" x2="35.40" y2="97.98" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="39.05" y="93.03">Ø6.5</text>
+<text class="lbl" x="35.40" y="101.93" text-anchor="middle">DAMPING CV</text>
+<circle cx="48.40" cy="96.48" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="46.90" y1="96.48" x2="49.90" y2="96.48" stroke="#000" stroke-width="0.12"/>
+<line x1="48.40" y1="94.98" x2="48.40" y2="97.98" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="52.05" y="93.03">Ø6.5</text>
+<text class="lbl" x="48.40" y="101.93" text-anchor="middle">STRUCTURE CV</text>
+<circle cx="61.40" cy="96.48" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="59.90" y1="96.48" x2="62.90" y2="96.48" stroke="#000" stroke-width="0.12"/>
+<line x1="61.40" y1="94.98" x2="61.40" y2="97.98" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="65.05" y="93.03">Ø6.5</text>
+<text class="lbl" x="61.40" y="101.93" text-anchor="middle">POSITION CV</text>
+<circle cx="9.40" cy="111.08" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="7.90" y1="111.08" x2="10.90" y2="111.08" stroke="#000" stroke-width="0.12"/>
+<line x1="9.40" y1="109.58" x2="9.40" y2="112.58" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="13.05" y="107.63">Ø6.5</text>
+<text class="lbl" x="9.40" y="116.53" text-anchor="middle">STRUM</text>
+<circle cx="22.40" cy="111.08" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="20.90" y1="111.08" x2="23.90" y2="111.08" stroke="#000" stroke-width="0.12"/>
+<line x1="22.40" y1="109.58" x2="22.40" y2="112.58" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="26.05" y="107.63">Ø6.5</text>
+<text class="lbl" x="22.40" y="116.53" text-anchor="middle">V/OCT</text>
+<circle cx="35.40" cy="111.08" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="33.90" y1="111.08" x2="36.90" y2="111.08" stroke="#000" stroke-width="0.12"/>
+<line x1="35.40" y1="109.58" x2="35.40" y2="112.58" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="39.05" y="107.63">Ø6.5</text>
+<text class="lbl" x="35.40" y="116.53" text-anchor="middle">IN</text>
+<circle cx="48.40" cy="111.08" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="46.90" y1="111.08" x2="49.90" y2="111.08" stroke="#000" stroke-width="0.12"/>
+<line x1="48.40" y1="109.58" x2="48.40" y2="112.58" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="52.05" y="107.63">Ø6.5</text>
+<text class="lbl" x="48.40" y="116.53" text-anchor="middle">ODD</text>
+<circle cx="61.40" cy="111.08" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="59.90" y1="111.08" x2="62.90" y2="111.08" stroke="#000" stroke-width="0.12"/>
+<line x1="61.40" y1="109.58" x2="61.40" y2="112.58" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="65.05" y="107.63">Ø6.5</text>
+<text class="lbl" x="61.40" y="116.53" text-anchor="middle">EVEN</text>
+<line x1="10" y1="-8" x2="60" y2="-8" stroke="#000" stroke-width="0.3"/>
+<line x1="10" y1="-9.5" x2="10" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<line x1="60" y1="-9.5" x2="60" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<text x="35" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>
+<text x="35.4" y="136.5" font-size="2" text-anchor="middle">Ringsy 14HP panel, front view. Red circles: final hole size. Dashed: the faceplate board.</text>
+</svg>

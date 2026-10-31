@@ -1,0 +1,29 @@
+kind,ref,label,board_origin_x,board_origin_y,panel_x_from_left,panel_y_from_top,hole_mm
+ledbutton,SW1,polyphony,6.90,102.13,7.50,16.12,6.5
+ledbutton,SW2,resonator model,62.70,102.13,63.30,16.12,6.5
+led,D1,polyphony 1 / 2 / 4,13.20,102.13,13.80,16.12,3.2
+led,D2,model,56.40,102.13,57.00,16.12,3.2
+pot,RV1,FREQUENCY,14.30,84.82,18.90,33.43,7.5
+pot,RV2,STRUCTURE,47.30,84.82,51.90,33.43,7.5
+pot,RV3,BRIGHTNESS,7.00,57.62,11.60,60.63,7.5
+pot,RV4,DAMPING,30.80,57.62,35.40,60.63,7.5
+pot,RV5,POSITION,54.60,57.62,59.20,60.63,7.5
+pot,RV6,BRIGHTNESS att.,8.80,41.62,9.40,80.63,7.5
+pot,RV7,FREQUENCY att.,21.80,41.62,22.40,80.63,7.5
+pot,RV8,DAMPING att.,34.80,41.62,35.40,80.63,7.5
+pot,RV9,STRUCTURE att.,47.80,41.62,48.40,80.63,7.5
+pot,RV10,POSITION att.,60.80,41.62,61.40,80.63,7.5
+jack,J1,BRIGHTNESS CV,8.80,22.55,9.40,96.48,6.5
+jack,J2,FREQUENCY CV,21.80,22.55,22.40,96.48,6.5
+jack,J3,DAMPING CV,34.80,22.55,35.40,96.48,6.5
+jack,J4,STRUCTURE CV,47.80,22.55,48.40,96.48,6.5
+jack,J5,POSITION CV,60.80,22.55,61.40,96.48,6.5
+jack,J6,STRUM,8.80,7.95,9.40,111.08,6.5
+jack,J7,V/OCT,21.80,7.95,22.40,111.08,6.5
+jack,J8,IN,34.80,7.95,35.40,111.08,6.5
+jack,J9,ODD,47.80,7.95,48.40,111.08,6.5
+jack,J10,EVEN,60.80,7.95,61.40,111.08,6.5
+mount,,mounting slot,,,7.50,3.00,5.5 x 3.2 slot
+mount,,mounting slot,,,7.50,125.50,5.5 x 3.2 slot
+mount,,mounting slot,,,63.38,3.00,5.5 x 3.2 slot
+mount,,mounting slot,,,63.38,125.50,5.5 x 3.2 slot
