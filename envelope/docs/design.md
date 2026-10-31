@@ -10,11 +10,19 @@ Status (2026-10-31):
 
 - **Panel:** agreed, with the drawn defaults: 16HP, four channels, a 2.55 V
   threshold, unfitted footprints for a second timing cap, the name Envy.
-- **Netlist:** written for one board, 167 parts, 0 problems.
+  The placement moved the jack rows and put each LED beside its OUT jack
+  (see [Panel](#panel)).
+- **Netlist:** 167 parts, 0 problems, split over two boards: a faceplate
+  with 36 parts and a main board with 139 (see [Board](#board)).
 - **Simulation:** `sim.py` runs the netlist in time; all 28 checks pass. The
   numbers below come from it.
-- **Next:** the EasyEDA schematic, then the placement. The placement decides
-  whether one board holds it (see [Board](#board)).
+- **EasyEDA Pro project:** `hardware/easyeda/Envy.epro2` has three boards.
+  - **Main:** five schematic pages and a placed PCB.
+  - **Faceplate:** one schematic page and a placed PCB.
+  - **Panel:** the panel as a PCB.
+  - **Checks:** 0 schematic, 0 PCB and 0 file problems.
+- **Next:** you import it, check it, and route the boards
+  ([routing notes](#routing-notes)).
 
 ---
 
@@ -178,6 +186,17 @@ left out, and two op-amp outputs on one net.
 | R*k*01–R*k*15, C*k*01–C*k*03, D*k*01–D*k*07 | channel *k*'s resistors, caps and diodes (R101 … R415). C*k*03 is the unfitted second timing cap |
 | R901–R904, C901, C902 | VREF and AXIS |
 | J13, D901, D902, R905, R906, C903–C916 | power entry, bulk and decoupling |
+| HF1–HF4 / H1–H4 | board-to-board, 1 × 13 at 2.54 mm: male on the faceplate's rear, female sockets on the main board's front, one per channel |
+
+Header pins, the same on all four (channel *k*'s nets; `_F` on the faceplate
+side):
+
+| Pin | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Net | AK | CT | RK | G | SUS | N | BI | L | GND | GATE | LE | OUT | INV |
+
+`split_check()` proves that every net shared by a panel part and the rest
+crosses on a header pin, and that nothing else does.
 
 Net names say what they carry:
 
@@ -233,20 +252,120 @@ in about 15 s.
 
 ## Board
 
-One board: Thonk panel parts on its front, everything else on its rear,
-as on Offset ("one board is always simpler and cheaper if possible").
+Two boards, the stack of Marblesy, the mixer and Side FXy. One board was
+tried first ("one board is always simpler and cheaper if possible") and
+does not fit:
 
-- **Count:** 131 fitted parts and 4 unfitted footprints sit behind the
-  panel, on 79.7 × 108 mm (8,600 mm²). That is about 65 mm² per part,
-  the same density as Offset's board.
-- **Area:** the rear footprints themselves (courtyards, horizontal
-  resistors) come to about 5,600 mm², or 65 %. That is dense for a hand
-  route, but it fits. Standing some resistors up, as the kit does, frees
-  more.
-- **If it doesn't fit:** if the placement shows it cannot be routed on
-  one board, the split is a faceplate board (panel parts, LED drivers,
-  output and inverter stages) and a main board. The netlist stays the
-  same apart from the header nets.
+- **Why one board fails.** A through-hole part behind the panel is
+  soldered on the panel side, where the jack, pot and toggle bodies lie
+  flat, so its pads must stay out from under them. The panel parts leave
+  only strips free: 2.25 mm between the knob rows, 8.5–9 mm between the
+  columns. A DIP-14 needs 9.2 mm across its pads. A placement probe found
+  room for four DIP-14s, all in the strip above the ATTACK row. Envy has
+  six.
+- **Faceplate** (`HF1`–`HF4`): the panel parts on its front. Behind them
+  sit only the four 1 × 13 male headers, one per channel in the gap right
+  of its column, between the pot rows.
+- **Main board** (`H1`–`H4`): the female sockets on its front at the same
+  spots, everything else on its rear.
+  - **Comparator chips** (U1, U4) stand beside the sockets of their
+    channel pair.
+  - **Other chips:** the buffer chips (U2, U5) and the Schmitt /
+    inverter chips (U3, U6) lie below them.
+  - **Power entry** (J13, the 1N5819s, the 10 Ω resistors and the 47 µF
+    caps) is at the bottom.
+  - **Passives:** the placer put each one beside the pads it connects to,
+    and each decoupling pair at its chip's supply pins.
+- **Mounting:** four M3 standoffs, clear on both boards. Their rear-view
+  positions are (5.25, 6.0), (75.25, 6.0), (6.0, 102.0) and (73.75, 102.0).
+  The stack is about 30 mm deep: the 7 mm panel gap, 8.5 mm sockets and the
+  main board's parts.
+- **Checks** (`easyeda_export.py`):
+  - pads 0.25 mm apart and 0.5 mm from the edge;
+  - no bodies overlapping;
+  - nothing under a standoff;
+  - every header pin at the same spot on both boards;
+  - the panel parts exactly at PLACEMENT;
+  - no rear pad under a panel part;
+  - no panel part's pad under another panel part.
+
+  All pass.
+
+---
+
+## EasyEDA project
+
+`python easyeda_export.py` (from `hardware/tools`) writes
+`hardware/easyeda/Envy.epro2`. It holds three boards:
+
+- **Envy Main:**
+  - Schematic: five pages. One per channel: gate input and comparator,
+    burst, sustain resistor, buffer, steering and timing, OUT, INV, the LED
+    driver, the loop Schmitt. A fifth page has VREF, AXIS, power,
+    decoupling and the sockets.
+  - PCB: placed and unrouted.
+- **Envy Faceplate:** one schematic page (the 32 panel parts and the four
+  headers) and the placed PCB.
+- **Envy Panel:** the 16HP panel as a PCB, from the same layout the SVG
+  artwork uses.
+  - Non-plated holes and slots.
+  - Silkscreen.
+  - The output band as bare copper under a mask opening (ENIG gold).
+
+Generated footprints (library parts where the cache has them):
+
+- **Shared with Offset:** the Alpha 9 mm pot, DIP-14 on 7.62 mm, TO-92,
+  the 3 mm LED, the Dailywell 2MS1 toggle, standing resistors.
+- **New here:** a standing DO-35, a 1 µF film box, a 6.3 mm electrolytic,
+  the 2 × 5 box header, the 1 × 13 header.
+
+Previews of every page and PCB are in `hardware/easyeda/`.
+
+What EasyEDA's own DRC will still say:
+
+- **C103, C203, C303, C403** (the unfitted second timing caps) are in the
+  netlist and on the PCB, with "Add into BOM" off.
+- **Toggle pin order:** the Dailywell 2MS1's pin order is from Dailywell's
+  table. Ring one out before soldering: lever up must join 2–3.
+
+## Routing notes
+
+Rules for hand soldering, as on the other boards:
+
+- 0.25 mm clearance and 0.3 mm tracks.
+- A POWER class at 0.6 mm for ±12 V.
+- 0.8 / 0.4 mm vias.
+- Copper 0.5 mm from the edge.
+- 3 mm keepouts round each jack barrel on the faceplate's panel side
+  (ground may stay).
+- 3.5 mm round the mounting holes on the standoff side.
+
+Lay these by hand and lock them before the autorouter:
+
+- **Power:** ±12 V as 0.6 mm buses from J13 up both halves of the main
+  board, past each TL074's decoupling pair.
+- **VREF and AXIS:** short trees from C901 and C902. VREF reaches all eight
+  comparator − inputs (U1, U4); AXIS reaches the four inverter + inputs
+  (U3, U6).
+- **Timing nodes** (CT1–CT4) and the buffers' + inputs (BI, CT): short, on
+  one layer, over ground. CT runs from the socket (pin 2) to C*k*02,
+  C*k*03 and the output buffer. It is the module's highest-impedance net
+  (1 MΩ against 1 µF), so keep it away from the comparator outputs.
+- **Comparator outputs** (GC, BC, SC): they swing 20 V in a microsecond.
+  Keep them short and on the far side of their chips from CT and the
+  buffers.
+
+Then autoroute the rest on both layers, with ground and POWER skipped.
+
+Ground:
+
+- **Main board:** one GND poured on both layers. The socket side is nearly
+  empty and becomes the plane.
+- **Faceplate:** GND poured on the panel side under everything (jack
+  sleeves, pot lugs, LED cathodes), reaching pin 9 of each header.
+- **Pot wipers and the GATE normals:** on the faceplate's panel side under
+  that pour. The headers carry the time pots' ends, so run AK, RK and CT
+  as a tight group from each pot pair to its header.
 
 ---
 
@@ -260,7 +379,7 @@ as on Offset ("one board is always simpler and cheaper if possible").
 - Each row's word stands once in the left margin, on a bracket.
 - The MODE toggles carry LOOP / SINGLE beside the lever.
 - Dotted lines between the GATE jacks show the normal.
-- The outputs (LED, OUT, INV) sit on the gold band.
+- The outputs (OUT with its LED beside it, INV) sit on the gold band.
 
 ![panel](../hardware/panel/envy-panel-preview.png)
 
@@ -271,12 +390,18 @@ as on Offset ("one board is always simpler and cheaper if possible").
 | DEC/REL | 41.0 | RV2, RV5, RV8, RV11: Alpha 9 mm A1M |
 | SUSTAIN | 56.5 | RV3, RV6, RV9, RV12: Alpha 9 mm A100k |
 | MODE | 70.0 | SW1–SW4: sub-mini SPDT ON-ON, 2.5 mm left of the column |
-| GATE | 81.5 | J1–J4: Thonkiconn |
-| LEDs | 90.5 | D1–D4: 3 mm red |
-| OUT | 100.5 | J5–J8: Thonkiconn |
-| INV | 111.5 | J9–J12: Thonkiconn |
+| GATE | 82.5 | J1–J4: Thonkiconn |
+| OUT | 96.0 | J5–J8: Thonkiconn; D1–D4 (3 mm red) 7.2 mm right of each |
+| INV | 109.0 | J9–J12: Thonkiconn |
 
-- **Columns:** channel x is 14, 32, 50 and 68 mm.
+- **Columns:** channel x is 13, 31, 49 and 67 mm.
+- **What the placement changed** (the draft had GATE at 81.5, the LEDs above
+  OUT at 90.5, OUT at 100.5 and INV at 111.5):
+  - **OUT and INV are now 13 mm apart, not 11.** A Thonkiconn's tip pad sits
+    4.9 mm below its barrel and the sleeve pad 6.5 mm above, so in a column
+    11 mm put OUT's tip pad on INV's sleeve pad.
+  - **The LEDs moved beside OUT.** That was the only room left in a column.
+  - **GATE moved 1 mm down,** so its sleeve lug clears the toggle body above.
 - **Clearances:** `panel.py` reports no gap under 1 mm (knob scales with a
   0.6 mm margin, nuts, and the toggle levers thrown both ways). The
   tightest gap is 1.02 mm, between a lever thrown up and the SUSTAIN
@@ -298,6 +423,7 @@ as on Offset ("one board is always simpler and cheaper if possible").
 | Decoupling next to each chip | Marblesy routing | a 100 n pair per TL074, placed before routing |
 | One unbroken ground pour | Compressor's six islands | checked in the copper audit |
 | Fast edges away from quiet nodes | FM drum noise | comparators on U1 / U4; timing caps and buffers on U2 / U5 |
+| Thonkiconns in a column need about 13 mm | Envy's own draft (11 mm put a tip pad on the next sleeve pad) | OUT → INV 13 mm; `panel_pad_check()` in `pcb.py` |
 
 ---
 
@@ -323,3 +449,6 @@ From the netlist.
 | 2 | 47 µF 25 V | bulk |
 | 66 | resistors | 100k ×34, 10k ×12, 1k ×8, 1k5 ×4, 100 Ω ×4, 27k, 68k, 10 Ω ×2 |
 | 1 | 2 × 5 shrouded header, 2.54 mm | |
+| 4 + 4 | 1 × 13 male header / 1 × 13 female socket, 2.54 mm | board to board (Thonk's male + female header bag) |
+| 4 | M3 standoffs for the 8.5 mm board gap, with screws | as on Side FXy |
+| 3 | PCBs: faceplate, main board, panel | 1.6 mm FR4; the panel black mask, white silk, ENIG |

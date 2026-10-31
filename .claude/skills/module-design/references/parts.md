@@ -18,7 +18,16 @@ missing, in the same style, with real pin numbers.
   6.78 mm below the origin to 3.73 mm above it: the sleeve lug sticks out
   of the back of the body, and the strip above a jack row is wider than it
   looks (a row at origin y 22.8 ends at 26.6).
-- Place at 11–12 mm pitch; nuts are about 8 mm across.
+- Place at 11–12 mm pitch side by side; nuts are about 8 mm across.
+- In a column with the same orientation, keep the barrels at least 13 mm
+  apart. The tip pad sits 4.92 mm below one barrel and the next jack's
+  sleeve pad 6.48 mm above its own, so at 11 mm they overlap (Envy's draft:
+  −0.65 mm). Envy's `pcb.panel_pad_check()` catches a panel part's pad
+  under another panel part's body (a jack's sleeve lug under a toggle).
+- One board vs the stack: a rear through-hole part's pads cannot sit under
+  a jack, pot or toggle body, so a dense panel leaves only strips. On Envy
+  (16HP, three knob rows at 15.5 mm), a DIP-14 fitted only above the top
+  knob row. Probe the free strips before promising one board.
 - Sleeve to the analog ground; CV inputs get the switch lug grounded, clock
   inputs get the normalization probe through 10 kΩ; outputs leave it open.
 

@@ -1,5 +1,7 @@
 """Envy: four Moritz Klein envelopes (MKI x ES.EDU EG) in 16HP Eurorack, all
-analog, on one PCB: Thonk panel parts on its front, everything else behind them.
+analog, on two stacked PCBs: a faceplate with the Thonk panel parts and four
+board-to-board headers, and a main board with everything else (see "two
+boards" below for why one board does not fit).
 
 Per channel k (1-4), the kit's pseudo-ADSR (EG_MANUAL_v3.pdf):
   GATE k     comparator against VREF; unpatched it takes GATE k-1 (GATE 1: 0 V)
@@ -243,11 +245,14 @@ JACK_BARREL = -0.78                     # barrel centre below the WQP518MA origi
 POT_SHAFT = 4.0                         # Alpha shaft from the PTV09A-frame origin, away from the pins
 
 # Channels are columns, as on Offset, 18 mm apart; the left margin holds the row words. Knobs at the
-# top, jacks at the bottom so cables hang away from the hands; the outputs on the gold band.
-CH_X = [14.0 + 18.0 * i for i in range(CHANNELS)]
-ROW = {"attack": 25.5, "decay": 41.0, "sustain": 56.5, "mode": 70.0,
-       "gate": 81.5, "led": 90.5, "out": 100.5, "inv": 111.5}
+# top, jacks at the bottom so cables hang away from the hands; the outputs on the gold band. Jacks in a
+# column need 13 mm: the tip pad of one sits 4.9 mm below its barrel, the sleeve pad of the next 6.5 mm
+# above its own (11 mm put OUT's tip pad on INV's sleeve pad). So the LED sits right of its OUT jack,
+# between the columns, and GATE clears the toggle bodies above it.
+CH_X = [13.0 + 18.0 * i for i in range(CHANNELS)]
+ROW = {"attack": 25.5, "decay": 41.0, "sustain": 56.5, "mode": 70.0, "gate": 82.5, "out": 96.0, "inv": 109.0}
 TOGGLE_DX = -2.5                        # the toggle left of the column line, its LOOP / SINGLE words right
+LED_DX = 7.2                            # the LED right of its OUT jack
 
 
 def board_xy(px, py):
@@ -269,7 +274,72 @@ for k, x in enumerate(CH_X, start=1):
         bx, by = board_xy(x, ROW[row])
         PLACEMENT[ref] = (bx, round(by - JACK_BARREL, 2), 0)        # sleeve up
     PLACEMENT[f"SW{k}"] = (*board_xy(x + TOGGLE_DX, ROW["mode"]), 0)   # pin 3 at the bottom
-    PLACEMENT[f"D{k}"] = (*board_xy(x, ROW["led"]), 0)
+    PLACEMENT[f"D{k}"] = (*board_xy(x + LED_DX, ROW["out"]), 0)
+
+
+# ------------------------------------------------------------- two boards
+# A DIP-14's pads cannot sit under a jack, pot or toggle body on the faceplate (they are soldered on the
+# panel side, where those bodies lie), and the only strip wide enough for one is above the ATTACK row:
+# four fit, Envy has six. So the stack: the faceplate carries the panel parts and nothing else behind
+# them but four 1 x 13 male headers, one per channel in the gap right of its column; the main board
+# carries everything else and the female sockets at the same spots. Faceplate nets end in _F (GND stays GND:
+# the boards are separate EasyEDA boards, and the header carries it).
+HEADER_NETS = ["AK", "CT", "RK", "G", "SUS", "N", "BI", "L", "GND", "GATE", "LE", "OUT", "INV"]
+HEADER_DX = 9.0                         # header column right of the channel's column (panel x), in the gap
+HEADER_TOP = 21.0                       # panel y of pin 1; 13 pins reach down to 51.5, between the pots
+
+
+def _faceplate(net):
+    return net if net == GND else net + "_F"            # each board has its own GND net
+
+
+def _hnet(name, k):
+    return GND if name == "GND" else f"{name}{k}"
+
+
+HEADERS = [(f"H{k}", "HDR13", [(_hnet(n, k), _faceplate(_hnet(n, k))) for n in HEADER_NETS]) for k in CH]
+
+
+def fb_ref(ref):
+    """Faceplate-side designator of a header: H1 -> HF1 (EasyEDA wants letters, then digits)."""
+    return "HF" + ref[1:]
+
+
+def header_xy(i):
+    """Front-view board position of pin 1 of header i (0 = H1) and the step to the next pin (y up)."""
+    bx, by = board_xy(CH_X[i] + HEADER_DX, HEADER_TOP)
+    return bx, by, -2.54
+
+
+def faceplate_parts():
+    """The panel parts with faceplate net names, and the male headers."""
+    parts = []
+    for p in panel_parts():
+        parts.append(Part(p.ref, p.kind, p.value, {pid: _faceplate(n) for pid, n in p.nets.items()}, p.label))
+    for ref, kind, nets in HEADERS:
+        parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets)}))
+    return parts
+
+
+def main_board_parts():
+    panel = {p.ref for p in panel_parts()}
+    parts = [p for p in all_parts() if p.ref not in panel]
+    for ref, kind, nets in HEADERS:
+        parts.append(Part(ref, kind, "", {str(i + 1): mb for i, (mb, fb) in enumerate(nets)}))
+    return parts
+
+
+def split_check():
+    """Every net the panel parts share with the rest crosses on a header pin, and nothing else does."""
+    panel = {n for p in panel_parts() for n in p.nets.values()}
+    rest = {n for p in all_parts() if p.ref not in {q.ref for q in panel_parts()} for n in p.nets.values()}
+    crossing = {mb for _, _, nets in HEADERS for mb, fb in nets}
+    bad = [f"{n} joins the boards but is on no header" for n in sorted((panel & rest) - crossing)]
+    bad += [f"{n} is on a header but does not join the boards" for n in sorted(crossing - (panel & rest))]
+    for parts in (faceplate_parts(), main_board_parts()):
+        nets = nets_of(parts)
+        bad += [f"single-pin net {n} {nets[n]}" for n in sorted(nets) if len(nets[n]) < 2]
+    return bad
 
 
 if __name__ == "__main__":
@@ -277,8 +347,9 @@ if __name__ == "__main__":
     print(f"{len(parts)} parts, {len(nets_of(parts))} nets")
     kinds = collections.Counter((p.kind, p.value) for p in parts)
     print("  " + ", ".join(f"{n} x {k} {v}".strip() for (k, v), n in sorted(kinds.items())))
-    problems = check()
+    problems = check() + split_check()
     for b in problems:
         print("  " + b)
-    print(f"{len(problems)} netlist problems")
+    print(f"{len(problems)} netlist problems; faceplate {len(faceplate_parts())} parts, "
+          f"main board {len(main_board_parts())} parts, {len(HEADERS)} x 13 header pins")
     print(f"board {BOARD_W} x {BOARD_H} on a {PANEL_W} x {PANEL_H} panel; {len(PLACEMENT)} panel parts")

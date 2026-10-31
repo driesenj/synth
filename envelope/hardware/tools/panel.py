@@ -141,10 +141,11 @@ MOCK_LED = {"D1": 0.9, "D2": 0.15, "D3": 0.55, "D4": 0.75}
 
 
 def bands(pos):
-    """The bare-copper band round the LEDs and the OUT and INV jacks: [((x, y, w, h, rx), [(x, y, r)
+    """The bare-copper band round the OUT and INV jacks and the LEDs beside OUT: [((x, y, w, h, rx), [(x, y, r)
     holes])] from the top-left in the panel frame, each hole through it as a clearance circle."""
-    x0, x1 = pos[OUTPUTS[0]][2] - 5.6, pos[OUTPUTS[-1]][2] + 5.6
-    y0, y1 = pos["D1"][3] - 3.4, pos[INVERTED[0]][3] + 5.4
+    x0 = pos[OUTPUTS[0]][2] - 5.6
+    x1 = max(pos[OUTPUTS[-1]][2] + 5.6, pos[f"D{N}"][2] + ART["led"] + 1.4)
+    y0, y1 = pos[OUTPUTS[0]][3] - 5.4, pos[INVERTED[0]][3] + 5.4
     x, y, w, h = x0, y0, x1 - x0, y1 - y0
     cuts = []
     for kind, label, hx, hy in pos.values():
