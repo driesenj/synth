@@ -1,7 +1,13 @@
 """Atlasy: a Vostok Instruments Atlas clone. 16HP Eurorack, all analog.
 
-The whole circuit as one netlist; the split over the boards comes with the
-placement. docs/design.md explains the blocks and the numbers.
+The whole circuit as one netlist, split over two boards (SMD, assembled by
+JLC on each board's rear; the panel parts and headers are through-hole):
+  faceplate   the panel parts on its front, the FREQ / RES summers (U14,
+              U15), the four 1k output resistors and five male 1x8 headers
+              on its rear
+  main board  everything else on its rear, the five female sockets on its
+              front
+docs/design.md explains the blocks and the numbers.
 
 Per channel k (1-4), after Sound Semiconductor's AN701:
   IN k -> 100k -> input summer (51k: A = -0.51 IN, plus the resonance current)
@@ -30,8 +36,9 @@ Pin maps: TL074 sections (out, in-, in+); SSI2164 cells (IIN, VC, IOUT),
 pin 1 MODE open = class AB, 8 GND, 9 V-, 16 V+; AS3360 (Alfa datasheet):
 1 GND, 2 IO1, 3 VE1, 4 VO1, 5 VC1, 6 II1, 7 VEE, 8 VREF, 9 II2, 10 VC2,
 11 VO2, 12 VE2, 13 IO2, 14 VCC (log converters bridged 3-4 and 11-12 for
-linear control, VREF 4n7 to ground, as in Alfa's figure 1); BC547 / BC557
-TO-92 pins 1 C, 2 B, 3 E; jack 1 sleeve, 2 switch lug, 3 tip; Alpha pot
+linear control, VREF 4n7 to ground, as in Alfa's figure 1); BC847 / BC857
+SOT-23 pins 1 B, 2 E, 3 C (not the TO-92 order); diodes pin 1 = cathode;
+jack 1 sleeve, 2 switch lug, 3 tip; Alpha pot
 1 CCW, 2 wiper, 3 CW, 4/5 lugs; Dailywell 2M toggles: SPDT 2MS1 position
 1 = 2-3, position 3 = 2-1; DPDT 2MD6 (ON-ON-ON) 2-3 + 5-6, 2-3 + 5-4,
 2-1 + 5-4 (Dailywell catalogue; ring it out before soldering).
@@ -65,12 +72,13 @@ def C(ref, value, a, b, label=""):
 
 
 def D(ref, anode, cathode, label="", kind="D4148"):
-    """Diode: pin 1 cathode, pin 2 anode (the library 1N4148 / 1N5819)."""
-    return Part(ref, kind, {"D4148": "1N4148", "D5819": "1N5819"}[kind], {"1": cathode, "2": anode}, label)
+    """Diode, SOD-123: pin 1 cathode (the band), pin 2 anode."""
+    return Part(ref, kind, {"D4148": "1N4148W", "D5819": "B5819W"}[kind], {"1": cathode, "2": anode}, label)
 
 
 def Q(ref, kind, c, b, e, label=""):
-    return Part(ref, kind, {"NPN": "BC547B", "PNP": "BC557B"}[kind], {"1": c, "2": b, "3": e}, label)
+    """SOT-23 transistor: pin 1 base, 2 emitter, 3 collector."""
+    return Part(ref, kind, {"NPN": "BC847B", "PNP": "BC857B"}[kind], {"1": b, "2": e, "3": c}, label)
 
 
 GND, VP, VN = "GND", "+12V", "-12V"
@@ -238,24 +246,26 @@ NO_CONNECT = {"SSI2164": {"1"}}      # MODE open: class AB (datasheet)
 
 def power_parts():
     hdr = {"1": "N12_IN", "2": "N12_IN", "11": "P12_IN", "12": "P12_IN"}
-    hdr.update({str(n): GND for n in range(3, 11)})
-    hdr.update({str(n): f"HDR_{n}" for n in range(13, 17)})        # +5 V and CV / gate: not used
+    hdr.update({str(n): GND for n in range(3, 11)})                  # 13-16 (+5 V, CV, gate) open
     parts = [
         Part("J19", "HDR16", "16-pin Eurorack", hdr, "POWER"),
         D("D901", "P12_IN", "P12_D", "+12 V reverse protection", "D5819"),    # anode at the header
         D("D902", "N12_D", "N12_IN", "-12 V reverse protection", "D5819"),    # cathode at the header
         R("R901", "10R", "P12_D", VP, "+12 V filter"), R("R902", "10R", "N12_D", VN, "-12 V filter"),
-        Part("C901", "CP", "22u", {"2": VP, "1": GND}, "+12 V bulk"),        # CP: pin 2 +, pin 1 -
-        Part("C902", "CP", "22u", {"2": GND, "1": VN}, "-12 V bulk"),
+        C("C901", "10u", VP, GND, "+12 V bulk"), C("C902", "10u", GND, VN, "-12 V bulk"),     # ceramic, 1206
         R("R903", "100R", VP, P12F, "knob rail filter"), R("R904", "100R", VN, N12F, "knob rail filter"),
-        Part("C903", "CP", "22u", {"2": P12F, "1": GND}, "knob rail filter"),
-        Part("C904", "CP", "22u", {"2": GND, "1": N12F}, "knob rail filter"),
+        C("C903", "10u", P12F, GND, "knob rail filter"), C("C904", "10u", GND, N12F, "knob rail filter"),
     ]
-    chips = [p.ref for p in opamp_parts() + vca_parts()]
-    for i, u in enumerate(sorted(chips, key=lambda s: int(s[1:]))):      # a pair beside every chip
-        parts.append(C(f"C{911 + 2 * i}", "100n", VP, GND, f"{u} +12 V"))
-        parts.append(C(f"C{912 + 2 * i}", "100n", GND, VN, f"{u} -12 V"))
+    for u, (cp, cn) in decoupling().items():         # a pair beside every chip
+        parts.append(C(cp, "100n", VP, GND, f"{u} +12 V"))
+        parts.append(C(cn, "100n", GND, VN, f"{u} -12 V"))
     return parts
+
+
+def decoupling():
+    """chip -> (its 100 n to +12 V, its 100 n to -12 V), numbered in chip order from C911."""
+    chips = sorted((p.ref for p in opamp_parts() + vca_parts()), key=lambda s: int(s[1:]))
+    return {u: (f"C{911 + 2 * i}", f"C{912 + 2 * i}") for i, u in enumerate(chips)}
 
 
 # ------------------------------------------------------------ panel parts
@@ -292,9 +302,58 @@ def all_parts():
     return parts + scanner_parts() + opamp_parts() + vca_parts() + power_parts() + panel_parts()
 
 
+# ------------------------------------------------------------ the two boards
+# Nets that cross between the boards keep their name on the main board and get _F on the faceplate
+# (GND -> GND_F), the convention of the other modules. Five 1x8 headers in the one strip the panel parts
+# leave free from top to bottom (front x 43, between the OUT jacks and the FREQ pots): one per channel
+# row, one for the scanner and the supplies. Male pins on the faceplate's rear, sockets on the main
+# board's front. Pin 1 at the top.
+FACEPLATE_CHIPS = ("U14", "U15")
+HEADER_NETS = {k: [f"VF{k}", f"VR{k}", GND, f"IN{k}", f"SEL{k}", f"LP{k}", f"HP{k}", f"BP{k}"]
+               for k in range(1, CHANNELS + 1)}
+HEADER_NETS[5] = ["SCW", "SCV", "SCAN_OUT", GND, P12F, N12F, VP, VN]
+
+
+def fb_net(net):
+    return net + "_F"
+
+
+def fb_ref(ref):
+    """Faceplate-side designator of a header: H1 -> HF1 (EasyEDA wants letters, then digits)."""
+    return "HF" + ref[1:]
+
+
+HEADERS = [(f"H{k}", "HDR8", [(n, fb_net(n)) for n in nets]) for k, nets in HEADER_NETS.items()]
+
+
+def faceplate_refs():
+    refs = {p.ref for k in range(1, CHANNELS + 1) for p in cv_parts(k)}
+    refs |= {f"R{100 * k + 33}" for k in range(1, CHANNELS + 1)}          # the 1k output resistors
+    refs |= set(FACEPLATE_CHIPS) | {c for u in FACEPLATE_CHIPS for c in decoupling()[u]}
+    refs |= {p.ref for p in panel_parts()}
+    return refs
+
+
+def faceplate_parts():
+    fr = faceplate_refs()
+    parts = [Part(p.ref, p.kind, p.value, {pid: fb_net(n) for pid, n in p.nets.items()}, p.label)
+             for p in all_parts() if p.ref in fr]
+    for ref, kind, pins in HEADERS:
+        parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(pins)}))
+    return parts
+
+
+def main_board_parts():
+    fr = faceplate_refs()
+    parts = [p for p in all_parts() if p.ref not in fr]
+    for ref, kind, pins in HEADERS:
+        parts.append(Part(ref, kind, "", {str(i + 1): mb for i, (mb, fb) in enumerate(pins)}))
+    return parts
+
+
 PINS = {"TL074": 14, "SSI2164": 16, "AS3360": 14, "HDR16": 16, "JACK": 3, "POT": 5, "TOGGLE_DPDT": 6,
-        "TOGGLE_SPDT": 3, "R": 2, "C": 2, "CP": 2, "D4148": 2, "D5819": 2, "NPN": 3, "PNP": 3}
-OPEN_OK = {"JACK": {"2"}}            # an output jack's switch lug stays open
+        "TOGGLE_SPDT": 3, "R": 2, "C": 2, "CP": 2, "D4148": 2, "D5819": 2, "NPN": 3, "PNP": 3, "HDR8": 8}
+OPEN_OK = {"JACK": {"2"}, "HDR16": {"13", "14", "15", "16"}}   # an output jack's lug; +5 V, CV, gate
 
 
 def nets_of(parts):
@@ -319,13 +378,40 @@ def check(parts):
         if set(p.nets) - want:
             bad.append(f"{p.ref}: pins {sorted(set(p.nets) - want)} do not exist")
     for n, pins in nets_of(parts).items():
-        if len(pins) < 2 and not n.startswith("HDR_"):
+        if len(pins) < 2:
             bad.append(f"single-pin net {n}: {pins}")
     by = {p.ref: p for p in parts}
-    if by["D901"].nets != {"1": "P12_D", "2": "P12_IN"}:
+    if "D901" in by and by["D901"].nets != {"1": "P12_D", "2": "P12_IN"}:
         bad.append("D901: the +12 V diode needs its anode (pin 2) on the header")
-    if by["D902"].nets != {"1": "N12_IN", "2": "N12_D"}:
+    if "D902" in by and by["D902"].nets != {"1": "N12_IN", "2": "N12_D"}:
         bad.append("D902: the -12 V diode needs its cathode (pin 1) on the header")
+    return bad
+
+
+def board_check():
+    """Each board on its own, and every header pin used on both boards (a pin with a net on one side
+    only means a net that never crosses)."""
+    mb, fb = main_board_parts(), faceplate_parts()
+    bad = [f"main board: {b}" for b in check(mb)] + [f"faceplate: {b}" for b in check(fb)]
+    nm, nf = nets_of(mb), nets_of(fb)
+    for ref, kind, pins in HEADERS:
+        for a, b in pins:
+            if len(nm[a]) < 2 or len(nf[b]) < 2:
+                bad.append(f"header {ref}: {a} / {b} not used on both boards")
+    fr = faceplate_refs()
+    crossing = {n for nets in HEADER_NETS.values() for n in nets}
+    sides = collections.defaultdict(set)
+    for p in all_parts():
+        for n in p.nets.values():
+            sides[n].add(p.ref in fr)
+    for n, s in sorted(sides.items()):       # a net on both boards must go through a header
+        if len(s) == 2 and n not in crossing:
+            bad.append(f"net {n} is on both boards but in no header")
+    whole = {(p.ref, pid): n for p in all_parts() for pid, n in p.nets.items()}
+    for p in mb + fb:                        # the split must not change a connection
+        for pid, n in p.nets.items():
+            if (p.ref, pid) in whole and n not in (whole[(p.ref, pid)], fb_net(whole[(p.ref, pid)])):
+                bad.append(f"{p.ref}.{pid} changed net in the split")
     return bad
 
 
@@ -341,7 +427,7 @@ POT_PINS_UP = {"RV9"}                   # the rest point their pins down (toward
 JACK_X = [7.0, 17.0, 27.0, 37.0]        # IN, FREQ, FM2/RES, OUT: 10 mm apart (Atlas: about 9.3)
 KNOB_X = (52.5, 72.5)                   # FREQ, RES
 ROW_Y = [21.0 + 22.0 * r for r in range(CHANNELS)]   # jacks and knobs of a channel on one line
-MODE_XY = (23.0, 10.0)                  # mode toggle: under the FREQ / FM2-RES jacks, row + 10
+MODE_XY = (23.0, 10.3)                  # mode toggle: under the FREQ / FM2-RES jacks; its body clears theirs by 0.2
 FMRES_XY = (62.5, 10.0)                 # FM2/RES toggle: between the knobs, row + 10
 NUMERAL_XY = (44.6, 7.0)                # numeral centre: between the jacks and FREQ, row + 7 (artwork only)
 SCAN_Y = 111.6                          # scanner row
@@ -387,24 +473,29 @@ for ref, x in zip(("J17", "J18"), SCAN_JACK_X):
 _pot("RV9", SCAN_KNOB_X, SCAN_Y)
 
 
-# ---------------------------------------------------------------- how much board this is
-# Rough through-hole areas (mm^2) per part with its share of the space round it, from the Plaitsy and
-# mixer main boards (standing resistors, 2.54 mm): used to judge the board count before placing.
-AREA = {"R": 16, "C": 22, "CP": 40, "D4148": 16, "D5819": 30, "NPN": 26, "PNP": 26, "TL074": 190,
-        "SSI2164": 90, "AS3360": 190, "HDR16": 230}
+# ---------------------------------------------------------------- headers and mounting holes
+# Front view, board mm: the five headers in the strip between the OUT jacks (bodies to x 40.9) and the
+# FREQ pots' lugs (from x 45.75), one centred on each channel row and one low down for the scanner and
+# the supplies; angle 270 = pins along y, pin 1 at the top. Both boards use the same spots.
+HEADER_X = 43.0
+HEADERS_FRONT = {f"H{k}": (HEADER_X, round(board_xy(0, y)[1], 2), 270) for k, y in enumerate(ROW_Y, 1)}
+HEADERS_FRONT["H5"] = (HEADER_X, 10.8, 270)
+# Mounting holes, the same four on both boards: two between the IN and FREQ jack columns where the jack
+# rows leave a gap (rows 1-2 and 3-4), two between the knob columns under the FM2/RES toggles of rows 1
+# and 3. Each has 3 mm round it free of panel-part bodies on the faceplate.
+HOLES_FRONT = [(11.4, 85.5), (11.4, 41.5), (61.9, 79.0), (61.9, 35.0)]
 
 
 if __name__ == "__main__":
     parts = all_parts()
-    problems = check(parts)
+    problems = check(parts) + board_check()
     for b in problems:
         print("problem:", b)
     nets = nets_of(parts)
     kinds = collections.Counter((p.kind, p.value) for p in parts)
     print(f"{len(parts)} parts, {len(nets)} nets, {len(problems)} problems")
     print("  " + ", ".join(f"{n} x {k} {v}".strip() for (k, v), n in sorted(kinds.items())))
-    rear = [p for p in parts if p.kind in AREA]
-    area = sum(AREA[p.kind] for p in rear)
-    print(f"behind-panel parts: {len(rear)}, about {area:.0f} mm^2 of through-hole board "
-          f"({area / (BOARD_W * BOARD_H):.2f} boards of {BOARD_W} x {BOARD_H})")
+    mb, fb = main_board_parts(), faceplate_parts()
+    print(f"main board {len(mb)} parts ({len(nets_of(mb))} nets), faceplate {len(fb)} parts "
+          f"({len(nets_of(fb))} nets), {len(HEADERS)} headers x 8")
     print(f"board {BOARD_W} x {BOARD_H} on a {PANEL_W} x {PANEL_H} panel; {len(PLACEMENT)} panel parts")

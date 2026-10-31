@@ -182,3 +182,30 @@ Dailywell's 2MS sheet: SPDT 2MS1 (ON-ON) and 2MS3 (ON-OFF-ON), DPDT 2MD.
   the bushing. Mounted with pin 3 at the bottom, lever up joins 2-3.
 - **Library:** the user's library holds only the Nidec ATE1D, which has no
   panel nut.
+
+## SMD (first used on Atlasy, 2026-10-31)
+
+- When a module's rear circuitry needs more than one through-hole main
+  board (Atlasy: about 2.8 boards at the mixer's density), SMD on the rear
+  of each board, assembled by JLC, keeps it to faceplate + main board.
+  Panel parts and headers stay through-hole and hand-soldered.
+- Packages and pad geometry (copied from the LCSC footprints in the user's
+  MorrisSynth export): SOIC-16 narrow pads 0.60 × 1.97 oval, rows at
+  ±2.736, 1.27 pitch, pin 1 bottom-left; SOIC-14 the same with 7 per side;
+  SOT-23 pins 1 / 2 at (+1.15, ∓0.95), pin 3 at (−1.15, 0), pads 1.0 × 0.8;
+  0603 pads 0.8 × 0.95 at ±0.8; 1206 pads 1.0 × 1.75 at ±1.5; SOD-123 pads
+  0.91 × 1.22 at ±1.635, pin 1 = cathode (band). Generators:
+  `atlas/hardware/tools/easyeda_export.py` (`fp_chip`, `fp_soic`,
+  `fp_sot23`, `fp_sod123`).
+- **SOT-23 transistors number their pins 1 B, 2 E, 3 C**, not the TO-92
+  C B E of the library footprint. Write the netlist in the package's
+  numbering.
+- Device attributes: clone the LR1F / FG28 attribute sets, set
+  `Manufacturer Part` (UNI-ROYAL `0603WAF{code}T5E`, the code following
+  from the value; Samsung CL10… / CL31…) and leave `Supplier Part` empty
+  for JLC's BOM matcher unless the LCSC number is known for certain.
+- Dailywell 2M sub-mini toggles (2MS1 SPDT ON-ON, 2MD6 DPDT ON-ON-ON):
+  catalogue contact table 2MS1 2-3 / 2-1; 2MD6 2-3 + 5-6, 2-3 + 5-4,
+  2-1 + 5-4; lever up joins the lower pins. PC terminals .110 in apart,
+  poles .200 in; 6 mm bushing, 6.5 mm panel hole. Not yet checked against
+  a real part.

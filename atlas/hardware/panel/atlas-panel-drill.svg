@@ -42,11 +42,11 @@
 <line x1="72.50" y1="19.50" x2="72.50" y2="22.50" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="76.55" y="17.15">Ø7.5</text>
 <text class="lbl" x="72.50" y="26.75" text-anchor="middle">RES 1</text>
-<circle cx="23.00" cy="31.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="21.50" y1="31.00" x2="24.50" y2="31.00" stroke="#000" stroke-width="0.12"/>
-<line x1="23.00" y1="29.50" x2="23.00" y2="32.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="26.65" y="31.55">Ø6.5</text>
-<text class="lbl" x="23.00" y="36.25" text-anchor="middle">MODE 1</text>
+<circle cx="23.00" cy="31.30" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="21.50" y1="31.30" x2="24.50" y2="31.30" stroke="#000" stroke-width="0.12"/>
+<line x1="23.00" y1="29.80" x2="23.00" y2="32.80" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="26.65" y="31.85">Ø6.5</text>
+<text class="lbl" x="23.00" y="36.55" text-anchor="middle">MODE 1</text>
 <circle cx="62.50" cy="31.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="61.00" y1="31.00" x2="64.00" y2="31.00" stroke="#000" stroke-width="0.12"/>
 <line x1="62.50" y1="29.50" x2="62.50" y2="32.50" stroke="#000" stroke-width="0.12"/>
@@ -82,11 +82,11 @@
 <line x1="72.50" y1="41.50" x2="72.50" y2="44.50" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="76.55" y="39.15">Ø7.5</text>
 <text class="lbl" x="72.50" y="48.75" text-anchor="middle">RES 2</text>
-<circle cx="23.00" cy="53.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="21.50" y1="53.00" x2="24.50" y2="53.00" stroke="#000" stroke-width="0.12"/>
-<line x1="23.00" y1="51.50" x2="23.00" y2="54.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="26.65" y="53.55">Ø6.5</text>
-<text class="lbl" x="23.00" y="58.25" text-anchor="middle">MODE 2</text>
+<circle cx="23.00" cy="53.30" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="21.50" y1="53.30" x2="24.50" y2="53.30" stroke="#000" stroke-width="0.12"/>
+<line x1="23.00" y1="51.80" x2="23.00" y2="54.80" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="26.65" y="53.85">Ø6.5</text>
+<text class="lbl" x="23.00" y="58.55" text-anchor="middle">MODE 2</text>
 <circle cx="62.50" cy="53.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="61.00" y1="53.00" x2="64.00" y2="53.00" stroke="#000" stroke-width="0.12"/>
 <line x1="62.50" y1="51.50" x2="62.50" y2="54.50" stroke="#000" stroke-width="0.12"/>
@@ -122,11 +122,11 @@
 <line x1="72.50" y1="63.50" x2="72.50" y2="66.50" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="76.55" y="61.15">Ø7.5</text>
 <text class="lbl" x="72.50" y="70.75" text-anchor="middle">RES 3</text>
-<circle cx="23.00" cy="75.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="21.50" y1="75.00" x2="24.50" y2="75.00" stroke="#000" stroke-width="0.12"/>
-<line x1="23.00" y1="73.50" x2="23.00" y2="76.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="26.65" y="75.55">Ø6.5</text>
-<text class="lbl" x="23.00" y="80.25" text-anchor="middle">MODE 3</text>
+<circle cx="23.00" cy="75.30" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="21.50" y1="75.30" x2="24.50" y2="75.30" stroke="#000" stroke-width="0.12"/>
+<line x1="23.00" y1="73.80" x2="23.00" y2="76.80" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="26.65" y="75.85">Ø6.5</text>
+<text class="lbl" x="23.00" y="80.55" text-anchor="middle">MODE 3</text>
 <circle cx="62.50" cy="75.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="61.00" y1="75.00" x2="64.00" y2="75.00" stroke="#000" stroke-width="0.12"/>
 <line x1="62.50" y1="73.50" x2="62.50" y2="76.50" stroke="#000" stroke-width="0.12"/>
@@ -162,11 +162,11 @@
 <line x1="72.50" y1="85.50" x2="72.50" y2="88.50" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="76.55" y="83.15">Ø7.5</text>
 <text class="lbl" x="72.50" y="92.75" text-anchor="middle">RES 4</text>
-<circle cx="23.00" cy="97.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
-<line x1="21.50" y1="97.00" x2="24.50" y2="97.00" stroke="#000" stroke-width="0.12"/>
-<line x1="23.00" y1="95.50" x2="23.00" y2="98.50" stroke="#000" stroke-width="0.12"/>
-<text class="dim" x="26.65" y="97.55">Ø6.5</text>
-<text class="lbl" x="23.00" y="102.25" text-anchor="middle">MODE 4</text>
+<circle cx="23.00" cy="97.30" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="21.50" y1="97.30" x2="24.50" y2="97.30" stroke="#000" stroke-width="0.12"/>
+<line x1="23.00" y1="95.80" x2="23.00" y2="98.80" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="26.65" y="97.85">Ø6.5</text>
+<text class="lbl" x="23.00" y="102.55" text-anchor="middle">MODE 4</text>
 <circle cx="62.50" cy="97.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="61.00" y1="97.00" x2="64.00" y2="97.00" stroke="#000" stroke-width="0.12"/>
 <line x1="62.50" y1="95.50" x2="62.50" y2="98.50" stroke="#000" stroke-width="0.12"/>

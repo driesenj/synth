@@ -18,9 +18,12 @@ parts where Thonk has them.
 | Part | Status | Files |
 |---|---|---|
 | Panel layout, hole table, drill template, artwork | Agreed 2026-10-31 (toggles, no LEDs, SCAN knob) | `hardware/tools/panel.py`, `hardware/panel/` |
-| Netlist | Done, `check()` 0 problems; levels and the scanner checked by `sim.py` | `hardware/tools/circuit.py`, `hardware/tools/sim.py` |
-| Circuit description | Done | `docs/design.md` |
-| Schematic, PCBs, panel PCB | Waiting for the board-count decision (through-hole on four boards or SMD on two) | |
+| Netlist | Done, `check()` and `board_check()` at 0; levels and the scanner checked by `sim.py` | `hardware/tools/circuit.py`, `hardware/tools/sim.py` |
+| Schematic (6 pages), both PCBs placed, panel PCB | Generated, every check at 0; not yet opened in EasyEDA, not routed | `hardware/easyeda/Atlasy.epro2`, `hardware/tools/{easyeda_export,pcb,panel_pcb}.py` |
+| Circuit and board description, routing notes | Done | `docs/design.md` |
+
+Two boards, SMD on the rear of each for JLC's assembly; the panel parts and
+the headers are through-hole.
 
 ## Panel
 
@@ -72,7 +75,8 @@ precision-clamped CV summers, and a scanner whose stacked PNP current line
 keeps the four VCA gains summing to one. Run from `hardware/tools`:
 
 ```
-python circuit.py     # netlist check, part counts, board-area estimate
-python sim.py         # filter levels, resonance loop, scanner crossfade
-python panel.py       # hole table, drill template, artwork
+python circuit.py         # netlist and board-split checks, part counts
+python sim.py             # filter levels, resonance loop, scanner crossfade
+python panel.py           # hole table, drill template, artwork
+python easyeda_export.py  # Atlasy.epro2: schematic, both PCBs placed, panel PCB, previews
 ```

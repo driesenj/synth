@@ -140,3 +140,14 @@ its rows is fine.
   column and one horizontal resistor column (x 43.5) and one capacitor
   column (x 52.5); the second resistor column of the 18HP layout is gone,
   so everything else goes in 2.5 mm rows of that one column.
+
+## SMD placement (Atlasy)
+
+`atlas/hardware/tools/pcb.py` has `Placer`: a 0.25 mm occupancy grid per
+board side, edges, standoffs (3 mm) and through-hole pads (+0.6 mm for the
+iron) taken; each part goes to the nearest free spot round the centroid of
+the placed pads it shares a signal net with, two-pin parts turned to point
+along their nets. Place panel parts, headers, holes and chips by hand,
+decoupling pairs at the supply pins (`place_decoupling`), then the rest in
+netlist order (`place_all`). `Board.check()` also flags an SMD body over a
+through-hole pad; `front_housing_check()` only looks at through-hole pads.

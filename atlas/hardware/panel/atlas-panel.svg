@@ -104,24 +104,24 @@
 <text x="56.49" y="106.29" font-size="1.9" text-anchor="middle">2</text>
 <text x="68.51" y="106.29" font-size="1.9" text-anchor="middle">3</text>
 <text x="68.95" y="116.90" font-size="1.9" text-anchor="middle">4</text>
-<text x="27.70" y="29.06" font-size="1.55" text-anchor="start">LP</text>
-<text x="27.70" y="31.56" font-size="1.55" text-anchor="start">HP</text>
-<text x="27.70" y="34.06" font-size="1.55" text-anchor="start">BP</text>
+<text x="27.70" y="29.36" font-size="1.55" text-anchor="start">LP</text>
+<text x="27.70" y="31.86" font-size="1.55" text-anchor="start">HP</text>
+<text x="27.70" y="34.36" font-size="1.55" text-anchor="start">BP</text>
 <text x="67.20" y="29.96" font-size="1.55" text-anchor="start">FM2</text>
 <text x="67.20" y="33.16" font-size="1.55" text-anchor="start">RES</text>
-<text x="27.70" y="51.06" font-size="1.55" text-anchor="start">LP</text>
-<text x="27.70" y="53.56" font-size="1.55" text-anchor="start">HP</text>
-<text x="27.70" y="56.06" font-size="1.55" text-anchor="start">BP</text>
+<text x="27.70" y="51.36" font-size="1.55" text-anchor="start">LP</text>
+<text x="27.70" y="53.86" font-size="1.55" text-anchor="start">HP</text>
+<text x="27.70" y="56.36" font-size="1.55" text-anchor="start">BP</text>
 <text x="67.20" y="51.96" font-size="1.55" text-anchor="start">FM2</text>
 <text x="67.20" y="55.16" font-size="1.55" text-anchor="start">RES</text>
-<text x="27.70" y="73.06" font-size="1.55" text-anchor="start">LP</text>
-<text x="27.70" y="75.56" font-size="1.55" text-anchor="start">HP</text>
-<text x="27.70" y="78.06" font-size="1.55" text-anchor="start">BP</text>
+<text x="27.70" y="73.36" font-size="1.55" text-anchor="start">LP</text>
+<text x="27.70" y="75.86" font-size="1.55" text-anchor="start">HP</text>
+<text x="27.70" y="78.36" font-size="1.55" text-anchor="start">BP</text>
 <text x="67.20" y="73.96" font-size="1.55" text-anchor="start">FM2</text>
 <text x="67.20" y="77.16" font-size="1.55" text-anchor="start">RES</text>
-<text x="27.70" y="95.06" font-size="1.55" text-anchor="start">LP</text>
-<text x="27.70" y="97.56" font-size="1.55" text-anchor="start">HP</text>
-<text x="27.70" y="100.06" font-size="1.55" text-anchor="start">BP</text>
+<text x="27.70" y="95.36" font-size="1.55" text-anchor="start">LP</text>
+<text x="27.70" y="97.86" font-size="1.55" text-anchor="start">HP</text>
+<text x="27.70" y="100.36" font-size="1.55" text-anchor="start">BP</text>
 <text x="67.20" y="95.96" font-size="1.55" text-anchor="start">FM2</text>
 <text x="67.20" y="99.16" font-size="1.55" text-anchor="start">RES</text>
 <polyline points="7.00,25.90 7.00,38.10" class="silk dots"/>
@@ -142,7 +142,7 @@
 <circle cx="37.00" cy="21.00" r="3.25" class="hole"/>
 <circle cx="52.50" cy="21.00" r="3.75" class="hole"/>
 <circle cx="72.50" cy="21.00" r="3.75" class="hole"/>
-<circle cx="23.00" cy="31.00" r="3.25" class="hole"/>
+<circle cx="23.00" cy="31.30" r="3.25" class="hole"/>
 <circle cx="62.50" cy="31.00" r="3.25" class="hole"/>
 <circle cx="7.00" cy="43.00" r="3.25" class="hole"/>
 <circle cx="17.00" cy="43.00" r="3.25" class="hole"/>
@@ -150,7 +150,7 @@
 <circle cx="37.00" cy="43.00" r="3.25" class="hole"/>
 <circle cx="52.50" cy="43.00" r="3.75" class="hole"/>
 <circle cx="72.50" cy="43.00" r="3.75" class="hole"/>
-<circle cx="23.00" cy="53.00" r="3.25" class="hole"/>
+<circle cx="23.00" cy="53.30" r="3.25" class="hole"/>
 <circle cx="62.50" cy="53.00" r="3.25" class="hole"/>
 <circle cx="7.00" cy="65.00" r="3.25" class="hole"/>
 <circle cx="17.00" cy="65.00" r="3.25" class="hole"/>
@@ -158,7 +158,7 @@
 <circle cx="37.00" cy="65.00" r="3.25" class="hole"/>
 <circle cx="52.50" cy="65.00" r="3.75" class="hole"/>
 <circle cx="72.50" cy="65.00" r="3.75" class="hole"/>
-<circle cx="23.00" cy="75.00" r="3.25" class="hole"/>
+<circle cx="23.00" cy="75.30" r="3.25" class="hole"/>
 <circle cx="62.50" cy="75.00" r="3.25" class="hole"/>
 <circle cx="7.00" cy="87.00" r="3.25" class="hole"/>
 <circle cx="17.00" cy="87.00" r="3.25" class="hole"/>
@@ -166,7 +166,7 @@
 <circle cx="37.00" cy="87.00" r="3.25" class="hole"/>
 <circle cx="52.50" cy="87.00" r="3.75" class="hole"/>
 <circle cx="72.50" cy="87.00" r="3.75" class="hole"/>
-<circle cx="23.00" cy="97.00" r="3.25" class="hole"/>
+<circle cx="23.00" cy="97.30" r="3.25" class="hole"/>
 <circle cx="62.50" cy="97.00" r="3.25" class="hole"/>
 <circle cx="27.00" cy="111.60" r="3.25" class="hole"/>
 <circle cx="37.00" cy="111.60" r="3.25" class="hole"/>
@@ -191,10 +191,10 @@
 <circle cx="72.50" cy="21.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
 <circle cx="72.50" cy="21.00" r="3.10" fill="#e8e8e4"/>
 <line x1="71.20" y1="20.25" x2="68.39" y2="18.62" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
-<polygon points="27.30,31.00 25.15,34.72 20.85,34.72 18.70,31.00 20.85,27.28 25.15,27.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
-<circle cx="23.00" cy="31.00" r="2.3" fill="#8d8f8a"/>
-<line x1="23.00" y1="31.00" x2="23.00" y2="25.80" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
-<circle cx="23.00" cy="25.80" r="1.05" fill="#ededea"/>
+<polygon points="27.30,31.30 25.15,35.02 20.85,35.02 18.70,31.30 20.85,27.58 25.15,27.58" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="23.00" cy="31.30" r="2.3" fill="#8d8f8a"/>
+<line x1="23.00" y1="31.30" x2="23.00" y2="26.10" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="23.00" cy="26.10" r="1.05" fill="#ededea"/>
 <polygon points="66.80,31.00 64.65,34.72 60.35,34.72 58.20,31.00 60.35,27.28 64.65,27.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
 <circle cx="62.50" cy="31.00" r="2.3" fill="#8d8f8a"/>
 <line x1="62.50" y1="31.00" x2="62.50" y2="25.80" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
@@ -213,9 +213,9 @@
 <circle cx="72.50" cy="43.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
 <circle cx="72.50" cy="43.00" r="3.10" fill="#e8e8e4"/>
 <line x1="73.01" y1="41.59" x2="74.12" y2="38.54" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
-<polygon points="27.30,53.00 25.15,56.72 20.85,56.72 18.70,53.00 20.85,49.28 25.15,49.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
-<circle cx="23.00" cy="53.00" r="2.3" fill="#8d8f8a"/>
-<circle cx="23.00" cy="53.00" r="1.5" fill="#e4e4e0" stroke="#666" stroke-width="0.15"/>
+<polygon points="27.30,53.30 25.15,57.02 20.85,57.02 18.70,53.30 20.85,49.58 25.15,49.58" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="23.00" cy="53.30" r="2.3" fill="#8d8f8a"/>
+<circle cx="23.00" cy="53.30" r="1.5" fill="#e4e4e0" stroke="#666" stroke-width="0.15"/>
 <polygon points="66.80,53.00 64.65,56.72 60.35,56.72 58.20,53.00 60.35,49.28 64.65,49.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
 <circle cx="62.50" cy="53.00" r="2.3" fill="#8d8f8a"/>
 <line x1="62.50" y1="53.00" x2="62.50" y2="58.20" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
@@ -234,10 +234,10 @@
 <circle cx="72.50" cy="65.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
 <circle cx="72.50" cy="65.00" r="3.10" fill="#e8e8e4"/>
 <line x1="73.91" y1="65.51" x2="76.96" y2="66.62" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
-<polygon points="27.30,75.00 25.15,78.72 20.85,78.72 18.70,75.00 20.85,71.28 25.15,71.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
-<circle cx="23.00" cy="75.00" r="2.3" fill="#8d8f8a"/>
-<line x1="23.00" y1="75.00" x2="23.00" y2="80.20" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
-<circle cx="23.00" cy="80.20" r="1.05" fill="#ededea"/>
+<polygon points="27.30,75.30 25.15,79.02 20.85,79.02 18.70,75.30 20.85,71.58 25.15,71.58" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="23.00" cy="75.30" r="2.3" fill="#8d8f8a"/>
+<line x1="23.00" y1="75.30" x2="23.00" y2="80.50" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="23.00" cy="80.50" r="1.05" fill="#ededea"/>
 <polygon points="66.80,75.00 64.65,78.72 60.35,78.72 58.20,75.00 60.35,71.28 64.65,71.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
 <circle cx="62.50" cy="75.00" r="2.3" fill="#8d8f8a"/>
 <line x1="62.50" y1="75.00" x2="62.50" y2="69.80" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
@@ -256,10 +256,10 @@
 <circle cx="72.50" cy="87.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
 <circle cx="72.50" cy="87.00" r="3.10" fill="#e8e8e4"/>
 <line x1="71.44" y1="88.06" x2="69.14" y2="90.36" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
-<polygon points="27.30,97.00 25.15,100.72 20.85,100.72 18.70,97.00 20.85,93.28 25.15,93.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
-<circle cx="23.00" cy="97.00" r="2.3" fill="#8d8f8a"/>
-<line x1="23.00" y1="97.00" x2="23.00" y2="91.80" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
-<circle cx="23.00" cy="91.80" r="1.05" fill="#ededea"/>
+<polygon points="27.30,97.30 25.15,101.02 20.85,101.02 18.70,97.30 20.85,93.58 25.15,93.58" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="23.00" cy="97.30" r="2.3" fill="#8d8f8a"/>
+<line x1="23.00" y1="97.30" x2="23.00" y2="92.10" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="23.00" cy="92.10" r="1.05" fill="#ededea"/>
 <polygon points="66.80,97.00 64.65,100.72 60.35,100.72 58.20,97.00 60.35,93.28 64.65,93.28" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
 <circle cx="62.50" cy="97.00" r="2.3" fill="#8d8f8a"/>
 <line x1="62.50" y1="97.00" x2="62.50" y2="91.80" stroke="#d8d8d4" stroke-width="1.6" stroke-linecap="round"/>

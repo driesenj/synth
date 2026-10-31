@@ -2,8 +2,10 @@
 
 2026-10-31. The netlist is in `hardware/tools/circuit.py` (369 parts, its
 `check()` at 0 problems); `hardware/tools/sim.py` computes the filter's and
-the scanner's behaviour from those part values. Not yet drawn as a
-schematic or placed: the board count is open (end of this page).
+the scanner's behaviour from those part values. Two boards, SMD on the
+rear of each (the user's choice, 2026-10-31): `easyeda_export.py` writes
+`hardware/easyeda/Atlasy.epro2` with the schematic, both PCBs placed (not
+routed) and the panel as a third PCB.
 
 ## What Atlas is
 
@@ -141,53 +143,106 @@ ones worth showing (where a CV-driven scan is), and they are already there.
 
 | Part | Count | Package |
 |---|---|---|
-| SSI2164 quad VCA | 5 | SOIC-16 only |
-| AS3360 dual VCA | 2 | DIP-14 (or SOIC-14) |
-| TL074 | 11 | DIP-14 (or SOIC-14) |
-| BC557B / BC547B | 7 / 1 | TO-92, pins C B E |
-| 1N4148 / 1N5819 | 36 / 2 | |
-| Resistors | 186 | 1 %; the pole-mix and pole resistors set the response |
-| Capacitors | 79 + 4 electrolytic | 220 pF C0G for the integrators |
-| Panel | 18 jacks, 9 Alpha pots, 4 DPDT ON-ON-ON + 4 SPDT toggles | |
+| SSI2164S-TU quad VCA | 5 | SOIC-16 |
+| AS3360D dual VCA | 2 | SOIC-14 |
+| TL074CDR | 11 | SOIC-14 |
+| BC857B / BC847B | 7 / 1 | SOT-23, pins 1 B, 2 E, 3 C |
+| 1N4148W / B5819W | 36 / 2 | SOD-123, pin 1 = cathode (band) |
+| Resistors | 186 | 0603, 1 % (UNI-ROYAL 0603WAF); the pole-mix and pole resistors set the response |
+| Capacitors | 79 | 0603 (220 pF and 1.2 nF C0G, 100 n X7R), four 10 µF 25 V X5R in 1206 |
+| Panel | 18 jacks, 9 Alpha pots, 4 DPDT ON-ON-ON + 4 SPDT toggles, 5 × 1x8 headers + sockets, 2×8 power header | through-hole |
 
 Supply: 11 TL074 (about 62 mA), 5 SSI2164 (6 mA each), 2 AS3360 (about
 5 mA each) and the knob and scanner currents: about 110 mA on each rail
 (Atlas: 170 mA). 16-pin power header with the reverse diodes the right way
 round (`check()` asserts it).
 
-## Board count
+## The two boards
 
-At the density the mixer's main board was laid out (37 % of the board
-covered by through-hole parts and their spacing), the 334 parts behind the
-panel need about 2.8 boards of 79.7 × 108 mm, on top of the faceplate
-board, whose rear can take perhaps a third of a board between the panel
-parts' bodies. Two ways:
+The 334 parts behind the panel would need about 2.8 boards in through-hole
+at the density the mixer was laid out at; SMD on the rear of two boards was
+chosen. Both boards are 79.7 × 108 mm, stacked on four M3 standoffs.
 
-| | Through-hole (as the other modules) | SMD (0805, SOIC, SOT-23), JLC-assembled |
-|---|---|---|
-| Boards | faceplate + 3 (filters 1-2, filters 3-4, scanner and power) | faceplate + 1 main board |
-| Depth | about 45 mm | about 30 mm, like Atlas |
-| Soldering | about 1100 joints by hand, plus 5 SSI2164 (SOIC anyway) | assembled except the panel parts; the SSI2164 and AS3360 by hand if JLC has no stock |
-| Board-to-board headers | 3 sets | 1 set |
-| Library | your THT EasyEDA parts | LCSC parts, which EasyEDA has natively |
+- **Faceplate:** the panel parts on its front (through-hole: 18 jacks, 9
+  pots, 8 toggles); on its rear, SMD: the FREQ / RES summers (U14, U15 with
+  36 resistors and 16 diodes), the four 1k output resistors, the two
+  decoupling pairs; the five male 1x8 headers.
+- **Main board:** the five female sockets on its front; on its rear, SMD:
+  the four channels (each its SSI2164 and integrator TL074 right of the
+  header column, its summer TL074 left of it, in the channel's own row),
+  the resonance cells U5, the scanner bottom left, the power header bottom
+  right.
+- **Headers:** H1..H4 carry one channel each (VF, VR, GND, IN, SEL, LP, HP,
+  BP), H5 the scanner and the supplies (SCW, SCV, SCAN_OUT, GND, the two
+  knob rails, ±12 V). They stand in a column at front x 43, the only strip
+  the panel parts leave free from top to bottom (between the OUT jacks and
+  the FREQ pots' lugs). The faceplate's nets end in _F; `board_check()`
+  proves every net that is on both boards goes through a header and that
+  the split changed no connection.
+- **Placement:** panel parts, headers, mounting holes and chips by hand;
+  every passive by an occupancy-grid placer (`pcb.Placer`) that puts each
+  one as close as it fits to the pads it connects to, decoupling pairs at
+  their chip's supply pins. It keeps SMD bodies 0.6 mm off every
+  through-hole pad (room for the iron) and 3 mm off the standoffs; the
+  checks also prove no SMD body covers a through-hole pad. Move parts
+  freely while routing: the routed export becomes the master, as on
+  Marblesy.
+
+### Footprints to check before ordering
+
+- **Dailywell 2M toggles** (`TOGGLE-DAILYWELL-2M-SPDT/DPDT`): terminals 2.79
+  mm apart along the throw, the second pole 5.08 mm beside the first, from
+  the catalogue drawing (.110 / .200 in); slots 1.8 × 0.8 mm for the flat
+  pins. Hold a switch against a 1:1 print of the footprint.
+- **ON-ON-ON contact table** (2-3 + 5-6, 2-3 + 5-4, 2-1 + 5-4) and the lever
+  direction (lever up joins 2-3, so pins 3 / 6 sit at the bottom): ring one
+  switch out.
+- **SOT-23 and SOIC-16** copy your LCSC footprints (SOT-23_L2.9-W1.3-P1.90,
+  SOIC-16_L9.9-W3.9-P1.27); SOIC-14 follows the same pattern.
+
+### Assembly (JLC)
+
+Each board's rear is single-sided SMD: JLC assembles it, and you solder the
+through-hole parts. The devices carry manufacturer part numbers (UNI-ROYAL
+0603WAF…, Samsung CL10…/CL31…, TL074CDR, BC847B / BC857B, 1N4148W,
+B5819W); the LCSC numbers are left for JLC's BOM tool to match. If JLC
+cannot get the SSI2164S-TU or the AS3360D, leave them out of the order and
+solder them by hand (SOIC, 1.27 mm).
+
+### Routing notes
+
+- Ground pour on both layers of both boards, stitched with vias; GND reaches
+  the faceplate on four header pins.
+- Per pole: the SSI2164 output (IOUT) to the TL074's inverting input is the
+  integrator's summing node: shortest trace on the board, with the 220 pF
+  straight across from it to the op-amp output. The same for each summer's
+  junction.
+- The SSI2164 control pins (VF k, VR k) are DC; route them freely, but keep
+  them off the cells' input pins (IIN, a virtual ground fed by 15k).
+- The resonance path (BP k -> 11k -> limiter -> 13k -> U5) is the only long
+  audio run; keep it away from the scanner's base lines.
+- Scanner: the three pairs' emitter resistors and the tail node close
+  together; the W k loads at the AS3360 control pins.
+- Decoupling pairs are already at the supply pins; give each its own via to
+  the ground pour.
 
 ## Lessons from the earlier boards, and where they land here
 
 | Lesson | From | Here |
 |---|---|---|
-| Panel first, compared with the original, before any PCB | Marblesy's re-layout | Done first; nothing placed on a PCB yet |
+| Panel first, compared with the original, before any PCB | Marblesy's re-layout | Panel agreed before the netlist and the placement |
 | One panel frame on every module | Marblesy/mixer drift | Title, subtitle, band, rule and maker at the skill's numbers |
 | Rows of identical controls labelled once | Mixer panel (option D) | Column words once above row 1, numerals name the rows, only switch positions per switch |
 | Give a hole table, not just a picture | Marblesy panel-board confusion | `atlas-panel-holes.csv`: every hole in panel coordinates next to its footprint origin |
 | Alpha shaft 4.0 mm from the PTV09A-frame origin; Alpha footprint, not PTV09A | Pot shaft fix (2026-10-30) | `POT_SHAFT = 4.0`; FREQ and RES pins down, SCAN pins up (it sits 7 mm from the board edge) |
-| DIP-14 rows 7.62 mm, never the library TL074 footprint | Kick, Mixer, Output bent legs | `fp_dip(14, "DIP-14-W7.62-P2.54")` if through-hole |
+| DIP-14 rows 7.62 mm, never the library TL074 footprint | Kick, Mixer, Output bent legs | SMD now: SOIC-14 / SOIC-16 from your LCSC footprints' geometry |
 | Eurorack header at 2.54 mm | Compressor, FM, Clap, CB/RM (2.00 mm) | The mixer's 2×8 2.54 mm box header |
 | −12 V reverse diode the right way round | Every drum board | +12 V anode at the header, −12 V cathode at the header; `check()` fails otherwise |
-| TO-92 pin order checked against the part | FM (VT13), Compressor (CBE) | BC547B / BC557B, pins 1 C, 2 B, 3 E, written into the netlist |
+| Transistor pin order checked against the package | FM (VT13), Compressor (CBE) | SOT-23 numbers B E C (not TO-92's C B E): BC847B / BC857B pins 1 B, 2 E, 3 C in the netlist, the symbol and the footprint |
 | A switch's contact table from its datasheet, not from habit | (new here) | The ON-ON-ON's table is in `circuit.py`; ring one out before soldering |
 | Every jack switch lug goes somewhere on purpose | Kick ACCENT floating | IN and FREQ chained, ground on IN 1 / FREQ 1 / FM2-RES / SCAN, outputs open; `check()` flags any other open pin |
 | Sensitive nodes away from switching edges | FM bleed | No LEDs or logic at all now; the integrators' summing nodes short in the layout |
-| One unbroken ground pour | Compressor's six islands | Copper audit before ordering |
+| One unbroken ground pour | Compressor's six islands | Pours on both layers (routing notes); copper audit before ordering |
 | Decoupling next to each chip | Marblesy routing | A 100 n pair per TL074, SSI2164 and AS3360 in the netlist, placed beside it |
 | No ×2 stage that clips in dense patches | Mixer → output chain | Unity through every mode; the core runs at half level with 12 dB of headroom |
 | Prove the circuit's numbers before the board | (new here) | `sim.py` from the netlist values: passbands, the resonance loop's sign, the scanner's sum |

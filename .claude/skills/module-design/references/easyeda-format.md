@@ -121,6 +121,13 @@ The PTV09A pot's drawing runs 9 mm beyond its origin, which matches an Alpha
 pot's housing (4.85 mm past a shaft at +4.0); the 4 mm `pcb.BODY` override
 Marblesy and Plaitsy use is too short. See parts.md.
 
+SMD pads (from the LCSC footprints in the user's export): `PAD` on layer 1,
+`hole: null`, `defaultPad {padType RECT|OVAL, width, height}` (width along
+x before `padAngle`), `topSolderExpansion` 2 mil; courtyard as a `POLY` on
+layer 48 (the placement checks read layers 3, 13 and 48 for the body). The
+footprint's LAYER list needs layer 48 (COMPONENT_SHAPE). Generated in
+`atlas/hardware/tools/easyeda_export.py` (`Footprint.smd`).
+
 ## Schematic facts
 
 - Wires connect only at endpoints; a wire's net is its `NET` ATTR. Net ports
