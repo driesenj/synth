@@ -42,11 +42,19 @@ from easyeda_export import (Doc, Symbol, Page, Project, meta, attr_payload, Y, r
 
 LIBFILES = [os.path.join(PLAITSY, "..", "easyeda", "morrissynth-parts.epru"),
             os.path.normpath(os.path.join(HERE, "..", "..", "..", "stereo-mixer", "hardware", "easyeda",
-                                          "stereo-mixer-parts.epru"))]
+                                          "stereo-mixer-parts.epru")),
+            os.path.join(HERE, "..", "easyeda", "offset-parts.epru")]       # TL072CN, from the same export
 
-_spec = importlib.util.spec_from_file_location("offset_circuit", os.path.join(HERE, "circuit.py"))
-circuit = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(circuit)
+def _load(name):
+    spec = importlib.util.spec_from_file_location("offset_" + name, os.path.join(HERE, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+circuit = _load("circuit")
+pcb = _load("pcb")
+panel_pcb = _load("panel_pcb")
 SECTION = circuit.SECTION
 UNIT = {"A": 1, "B": 2, "C": 3, "D": 4}          # TL074 symbol units; unit 1 carries the supply pins
 
@@ -63,6 +71,7 @@ DEV = {
     "C100n": "2eb0447475ac403680fd2b11e4f4c945",     # FG28X7R1H104KNT00
     "C10u": "21e4ec8defc34a489f66b07134d13cd6",      # 178MU0033, 10 uF 35 V
     "TL074": "ad23edee5d134c14aa92ae80bedf6b28",     # TL074ACN (its symbol; footprint replaced below)
+    "TL072": "6b6657240a1b438c837d896a96680474",     # TL072CN (its symbol, one unit; footprint replaced below)
     "JACK": "f4a247c302d346488553de1a1eb440e9",      # WQP-WQP518MA (Thonkiconn)
     "POT": "be9d2c8f5f814271a402f956f18b56f9",       # PTV09A-4025F-B103 (its symbol)
     "D5819": "f1e2836d6b9a4bf1bb0838127f6aa231",     # 1N5819 (1 = cathode)
@@ -178,7 +187,7 @@ def fp_dip(n, title):
     for i in range(half):
         f.pad(i + 1, x0 + i * 2.54, -3.81, 0.9, 1.6, square=(i == 0))
         f.pad(n - i, x0 + i * 2.54, 3.81, 0.9, 1.6)
-    hx, hy = half * 1.27 + 0.7, 3.25       # body: 19.2 x 6.5 mm for DIP-14
+    hx, hy = half * 1.27 + 0.7, 3.25       # body: 19.2 x 6.5 mm for DIP-14, 9.6 x 6.5 for DIP-8
     f.rect(-hx, -hy, hx, hy)
     f.circle(-hx + 0.9, -hy + 0.9, 0.3)
     return f
@@ -341,6 +350,18 @@ class MProject(Project):
         a.update(changes)
         self._device(key, title, a, tags)
 
+    def footprint_geo(self, uid):
+        """Pads and body box of a library or generated footprint, by uuid."""
+        if not hasattr(self, "_fpgeo"):
+            self._fpgeo = {}
+            docs = {u: d for u, d in self.lib.items() if d["docType"] == "FOOTPRINT"}
+            for typ, lines in self.new_docs:
+                if typ == "FOOTPRINT":
+                    docs.update(ee.parse(lines))
+            for u, d in docs.items():
+                self._fpgeo[u] = pcb.footprint_geometry(d)
+        return self._fpgeo[uid]
+
     def _symbol(self, sym):
         lines = sym.build()
         self.new_docs.insert(0, ("SYMBOL", lines))
@@ -365,13 +386,16 @@ class MProject(Project):
             self._device("C" + val, mpn, a, ["Capacitors", "Multilayer Ceramic Capacitors MLCC - Leaded"])
         fps = {"RV": self._footprint(fp_res_vertical()), "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
                "TO92": self._footprint(fp_to92()), "LED2": self._footprint(fp_led2()),
-               "POT": self._footprint(fp_alpha_pot()), "TOGGLE": self._footprint(fp_toggle())}
+               "POT": self._footprint(fp_alpha_pot()), "TOGGLE": self._footprint(fp_toggle()),
+               "DIP8": self._footprint(fp_dip(8, "DIP-8-W7.62-P2.54"))}
         for key in STANDING:                                      # each resistor again, standing up
             a = self.device_attrs(key)
             self._copy(key + "V", key, a["Manufacturer Part"], ["Resistors", "Through Hole Resistors"],
                        Footprint=fps["RV"])
         self._copy("TL074N", "TL074", "TL074ACN", ["Amplifiers"], Footprint=fps["DIP14"],
                    Description="Quad JFET op-amp, DIP-14 on the 7.62 mm row pitch")
+        self._copy("TL072N", "TL072", "TL072CN", ["Amplifiers"], Footprint=fps["DIP8"],
+                   Description="Dual JFET op-amp, DIP-8 on the 7.62 mm row pitch: 8 = V+, 4 = V-")
         self._copy("POTB10k", "POT", "Alpha 9mm B10k", ["Potentiometers"], Footprint=fps["POT"],
                    Name="={Value}", Value="B10k", **{"Manufacturer Part": "Alpha RD901F-40-15R1 B10K",
                                                      "Supplier Part": "", "Datasheet": "",
@@ -394,7 +418,7 @@ class MProject(Project):
                      "3D Model": "", "3D Model Title": "", "3D Model Transform": "", "Description": desc}
             self._device(key, title, attrs)
 
-    def write(self, boards, path):
+    def write(self, boards, path, template=None):
         """boards: [(title, pages, pcb board or None)]; each gets a BOARD doc holding its schematic pages
         and, once placed, its PCB."""
         used = {u for u, m in self.devices.values()}
@@ -412,6 +436,8 @@ class MProject(Project):
             lines += sch.lines({"title": f"{title} Schema", "board": board.uuid, "zIndex": None})
             for pg in pages:
                 lines += pg.lines(sch.uuid)
+            if pcb_board is not None:
+                lines += pcb_board.doc(ee, template, board.uuid, f"{title} PCB")
         lines += Doc("CONFIG", "CONFIG").lines({"defaultSheet": ""})
         lines += next(d for d in self.lib.values() if d["docType"] == "BLOB")["lines"]   # one BLOB doc
         project = {"title": NAME, "cbb_project": False, "editorVersion": ee.EDIT, "introduction": "",
@@ -434,7 +460,7 @@ def dev_of(part):
         return {"100n": "C100n"}.get(part.value, "C" + part.value)
     if part.kind == "POT":
         return "POT" + part.value
-    return {"CP": "C10u", "TL074": "TL074N"}.get(part.kind, part.kind)
+    return {"CP": "C10u", "TL074": "TL074N", "TL072": "TL072N"}.get(part.kind, part.kind)
 
 
 # ---------------------------------------------------------------- drawing helpers
@@ -482,14 +508,56 @@ def inverting(pg, ref, sec, x, y, rf, cf=None):
     return (kx, oy)
 
 
-def input_stage(pg, P, rin, rf, ref, sec, x, y, cf=None):
+def network(pg, x, y, rf, cf=None):
+    """The feedback network of a stage whose op-amp is drawn elsewhere (channel 3's TL072s): junction at
+    (x, y), rf (|| cf) above, the output node at (x + 80, y). The junction's port to the chip's in- pin
+    sits below it, or above the cap when there is one (the summer's inputs fill the space below)."""
+    nin, nout = rf.nets["1"], rf.nets["2"]
+    a_rf = hpart(pg, rf, x + 20, y - 40)
+    pg.wire([(x, y), (x, y - 40), a_rf["1"]], nin)
+    pg.wire([a_rf["2"], (x + 80, y - 40), (x + 80, y)], nout)
+    if cf is not None:
+        a_cf = hpart(pg, cf, x + 20, y - 70)
+        pg.wire([(x, y - 40), (x, y - 70), a_cf["1"]], nin)
+        pg.wire([a_cf["2"], (x + 80, y - 70), (x + 80, y - 40)], nout)
+        pg.wire([(x, y - 70), (x, y - 100)], nin)
+        pg.port(x, y - 100, nin, "OUT", "left")
+    else:
+        pg.wire([(x, y), (x, y + 30)], nin)
+        pg.port(x, y + 30, nin, "OUT", "left")
+    return (x + 80, y)
+
+
+def stage(pg, P, k, sec, x, y, rf, cf=None):
+    """Inverting stage of channel k from its junction at (x, y): the TL074 section drawn in place, or for
+    channel 3 the network alone, the TL072 pins on ports (chip_block). Returns the output node."""
+    u, _ = circuit.stage(k, sec)
+    if circuit.OPAMPS[u] == "TL074":
+        return inverting(pg, u, sec, x, y, rf, cf)
+    return network(pg, x, y, rf, cf)
+
+
+def input_stage(pg, P, k, sec, rin, rf, x, y):
     """Net port -> rin -> inverting stage -> net port: rin's pin 1 at x, the junction at x + 60."""
     a = hpart(pg, P[rin], x, y)
     pg.stub_port(a["1"], P[rin].nets["1"], "IN", "left")
     pg.wire([a["2"], (x + 60, y)], P[rin].nets["2"])
-    kn = inverting(pg, ref, sec, x + 60, y, P[rf], P[cf] if cf else None)
+    kn = stage(pg, P, k, sec, x + 60, y, P[rf])
     pg.stub_port(kn, P[rf].nets["2"], "OUT", "right", 40)
     return kn
+
+
+def chip_block(pg, P, ref, x, y, note):
+    """A TL072 (your library's one-unit symbol) with every pin on a net port, GND too (ports connect by
+    name; ground flags would crowd the next pins, as on the mixer's logic chips)."""
+    s = pg.place(ref, "TL072N", x, y, des=(-40, -32, "LEFT_BOTTOM"), value_at=(-40, 42, "LEFT_BOTTOM"))
+    geo = pg.pr.symgeo[pg.pr.sym_of("TL072N")]
+    outs = {circuit.SECTION72[sec][0] for sec in ("A", "B")}
+    for p in geo["pins"]:
+        num, net = p["num"], P[ref].nets[p["num"]]
+        side = "left" if p["x"] < 0 else "right"
+        pg.stub_port(s[num], net, "OUT" if num in outs else "IN", side, 30)
+    pg.text(x - 60, y + 60, note, 9)
 
 
 def jack_block(pg, part, jx, jy, tip_kind):
@@ -547,7 +615,7 @@ def summer_block(pg, P, k, x, y):
     for a, b in zip(pts, pts[1:]):
         pg.wire([a, b], f"SUM{k}")
     pg.wire([(xb, y), (xj, y)], f"SUM{k}")
-    kn = inverting(pg, f"U{k}", "C", xj, y, P[f"R{r + 7}"], P[f"C{r + 1}"])
+    kn = stage(pg, P, k, "C", xj, y, P[f"R{r + 7}"], P[f"C{r + 1}"])
     ro = hpart(pg, P[f"R{r + 8}"], kn[0] + 20, kn[1])
     pg.wire([kn, ro["1"]], f"OA{k}")
     pg.stub_port(ro["2"], f"OUT{k}", "OUT", "right")
@@ -573,9 +641,9 @@ def channel_page(pr, P, k):
     y1 = Y(220)
     jack_block(pg, P[f"J{k}"], 90, y1, "OUT")
     pg.text(330, y1 - 120, "A: N = -IN", 10)
-    input_stage(pg, P, f"R{r + 1}", f"R{r + 2}", f"U{k}", "A", 330, y1)
+    input_stage(pg, P, k, "A", f"R{r + 1}", f"R{r + 2}", 330, y1)
     pg.text(640, y1 - 120, "B: P = +IN", 10)
-    input_stage(pg, P, f"R{r + 3}", f"R{r + 4}", f"U{k}", "B", 640, y1)
+    input_stage(pg, P, k, "B", f"R{r + 3}", f"R{r + 4}", 640, y1)
     pg.text(990, y1 - 120, "ATTEN: -1 (CCW) .. +1 (CW); OFFSET: -5 V .. +5 V", 10)
     pot_block(pg, P[f"RV{2 * k - 1}"], 1060, y1)
     pot_block(pg, P[f"RV{2 * k}"], 1360, y1)
@@ -585,14 +653,17 @@ def channel_page(pr, P, k):
     summer_block(pg, P, k, 330, y2)
     jack_block(pg, P[f"J{circuit.CHANNELS + k}"], 900, y2, "IN")
     toggle_block(pg, P[f"SW{k}"], 1260, y2)
-    # row 3: the cascade inverter, or the note on U3 D
+    # row 3: the cascade inverter; on channel 3 the two TL072s, their pins on the ports above
     y3 = Y(900)
     if k < circuit.CHANNELS:
         pg.text(330, y3 - 120, f"D: OUT {k} unpatched -> -OUT {k} into channel {k + 1}'s summer "
                                "(patched: the lug opens, D gives 0 V)", 10)
-        input_stage(pg, P, f"R{r + 11}", f"R{r + 12}", f"U{k}", "D", 330, y3)
+        input_stage(pg, P, k, "D", f"R{r + 11}", f"R{r + 12}", 330, y3)
     else:
-        pg.text(330, y3 - 60, "U3 D: the +1 V normal follower, on page 4. OUT 3 has no channel after it.", 10)
+        pg.text(330, y3 - 110, "Channel 3's op-amps: two TL072s (a third TL074 does not fit behind the 10HP "
+                               "panel). OUT 3 has no channel after it, so U4 B buffers the +1 V normal.", 10)
+        chip_block(pg, P, "U3", 450, y3, "U3: A makes N3 = -IN 3, B makes P3 = +IN 3")
+        chip_block(pg, P, "U4", 900, y3, "U4: A is channel 3's summer, B the +1 V follower (NDIV -> NORM)")
     pg.text(40, Y(1100), "Resistors 1 % metal film, all standing. Net ports with the same name connect across the "
                          "pages; GND is one net.", 9)
     return pg
@@ -627,7 +698,7 @@ def reference_block(pg, P, x, top, plus):
 
 
 def norm_block(pg, P, x, top):
-    """39k / 10k from REF_P, buffered by U3 D: the +1 V normal for IN 1."""
+    """39k / 10k from REF_P to NDIV; U4 B (page 3) buffers it into NORM, the +1 V normal for IN 1."""
     a = vpart(pg, P["R903"], x, top)
     pg.stub_port(a["1"], "REF_P", "IN", "left")
     n = (x, top + 50)
@@ -635,17 +706,8 @@ def norm_block(pg, P, x, top):
     b = vpart(pg, P["R904"], x, top + 60)
     pg.wire([n, b["1"]], "NDIV")
     pg.stub_gnd(b["2"], "down", 10)
-    xi = x + 60                                    # the follower's + input
-    pg.wire([n, (xi, n[1])], "NDIV")
-    ox, oy = xi + 40, n[1] - 10
-    amp = pg.place("U3", "TL074N", ox, oy, unit=UNIT["D"], des=(-6, 32, "LEFT_BOTTOM"), name=False)
-    out, inm, inp = SECTION["D"]
-    node = (ox + 55, oy)
-    pg.wire([amp[out], node], "NORM")
-    pg.wire([node, (ox + 55, oy - 35), (ox - 55, oy - 35), (ox - 55, oy - 10), amp[inm]], "NORM")
-    pg.wire([node, (ox + 95, oy)], "NORM")
-    pg.port(ox + 95, oy, "NORM", "OUT", "right")
-    pg.text(ox - 30, oy + 45, "U3 D", 8)
+    pg.wire([n, (x + 40, n[1])], "NDIV")
+    pg.port(x + 40, n[1], "NDIV", "OUT", "right")
 
 
 def power_block(pg, P, x0, t0):
@@ -712,16 +774,16 @@ def power_page(pr, P):
     reference_block(pg, P, 160, Y(140), True)
     pg.text(380, Y(110), "-5 V", 11)
     reference_block(pg, P, 460, Y(140), False)
-    pg.text(720, Y(110), "+1 V normal for IN 1: 39k / 10k from REF_P (1.02 V), buffered by U3 D", 11)
+    pg.text(720, Y(110), "+1 V normal for IN 1: 39k / 10k from REF_P (1.02 V), buffered by U4 B (page 3)", 11)
     norm_block(pg, P, 800, Y(160))
     pg.text(40, Y(440), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V), a 1N5819 per rail: +12 V anode "
                         "on the header, -12 V cathode on the header", 12)
     power_block(pg, P, 80, 520)
-    pg.text(900, Y(440), "Decoupling: a 100n pair per TL074, beside its supply pins", 12)
-    for i, k in enumerate(circuit.CH):
-        x, top = 980 + i * 140, Y(560)
-        decoupling_pair(pg, P, f"C{903 + 2 * k}", f"C{904 + 2 * k}", x, top)
-        pg.text(x + 8, top + 140, f"U{k}", 10)
+    pg.text(900, Y(440), "Decoupling: a 100n pair per op-amp, beside its supply pins", 12)
+    for i, u in enumerate(circuit.OPAMPS, start=1):
+        x, top = 940 + (i - 1) * 140, Y(560)
+        decoupling_pair(pg, P, f"C{903 + 2 * i}", f"C{904 + 2 * i}", x, top)
+        pg.text(x + 8, top + 140, u, 10)
     return pg
 
 
@@ -763,18 +825,54 @@ def pins_and_pads(pr, keys):
     return problems
 
 
+def part_info(pages):
+    """ref -> device key, schematic Unique ID and the PCB's Channel ID ('$' + page number + id of the
+    part's first schematic component)."""
+    info = {}
+    for pg in pages:
+        for c in pg.comps:
+            if c["ref"] and c["ref"] not in info:
+                info[c["ref"]] = {"dev": c["dev"], "uid": pg.pr.unique_id(c["ref"]),
+                                  "channel": f"${pg.number}{c['cid']}"}
+    return info
+
+
 def validate(path):
-    """Parse the written project: every component's Device, Symbol and Footprint must be in it."""
+    """Parse the written project: every schematic component's Device, Symbol and Footprint must be in it;
+    on the PCBs every PAD_NET must name a real pad of its component's footprint and a net with a NET
+    record, and every component's Device must exist (EasyEDA drops a net silently otherwise)."""
     with ee.zipfile.ZipFile(path) as z:
         docs = ee.parse(z.read(f"{NAME}.epru").decode("utf-8").split("\n"))
     problems = []
     for u, d in docs.items():
-        if d["docType"] != "SCH_PAGE":
-            continue
-        for h, p in d["recs"]:
-            if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"] \
-                    and p["value"] not in docs:
-                problems.append(f"{meta(d)['title']}: {p['key']} {p['value']} missing")
+        if d["docType"] == "SCH_PAGE":
+            for h, p in d["recs"]:
+                if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"] \
+                        and p["value"] not in docs:
+                    problems.append(f"{meta(d)['title']}: {p['key']} {p['value']} missing")
+        elif d["docType"] == "PCB":
+            comps, nets, attrs = set(), set(), {}
+            for h, p in d["recs"]:
+                if h["type"] == "COMPONENT":
+                    comps.add(h["id"])
+                elif h["type"] == "NET":
+                    nets.add(ee.json.loads(h["id"])[1])
+                elif h["type"] == "ATTR" and p.get("parentId"):
+                    attrs.setdefault(p["parentId"], {})[p["key"]] = p["value"]
+            for cid in comps:
+                a = attrs.get(cid, {})
+                if a.get("Device") not in docs or a.get("Footprint") not in docs:
+                    problems.append(f"{meta(d)['title']}: component {cid} has no Device or Footprint")
+            for h, p in d["recs"]:
+                if h["type"] != "PAD_NET":
+                    continue
+                _, cid, num, pad_id = ee.json.loads(h["id"])
+                fp = docs.get(attrs.get(cid, {}).get("Footprint"))
+                pad_ids = {hh["id"] for hh, _ in fp["recs"] if hh["type"] == "PAD"} if fp else set()
+                if pad_id not in pad_ids:
+                    problems.append(f"{meta(d)['title']}: PAD_NET {cid}.{num} names no pad of its footprint")
+                if p["padNet"] not in nets:
+                    problems.append(f"{meta(d)['title']}: net {p['padNet']} has no NET record")
     return problems, collections.Counter(d["docType"] for d in docs.values())
 
 
@@ -790,15 +888,28 @@ def main():
     bad += pins_and_pads(pr, used)
     for b in bad:
         print("PROBLEM:", b)
-    pr.write([("Offset", pages, None)], OUT)
+    board = pcb.one_board(pr, parts, part_info(pages), circuit)
+    pcb_bad = board.check() + pcb.placement_check(board, circuit) + pcb.front_housing_check(board)
+    for b in pcb_bad:
+        print("PCB:", b)
+    panel_page = MPage(pr, "Panel", 1)
+    panel_page.page_count = "1"
+    panel_page.text(70, Y(60), "Offset 10HP panel as a PCB: no parts, no nets. Holes, slots, silkscreen and the "
+                               "bare-copper output band are in the PCB document; the art is "
+                               "hardware/panel/offset-panel.svg.", 12)
+    board_panel = panel_pcb.PanelBoard()
+    pr.write([("Offset", pages, board), ("Offset Panel", [panel_page], board_panel)], OUT, pcb.load_template(ee))
     missing, counts = validate(OUT)
     for b in missing:
         print("FILE:", b)
     for pg in pages:
         render(pr, pg, PREVIEW.format(pg.title.split(",")[0].lower().replace(" ", "-")))
+    board.render(PREVIEW.format("pcb"))
+    board_panel.render(PREVIEW.format("pcb-panel"))
     n = sum(1 for pg in pages for c in pg.comps if c["ref"])
-    print(f"{os.path.normpath(OUT)}: {n} part units on {len(pages)} pages, {len(bad)} schematic problems, "
-          f"{len(missing)} file problems; docs {dict(counts)}")
+    print(f"{os.path.normpath(OUT)}: {n} part units on {len(pages)} pages, {len(bad)} schematic problems; "
+          f"{len(board.placed)} parts placed, {len(pcb_bad)} PCB problems; {len(missing)} file problems; "
+          f"docs {dict(counts)}")
 
 
 if __name__ == "__main__":

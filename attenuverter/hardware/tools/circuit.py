@@ -11,8 +11,11 @@ jack is unpatched).
   OUT k     1k series; unpatched it adds into channel k+1 (OUT 3 = the sum)
   LED k     2-lead bicolour: green positive, red negative
 
-One TL074 per channel, every signal stage inverting (no op-amp input moves
-with the signal, so a -10 V input stays inside the TL07x's common-mode range):
+Four sections per channel, every signal stage inverting (no op-amp input
+moves with the signal, so a -10 V input stays inside the TL07x's
+common-mode range). Channels 1 and 2 each have a TL074 (U1, U2); channel 3
+is split over two TL072s (U3: A, B; U4: C and the +1 V follower), because
+a third DIP-14 does not fit behind the 10HP panel's parts (see pcb.py):
   A  inverter               N_k = -IN_k         100k / 100k
   B  inverter               P_k = +IN_k         100k / 100k
      ATTEN between P_k (CCW, pin 1) and N_k (CW, pin 3), wiper -> 100k -> SUM_k
@@ -24,14 +27,14 @@ with the signal, so a -10 V input stays inside the TL07x's common-mode range):
                             OA_k -> 1k -> OUT k;  OA_k -> 2k2 -> LED k -> GND
   D  cascade inverter       OUT k's switch lug -> 100k -> CAS_k+1 = -OUT_k
                             -> 100k -> SUM_k+1 (open lug: 0 V)
-U3's D section has no channel after it and buffers NORM, the +1 V normal
-(39k / 10k from REF_P, 1.02 V).
+Channel 3 has no channel after it: its fourth section (U4 B) buffers NORM,
+the +1 V normal (39k / 10k from REF_P, 1.02 V).
 
 References: REF_P = +5 V (LM4040 cathode, 1k from +12 V), REF_N = -5 V
 (LM4040 anode, cathode on GND, 1k to -12 V); 7 mA each, 3 mA of it through
 the three OFFSET pots. Power: 16-pin Eurorack header, a 1N5819 in each rail
 (+12 V: anode on the header; -12 V: cathode on the header), 10R + 10u per
-rail, a 100n pair at each TL074.
+rail, a 100n pair at each op-amp.
 
 `python circuit.py` prints the part counts, the netlist problems (single-pin
 nets, designators used twice) and a DC check: an ideal-op-amp solve of this
@@ -73,6 +76,17 @@ GND, VP, VN = "GND", "+12V", "-12V"
 
 # TL074 section pins: (out, in-, in+); A and B on the pin 1-7 side, C and D on the pin 8-14 side
 SECTION = {"A": ("1", "2", "3"), "B": ("7", "6", "5"), "C": ("8", "9", "10"), "D": ("14", "13", "12")}
+SECTION72 = {"A": ("1", "2", "3"), "B": ("7", "6", "5")}            # TL072: 8 = V+, 4 = V-
+SUPPLY = {"TL074": ("4", "11"), "TL072": ("8", "4")}                 # (V+, V-) pins
+OPAMPS = {"U1": "TL074", "U2": "TL074", "U3": "TL072", "U4": "TL072"}
+
+
+def stage(k, s):
+    """(chip, (out, in-, in+)) of stage s (A, B, C, D) of channel k. Channel 3's D is the +1 V follower."""
+    if k < 3:
+        return f"U{k}", SECTION[s]
+    return {"A": ("U3", SECTION72["A"]), "B": ("U3", SECTION72["B"]),
+            "C": ("U4", SECTION72["A"]), "D": ("U4", SECTION72["B"])}[s]
 
 # ---------------------------------------------------------------- panel parts
 # ref, panel label, tip net, switch-lug net (None = open). The lug touches the tip while nothing is patched.
@@ -128,16 +142,20 @@ def channel_parts(k):
     if k < CHANNELS:
         parts += [R(f"R{r + 11}", "100k", f"OSW{k}", f"ND{k}", "cascade in"),
                   R(f"R{r + 12}", "100k", f"ND{k}", f"CAS{k + 1}", "cascade feedback")]
-    nets = {"4": VP, "11": VN}
-    for sec, (out, inm, inp) in (("A", (f"N{k}", f"NA{k}", GND)), ("B", (f"P{k}", f"NB{k}", GND)),
-                                 ("C", (f"OA{k}", f"SUM{k}", GND))):
-        nets.update(dict(zip(SECTION[sec], (out, inm, inp))))
-    if k < CHANNELS:
-        nets.update(dict(zip(SECTION["D"], (f"CAS{k + 1}", f"ND{k}", GND))))
-    else:
-        nets.update(dict(zip(SECTION["D"], ("NORM", "NORM", "NDIV"))))    # follower for the +1 V normal
-    parts.append(Part(f"U{k}", "TL074", "TL074", nets, f"channel {k}"))
     return parts
+
+
+def opamp_parts():
+    roles = {}
+    for k in CH:
+        roles.update({(k, "A"): (f"N{k}", f"NA{k}", GND), (k, "B"): (f"P{k}", f"NB{k}", GND),
+                      (k, "C"): (f"OA{k}", f"SUM{k}", GND),
+                      (k, "D"): (f"CAS{k + 1}", f"ND{k}", GND) if k < CHANNELS else ("NORM", "NORM", "NDIV")})
+    nets = {u: dict(zip(SUPPLY[kind], (VP, VN))) for u, kind in OPAMPS.items()}
+    for (k, s), role in roles.items():
+        u, pins = stage(k, s)
+        nets[u].update(dict(zip(pins, role)))
+    return [Part(u, kind, kind, nets[u]) for u, kind in OPAMPS.items()]
 
 
 def reference_parts():
@@ -165,14 +183,14 @@ def power_parts():
         Part("C903", "CP", "10u", {"2": VP, "1": GND}, "+12 V bulk"),
         Part("C904", "CP", "10u", {"2": GND, "1": VN}, "-12 V bulk"),
     ]
-    for k in CH:                                        # one pair per TL074, beside its supply pins
-        parts.append(C(f"C{903 + 2 * k}", "100n", VP, GND, f"U{k} +12 V"))
-        parts.append(C(f"C{904 + 2 * k}", "100n", GND, VN, f"U{k} -12 V"))
+    for i, u in enumerate(OPAMPS, start=1):             # one pair per op-amp, beside its supply pins
+        parts.append(C(f"C{903 + 2 * i}", "100n", VP, GND, f"{u} +12 V"))
+        parts.append(C(f"C{904 + 2 * i}", "100n", GND, VN, f"{u} -12 V"))
     return parts
 
 
 def all_parts():
-    parts = panel_parts() + reference_parts() + power_parts()
+    parts = panel_parts() + reference_parts() + power_parts() + opamp_parts()
     for k in CH:
         parts += channel_parts(k)
     return parts
@@ -187,15 +205,16 @@ def nets_of(parts):
 
 
 def check():
-    """Netlist problems: single-pin nets, designators used twice, TL074s with a pin left out."""
+    """Netlist problems: single-pin nets, designators used twice, op-amps with a pin left out."""
     parts = all_parts()
     nets = nets_of(parts)
     bad = [f"single-pin net {n} {nets[n]}" for n in sorted(nets) if len(nets[n]) < 2]
     refs = collections.Counter(p.ref for p in parts)
     bad += [f"{r} used {c} times" for r, c in refs.items() if c > 1]
     for p in parts:
-        if p.kind == "TL074" and set(p.nets) != {str(i) for i in range(1, 15)}:
-            bad.append(f"{p.ref}: pins {sorted(set(map(str, range(1, 15))) - set(p.nets), key=int)} unconnected")
+        n = {"TL074": 14, "TL072": 8}.get(p.kind)
+        if n and set(p.nets) != {str(i) for i in range(1, n + 1)}:
+            bad.append(f"{p.ref}: pins {sorted(set(map(str, range(1, n + 1))) - set(p.nets), key=int)} unconnected")
     return bad
 
 
@@ -242,8 +261,8 @@ def solve(atten, offset, inputs=None, patched_outs=(), source_r=0.0, ten_volt=()
         elif p.kind == "TOGGLE_SPDT":
             if int(p.label.split()[-1]) in ten_volt:
                 res.append((p.nets["2"], p.nets["3"], 1e-3))
-        elif p.kind == "TL074":
-            for out, inm, inp in SECTION.values():
+        elif p.kind in ("TL074", "TL072"):
+            for out, inm, inp in (SECTION if p.kind == "TL074" else SECTION72).values():
                 amps.append((p.nets[out], p.nets[inm], p.nets[inp]))
     for p in all_parts():                    # a toggle's open throw leaves its resistor dangling: tie it down
         if p.kind == "TOGGLE_SPDT" and int(p.label.split()[-1]) not in ten_volt:

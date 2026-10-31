@@ -8,11 +8,11 @@ channels at different depths. The outputs add into the next channel when
 unpatched, so the module also mixes modulation. Reference designators
 match `hardware/tools/circuit.py`.
 
-Status (2026-10-31): panel approved; netlist for one board (81 parts, 0
+Status (2026-10-31): panel approved; netlist for one board (84 parts, 0
 problems, DC check passing, see [Netlist](#netlist)); EasyEDA Pro
-schematic generated and checked against the netlist (see
-[Schematic](#schematic)), not yet imported. PCB placement and the panel
-PCB are not started.
+schematic, the placed PCB and the panel PCB generated and checked (see
+[Schematic](#schematic) and [PCB](#pcb)), not yet imported. Routing is
+yours.
 
 ---
 
@@ -52,7 +52,9 @@ OUT k = ATTEN k × IN k + OFFSET k  (+ OUT k−1, when OUT k−1 is unpatched)
 
 ## Circuit
 
-One TL074 per channel. Every signal stage is inverting, so no op-amp input
+Four op-amp sections per channel: a TL074 each for channels 1 and 2, two
+TL072s for channel 3. A third DIP-14 does not fit behind the 10HP panel's
+parts (see [PCB](#pcb)). Every signal stage is inverting, so no op-amp input
 moves with the signal: a follower fed −10 V would sit past the old TL07x's
 common-mode range on ±12 V, where its output can flip. All resistors are
 100 k 1 % unless noted.
@@ -101,11 +103,12 @@ common-mode range on ±12 V, where its output can flip. All resistors are
 
 ### Op-amp sections
 
-| Chip | A | B | C | D |
-|---|---|---|---|---|
-| U1 | N_1 | P_1 | channel 1 summer | cascade 1 → 2 |
-| U2 | N_2 | P_2 | channel 2 summer | cascade 2 → 3 |
-| U3 | N_3 | P_3 | channel 3 summer | NORM: follower for +1 V (39k / 10k from +5 V) |
+| Chip | Sections |
+|---|---|
+| U1 (TL074) | A: N_1, B: P_1, C: channel 1 summer, D: cascade 1 → 2 |
+| U2 (TL074) | A: N_2, B: P_2, C: channel 2 summer, D: cascade 2 → 3 |
+| U3 (TL072) | A: N_3, B: P_3 |
+| U4 (TL072) | A: channel 3 summer, B: NORM, the follower for +1 V (39k / 10k from +5 V) |
 
 ### References and power
 
@@ -116,9 +119,10 @@ common-mode range on ±12 V, where its output can flip. All resistors are
 - **Power entry:** 16-pin Eurorack header (2.54 mm, shrouded). There is a
   1N5819 in each rail: the +12 V anode on the header, and the −12 V
   *cathode* on the header (the reversed −12 V diode on the older PCBs is the
-  error to avoid). Each rail then has a 10 Ω and 10 µF, and each TL074 has a
-  100 n pair at its supply pins.
-- **Current, estimated:** TL074s about 17 mA per rail, references 7 mA each,
+  error to avoid). Each rail then has a 10 Ω and 10 µF, and each op-amp has a
+  100 n pair at its supply pins (TL074: 4 = V+, 11 = V−; TL072: 8 = V+,
+  4 = V−).
+- **Current, estimated:** op-amps about 17 mA per rail, references 7 mA each,
   LEDs up to 3 × 3.6 mA, ATTEN pots up to 2 mA each at full input. That
   comes to about 40 mA per rail at worst, 25 mA typical.
 
@@ -136,10 +140,11 @@ TL074 pins left out) and a DC check.
 | RV1, RV3, RV5 / RV2, RV4, RV6 | ATTEN / OFFSET (pin 3 = CW end, both on the negative side; lugs 4, 5 on GND) |
 | SW1–SW3 | RANGE toggles (2 common, 3 = lever up = 10 V, 1 open) |
 | D1–D3 | output LEDs, 2-lead bicolour: current from pin 1 to pin 2 = green |
-| U1–U3 | TL074 per channel, sections A (pins 1–3), B (5–7), C (8–10), D (12–14) |
+| U1, U2 | TL074 for channels 1 and 2, sections A (pins 1–3), B (5–7), C (8–10), D (12–14) |
+| U3, U4 | TL072 for channel 3, sections A (1–3), B (5–7); `circuit.stage()` maps them |
 | R*k*01–R*k*13, C*k*01 | channel *k*'s resistors and summer cap (R101 … R313) |
 | D4, D5, R901–R904, C901, C902 | ±5 V references, the +1 V divider |
-| J7, D6, D7, R905, R906, C903–C910 | power entry, bulk and decoupling |
+| J7, D6, D7, R905, R906, C903–C912 | power entry, bulk and decoupling (C905 … C912: a pair per op-amp) |
 
 Net names say what they carry: `IN1`, `N1` (−IN), `P1` (+IN), `AW1` / `OW1`
 (the wipers), `OR1` (the RANGE throw), `SUM1`, `OA1` (summer out), `OUT1`
@@ -175,18 +180,21 @@ one board, four A3 pages, previews in `hardware/easyeda/offset-easyeda-*.png`.
 
 | Page | Holds |
 |---|---|
-| Channel 1–3 | IN jack; A and B; ATTEN and OFFSET pots; the summer with the output resistor and the LED; OUT jack; RANGE toggle; the cascade inverter D (channels 1 and 2) |
-| References, +1 V normal, power | both LM4040s, the 39k / 10k divider and U3 D, the 16-pin header with its diodes, 10 Ω and 10 µF, the three decoupling pairs |
+| Channel 1–3 | IN jack; A and B; ATTEN and OFFSET pots; the summer with the output resistor and the LED; OUT jack; RANGE toggle; the cascade inverter D (channels 1 and 2). Channel 3 draws its stages' networks with the junctions on ports, and the two TL072s (your library's one-unit symbol) with every pin on a port |
+| References, +1 V normal, power | both LM4040s, the 39k / 10k divider (NDIV, to U4 B), the 16-pin header with its diodes, 10 Ω and 10 µF, the four decoupling pairs |
+| Panel (its own board) | a note; the panel PCB itself |
 
 Each block ends in net ports, and ports with the same name connect across
 the pages.
 
-**Parts.** They come from your library where it has them: the TL074ACN symbol, the
-WQP518MA jack, the PTV09A pot symbol, LR1F resistors, FG28 capacitors,
-1N5819, the 10 µF and the 2×8 box header. The rest is drawn here in the
-same style:
-- **footprints:** the DIP-14 on the 7.62 mm row pitch and the Alpha 9 mm
-  pot (both the mixer's), TO-92, and a 2-lead 3 mm LED. The Dailywell 2MS1
+**Parts.** They come from your library where it has them: the TL074ACN and
+TL072CN symbols (the TL072CN cached from your MorrisSynth export in
+`hardware/easyeda/offset-parts.epru`), the WQP518MA jack, the PTV09A pot
+symbol, LR1F resistors, FG28 capacitors, 1N5819, the 10 µF and the 2×8 box
+header. The rest is drawn here in the same style:
+- **footprints:** the DIP-14 and DIP-8 on the 7.62 mm row pitch (the
+  library ones have 9.0 / 9.1 mm rows), the Alpha 9 mm pot (the mixer's),
+  TO-92, and a 2-lead 3 mm LED. The Dailywell 2MS1
   toggle has three pins at 2.54 mm and a 6 mm bushing, from Dailywell's
   2MS sheet.
 - **symbols:** the LM4040 (Marblesy's, labelled 5.0 V), the bicolour LED
@@ -200,7 +208,9 @@ All resistors are standing (the 2.54 mm footprint).
   T-junctions.
 - Every pin with a net is drawn exactly once.
 - Every symbol pin has a pad and every pad a pin.
-- Every Device, Symbol and Footprint in the written file resolves.
+- Every Device, Symbol and Footprint in the written file resolves, and on
+  the PCBs every PAD_NET names a real pad of its part's footprint and a net
+  with a NET record.
 - Result: 0 problems, 90 part units.
 
 **What EasyEDA's DRC will still report** (all intended):
@@ -210,6 +220,83 @@ All resistors are standing (the 2.54 mm footprint).
 
 Import with File > Import > EasyEDA (Professional) > `Offset.epro2`, then
 Design > Check DRC.
+
+---
+
+## PCB
+
+One board, 49.3 × 108 mm, placed and net-assigned, unrouted, in
+`Offset.epro2` beside the panel PCB. `hardware/tools/pcb.py` places it;
+the preview is `hardware/easyeda/offset-easyeda-pcb.png` (rear view, as
+EasyEDA shows the top layer: channel 1 on the right).
+
+- **Front (bottom layer):** the jacks, pots, LEDs and RANGE toggles at their
+  panel positions. The orientations are set by rule: jack sleeves up, pot
+  pins down with pin 1 on the left, LED pad 1 (green anode) on the left,
+  toggle pin 3 at the bottom.
+- **Rear (top layer):** everything else, every resistor standing. A rear
+  part's leads are soldered on the front, so no rear pad may sit under a
+  front part's body. In 10HP those bodies cover most of the board, and what
+  is left decides the layout:
+
+| Where (front view) | What |
+|---|---|
+| strip above the ATTEN pots | U1, U2 (TL074) side by side; a third DIP-14 would need 50.5 mm of the 49.3 |
+| between the IN and OUT jacks | U3, U4 (TL072), one between each pair of LEDs (0.5 mm to spare each side) |
+| between the OFFSET and ATTEN pots | D4, D5 (LM4040), between the pot columns |
+| under the OUT jacks | J7, the power header, pin 1 (−12 V, red stripe) on the left |
+| side margins beside J7 | D7 and C904 (−12 V) on the left, D6 and C903 (+12 V) on the right |
+| everything else | resistors and capacitors on a 2.54 mm grid in the margins, the channels between the pot columns and the strips between the rows |
+
+`place_grid()` puts each small part on the free grid spot nearest to the
+pads it connects to. Each part costs the distance from its pins to the nets
+they join. Summing nodes count three times so they stay short, and GND a
+fifth. The decoupling pairs go down first, each drawn to its own chip's
+supply pins. There are no mounting holes: the jack, pot and toggle nuts
+hold the board to the panel.
+
+**Checks** (in `python easyeda_export.py`), all 0 problems:
+- pads 0.25 mm apart and 0.5 mm from the edge
+- no bodies overlapping on one side or reaching past the edge
+- panel parts exactly at `PLACEMENT`
+- no rear pad under a front body
+- the PAD_NET parse
+
+**Panel PCB:** 50.5 × 128.5 mm, from the same `panel.layout()` and
+`panel.bands()` as the SVG. Holes and slots are non-plated, the artwork is
+on silk, and the output band is bare ENIG copper with 0.4 mm clearance
+rings. Order it on 1.6 mm FR4, black mask, white silk, ENIG. EasyEDA's
+stroke font differs from the SVG's, so nudge labels after the import.
+
+### Routing notes
+
+- **Rules:** the project inherits an older board's rules (0.1 mm clearance).
+  For hand soldering set:
+  - clearance 0.25 mm and track 0.3 mm
+  - a POWER class at 0.6 mm for +12V, −12V, P12_IN / N12_IN and P12_D / N12_D
+  - REF_P, REF_N at 0.4 mm
+  - vias 0.8 / 0.4 mm
+  - copper 0.5 mm from the edge
+- **Keepouts:** 3 mm round each jack barrel on the front layer (ground may
+  stay).
+- **Hand-route and lock first:**
+  - the power buses: J7 → D6 / D7 → R905 / R906 → the four chips' supply
+    pins, each beside its 100 n pair
+  - REF_P and REF_N, as two trees from D4 / C901 and D5 / C902 to the
+    three OFFSET pots' outer pins
+  - the summing nodes NA, NB, SUM, ND at each op-amp: one layer, short
+- **Then autoroute the rest:** both layers, vertical on top and horizontal
+  on bottom. Skip GND and the POWER class.
+- **Long runs:** IN and OUT run from the bottom jacks to U1 / U2 at the
+  top, and channel 3's pots run down to U3 / U4. All of them are
+  low-impedance (driven by an op-amp or a module output), so length doesn't
+  matter. Keep them off the summing nodes and the wipers.
+- **Ground:** one GND, poured on both layers. The front layer, between the
+  panel parts, is the better plane: it shields the long CV runs on the
+  rear.
+- **LEDs:** the LED lines (OA → 2k2 → LED) carry up to 3.6 mA DC. Stand the
+  3 mm LEDs on their leads or a spacer, so the lens reaches the 3.2 mm hole
+  in the band.
 
 ---
 
@@ -251,14 +338,14 @@ x 38.5.
 | 6 | Alpha 9 mm vertical B10k | Thonk | A centre-detent version would help find noon on both rows; check stock |
 | 3 | Sub-mini toggle SPDT ON-ON, PCB mount (Dailywell 2MS1 type) | Thonk / Tayda | |
 | 3 | 3 mm bicolour LED red/green, 2 leads | Tayda | Thonk if stocked |
-| 3 | TL074 + DIP-14 sockets | Tayda | Use the 7.62 mm DIP footprint, not the library's 8.89 mm one |
+| 2 + 2 | TL074 + DIP-14 sockets, TL072 + DIP-8 sockets | Tayda | The footprints use 7.62 mm rows, not the library's 9 mm ones |
 | 2 | LM4040 5.0 V, TO-92 | Mouser | A or B grade (0.1 / 0.2 %) |
 | 30 | 100k 1 % | | |
 | 3 + 3 | 1k, 2k2 | | output series, LED |
 | 2 + 1 + 1 | 1k, 39k, 10k | | reference feeds, +1 V divider |
 | 2 | 10 Ω | | rail filters |
 | 3 | 22 p C0G | | summer feedback |
-| 8 | 100 n | | 6 decoupling, 2 at the references |
+| 10 | 100 n | | 8 decoupling, 2 at the references |
 | 2 | 10 µ electrolytic | | rail bulk |
 | 2 | 1N5819 | | reverse protection |
 | 1 | 16-pin shrouded Eurorack header, 2.54 mm | Thonk | Not the 2.00 mm footprint the FM / Clap / Compressor boards got |
