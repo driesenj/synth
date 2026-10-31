@@ -61,6 +61,16 @@ missing, in the same style, with real pin numbers.
   on pin 1 and the panel reads the right way round.
 - Bring schematic wires into the lug pins 4/5 vertically or they cross a
   tab pin.
+- Values Thonk stocks (the user's paste of the shop list, 2026-10-31).
+  Vertical T18:
+  - B5K, B10K, B25K, B50K, B100K (also with a centre detent), B250K, B1M
+  - A50K, A100K, A1M (A10K out of stock)
+  - no B500K, no C tapers
+  
+  Alpha TALL trimmers: B10K, B100K, B1M, A10K, A50K, A100K, A1M, and
+  centre-detent B10K, B50K, B100K. Pick from these before drawing a value,
+  or scale the part beside the pot. The S&H wanted B500K for RATE and
+  got B250K with its timing cap doubled instead.
 
 ## Thonk low-profile LED button (datasheet LowProfileButton.pdf)
 
