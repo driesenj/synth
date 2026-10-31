@@ -3,8 +3,8 @@ whole circuit as one netlist, split over two boards.
 
 Main board (MB): Daisy Seed on Rob Heel's seed_power_opamps breakout (audio
 in and out through the breakout's op-amps), four TL074 CV input stages, a
-transistor clock input, an H11L1 MIDI input, Adafruit's SDIO microSD
-breakout on sockets.
+transistor clock input, an H11L1 MIDI input. Presets live in the Seed's
+QSPI flash; there is no SD card.
 Faceplate board (FB): 9 Thonkiconn jacks and a stereo Thonkiconn for MIDI,
 4 EC11 encoders with push, 5 Thonk LED buttons, two 74HC165 (encoders and
 buttons) and a 74HC595 (button LEDs) on one bit-banged chain, the header for
@@ -18,7 +18,6 @@ Net naming
   ADC_*      Seed ADC pin, after the 1k series resistor
   CLK_IN     clock jack tip -> transistor stage -> CLK (Seed GPIO, active low)
   MIDI_TIP/MIDI_RING  TRS MIDI (type A: ring = source, tip = sink) -> H11L1 -> MIDI_RX
-  SD_*       Seed SDMMC1 <-> the microSD breakout
   LCD_*      Seed SPI1 and GPIO -> the display module's cable
   SR_*       the shift-register chain: SR_CLK and SR_LOAD (74HC165 /PL and 74HC595
              RCLK together), SR_DIN (165 -> Seed), SR_DOUT (Seed -> 595)
@@ -54,22 +53,22 @@ def C(ref, value, a, b):
 
 # --------------------------------------------------------------- Daisy Seed
 # Seed pin number -> (libDaisy name, net). Pins with no net are left open.
-# Fixed by the STM32: SDMMC1 on D1..D6 (D1 = DAT3 ... D4 = DAT0, D5 = CMD,
-# D6 = CK), SPI1 on D7/D8/D10 (D9 = MISO stays free: the display only
-# listens), USART1 RX on D14, TIM4_CH4 on D12 (PB9) for the backlight PWM.
-# The shift-register chain is bit-banged on the four pins without an ADC.
-# Free: D9, D21..D25 (A6..A10), D28 (A11), VIN.
+# Fixed by the STM32: SPI1 on D7/D8/D10 (D9 = MISO stays free: the display
+# only listens), USART1 RX on D14, TIM4_CH4 on D12 (PB9) for the backlight
+# PWM. The shift-register chain is bit-banged on the four pins without an
+# ADC. Free: D1..D6 (SDMMC1, if an SD card is ever wanted), D9, D19,
+# D21..D25 (A4, A6..A10), D28 (A11), VIN.
 SEED = {
     "1": ("D0", "CLK"),
-    "2": ("D1", "SD_D3"), "3": ("D2", "SD_D2"), "4": ("D3", "SD_D1"), "5": ("D4", "SD_D0"),
-    "6": ("D5", "SD_CMD"), "7": ("D6", "SD_CLK"),
+    "2": ("D1", None), "3": ("D2", None), "4": ("D3", None), "5": ("D4", None),
+    "6": ("D5", None), "7": ("D6", None),
     "8": ("D7", "LCD_CS"), "9": ("D8", "LCD_SCK"), "10": ("D9", None), "11": ("D10", "LCD_MOSI"),
     "12": ("D11", "LCD_DC"), "13": ("D12", "LCD_BL"), "14": ("D13", "LCD_RST"), "15": ("D14", "MIDI_RX"),
     "16": ("AIN1", None), "17": ("AIN2", None), "18": ("AOUT1", None), "19": ("AOUT2", None),
     "20": ("AGND", "GND"), "21": ("3V3A", "3V3A"),
     "22": ("D15/A0", "ADC_CV1"), "23": ("D16/A1", "ADC_CV2"), "24": ("D17/A2", "ADC_CV3"),
     "25": ("D18/A3", "ADC_CV4"),
-    "26": ("D19/A4", "SD_DET"), "27": ("D20/A5", "BTN_SHIFT"),
+    "26": ("D19/A4", None), "27": ("D20/A5", "BTN_SHIFT"),
     "28": ("D21/A6", None), "29": ("D22/A7", None), "30": ("D23/A8", None),
     "31": ("D24/A9", None), "32": ("D25/A10", None),
     "33": ("D26", "SR_CLK"), "34": ("D27", "SR_LOAD"), "35": ("D28/A11", None),
@@ -121,11 +120,6 @@ def main_board_parts():
                                                "6": "3V3D"}))                          # 1 A, 2 K, 4 Vo, 5 GND, 6 Vcc
     parts.append(R("R27", "1k", "3V3D", "MIDI_RX"))
     parts.append(C("C17", "100n", "3V3D", "GND"))
-    # microSD: Adafruit 4682 (SPI or SDIO breakout, pull-ups on board) on a 9-pin socket, 4-bit SDIO
-    parts.append(Part("U8", "SDIO_BREAKOUT", "Adafruit 4682", {
-        "1": "3V3D", "2": "GND", "3": "SD_CLK", "4": "SD_D0", "5": "SD_CMD", "6": "SD_D3", "7": "SD_D1",
-        "8": "SD_D2", "9": "SD_DET"}))
-    parts.append(C("C18", "10u", "3V3D", "GND"))
     # board-to-board headers (female sockets on this board)
     for ref, kind, nets in HEADERS:
         parts.append(Part(ref, kind, "", {str(i + 1): mb for i, (mb, fb) in enumerate(nets) if mb}))

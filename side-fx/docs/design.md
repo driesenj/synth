@@ -26,7 +26,7 @@ From RYK's product page and photos (no manual published yet):
 | CV inputs | M1–M4, assignable | CV 1–4, ±5 V |
 | Clock input | CLK | CLOCK |
 | MIDI in | MIDI (3.5 mm) | TRS type A |
-| Presets | on an internal SD card | microSD on Adafruit's SDIO breakout |
+| Presets | on an internal SD card | in the Seed's 8 MB QSPI flash, no card (see [Presets](#presets)) |
 
 ---
 
@@ -40,7 +40,7 @@ From RYK's product page and photos (no manual published yet):
         │      29 pins in 4 headers (male on the FB, female on the MB)
         └─ main board (MB)        Daisy Seed on the seed_power_opamps breakout (audio in/out),
             69.6 x 108 mm          TL074 with 4 CV input stages, clock input stage,
-                                   H11L1 MIDI input, Adafruit 4682 microSD breakout on a socket
+                                   H11L1 MIDI input
 ```
 
 The stack is Marblesy's: panel parts on the FB's front, logic and male
@@ -52,19 +52,17 @@ else on the MB's rear.
 | Seed pin | libDaisy | Net | Use |
 |---|---|---|---|
 | 1 | D0 | CLK | clock input (after the transistor, active low) |
-| 2–7 | D1–D6 (SDMMC1 DAT3, DAT2, DAT1, DAT0, CMD, CK) | SD_D3, SD_D2, SD_D1, SD_D0, SD_CMD, SD_CLK | microSD, 4-bit |
 | 8, 9, 11 | D7, D8, D10 (SPI1 NSS, SCK, MOSI) | LCD_CS, LCD_SCK, LCD_MOSI | display |
 | 12, 13, 14 | D11, D12 (TIM4_CH4), D13 | LCD_DC, LCD_BL, LCD_RST | display data/command, backlight PWM, reset |
 | 15 | D14 (USART1 RX) | MIDI_RX | MIDI in, 31250 baud |
 | 20, 40 | AGND, DGND | GND | both on the main board's GND |
 | 21 | 3V3A | 3V3A | CV bias divider |
 | 22–25 | A0–A3 | ADC_CV1..ADC_CV4 | CV inputs |
-| 26 | D19 | SD_DET | card detect (high with a card) |
 | 27 | D20 | BTN_SHIFT | SHIFT button, 10k pull-up on the FB |
 | 33, 34 | D26, D27 | SR_CLK, SR_LOAD | shift-register chain clock; 165 /PL and 595 RCLK |
 | 36, 37 | D29, D30 | SR_DOUT, SR_DIN | to the 595 SER, from U1's Q7 |
-| 38 | 3V3D | 3V3D | logic, display, microSD, MIDI pull-up |
-| 10, 28–32, 35, 39 | D9, A6–A10, A11, VIN | — | free (D9 is SPI1 MISO; the display never talks back) |
+| 38 | 3V3D | 3V3D | logic, display, MIDI pull-up |
+| 2–7, 10, 26, 28–32, 35, 39 | D1–D6, D9, A4, A6–A10, A11, VIN | — | free (D1–D6 are SDMMC1 should a card ever come back; D9 is SPI1 MISO, and the display never talks back) |
 
 The breakout's headers land on the same footprint: J1 (GND, −12 V ×3), J3
 (GND, +12 V ×3), J4 (audio out: AOUT1 = OUT1, AOUT2 = OUT2), J5 (audio in:
@@ -123,13 +121,16 @@ The H11L1 runs from 3 V and its output idles high, as a UART wants. The
 sleeve is left open (a MIDI input leaves the shield unconnected). Type B
 gear (tip and ring swapped) needs a type B adapter cable.
 
-### microSD
+### Presets
 
-Adafruit 4682 (microSD SPI or SDIO breakout, 3 V only, pull-ups on every
-line, 25.4 × 22.9 mm) in a 9-pin female socket, wired for 4-bit SDIO:
-pins 1–9 = 3V, GND, CLK, D0, CMD, D3, D1, D2, DET. C18 10 µ at its supply.
-The microSD socket itself is SMD only; the breakout keeps the build
-through-hole.
+No hardware: presets go in the Seed's 8 MB QSPI flash, next to the
+firmware. A preset (algorithm, four blocks' settings, CV and LFO
+assignments) is a few hundred bytes, so even a thousand presets take less
+than 1 MB. SIDE FX's SD card is mainly for swapping preset files with
+other owners, and RYK's files wouldn't load on this firmware anyway.
+Backups, if wanted, can go over the Seed's USB later, with no hardware
+change. Dropped on 2026-10-31: the Adafruit 4682 SDIO breakout, its socket and
+C18, up to 100 mA on 3V3D, and seven Seed pins.
 
 ---
 
@@ -199,10 +200,10 @@ main board, through their own header pins.
 ## Power
 
 ±12 V from the breakout's J1/J3 feed only the TL074. Everything else runs
-on the Seed's 3V3D: the display (40 mA max), the microSD (up to about
-100 mA while writing), the LEDs (about 15 mA) and the logic. Measure the
-3V3D current on the first build. If the Seed's regulator runs hot, give the
-display and the card their own 3.3 V regulator.
+on the Seed's 3V3D: the display (40 mA max), the LEDs (about 15 mA), the
+MIDI pull-up and the logic, about 60 mA on top of the Seed itself. Measure
+the 3V3D current on the first build. If the Seed's regulator runs hot, give
+the display its own 3.3 V regulator.
 
 ---
 
@@ -213,7 +214,6 @@ display and the card their own 3.3 V regulator.
 | 1 | Daisy Seed (Thonk) | | U5 |
 | 1 | seed_power_opamps breakout (Rob Heel), built with its audio in and out | | U5 |
 | 1 | Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI) with its cable | | DS1, CN1 |
-| 1 | Adafruit 4682 microSD SPI/SDIO breakout + a microSD card | | U8 |
 | 9 | Thonkiconn PJ398SM (Thonk) | | J1–J4, J6–J10 |
 | 1 | Thonkiconn stereo PJ366ST (Thonk) | MIDI | J5 |
 | 5 | Thonk low-profile LED button, red | clip the three feet | SW1–SW5 |
@@ -236,8 +236,8 @@ display and the card their own 3.3 V regulator.
 | 4 | 1n film/C0G | | C10–C13 |
 | 6 | 100n | | C1–C3, C15–C17 |
 | 1 | 1 µ | | C14 |
-| 2 | 10 µ electrolytic | | C4, C18 |
-| — | Male + female 2.54 mm headers (Thonk header bag): 6, 7, 8, 8 pins per side; a 9-pin female for U8; sockets for the breakout | | H1–H4, HF1–HF4 |
+| 1 | 10 µ electrolytic | | C4 |
+| — | Male + female 2.54 mm headers (Thonk header bag): 6, 7, 8, 8 pins per side; sockets for the breakout | | H1–H4, HF1–HF4 |
 
 ---
 
@@ -255,7 +255,9 @@ display and the card their own 3.3 V regulator.
   software PWM in the same loop.
 - **MIDI:** USART1, receive only (D13 is the display's reset, so no TX
   pin).
-- **SD:** libDaisy's SDMMC handler in 4-bit mode with FatFS; SD_DET tells the
-  UI whether a card is in.
+- **Presets:** libDaisy's QSPI driver (or `PersistentStorage` for the
+  settings), 4 KB sectors. Run the program from SRAM (BOOT_SRAM, as planned
+  for the other Seed modules): writing the QSPI stops any code executing
+  from it, so a preset save would glitch the audio under BOOT_QSPI.
 - **CV:** four ADC channels, calibrated for offset and scale per channel
   like Marblesy's.

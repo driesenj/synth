@@ -3,9 +3,9 @@
 A clone of RYK Modular's SIDE FX (October 2026): a quad multi-effects
 module that runs up to four effect blocks in seven serial and parallel
 chain algorithms. It has four CV inputs, a clock input, MIDI in, internal
-LFOs, a random source and an envelope follower. Presets live on a microSD
-card. The clone is 14HP Eurorack like the original and built the
-Marblesy way: two stacked PCBs, Thonk panel parts, and the Daisy Seed on
+LFOs, a random source and an envelope follower. The original keeps its
+presets on a microSD card; the clone keeps them in the Seed's own flash.
+The clone is 14HP Eurorack like the original and built the Marblesy way: two stacked PCBs, Thonk panel parts, and the Daisy Seed on
 Rob Heel's seed_power_opamps breakout.
 
 ![panel](hardware/panel/side-fx-panel-preview.png)
@@ -15,7 +15,7 @@ Rob Heel's seed_power_opamps breakout.
 | Part | Status | Files |
 |---|---|---|
 | Panel layout, drill template, artwork | Done (approved 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
-| Netlist | Done, 77 parts over two boards, checks pass | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
+| Netlist | Done, 75 parts over two boards, checks pass; no SD card (presets in QSPI flash) | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
 | Schematic, PCBs, panel PCB | Not started | |
 | Firmware | Not started | |
 
@@ -57,5 +57,3 @@ enough to leave room for the knob stack in 14HP.
   settled in the PCB step, from Waveshare's drawing.
 - Encoder height: an EC11's body is lower than a Thonkiconn, so the bushing
   may need a washer. Check against the part that gets ordered.
-- Presets on microSD (SDMMC1, D1–D6) like the original, or in the Seed's QSPI
-  flash (simpler, no socket).
