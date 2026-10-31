@@ -1,13 +1,14 @@
-"""Offset: four offset attenuverters in 12HP Eurorack, all analog, on one
+"""Offset: three offset attenuverters in 10HP Eurorack, all analog, on one
 PCB: Thonk panel parts on its front, everything else behind them.
 
-Per channel k (1-4): OUT k = ATTEN k x IN k + OFFSET k (+ OUT k-1 when that
+Per channel k (1-3): OUT k = ATTEN k x IN k + OFFSET k (+ OUT k-1 when that
 jack is unpatched).
   IN k      CV / audio in, 100k; unpatched it takes IN k-1, and IN 1 takes
             +1 V, so with nothing patched ATTEN is a fine +-1 V offset
   ATTEN k   B10k, -1 (CCW) .. 0 (noon) .. +1 (CW)
   OFFSET k  B10k, -5 V .. +5 V from two LM4040-5.0 references
-  OUT k     1k series; unpatched it adds into channel k+1 (OUT 4 = the sum)
+  RANGE k   SPDT toggle: lever up = OFFSET -10 V .. +10 V
+  OUT k     1k series; unpatched it adds into channel k+1 (OUT 3 = the sum)
   LED k     2-lead bicolour: green positive, red negative
 
 One TL074 per channel, every signal stage inverting (no op-amp input moves
@@ -15,17 +16,20 @@ with the signal, so a -10 V input stays inside the TL07x's common-mode range):
   A  inverter               N_k = -IN_k         100k / 100k
   B  inverter               P_k = +IN_k         100k / 100k
      ATTEN between P_k (CCW, pin 1) and N_k (CW, pin 3), wiper -> 100k -> SUM_k
-     OFFSET between REF_P (CCW) and REF_N (CW), wiper -> 100k -> SUM_k
+     OFFSET between REF_P (CCW) and REF_N (CW), wiper -> 100k -> SUM_k, and
+     through RANGE k (common 2, lever up joins 2-3) -> a second 100k -> SUM_k:
+     50k into the summer doubles the offset. The toggle carries the wiper,
+     never the summing node.
   C  inverting summer       OA_k = -(SUM inputs), 100k || 22p
                             OA_k -> 1k -> OUT k;  OA_k -> 2k2 -> LED k -> GND
   D  cascade inverter       OUT k's switch lug -> 100k -> CAS_k+1 = -OUT_k
                             -> 100k -> SUM_k+1 (open lug: 0 V)
-U4's D section has no channel after it and buffers NORM, the +1 V normal
+U3's D section has no channel after it and buffers NORM, the +1 V normal
 (39k / 10k from REF_P, 1.02 V).
 
 References: REF_P = +5 V (LM4040 cathode, 1k from +12 V), REF_N = -5 V
-(LM4040 anode, cathode on GND, 1k to -12 V); 7 mA each, 4 mA of it through
-the four OFFSET pots. Power: 16-pin Eurorack header, a 1N5819 in each rail
+(LM4040 anode, cathode on GND, 1k to -12 V); 7 mA each, 3 mA of it through
+the three OFFSET pots. Power: 16-pin Eurorack header, a 1N5819 in each rail
 (+12 V: anode on the header; -12 V: cathode on the header), 10R + 10u per
 rail, a 100n pair at each TL074.
 
@@ -41,6 +45,8 @@ right, y up, origin at the board's bottom-left corner): footprint origins.
   pot     PTV09A-frame origin of the Alpha footprint; the shaft is 4.0 mm
           from it, away from the pins (pins point down here)
   LED     3 mm, the lens centre between its two pads
+  toggle  Dailywell 2MS1 sub-mini, the bushing centre (the middle pin); pins
+          in a column, pin 3 at the bottom, so lever up joins 2-3
 """
 import collections
 
@@ -61,7 +67,7 @@ def C(ref, value, a, b, label=""):
     return Part(ref, "C", value, {"1": a, "2": b}, label)
 
 
-CHANNELS = 4
+CHANNELS = 3
 CH = range(1, CHANNELS + 1)
 GND, VP, VN = "GND", "+12V", "-12V"
 
@@ -80,6 +86,8 @@ for k in CH:
              (f"RV{2 * k}", f"OFFSET {k}", "B10k", ("REF_N", f"OW{k}", "REF_P"))]
 # 2-lead bicolour LED: current from pin 1 to pin 2 lights green, from 2 to 1 red
 LEDS = [(f"D{k}", f"OUT {k}", f"LED{k}") for k in CH]
+# ref, label, (pin 1, common, pin 3): SPDT ON-ON sub-mini toggle, lever up joins 2-3 = +-10 V; pin 1 is open
+TOGGLES = [(f"SW{k}", f"RANGE {k}", (None, f"OW{k}", f"OR{k}")) for k in CH]
 
 
 def panel_parts():
@@ -93,6 +101,8 @@ def panel_parts():
         parts.append(Part(ref, "POT", value, {"3": cw, "2": w, "1": ccw, "4": GND, "5": GND}, label))
     for ref, label, net in LEDS:
         parts.append(Part(ref, "LED_BI", "red/green", {"1": net, "2": GND}, label))
+    for ref, label, pins in TOGGLES:
+        parts.append(Part(ref, "TOGGLE", "SPDT ON-ON", {str(i + 1): n for i, n in enumerate(pins) if n}, label))
     return parts
 
 
@@ -106,6 +116,7 @@ def channel_parts(k):
         R(f"R{r + 4}", "100k", f"NB{k}", f"P{k}", "B feedback"),
         R(f"R{r + 5}", "100k", f"AW{k}", f"SUM{k}", "ATTEN into the summer"),
         R(f"R{r + 6}", "100k", f"OW{k}", f"SUM{k}", "OFFSET into the summer"),
+        R(f"R{r + 13}", "100k", f"OR{k}", f"SUM{k}", "OFFSET, +-10 V: beside R{r + 6} when RANGE is up"),
         R(f"R{r + 7}", "100k", f"SUM{k}", f"OA{k}", "summer feedback"),
         C(f"C{r + 1}", "22p", f"SUM{k}", f"OA{k}", "summer feedback"),
         R(f"R{r + 8}", "1k", f"OA{k}", f"OUT{k}", "output series"),
@@ -130,8 +141,8 @@ def channel_parts(k):
 
 def reference_parts():
     return [
-        Part("D5", "LM4040", "LM4040-5.0", {"1": "REF_P", "2": GND}, "+5 V reference"),     # 1 = cathode, 2 = anode
-        Part("D6", "LM4040", "LM4040-5.0", {"1": GND, "2": "REF_N"}, "-5 V reference"),
+        Part("D4", "LM4040", "LM4040-5.0", {"1": "REF_P", "2": GND}, "+5 V reference"),     # 1 = cathode, 2 = anode
+        Part("D5", "LM4040", "LM4040-5.0", {"1": GND, "2": "REF_N"}, "-5 V reference"),
         R("R901", "1k", VP, "REF_P", "+5 V reference feed, 7 mA"),
         R("R902", "1k", "REF_N", VN, "-5 V reference feed, 7 mA"),
         C("C901", "100n", "REF_P", GND, "+5 V reference"),
@@ -145,9 +156,9 @@ def power_parts():
     hdr = {"1": "N12_IN", "2": "N12_IN", "11": "P12_IN", "12": "P12_IN"}
     hdr.update({str(n): GND for n in range(3, 11)})
     parts = [
-        Part("J9", "HDR16", "16-pin Eurorack", hdr, "POWER"),
-        Part("D7", "D5819", "1N5819", {"2": "P12_IN", "1": "P12_D"}, "+12 V reverse protection"),   # 1 = cathode
-        Part("D8", "D5819", "1N5819", {"1": "N12_IN", "2": "N12_D"}, "-12 V reverse protection"),
+        Part("J7", "HDR16", "16-pin Eurorack", hdr, "POWER"),
+        Part("D6", "D5819", "1N5819", {"2": "P12_IN", "1": "P12_D"}, "+12 V reverse protection"),   # 1 = cathode
+        Part("D7", "D5819", "1N5819", {"1": "N12_IN", "2": "N12_D"}, "-12 V reverse protection"),
         R("R905", "10R", "P12_D", VP, "+12 V filter"),
         R("R906", "10R", "N12_D", VN, "-12 V filter"),
         Part("C903", "CP", "10u", {"2": VP, "1": GND}, "+12 V bulk"),
@@ -197,11 +208,12 @@ def _ohms(v):
     return float(v)
 
 
-def solve(atten, offset, inputs=None, patched_outs=(), source_r=0.0):
+def solve(atten, offset, inputs=None, patched_outs=(), source_r=0.0, ten_volt=()):
     """DC node voltages of the netlist with ideal op-amps and ideal references.
     atten, offset: pot positions per channel, 0 = fully CCW .. 1 = fully CW. inputs: {k: volts} for the
     patched IN jacks, driven through source_r. patched_outs: OUT jacks with a cable (100k load); an
-    unpatched jack's lug touches its tip. LEDs and capacitors are left out (the op-amps are ideal)."""
+    unpatched jack's lug touches its tip. ten_volt: channels whose RANGE lever is up (pins 2-3 joined).
+    LEDs and capacitors are left out (the op-amps are ideal)."""
     inputs = inputs or {}
     fixed = {GND: 0.0, VP: 12.0, VN: -12.0, "REF_P": 5.0, "REF_N": -5.0}
     res, amps = [], []                       # (a, b, ohms); (out, in-, in+)
@@ -226,9 +238,15 @@ def solve(atten, offset, inputs=None, patched_outs=(), source_r=0.0):
                 res.append((src, tip, max(source_r, 1e-3)))
             elif patched:
                 res.append((tip, GND, 100e3))
+        elif p.kind == "TOGGLE":
+            if int(p.label.split()[-1]) in ten_volt:
+                res.append((p.nets["2"], p.nets["3"], 1e-3))
         elif p.kind == "TL074":
             for out, inm, inp in SECTION.values():
                 amps.append((p.nets[out], p.nets[inm], p.nets[inp]))
+    for p in all_parts():                    # a toggle's open throw leaves its resistor dangling: tie it down
+        if p.kind == "TOGGLE" and int(p.label.split()[-1]) not in ten_volt:
+            res.append((p.nets["3"], GND, 1e12))
     nodes = sorted({n for a, b, _ in res for n in (a, b)} | {n for amp in amps for n in amp} - set(fixed))
     nodes = [n for n in nodes if n not in fixed]
     idx = {n: i for i, n in enumerate(nodes)}
@@ -271,22 +289,26 @@ HOP = 100 / 101                          # a cascade reads OUT k's tip: OA_k thr
 def dc_check():
     """Patch cases with known answers, read at the op-amp outputs OA_k (a patched jack's tip carries
     OA_k x 100/101 into the 100k load the solve puts on it). Returns the failures and the fraction of a
-    1k-impedance source that reaches IN 1 when it feeds all four inputs."""
+    1k-impedance source that reaches IN 1 when it feeds all three inputs."""
     all_out = tuple(CH)
+    # a B10k wiper at 3/4 is 1.875k (0.75 x 0.25 x 10k) behind its open-circuit voltage
     cases = [   # name, expected {net: volts}, solve arguments
         ("all at noon, nothing patched", {f"OA{k}": 0.0 for k in CH}, (NOON, NOON)),
-        ("ATTEN 1 CW, nothing patched: +1 V normal", {"OA1": NORM_V}, ([1, .5, .5, .5], NOON, None, (1,))),
-        ("ATTEN 1 CCW, nothing patched", {"OA1": -NORM_V}, ([0, .5, .5, .5], NOON, None, (1,))),
-        ("OFFSET CW / CCW", {"OA1": 5.0, "OA2": -5.0}, (NOON, [1, 0, .5, .5], None, all_out)),
-        ("3 V into IN 1, fanned out: ATTEN CW, CCW, noon, 3/4",
-         {"OA1": 3.0, "OA2": -3.0, "OA3": 0.0, "OA4": 1.5 * 100 / (100 + 0.75 * 0.25 * 10)},
-         ([1, 0, .5, .75], NOON, {1: 3.0}, all_out)),
-        ("IN 3 patched breaks the chain", {"OA2": 2.0, "OA3": -1.0, "OA4": -1.0},
-         ([.5, 1, 1, 1], NOON, {1: 2.0, 3: -1.0}, all_out)),
+        ("ATTEN 1 CW, nothing patched: +1 V normal", {"OA1": NORM_V}, ([1, .5, .5], NOON, None, (1,))),
+        ("ATTEN 1 CCW, nothing patched", {"OA1": -NORM_V}, ([0, .5, .5], NOON, None, (1,))),
+        ("OFFSET CW / CCW, 5 V range", {"OA1": 5.0, "OA2": -5.0}, (NOON, [1, 0, .5], None, all_out)),
+        ("OFFSET CW / CCW, 10 V range", {"OA1": 10.0, "OA2": -10.0},
+         (NOON, [1, 0, .5], None, all_out, 0.0, (1, 2))),
+        ("OFFSET 3/4, 10 V range", {"OA3": 2.5 * 100 / (50 + 1.875)},
+         (NOON, [.5, .5, .75], None, all_out, 0.0, (3,))),
+        ("3 V into IN 1, fanned out: ATTEN CW, CCW, 3/4",
+         {"OA1": 3.0, "OA2": -3.0, "OA3": 1.5 * 100 / (100 + 1.875)}, ([1, 0, .75], NOON, {1: 3.0}, all_out)),
+        ("IN 2 patched breaks the chain", {"OA1": 0.0, "OA2": -1.0, "OA3": -1.0},
+         ([.5, 1, 1], NOON, {1: 2.0, 2: -1.0}, all_out)),
         ("OUT 1 unpatched adds into OUT 2", {"OA2": 2.0 * HOP + 5.0},
-         ([1, .5, .5, .5], [.5, 1, .5, .5], {1: 2.0}, (2, 3, 4))),
-        ("OUT 1-3 unpatched: OUT 4 is the sum", {"OA4": ((1.0 * HOP) * HOP + 5.0) * HOP - 5.0},
-         ([1, .5, .5, .5], [.5, .5, 1, 0], {1: 1.0}, (4,))),
+         ([1, .5, .5], [.5, 1, .5], {1: 2.0}, (2, 3))),
+        ("OUT 1-2 unpatched: OUT 3 is the sum", {"OA3": (1.0 * HOP + 5.0) * HOP - 5.0},
+         ([1, .5, .5], [.5, 1, 0], {1: 1.0}, (3,))),
     ]
     bad = []
     for name, want, args in cases:
@@ -294,23 +316,24 @@ def dc_check():
         for net, x in want.items():
             if abs(v[net] - x) > 1e-6:
                 bad.append(f"{name}: {net} = {v[net]:+.4f} V, expected {x:+.4f} V")
-    # loading: one source with a 1k output impedance into IN 1, fanned out to all four inputs
+    # loading: one source with a 1k output impedance into IN 1, fanned out to all three inputs
     v = solve([1] * CHANNELS, NOON, {1: 1.0}, all_out, source_r=1e3)
     return bad, v["IN1"]
 
 
 # ---------------------------------------------------------------- panel grid (panel frame, y down)
-HP = 12
-PANEL_W, PANEL_H = 60.6, 128.5          # 12 x 5.08 less 0.36, as Plaitsy
-BOARD_W, BOARD_H = 59.4, 108.0          # 0.6 mm in from each side, like the other modules
+HP = 10
+PANEL_W, PANEL_H = 50.5, 128.5          # HP x 5.08 - 0.3, as the S&H
+BOARD_W, BOARD_H = 49.3, 108.0          # 0.6 mm in from each side, like the other modules
 BOARD_X0, BOARD_Y0 = (PANEL_W - BOARD_W) / 2, (PANEL_H - BOARD_H) / 2
 JACK_BARREL = -0.78                     # barrel centre below the WQP518MA origin
 POT_SHAFT = 4.0                         # Alpha shaft from the PTV09A-frame origin, away from the pins
 
-# Channels are columns like the mixer's strips, 13.3 mm apart (the mixer: 13.5); the left margin
-# holds the row words. Knobs at the top, jacks at the bottom so cables hang away from the hands.
-CH_X = [11.5 + 13.3 * i for i in range(CHANNELS)]
-ROW = {"atten": 27.0, "offset": 48.5, "in": 76.5, "led": 91.0, "out": 102.5}
+# Channels are columns like the mixer's strips, 14.3 mm apart (the mixer: 13.5); the left margin
+# holds the row words. Knobs at the top, the RANGE toggles under OFFSET, jacks at the bottom so
+# cables hang away from the hands.
+CH_X = [12.0 + 14.3 * i for i in range(CHANNELS)]
+ROW = {"atten": 27.0, "offset": 48.5, "range": 64.5, "in": 79.0, "led": 92.5, "out": 104.0}
 
 
 def board_xy(px, py):
@@ -332,6 +355,7 @@ for k, x in enumerate(CH_X, start=1):
         bx, by = board_xy(x, ROW[row])
         PLACEMENT[ref] = (bx, round(by - JACK_BARREL, 2), 0)        # sleeve up
     PLACEMENT[f"D{k}"] = (*board_xy(x, ROW["led"]), 0)
+    PLACEMENT[f"SW{k}"] = (*board_xy(x, ROW["range"]), 0)          # pin 3 at the bottom
 
 
 if __name__ == "__main__":
@@ -346,5 +370,5 @@ if __name__ == "__main__":
     dc, in1 = dc_check()
     for b in dc:
         print("  " + b)
-    print(f"{len(dc)} DC check failures; a 1k source into IN 1, fanned out to all four inputs, reads {in1:.3f} of itself")
+    print(f"{len(dc)} DC check failures; a 1k source into IN 1, fanned out to all three inputs, reads {in1:.3f} of itself")
     print(f"board {BOARD_W} x {BOARD_H} on a {PANEL_W} x {PANEL_H} panel; {len(PLACEMENT)} panel parts")

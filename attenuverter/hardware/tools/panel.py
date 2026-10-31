@@ -1,4 +1,4 @@
-"""12HP panel for Offset: hole list (CSV), a 1:1 drill template (SVG) and
+"""10HP panel for Offset: hole list (CSV), a 1:1 drill template (SVG) and
 the panel artwork (SVG, as a PCB panel). Everything is computed from
 PLACEMENT in circuit.py, so board and panel agree.
 
@@ -9,6 +9,7 @@ Panel-facing parts sit on the board's bottom layer.
          below the WQP518MA footprint origin
   pot    Alpha 9 mm, pins down; the shaft is 4.0 mm above the footprint origin
   LED    3 mm bicolour, lens centred on the origin
+  toggle Dailywell 2MS1 sub-mini, the bushing centred on the origin
 Run from attenuverter/hardware/tools:  python panel.py
 """
 import csv
@@ -21,9 +22,9 @@ _spec = importlib.util.spec_from_file_location("offset_circuit", os.path.join(HE
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
 
-PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 12HP
+PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 10HP
 HP = circuit.HP
-HOLE = {"pot": 7.5, "jack": 6.5, "led": 3.2}
+HOLE = {"pot": 7.5, "jack": 6.5, "led": 3.2, "toggle": 6.5}
 JACK_BARREL = circuit.JACK_BARREL
 POT_SHAFT = circuit.POT_SHAFT
 N = circuit.CHANNELS
@@ -32,7 +33,7 @@ OUT = os.path.join(HERE, "..", "panel")
 
 def features():
     """[(kind, ref, label, origin_x, origin_y, hole_x, hole_y)] in board mm, y up."""
-    labels = {r: lbl for r, lbl, *_ in circuit.JACKS + circuit.POTS + circuit.LEDS}
+    labels = {r: lbl for r, lbl, *_ in circuit.JACKS + circuit.POTS + circuit.LEDS + circuit.TOGGLES}
     out = []
     for ref, (x, y, rot) in circuit.PLACEMENT.items():
         if ref.startswith("J"):
@@ -41,6 +42,8 @@ def features():
             out.append(("pot", ref, labels[ref], x, y, x, y + POT_SHAFT))
         elif ref.startswith("D"):
             out.append(("led", ref, labels[ref], x, y, x, y))
+        elif ref.startswith("SW"):
+            out.append(("toggle", ref, labels[ref], x, y, x, y))
     return out
 
 
@@ -75,7 +78,7 @@ def write_svg(feats, path):
     W, H = PANEL_W, PANEL_H
     s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W + 40}mm" height="{H + 30}mm" '
          f'viewBox="-20 -15 {W + 40} {H + 30}">',
-         '<title>Offset 12HP panel - drill template (print at 100%)</title>',
+         '<title>Offset 10HP panel - drill template (print at 100%)</title>',
          '<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444} '
          '.lbl{font-size:1.8px;fill:#06c}</style>',
          f'<rect x="-20" y="-15" width="{W + 40}" height="{H + 30}" fill="#ffffff"/>',
@@ -98,7 +101,7 @@ def write_svg(feats, path):
     for x in (5, 55):
         s.append(f'<line x1="{x}" y1="-9.5" x2="{x}" y2="-6.5" stroke="#000" stroke-width="0.3"/>')
     s.append('<text x="30" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>')
-    s.append(f'<text x="{W / 2}" y="{H + 8}" font-size="2" text-anchor="middle">Offset 12HP panel, front view. '
+    s.append(f'<text x="{W / 2}" y="{H + 8}" font-size="2" text-anchor="middle">Offset 10HP panel, front view. '
              'Red circles: final hole size. Dashed: the board.</text>')
     s.append('</svg>')
     open(path, "w", encoding="utf-8").write("\n".join(s))
@@ -113,8 +116,10 @@ ART = {
     "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227",
     "green": "#57d163", "red": "#e04848",
     "knob": 5.0, "scale": 6.0,                # radii, mm, the mixer's channel knobs
-    "nut": 4.0, "led": 1.75,
-    "title": "Offset", "subtitle": "Quad attenuverter", "maker": "Seedable Instruments",
+    "nut": 4.0, "led": 1.75, "toggle_nut": 4.3,
+    "mark": 1.55,                             # switch positions, as on Atlas
+    "title": "Offset", "subtitle": "3× atten",     # 10HP: the title ends at x 26, so ~10 characters fit
+    "maker": "Seedable Instruments",
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
     "label": 1.9,
 }
@@ -128,8 +133,10 @@ OUTPUTS = [f"J{N + k}" for k in range(1, N + 1)]
 INPUTS = [f"J{k}" for k in range(1, N + 1)]
 BAND_CLEAR = 0.4      # bare board (under black mask) between a copper band and a hole through it; DRC asks 0.3
 # preview only: knob pointers (degrees from 12 o'clock) and lit LEDs
-MOCK_ANGLE = {"RV1": 110, "RV2": 0, "RV3": -70, "RV4": 35, "RV5": 0, "RV6": -120, "RV7": 60, "RV8": 0}
-MOCK_LED = {"D1": "green", "D2": "red", "D4": "green"}
+MOCK_ANGLE = {"RV1": 110, "RV2": 0, "RV3": -70, "RV4": 35, "RV5": 60, "RV6": -120}
+MOCK_LED = {"D1": "green", "D2": "red"}
+MOCK_TOGGLE = {"SW1": "up", "SW2": "down", "SW3": "down"}
+RANGE_WORDS = ("10V", "5V")                     # lever up, lever down
 
 
 def bands(pos):
@@ -195,6 +202,11 @@ def layout(pos):
                                  (x + (r + ln) * math.sin(ra), y - (r + ln) * math.cos(ra))], 0.3))
         text(x - 4.9, y + 6.6, "−", 1.9)
         text(x + 4.9, y + 6.6, "+", 1.9)
+    # RANGE toggles: the two positions stacked right of each nut, lever up first (Atlas does the same)
+    for ref, (kind, label, x, y) in pos.items():
+        if kind == "toggle":
+            for i, word in enumerate(RANGE_WORDS):
+                text(x + A["toggle_nut"] + 0.5, y + (i - 0.5) * 3.2 + 0.36 * A["mark"], word, A["mark"], "start")
     # the rows' words, once each in the left margin on a bracket as tall as the row
     for word, y, h in row_words(pos):
         size = A["label"]
@@ -216,6 +228,7 @@ def row_words(pos):
     its ticks, or its jack nut."""
     knob = ART["scale"] + 1.0
     return [("ATTEN", pos["RV1"][3], knob), ("OFFSET", pos["RV2"][3], knob),
+            ("RANGE", pos["SW1"][3], ART["toggle_nut"]),
             ("IN", pos["J1"][3], ART["nut"]), ("OUT", pos[OUTPUTS[0]][3], ART["nut"])]
 
 
@@ -223,7 +236,7 @@ def write_artwork(feats, path):
     A = ART
     W, H = PANEL_W, PANEL_H
     s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="0 0 {W} {H}">',
-         '<title>Offset 12HP panel - artwork</title>',
+         '<title>Offset 10HP panel - artwork</title>',
          f'<style>text{{font-family:{A["font"]};font-weight:bold;fill:{A["silk"]}}} '
          f'.serif{{font-family:{A["serif"]};font-style:italic;font-weight:normal}} '
          f'.silk{{stroke:{A["silk"]};fill:none;stroke-linecap:round;stroke-linejoin:round}} '
@@ -297,6 +310,16 @@ def write_artwork(feats, path):
                 s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="3.2" fill="{A[lit]}" opacity="0.28"/>')
             fill = A[lit] if lit else "#3a3a36"
             s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{A["led"]}" fill="{fill}" stroke="#000" stroke-width="0.2"/>')
+        elif kind == "toggle":           # hex nut, bushing, lever
+            rn = A["toggle_nut"]
+            hexagon = " ".join(f"{x + rn * math.cos(math.radians(60 * i)):.2f},{y + rn * math.sin(math.radians(60 * i)):.2f}"
+                               for i in range(6))
+            s.append(f'<polygon points="{hexagon}" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.3" fill="#8d8f8a"/>')
+            ty = y - 5.2 if MOCK_TOGGLE.get(ref) == "up" else y + 5.2
+            s.append(f'<line x1="{x:.2f}" y1="{y:.2f}" x2="{x:.2f}" y2="{ty:.2f}" stroke="#d8d8d4" '
+                     f'stroke-width="1.6" stroke-linecap="round"/>')
+            s.append(f'<circle cx="{x:.2f}" cy="{ty:.2f}" r="1.05" fill="#ededea"/>')
     for x, y in MOUNTS:                  # M3 screw head
         s.append(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>')
     s.append('</g>')
@@ -305,12 +328,13 @@ def write_artwork(feats, path):
 
 
 def check(feats):
-    """Panel clearances: knob scales, LEDs and jack nuts must not touch each other or the edges;
-    reports gaps under 1 mm."""
+    """Panel clearances: knob scales, LEDs, jack and toggle nuts must not touch each other or the
+    edges; reports gaps under 1 mm."""
     pos = {ref: (kind, label, *panel_xy(hx, hy)) for kind, ref, label, ox, oy, hx, hy in feats}
     items = []
     for ref, (kind, label, x, y) in pos.items():
-        r = {"pot": ART["scale"] + 0.6, "jack": ART["nut"], "led": ART["led"] + 0.25}[kind]
+        r = {"pot": ART["scale"] + 0.6, "jack": ART["nut"], "led": ART["led"] + 0.25,
+             "toggle": ART["toggle_nut"]}[kind]
         items.append((ref, x, y, r))
     bad = []
     for i, (a, xa, ya, ra) in enumerate(items):
