@@ -24,6 +24,13 @@ missing, in the same style, with real pin numbers.
   sleeve pad 6.48 mm above its own, so at 11 mm they overlap (Envy's draft:
   −0.65 mm). Envy's `pcb.panel_pad_check()` catches a panel part's pad
   under another panel part's body (a jack's sleeve lug under a toggle).
+- Or lay the column's jacks on their sides (Six, 4HP, 11 mm): the three
+  pads then sit in a row through the barrel (tip 4.92 mm one way, sleeve
+  6.48 mm the other, outside the body), the body runs 6.0 mm towards the
+  tip and 4.51 mm towards the sleeve, ±4.5 mm across, and the 9 mm width
+  sets the pitch. The origin is 0.78 mm from the barrel towards the sleeve
+  in that direction; `buffered-mult/hardware/tools/pcb.py` `barrel_check()`
+  works each barrel out from the placed pads and compares it with the hole.
 - One board vs the stack: a rear through-hole part's pads cannot sit under
   a jack, pot or toggle body, so a dense panel leaves only strips. On Envy
   (16HP, three knob rows at 15.5 mm), a DIP-14 fitted only above the top

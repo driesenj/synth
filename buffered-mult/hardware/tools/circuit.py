@@ -4,11 +4,11 @@ panel, Thonk panel parts. The whole circuit as one netlist, split over the
 two boards.
 
 Faceplate board (FB): 8 Thonkiconn jacks and 2 bicolour LEDs in one
-column, two 1x6 male headers in the strips beside the jack bodies.
+column, four male headers in the strips beside the jack bodies.
 Main board (MB): 2 TL074, the resistors standing up, the Eurorack power
-entry, the two female sockets. In 4HP the jack bodies take the middle 9 mm
-of an 18.8 mm board, which leaves no room for a DIP TL074 beside them; that
-is why this is two boards and not one.
+entry, the four female sockets. In 4HP the jack bodies take the middle
+10.5 mm of an 18.8 mm board, which leaves no room for a DIP TL074 beside
+them; that is why this is two boards and not one.
 
 Per group g (1, 2), one TL074 each:
   IN g      100k into an inverter (A): N_g = -IN_g, 100k || 10p.
@@ -32,7 +32,8 @@ header; -12 V: cathode on the header), 10R + 10u per rail, a 100n pair at
 each TL074.
 
 Net naming: nets that cross the board-to-board headers carry the same name
-on both boards, with _F on the faceplate side (GND -> GND_F).
+on both boards, with _F on the faceplate side. GND stays GND, as on Envy:
+the boards are separate EasyEDA boards, and the headers carry it.
 
 `python circuit.py` prints the part counts, the netlist problems
 (single-pin nets, designators used twice, TL074 pins left out, header pins
@@ -44,7 +45,8 @@ Coordinates: designed in the panel frame (from the top-left, y down, mm),
 stored in PLACEMENT in the board frame the generators use (front view, x
 right, y up, origin at the faceplate board's bottom-left corner):
 footprint origins.
-  jack    WQP518MA origin, the barrel 0.78 mm below it
+  jack    WQP518MA origin; every jack lies on its side with the sleeve lug
+          to the right, so the barrel is 0.78 mm left of the origin
   LED     3 mm, the lens centre between its two pads
 """
 import collections
@@ -130,13 +132,17 @@ def main_board_parts():
 
 # ------------------------------------------------------ board-to-board pins
 def _pair(net):
-    return net, {"GND": "GND_F"}.get(net, net + "_F")
+    return net, net if net == GND else net + "_F"       # each board has its own GND net
 
 
-# One 1x6 per group, in the strips beside the jack bodies (see HEADERS_FRONT). Pin 1 at the top, the
-# order following the jacks down the column; the order gets tuned for crossings when the boards are placed.
-HEADERS = [(f"H{g}", "HDR6", [_pair(n) for n in (f"IN{g}", GND, f"LED{g}", f"OUT{g}A", f"OUT{g}B", f"OUT{g}C")])
-           for g in GROUPS]
+# Two per group, standing in the strips beside the jack bodies (see HEADERS_FRONT), pin 1 at the top: a 1x4
+# on the left for the tips (the jacks' tip pads are on that side), a 1x2 on the right for GND and the LED
+# (the sleeve pads are on that side). Four headers hold the main board at four points; 4HP has no room for
+# standoffs.
+HEADERS = []
+for g in GROUPS:
+    HEADERS += [(f"H{2 * g - 1}", "HDR4", [_pair(n) for n in (f"IN{g}", f"OUT{g}A", f"OUT{g}B", f"OUT{g}C")]),
+                (f"H{2 * g}", "HDR2", [_pair(n) for n in (GND, f"LED{g}")])]
 
 
 def fb_ref(ref):
@@ -146,7 +152,7 @@ def fb_ref(ref):
 
 # ---------------------------------------------------------- panel parts
 # ref, panel label, tip net, switch-lug net (None = open). The lug touches the tip while nothing is patched.
-JACKS = [("J1", "IN 1", "IN1_F", "GND_F"), ("J2", "OUT 1a", "OUT1A_F", None), ("J3", "OUT 1b", "OUT1B_F", None),
+JACKS = [("J1", "IN 1", "IN1_F", GND), ("J2", "OUT 1a", "OUT1A_F", None), ("J3", "OUT 1b", "OUT1B_F", None),
          ("J4", "OUT 1c", "OUT1C_F", None),
          ("J5", "IN 2", "IN2_F", "IN1_F"), ("J6", "OUT 2a", "OUT2A_F", None), ("J7", "OUT 2b", "OUT2B_F", None),
          ("J8", "OUT 2c", "OUT2C_F", None)]
@@ -158,12 +164,12 @@ LEDS = [("D1", "group 1", "LED1_F"), ("D2", "group 2", "LED2_F")]
 def faceplate_parts():
     parts = []
     for ref, label, tip, lug in JACKS:
-        nets = {"1": "GND_F", "3": tip}
+        nets = {"1": GND, "3": tip}
         if lug:
             nets["2"] = lug
         parts.append(Part(ref, "JACK", "", nets, label))
     for ref, label, net in LEDS:
-        parts.append(Part(ref, "LED_BI", "red/green", {"1": "GND_F", "2": net}, label))
+        parts.append(Part(ref, "LED_BI", "red/green", {"1": GND, "2": net}, label))
     for ref, kind, nets in HEADERS:                     # male pins on this board
         parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets)}))
     return parts
@@ -328,16 +334,20 @@ HP = 4
 PANEL_W, PANEL_H = 20.0, 128.5          # HP x 5.08 - 0.3 = 20.02, Doepfer rounds 4HP to 20.0
 BOARD_W, BOARD_H = 18.8, 108.0          # 0.6 mm in from each side, like the other modules
 BOARD_X0, BOARD_Y0 = (PANEL_W - BOARD_W) / 2, (PANEL_H - BOARD_H) / 2
-JACK_BARREL = -0.78                     # barrel centre below the WQP518MA origin
+JACK_BARREL = 0.78                      # barrel centre from the WQP518MA origin, away from the sleeve lug
+JACK_SLEEVE = (1.0, 0.0)                # front view: the jacks lie on their sides, sleeve lug to the right
 
 # One column, 1 mm right of centre so the left margin holds the row words on their brackets. Per group,
-# from the top: the IN jack on black, then a gold band with the LED and the three outputs. What sets the
-# spacing (sleeve up, the Thonkiconn body runs 7.48 mm above its barrel and 2.92 mm below):
+# from the top: the IN jack on black, then a gold band with the LED and the three outputs.
+# The jacks lie on their sides. Stood sleeve-up in a column they would need 13 mm between barrels (a tip pad
+# meets the next jack's sleeve pad: parts.md), which 4HP has no room for. On its side a jack's three pads
+# sit in a row through the barrel (tip 4.92 mm left, sleeve 6.48 mm right, beside the body), its body runs
+# 6.0 mm left and 4.51 mm right of the barrel and 4.5 mm above and below it, so the 9 mm body sets the pitch:
 #   IN -> LED  8.0   the LED ring 1 mm clear of the IN nut on the panel
-#   LED -> OUT 9.9   the jack body above the barrel clears the LED's 3.8 mm flange on the board
-#   OUT pitch 11.0   bodies 0.6 mm apart (10.4 mm long)
+#   LED -> OUT 9.9   as drawn first; on the board the LED clears the jack bodies by 2.3 mm or more
+#   OUT pitch 11.0   bodies 2 mm apart, nuts 3 mm
 #   band       5.0 below the IN barrel (1 mm under its nut) to 5.4 below the last OUT
-#   next IN    10.9 below the last OUT: the bodies 0.5 mm apart (its nut is then 1.5 mm under the band)
+#   next IN    10.9 below the last OUT (its nut 1.5 mm under the band)
 COL_X = 11.0
 IN_Y = (20.6, 71.4)
 LED_DY, OUT_DY, OUT_PITCH = 8.0, 17.9, 11.0
@@ -363,18 +373,23 @@ def panel_xy(bx, by):
 PLACEMENT = {}
 for ref, (px, py) in PANEL_XY.items():
     bx, by = board_xy(px, py)
-    if ref.startswith("J"):
-        PLACEMENT[ref] = (bx, round(by - JACK_BARREL, 2), 0)        # sleeve up
+    if ref.startswith("J"):                                         # on its side, sleeve lug to the right
+        PLACEMENT[ref] = (round(bx + JACK_BARREL * JACK_SLEEVE[0], 2), round(by + JACK_BARREL * JACK_SLEEVE[1], 2),
+                          90)
     else:
         PLACEMENT[ref] = (bx, by, 0)
 
-# Headers (front view, faceplate board mm): x, y of the middle of the pin row, angle 270 = pins along y, pin
-# 1 at the top. The jack bodies cover x 5.9-14.9; H1 stands in the left strip beside group 1's outputs, H2
-# in the right strip beside group 2's, so the two hold the boards together at opposite corners.
-HEADERS_FRONT = {
-    "H1": (2.9, round(board_xy(0, PANEL_XY["J3"][1])[1], 2), 270),
-    "H2": (16.85, round(board_xy(0, PANEL_XY["J7"][1])[1], 2), 270),
-}
+# Headers (front view, faceplate board mm): x, y of the middle of the pin column, pin 1 at the top. The jack
+# bodies cover x 4.4-14.9, the tip pads stand at x 5.5 and the sleeve pads at x 16.9 (one per barrel). The
+# 1x4s stand in the left strip, centred on their group's four barrels; the 1x2s in the right strip between
+# the IN and OUT a sleeve pads, level with the LED.
+HEADER_LEFT_X, HEADER_RIGHT_X = 2.2, 16.9
+HEADERS_FRONT = {}
+for g in GROUPS:
+    j = 4 * (g - 1)
+    ys = [PANEL_XY[f"J{j + i}"][1] for i in range(1, 5)]
+    HEADERS_FRONT[f"H{2 * g - 1}"] = (HEADER_LEFT_X, board_xy(0, sum(ys) / 4)[1])
+    HEADERS_FRONT[f"H{2 * g}"] = (HEADER_RIGHT_X, board_xy(0, PANEL_XY[f"D{g}"][1])[1])
 
 
 if __name__ == "__main__":

@@ -5,8 +5,8 @@ in circuit.py, so board and panel agree.
 Conventions (the Marblesy ones): the faceplate board is seen from the
 front, x to the right, y up, origin at the board's bottom-left corner.
 Panel-facing parts sit on the board's bottom layer.
-  jack   sleeve pad towards the top of the board; the barrel sits 0.78 mm
-         below the WQP518MA footprint origin
+  jack   on its side, sleeve pad to the right; the barrel sits 0.78 mm
+         left of the WQP518MA footprint origin
   LED    3 mm bicolour, lens centred on the origin
 
 4HP leaves room for one mounting slot per rail and no room for the frame's
@@ -27,7 +27,7 @@ _spec.loader.exec_module(circuit)
 
 PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 4HP
 HOLE = {"jack": 6.5, "led": 3.2}
-JACK_BARREL = circuit.JACK_BARREL
+JACK_BARREL, (SLEEVE_X, SLEEVE_Y) = circuit.JACK_BARREL, circuit.JACK_SLEEVE
 OUT = os.path.join(HERE, "..", "panel")
 
 
@@ -37,7 +37,7 @@ def features():
     out = []
     for ref, (x, y, rot) in circuit.PLACEMENT.items():
         if ref.startswith("J"):
-            out.append(("jack", ref, labels[ref], x, y, x, y + JACK_BARREL))
+            out.append(("jack", ref, labels[ref], x, y, x - JACK_BARREL * SLEEVE_X, y - JACK_BARREL * SLEEVE_Y))
         elif ref.startswith("D"):
             out.append(("led", ref, labels[ref], x, y, x, y))
     return out
@@ -272,8 +272,7 @@ def write_artwork(feats, path):
 
 def check(feats):
     """Panel clearances: LEDs and jack nuts must not touch each other, the edges or the screw heads; reports
-    gaps under 1 mm (2 mm to the side edges). On the faceplate board the jack bodies (7.48 mm above the
-    barrel, 2.92 below) must clear each other and the LED flanges (r 1.9) by 0.25 mm."""
+    gaps under 1 mm (2 mm to the side edges). The board's own clearances are pcb.py's."""
     pos = {ref: (kind, label, *panel_xy(hx, hy)) for kind, ref, label, ox, oy, hx, hy in feats}
     items = [(ref, x, y, ART["nut"] if kind == "jack" else ART["led"] + 0.25) for ref, (kind, label, x, y) in pos.items()]
     items += [(f"screw {i + 1}", x, y, 2.6) for i, (x, y) in enumerate(MOUNTS)]
@@ -286,15 +285,6 @@ def check(feats):
         edge = min(xa, PANEL_W - xa) - ra
         if not a.startswith("screw") and edge < 2.0:
             bad.append(f"{a} - panel edge: {edge:.2f} mm")
-    # along the column on the board: (top, bottom) of each body in panel y
-    spans = sorted((y - 7.48, y + 2.92, ref) if kind == "jack" else (y - 1.9, y + 1.9, ref)
-                   for ref, (kind, label, x, y) in pos.items())
-    for (t0, b0, r0), (t1, b1, r1) in zip(spans, spans[1:]):
-        if t1 - b0 < 0.25:
-            bad.append(f"board: {r0} - {r1} bodies {t1 - b0:.2f} mm apart")
-    top, bottom = PANEL_H - circuit.BOARD_Y0 - circuit.BOARD_H, PANEL_H - circuit.BOARD_Y0
-    if spans[0][0] < top + 0.5 or spans[-1][1] > bottom - 0.5:
-        bad.append("board: a body within 0.5 mm of the board's top or bottom edge")
     last_band = bands(pos)[-1][0]
     if last_band[1] + last_band[3] > 118.6 - 1.0:
         bad.append(f"the lower band ends {118.6 - last_band[1] - last_band[3]:.2f} mm above the bottom rule")

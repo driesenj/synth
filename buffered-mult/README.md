@@ -13,9 +13,10 @@ two stacked PCBs with Thonk panel parts.
 
 | Part | Status | Files |
 |---|---|---|
-| Panel layout, hole table, drill template, artwork | Draft, waiting for review | `hardware/tools/panel.py`, `hardware/panel/` |
-| Netlist | Done: two boards, 59 parts, 0 problems, DC check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md#netlist) |
-| EasyEDA schematic, PCB placement, panel PCB | Not started | |
+| Panel layout, hole table, drill template, artwork | Agreed | `hardware/tools/panel.py`, `hardware/panel/` |
+| Netlist | Done: two boards, 63 parts, 0 problems, DC check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md#netlist) |
+| EasyEDA schematic, both PCBs placed, panel PCB | Done, 0 problems; to import, DRC and route | `hardware/easyeda/Six.epro2`, [docs/design.md](docs/design.md#easyeda-project) |
+| Routing | Not started (yours, in EasyEDA Pro) | routing notes in [docs/design.md](docs/design.md#easyeda-project) |
 
 ## Panel
 
@@ -38,6 +39,11 @@ hardware/
   tools/
     circuit.py            the netlist of both boards with its checks and DC solve, and the panel placement
     panel.py              hole list, drill template and the panel artwork from the placement
+    easyeda_export.py     the EasyEDA Pro project: schematics, and the PCBs from the two below
+    pcb.py                both boards placed (jacks on their sides, four headers), clearance checks
+    panel_pcb.py          the panel as a PCB, from panel.py's lists
+  easyeda/
+    Six.epro2             Six Main, Six Faceplate, Six Panel; six-easyeda-*.png previews
   panel/
     six-panel-holes.csv, six-panel-drill.svg
     six-panel.svg         panel artwork (groups: copper, silk, holes, mockup), six-panel-preview.png
@@ -46,5 +52,5 @@ hardware/
 Regenerate from `hardware/tools`:
 
 ```bash
-python circuit.py && python panel.py
+python circuit.py && python panel.py && python easyeda_export.py
 ```

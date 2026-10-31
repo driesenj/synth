@@ -174,3 +174,20 @@ are no headers or standoffs: the panel nuts hold the board.
 - **DO-41 diodes:** the library footprint's drawing reaches 2.84 mm to one
   side. In a narrow margin, pick the side by the diode's polarity, or the
   body pokes off the board.
+
+## Narrow modules (Six, 4HP)
+
+`buffered-mult/hardware/tools/pcb.py` is the template for a stack on an
+18.8 mm board.
+- **One column of jacks, on their sides** (parts.md): 11 mm pitch, the tip
+  pads in a line on one side of the bodies, the sleeve pads on the other.
+- **No standoffs:** a 6 mm standoff circle does not fit beside a 10.5 mm
+  jack body. Instead, four headers hold the main board: per group, the
+  tips on a 1×4 by the tip pads, and GND plus the LED on a 1×2 between two
+  sleeve pads.
+- **Main board, 18.8 × 108:** the following fit with Envy's greedy placer:
+  - two DIP-14s down the middle (pin rows at x ±3.81)
+  - a standing 16-pin box header at the bottom (9 × 28.6 mm)
+  - 26 standing resistors and 12 caps
+  It only fit once the 10 p caps moved to a 2.54 mm footprint. Place the
+  power entry before the groups, each group in its own band.

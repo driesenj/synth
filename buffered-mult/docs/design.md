@@ -8,9 +8,11 @@ output leaves the other five alone. A bicolour LED per group shows the
 signal. All analog, all through-hole, two stacked boards. Reference
 designators match `hardware/tools/circuit.py`.
 
-Status (2026-10-31): panel drawn and netlist written for two boards, 59
-parts, 0 problems, DC check passes. The EasyEDA schematic, PCB placement
-and panel PCB are not started.
+Status (2026-10-31): panel agreed; netlist for two boards (63 parts, 0
+problems, DC check passes); EasyEDA Pro project with the schematics, both
+PCBs placed and unrouted, and the panel as a PCB (0 schematic, 0 PCB, 0
+file problems). Next: import, DRC, routing (see [EasyEDA
+project](#easyeda-project)).
 
 ---
 
@@ -126,35 +128,42 @@ the mult carries pitch.
 
 ## Boards
 
-Two boards, because in 4HP the jack column takes the middle 9 mm of an
-18.8 mm board: the strips beside it (5.9 and 3.9 mm) cannot hold a DIP-14
+Two boards, because in 4HP the jack column takes the middle 10.5 mm of an
+18.8 mm board: the strips beside it (4.4 and 3.9 mm) cannot hold a DIP-14
 (9.2 mm over its pads), and through-hole parts behind a jack would push
 their leads into its body. With SOIC TL074s the whole module would fit on
 one board.
 
+**The jacks lie on their sides**, sleeve lug to the right (front view).
+Stood sleeve-up in one column, Thonkiconns need 13 mm between barrels: one
+jack's tip pad lands on the next one's sleeve pad (Envy found this). On its
+side a jack's three pads sit in a row through the barrel (tip 4.92 mm left,
+sleeve 6.48 mm right, outside the body), and the 9 mm body width sets the
+pitch, so the agreed 11 mm panel works unchanged. The panel holes did not
+move; only the footprint origins did (`pcb.barrel_check()` works each
+barrel out from the placed pads and compares it with the hole).
+
 | Board | Front (panel side) | Rear |
 |---|---|---|
-| Faceplate, 18.8 × 108 | 8 Thonkiconns, 2 LEDs | two 1×6 male headers |
-| Main, 18.8 × 108 | two 1×6 female sockets | 2 TL074, the resistors standing up, the power entry |
+| Faceplate, 18.8 × 108 | 8 Thonkiconns, 2 LEDs | four male headers |
+| Main, 18.8 × 108 | four female sockets | 2 TL074, 26 standing resistors, 12 caps, the power entry |
 
-Header positions (faceplate front view, board mm, pins along y, pin 1 at
-the top): H1 at x 2.9 in the left strip, centred on OUT 1b; H2 at x 16.85
-in the right strip, centred on OUT 2b. They hold the boards at opposite
-corners. There is no room for standoffs beside the jack column; whether the
-two headers hold the main board firmly enough is for the PCB step.
+Headers (faceplate front view, board mm, pins along y, pin 1 at the top).
+The 1×4s carry the tips and stand in the left strip by the tip pads; the
+1×2s carry GND and the LED and stand in the right strip, between the IN and
+OUT a sleeve pads, level with the LED. Four headers hold the main board at
+four points: an M3 standoff's 6 mm circle does not fit beside a 10.5 mm
+jack body, so there are no mounting holes.
 
-| Pin | H1 | H2 |
+| Header | Where | Pins, from the top |
 |---|---|---|
-| 1 | IN1 | IN2 |
-| 2 | GND | GND |
-| 3 | LED1 | LED2 |
-| 4 | OUT1A | OUT2A |
-| 5 | OUT1B | OUT2B |
-| 6 | OUT1C | OUT2C |
+| H1 / HF1 | x 2.2, y 75.98 (group 1's barrels) | IN1, OUT1A, OUT1B, OUT1C |
+| H2 / HF2 | x 16.9, y 89.65 (LED 1) | GND, LED1 |
+| H3 / HF3 | x 2.2, y 25.18 (group 2's barrels) | IN2, OUT2A, OUT2B, OUT2C |
+| H4 / HF4 | x 16.9, y 38.85 (LED 2) | GND, LED2 |
 
 The IN 1 → IN 2 normal is a trace on the faceplate board (J5's switch lug
-to J1's tip). The orders get tuned for crossings when the boards are
-placed.
+to J1's tip).
 
 ---
 
@@ -171,7 +180,7 @@ worst-case gains.
 | J1, J5 | IN 1, IN 2 (Thonkiconn: 1 sleeve, 2 switch lug, 3 tip) |
 | J2–J4, J6–J8 | OUT 1a–1c, OUT 2a–2c |
 | D1, D2 | group LEDs, 2-lead bicolour: current from pin 1 to pin 2 = green; pin 1 on GND |
-| HF1, HF2 / H1, H2 | 1×6 male headers on the faceplate / sockets on the main board |
+| HF1–HF4 / H1–H4 | male headers on the faceplate / sockets on the main board (1×4, 1×2, 1×4, 1×2) |
 | U1, U2 | TL074 per group, sections A (pins 1–3), B (5–7), C (8–10), D (12–14) |
 | R*g*01–R*g*03, C*g*01 | group *g*'s input stage and LED resistor |
 | R*gx*1–R*gx*3, C*gx*1 | output *x* of group *g* (x = 1, 2, 3 for a, b, c): input, feedback, 1k, 10p |
@@ -179,7 +188,8 @@ worst-case gains.
 
 Net names: `IN1` (tip), `NA1` (input stage in−), `N1` (−IN 1), `LED1`,
 `S1A` (output stage in−), `OA1A` (op-amp output), `OUT1A` (tip); `_F` on
-the faceplate side of each header pin.
+the faceplate side of each header pin, except GND, which keeps its name on
+both boards (as on Envy: they are separate EasyEDA boards).
 
 **DC check.** `solve()` builds the nodal equations of both boards joined
 at the headers, with ideal op-amps; patched inputs are sources, patched
@@ -211,12 +221,12 @@ with an arrowhead into IN 2 for the normal.
 | LED 2 | 79.4 | D2, on the band |
 | OUT 2a–2c | 89.3, 100.3, 111.3 | J6–J8, on the band |
 
-All at x 11.0. What sets the spacing: the Thonkiconn body runs 7.48 mm
-above its barrel and 2.92 mm below (sleeve up), so the LED needs 9.9 mm to
-the OUT below it on the board, the outputs 11.0 mm between them (bodies
-0.6 mm apart), and OUT 1c to IN 2 10.9 mm (0.5 mm apart). `panel.py`
-checks the nuts, LEDs and screw heads on the panel and the bodies on the
-board; it reports nothing under its limits.
+All at x 11.0. With the jacks on their sides (see [Boards](#boards)) the
+9 mm body width sets the pitch: the outputs are 11.0 mm apart (bodies 2 mm
+apart, nuts 3 mm), and the LEDs clear the jack bodies on the board by
+2.3 mm or more. `panel.py` checks the nuts, LEDs and screw heads on the
+panel; `pcb.py` checks the board with the real footprints. Neither reports
+a problem.
 
 **Where the frame bends.** 4HP has room for one mounting slot per rail
 (x 7.5). The title keeps its spot (x 12, baseline 7.4, 5.2 serif), which
@@ -224,6 +234,60 @@ leaves 7.5 mm before the edge: three letters, hence "Six". The subtitle
 ("buff mult") cannot sit right of it, so it moves under the dotted band.
 "Seedable Instruments" is 23 mm at 2.2, so the maker line says "Seedable",
 on its usual baseline, 0.5 mm above the bottom screw head.
+
+---
+
+## EasyEDA project
+
+`hardware/easyeda/Six.epro2`, written by `hardware/tools/easyeda_export.py`
+(with `pcb.py` and `panel_pcb.py`). Three boards in one project:
+
+| Board | Schematic | PCB |
+|---|---|---|
+| Six Main | Group 1, Group 2, Power and sockets | 2 TL074, 26 standing resistors, 12 caps, power entry; H1–H4 on the bottom |
+| Six Faceplate | the jacks, LEDs and HF1–HF4 | jacks and LEDs on the bottom (panel side), HF1–HF4 on top |
+| Six Panel | a note page | outline, holes and slots, silk, two gold bands |
+
+Previews: `six-easyeda-group-1.png`, `-group-2.png`, `-power.png`,
+`-faceplate.png`, `-pcb-main-board.png`, `-pcb-faceplate.png`,
+`-pcb-panel.png` (the PCB previews are rear views, as EasyEDA shows the top
+layer).
+
+Library parts come from your MorrisSynth caches, through Offset's exporter
+(TL074 symbol on a 7.62 mm DIP-14, WQP518MA jack, LR1F resistors, FG28
+100n, 178MU0033 10 µF, 1N5819, the 2×8 box header, the bicolour LED). New
+here: the 1×2 and 1×4 headers, the 100k 0.1 % device, and the 10p on a
+2.54 mm footprint. The 5.08 mm FG28 footprint left the last 10p of each
+group without room on the 18.8 mm board.
+
+What the generator checks, all 0: every pin drawn once and every page's
+wiring against the netlist; a symbol pin for every footprint pad; pads 0.25
+mm apart and 0.5 mm from the edge, bodies not overlapping; header pins at
+the same spot on both boards; panel parts at PLACEMENT; no rear pad under a
+jack or LED body; no panel-part pad under another's body; every barrel on
+its panel hole; every PAD_NET on a real pad with a NET record.
+
+What EasyEDA's DRC will still say: floating pins on the output jacks'
+switch lugs (J2–J4, J6–J8 pin 2, open on purpose) and on the power header's
+pins 13–16 (+5 V, CV, gate: unused).
+
+**Routing notes**
+
+- Rules for hand soldering: clearance 0.25 mm, track 0.3 mm, ±12 V and GND
+  0.6 mm, vias 0.8 / 0.4 mm, copper 0.5 mm from the edge.
+- Main board: keep each output stage's summing node (in−, its two 100k, the
+  10p) short and on one layer; the 100k feedback may leave the OUT net
+  anywhere on this board, since only the header and faceplate trace sit
+  outside the loop (milliohms). Decoupling pairs straight to pins 4 and 11.
+  ±12 V as 0.6 mm buses from the power entry up both sides of the chips.
+  GND poured on both layers.
+- Faceplate: GND poured on the panel side under everything (all sleeve
+  pads, LED pad 1, the 1×2s' pin 1). Non-ground copper 3 mm clear of each
+  barrel on that side. Tips run left from the tip pads (x 5.5) to the 1×4s
+  at x 2.2; the IN 1 → IN 2 normal (J5's lug to J1's tip, about 50 mm)
+  runs down the left strip on the rear; LED lines go right to the 1×2s.
+- J9's pin 1 (−12 V, the red stripe) is at the end the silk marks; check it
+  before soldering, as on every board here.
 
 ---
 
@@ -238,12 +302,13 @@ on its usual baseline, 0.5 mm above the bottom screw head.
 | 6 | 1k | | output series |
 | 2 | 2k2 | | LED |
 | 2 | 10 Ω | | rail filters |
-| 8 | 10 p C0G | | stage feedback |
+| 8 | 10 p C0G, 2.54 mm leads (KEMET C315 class) | Mouser | stage feedback |
 | 4 | 100 n | | decoupling |
 | 2 | 10 µ electrolytic | | rail bulk |
 | 2 | 1N5819 | | reverse protection |
 | 1 | 16-pin shrouded Eurorack header, 2.54 mm | Thonk | not the 2.00 mm footprint the FM / Clap / Compressor boards got |
-| 2 + 2 | 1×6 male header / 1×6 female socket, 2.54 mm | | board to board |
+| 2 + 2 | 1×4 male header / 1×4 female socket, 2.54 mm | | board to board, the tips |
+| 2 + 2 | 1×2 male header / 1×2 female socket, 2.54 mm | | board to board, GND and LED |
 | 1 | 4HP panel as a PCB, 2 M3 screws | JLCPCB | |
 
 ---
@@ -255,12 +320,11 @@ Settled on 2026-10-31:
 1. **Width:** 4HP, all through-hole (see [Why 4HP](#why-4hp-and-not-1hp)).
 2. **Channels:** 2 × 1 → 3, IN 2 normalled to IN 1.
 
+3. **The panel as drawn:** the name "Six", "buff mult" under the band,
+   the maker "Seedable", one LED per group (the user, approving the panel).
+4. **Board stack:** the jacks on their sides, four headers, no standoffs
+   (see [Boards](#boards)).
+
 Open:
 
-3. **Name and wording:** "Six" / "buff mult" fit the frame; any other name
-   longer than about three letters does not, unless the title moves left
-   of x 12.
-4. **The frame in 4HP:** subtitle under the band, maker "Seedable". The
-   alternative is a narrow-panel frame for every module.
-5. **LEDs:** one per group. Without them the outputs could sit at 12 mm.
-6. **TL074 or TL074B,** and 0.1 % resistors or paired 1 % ones.
+5. **TL074 or TL074B,** and 0.1 % resistors or paired 1 % ones.
