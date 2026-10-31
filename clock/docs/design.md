@@ -25,7 +25,10 @@ circuit values.
 - **Main board:** SMD (your choice).
 - **Netlist:** written. It passes its checks (0 netlist problems, 0 circuit
   problems; see [Checks](#checks)).
-- **Not yet:** the EasyEDA schematic, PCB placement and firmware.
+- **Schematic:** the EasyEDA Pro schematic is written, five A3 pages that
+  match the netlist (0 problems; see [Schematic](#schematic)). Not yet
+  imported into EasyEDA.
+- **Not yet:** PCB placement, the panel PCB and firmware.
 
 "Tempo" is still a working title.
 
@@ -155,8 +158,11 @@ audio pins stay open.
   and one configuration serve both modules.
 - **The DACs:** they get SPI3 on D2/D6, which are SDMMC pins that are free
   on both modules. The DAC traffic therefore never waits for a display DMA
-  transfer on SPI1. Check PC10/PC12 against libDaisy's SPI3 pin table before
-  the schematic.
+  transfer on SPI1.
+  - libDaisy's `src/per/spi.cpp` lists PC10 (AF6) as SPI3 SCK and PC12
+    (AF6) as SPI3 MOSI, checked 2026-10-31.
+  - Configure it transmit-only with a software NSS. libDaisy then skips the
+    MISO and NSS pin checks, and D1 (PC11) stays a plain chip select.
 - **D9:** the display never reads, so D9 (SPI1 MISO) carries the reset
   input. CLK on PB12 and RST on PB4 use different EXTI lines.
 
@@ -396,6 +402,62 @@ the Seed's SR_DIN pin each get caught.
 
 ---
 
+## Schematic
+
+`hardware/tools/easyeda_export.py` writes `hardware/easyeda/Tempo.epro2`:
+two boards (Tempo Main, Tempo Faceplate), each with its schematic, on five
+A3 pages. The PCBs and the panel board come with the placement step.
+
+| Page | Holds |
+|---|---|
+| Main 1 | Seed, CLOCK / RESET input stages, CV inputs (U8A–C), bias, the reference and its inverter (U8D) |
+| Main 2 | the four MCP4922s and the eight output stages (U6, U7) |
+| Main 3 | RUN / RESET gate stages (U9), decoupling, H1–H4 |
+| Faceplate 1 | jacks, encoders, LED buttons, output LEDs |
+| Faceplate 2 | U10–U12 with their resistors, CN1, decoupling, HF1–HF4 |
+
+The pages are drawn the way Senay's are: every pin ends in a net port or a
+ground flag named after its net, so parts sit in blocks without wires
+between them. Same name, same net within a board; the header pins carry the
+nets across.
+
+Run `python easyeda_export.py` from `hardware/tools` (needs Pillow for the
+previews `hardware/easyeda/tempo-easyeda-*.png`). It reports four kinds of
+problem, all 0:
+
+- the drawing against the netlist, per page (every pin on its net, no
+  T-junctions or pins in the middle of a wire);
+- every netlist pin drawn exactly once;
+- every symbol pin with a footprint pad, and the reverse;
+- every Device, Symbol and Footprint the pages name present in the
+  written file.
+
+**Where the parts come from:**
+
+- **Your MorrisSynth library caches:** the resistor, capacitor, 1N5819 and
+  TL074ACN symbols, the WQP518MA jack, net ports, ground flags, the frame.
+- **Taken over from Senay:** the SMD footprints (0603 / 0805 / 1206, SOIC-14,
+  SOIC-16, SOT-23 with B / E / C pads, SOD-123), the 3 mm LED and the
+  headers.
+- **Taken over from Side FXy:** the Seed breakout, the EC11, the Thonk LED
+  button and the right-angle header, with their symbols, and the 74HC165 /
+  74HC595 symbols.
+- **New:** the MCP4922 symbol (NC pins 2, 6, 7 drawn so every pad has a
+  pin), and the LM4040-2.5 in SOT-23 with pin 3 as the substrate.
+
+**What EasyEDA's DRC will still say** (all intentional, floating-pin
+warnings):
+
+| Where | Pins left open |
+|---|---|
+| U1 (Seed) | D28 (35), VIN (39), the codec pins 16–19, the breakout's audio pins J4-1, J4-3, J5-1, J5-3 |
+| U2–U5 (MCP4922) | 2, 6, 7 (NC) |
+| U10 (74HC165) | /Q7 (7) |
+| U12 (74HC595) | QD–QH (3–7) and QH' (9) |
+| J6–J15 (outputs) | the switch lugs (2) |
+
+---
+
 ## BOM
 
 **Main board** (SMD unless noted):
@@ -596,7 +658,6 @@ writes (preset saves) from stalling the program, as on Side FXy.
    - The button LEDs' forward voltage (R21, R22).
    - The EC11's height and pins against the footprint.
    - The 3V3D current.
-4. **libDaisy:** SPI3 on PC10/PC12, checked before the schematic.
 
 **Not included:**
 
