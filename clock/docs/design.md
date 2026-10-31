@@ -26,9 +26,11 @@ circuit values.
 - **Netlist:** written. It passes its checks (0 netlist problems, 0 circuit
   problems; see [Checks](#checks)).
 - **Schematic:** the EasyEDA Pro schematic is written, five A3 pages that
-  match the netlist (0 problems; see [Schematic](#schematic)). Not yet
-  imported into EasyEDA.
-- **Not yet:** PCB placement, the panel PCB and firmware.
+  match the netlist (0 problems; see [Schematic](#schematic)).
+- **PCBs:** both boards placed and net-assigned, unrouted, and the panel as
+  a third PCB, all in the same project (0 problems; see [PCBs](#pcbs)). Not
+  yet imported into EasyEDA.
+- **Not yet:** routing (yours, in EasyEDA) and firmware.
 
 "Tempo" is still a working title.
 
@@ -93,7 +95,7 @@ circuit values.
         ├─ faceplate board (FB) 59.4 x 108, 64 parts
         │     front: 15 Thonkiconn, 3 EC11, 3 LED buttons, 8 LEDs
         │     rear (SMD): 74HC165 (switches), 2x 74HC595 (LEDs), 12 pull-ups, 11 LED resistors;
-        │                 CN1 (right-angle, through-hole) for the display cable
+        │                 CN1 (8 wire pads, through-hole) for the display cable
         │      36 pins in 4 headers (male on the FB, female on the MB)
         └─ main board (MB) 59.4 x 108, 93 parts, SMD
               Daisy Seed on seed_power_opamps (through-hole sockets), 4x MCP4922 + LM4040,
@@ -341,15 +343,23 @@ modulation over the scans.
 
 ### Display
 
-The same module and cable as Side FXy: the Waveshare MX1.25 cable plugs
-onto CN1, a right-angle 1×8 header, in Waveshare's order (VCC, GND, DIN,
-CLK, CS, DC, RST, BL). C4 (10 µ, 1206) sits beside it.
+The same module and cable as Side FXy. The cable's wires go into CN1,
+eight wire pads in Waveshare's order (VCC, GND, DIN, CLK, CS, DC, RST, BL,
+pin 1 at the top). C4 (10 µ, 1206) sits beside it.
 
 - **Orientation:** landscape. With the flex end on the left, the module
   covers board x 2.1–53.3, y 78.4–105.7 (front view).
 - **The cable:** its connector sits 34.3–38.5 mm from the flex end, centred
-  in height. The cable goes through a cutout in the faceplate to CN1, which
-  stands in the 6 mm right margin beside the module.
+  in height. The cable goes through a 13.5 × 16.7 mm cutout in the
+  faceplate (x 34.95–48.45, y 83.7–100.4, front view; room for the plug and
+  the bend, Side FXy's proportions). On the rear it runs right to CN1 in
+  the 6 mm right margin, over a strip kept free of parts.
+- **Why wire pads, not a right-angle header:** the header's Dupont plug
+  lies flat and reaches about 18 mm in from its pins. From the right margin
+  that is right over the cutout the cable comes up through. Cut the Dupont
+  ends off, shorten the wires and solder them in; the module end stays a
+  plug. A 1×8 pin strip fits the same holes if you would rather keep the
+  plugs and find another way to lay them.
 - **Mounting:** tape round the window. The M2 holes are under the glass, as
   on Side FXy.
 
@@ -363,15 +373,18 @@ GND_D_F (logic, LEDs, display). They join only on the main board.
 ## Board-to-board headers
 
 From `circuit.HEADERS`: male pins on the faceplate (HF1–HF4), sockets on
-the main board (H1–H4). The pin order is a first guess; placement sorts it
-for the fewest crossings.
+the main board (H1–H4). Each stands in a column, pin 1 at the top; see
+[PCBs](#pcbs) for where. The pin order is the one with the fewest crossing
+straight lines from each pin to the nearest pad of its net, both boards
+counted. It was searched against the placement and repeated until it
+settled. That cut the headers' own crossings from 70 to 24.
 
-| Header | Pins | Nets (MB name; the faceplate adds _F) |
+| Header | Pins | Nets, pin 1 (top) first (MB name; the faceplate adds _F) |
 |---|---|---|
-| H1 / HF1 | 6 | CLK_IN, RST_IN, GND, CV1, CV2, CV3 |
-| H2 / HF2 | 11 | RUN_OUT, OUT1, OUT2, OUT3, OUT4, GND, RST_OUT, OUT5, OUT6, OUT7, OUT8 |
-| H3 / HF3 | 12 | 3V3D, GND (GND_D_F), SR_CLK, SR_LOAD, SR_DIN, SR_DOUT, ENC1_A, ENC1_B, ENC2_A, ENC2_B, ENC3_A, ENC3_B |
-| H4 / HF4 | 7 | LCD_SCK, LCD_MOSI, GND (GND_D_F), LCD_CS, LCD_DC, LCD_RST, LCD_BL |
+| H1 / HF1 | 6 | CV3, CLK_IN, GND, CV2, CV1, RST_IN |
+| H2 / HF2 | 11 | OUT4, OUT8, OUT3, OUT7, OUT2, OUT6, RUN_OUT, GND, OUT1, RST_OUT, OUT5 |
+| H3 / HF3 | 12 | SR_DIN, SR_LOAD, SR_CLK, SR_DOUT, ENC3_B, ENC3_A, ENC2_B, ENC2_A, 3V3D, GND (GND_D_F), ENC1_B, ENC1_A |
+| H4 / HF4 | 7 | LCD_CS, LCD_SCK, LCD_MOSI, LCD_DC, LCD_BL, LCD_RST, GND (GND_D_F) |
 
 ---
 
@@ -406,7 +419,8 @@ the Seed's SR_DIN pin each get caught.
 
 `hardware/tools/easyeda_export.py` writes `hardware/easyeda/Tempo.epro2`:
 two boards (Tempo Main, Tempo Faceplate), each with its schematic, on five
-A3 pages. The PCBs and the panel board come with the placement step.
+A3 pages, and each with its placed PCB; a third board, Tempo Panel, holds
+the panel PCB (see [PCBs](#pcbs)).
 
 | Page | Holds |
 |---|---|
@@ -439,9 +453,10 @@ problem, all 0:
 - **Taken over from Senay:** the SMD footprints (0603 / 0805 / 1206, SOIC-14,
   SOIC-16, SOT-23 with B / E / C pads, SOD-123), the 3 mm LED and the
   headers.
-- **Taken over from Side FXy:** the Seed breakout, the EC11, the Thonk LED
-  button and the right-angle header, with their symbols, and the 74HC165 /
-  74HC595 symbols.
+- **Taken over from Side FXy:** the Seed breakout, the EC11 and the Thonk
+  LED button, with their symbols, and the 74HC165 / 74HC595 symbols.
+- **Wire pads:** CN1's eight pads are a 1×8 header footprint under its own
+  name (`WIRE-PADS-1x8-P2.54`).
 - **New:** the MCP4922 symbol (NC pins 2, 6, 7 drawn so every pad has a
   pin), and the LM4040-2.5 in SOT-23 with pin 3 as the substrate.
 
@@ -455,6 +470,195 @@ warnings):
 | U10 (74HC165) | /Q7 (7) |
 | U12 (74HC595) | QD–QH (3–7) and QH' (9) |
 | J6–J15 (outputs) | the switch lugs (2) |
+
+---
+
+## PCBs
+
+`easyeda_export.py` also writes the two boards' PCBs (`hardware/tools/pcb.py`)
+and the panel as a third PCB (`hardware/tools/panel_pcb.py`) into
+`Tempo.epro2`. The boards are placed and every pad has its net. Nothing is
+routed. Previews: `hardware/easyeda/tempo-easyeda-pcb-*.png`, rear view
+(EasyEDA's top layer).
+
+**The code:** Senay's board class, checks and greedy SMD placer, with Side
+FXy's display keep-out, cutout and outline. On top of that:
+
+- an `improve()` pass (the S&H's lesson) that lifts each loose part and puts
+  it back until a round moves nothing;
+- summing nodes and transistor bases (IN_*, B_*) weighted three times in
+  the placer's cost (Offset's rule), so the high-impedance nodes stay short;
+- a rear keep-out for the cable's wires;
+- a check that no SMD body covers a through-hole pad.
+
+**Frame:** both PCBs are drawn as EasyEDA shows them, looking at the top
+layer, which is the rear of the stack on both boards: x_pcb = 59.4 −
+x_front. Below, "front x" is the front view's coordinate.
+
+### Faceplate
+
+- **Front (bottom layer):** the panel parts at their PLACEMENT spots,
+  oriented by rule:
+  - jacks with the sleeve above the tip;
+  - LED buttons with the LED pins along x, anode on the right;
+  - encoders with the phase row (A, C, B) 7.5 mm below the shaft, the
+    switch pins above and the mounting tabs to the sides;
+  - LEDs with the anode on the left.
+- **Behind the display:** a keep-out for leads (the module's back), the
+  cable's cutout milled out (a layer-12 region) and the module's outline
+  on the bottom silk.
+- **Headers (top layer):** in four columns of free board between the
+  encoder tabs, the button bodies and the jacks, from just above the top
+  jack row's sleeve pads (y 43.8) to just below the display (y 77.5):
+
+| Header | Front x | y | Why there |
+|---|---|---|---|
+| HF1 inputs | 3.0 (left margin) | 44.0–56.7 | beside the input row's left end |
+| HF2 outputs | 21.08 (between ENC1 / SW1 and ENC2 / SW2) | 44.0–69.4 | central for both output rows |
+| HF3 logic | 38.33 (between ENC2 / SW2 and ENC3 / SW3) | 48.9–76.8 | on the main board, beside the Seed's D20–D30 row |
+| HF4 display | 54.75 (right margin) | 57.1–72.4 | under CN1; on the main board, beside D7–D13 |
+
+- **CN1:** wire pads in the right margin, front x 56.4, y 83.2–100.9. The
+  strip between the cutout and CN1 (front x 48.45–54.9) stays free for
+  the wires.
+- **SMD logic (top layer, placed by the placer):**
+  - U10 (165) in ENC2's footprint between its phase and switch rows;
+  - U11 (595, output LEDs) between the jack rows, among the LEDs;
+  - U12 (595, button LEDs) at the top jack row;
+  - the pull-ups and LED resistors beside the pins they join;
+  - C1–C3 2.0 mm from their chip's VCC pin, C4 by CN1.
+- **Nothing behind the display yet:** it's free for anything SMD that
+  wants to move there while routing.
+
+### Main board
+
+- **The breakout:** stands along the rear view's left edge (front view's
+  right), USB end up, centre (9.7, 66.0):
+  - pins 1–20 (D0–D14) in its outer row at x 2.08, pin 1 at the top;
+  - pins 21–40 in its inner row at x 17.32, pin 21 at the bottom;
+  - J1 / J3 (±12 V) below the pins, the power header on the overhang
+    below.
+- **Sockets (bottom layer):** under the faceplate's headers. H4 stands in
+  the breakout's channel beside D7–D13, H3 beside the inner row's D20–D30.
+- **Chips (top layer, anchored):**
+  - the four DACs at the top, two above each output op-amp (U2, U3 over U6;
+    U4, U5 over U7);
+  - U6 and U7 either side of H2;
+  - under the holes, U9 (RUN / RESET gates) by the Seed's gate pins and U8
+    (CV inputs, the −2.5 V inverter) between the ADC pins and H1.
+- **Passives, transistors and the reference (placed):** each as near the
+  pads it joins as the board allows:
+  - each output stage's 24k, 47k and 100k round its op-amp's IN− pin;
+  - the CV stages and the −2.5 V inverter round U8;
+  - Q1 and Q2 with their 100k and clamps by H1;
+  - D11, R73 and C14 between the DAC pairs;
+  - decoupling 2.0 mm from every supply pin, the bulk caps by J1 / J3.
+- **Free board:** the bottom right (below y 30) for the ±12 V runs. Copper
+  may also run under the breakout, between its rows.
+
+### Mounting
+
+Three M3 standoffs on the same spots on both boards, front view (12.04,
+48.0), (29.7, 48.0), (46.5, 48.0). They sit in the strip between the top
+jack row and the buttons, between the header columns.
+
+- **Only three:** nowhere else on this faceplate has a 6 mm circle free on
+  both sides. Jacks fill the bottom, encoders and buttons the middle, the
+  display the top (a screw head can't go under the module, and the margins
+  beside it are 2.1 and 6.1 mm).
+- **On the main board:** the third hole is in the breakout's channel, so
+  its screw head sits under the breakout, as on Side FXy.
+- **Holding the stack:** the 36 header pins and the standoffs together.
+
+### Checks (all 0)
+
+- every part placed once;
+- pads 0.25 mm apart on a shared layer, 0.5 mm from the edge, clear of the
+  holes and the cutout;
+- bodies not overlapping on one side;
+- no SMD body over a through-hole pad;
+- nothing on the cable's strip;
+- nothing under a standoff (gap side) or a screw head (other side), except
+  the breakout over its screw head;
+- every header pin at the same spot on both boards;
+- the panel parts exactly at PLACEMENT;
+- no through-hole pad of a rear part under a panel part's body or the
+  display module;
+- in the written file, every PAD_NET names a pad of its footprint and a net
+  with a NET record.
+
+**Ratsnest:** straight lines per net (a shortest tree), power nets left out.
+
+| | Length | Crossings |
+|---|---|---|
+| Main board, first greedy pass | 1653 mm | 232 |
+| Main board, final (improve(), U8 / U9 moved, nodes weighted, header order searched) | 1412 mm | 187 |
+| Faceplate, first pass | 1450 mm | 182 |
+| Faceplate, final | 1438 mm | 166 |
+
+Weighting the nodes cost a few crossings and bought short nodes. The
+longest summing node (all its pads) spans 11.9 mm (IN_OUT1); the
+inverter's IN_NREF went from about 50 mm to 9.8 mm.
+
+### Routing notes
+
+- **Main board, ±12 V:**
+  - +12 V comes from J3 (inner row's bottom), −12 V from J1 (outer row's
+    bottom), through C27 / C28.
+  - Run both rails along the bottom strip and up to each TL074's pins 4 /
+    11.
+  - The bottom layer carries only the sockets: pour GND there.
+- **Main board, DAC bus:**
+  - DAC_SCK, DAC_MOSI, CS1–CS4 and LDAC leave the outer row (pins 2–7, 15).
+    Take them over the breakout's top end or between the inner row's pins
+    to the DACs.
+  - Keep them off the summing nodes (IN_OUT1–8) and NREF.
+- **Main board, references:**
+  - VREF runs from D11 (top middle) to the eight VREF pins and R71.
+  - NREF runs from U8D (bottom) up to the eight 47k Rref resistors beside
+    U6 / U7.
+  - Keep the summing nodes short: each 24k / 47k / 100k sits on its
+    op-amp's IN− pin.
+- **Main board, CLOCK and RESET:** Q1 and Q2 sit by H1, so the jack side
+  stays short. Their collectors (3.3 V logic, 10k pull-ups R77 / R79 near
+  the Seed) run up to D0 (pin 1, top of the outer row) and D9 (pin 10).
+  Those are the board's two long logic runs: keep them off the CV inputs
+  and the summing nodes.
+- **Faceplate, grounds:** keep them apart. GND_F carries the jack sleeves
+  and the inputs' switch lugs; GND_D_F carries the logic, LEDs, encoders,
+  buttons and display. They meet only on the main board, through H1 / H2
+  (GND) and H3 / H4 (GND_D).
+- **Faceplate, outputs:** they run up the channels between the jack
+  columns to HF2.
+- **Faceplate, display area:** tracks may run behind the display; only
+  leads are kept out. Give the cutout 0.3 mm of copper clearance.
+- **Header orders:** if you swap pins while routing, change
+  `circuit.HEADERS` to match, so the schematic follows.
+
+### What EasyEDA's PCB DRC will still say
+
+- every net unrouted;
+- the floating pins listed under [Schematic](#schematic);
+- the cutout: a non-plated region inside the outline, which DRC may list as
+  a board-outline remark. On Side FXy that was expected.
+
+### Panel PCB
+
+`panel_pcb.py` is Side FXy's writer. It draws from `panel.layout()` and
+`panel.band()`, the same lists the artwork uses:
+
+- **Outline:** 60.6 × 128.5 mm.
+- **Holes:** non-plated holes for the jacks, buttons, encoders and LEDs;
+  the four Eurorack slots; the display window milled with 1 mm corners.
+- **Silkscreen:** the frame, the button rings and words, the input labels
+  and the guides to the soft knobs.
+- **The output band:** bare ENIG copper (a top-layer fill under a mask
+  opening of the same shape), 0.4 mm clear round every hole. The output
+  numbers and RUN / RESET are white silk on the gold. The artwork knocks
+  them out of the gold instead; to match it, move them to the mask layer.
+- **Fonts:** EasyEDA's stroke font, not the artwork's serif italic, so
+  expect to nudge labels after import.
+- **Order:** 1.6 mm FR4, black mask, white silk, ENIG.
 
 ---
 
@@ -500,11 +704,12 @@ warnings):
 | 2 | 150R, 0603 | rear | R21, R22 |
 | 3 | 100 n X7R, 0603 | rear | C1–C3 |
 | 1 | 10 µ X7R, 1206 | rear, beside CN1 | C4 |
-| 1 | 1×8 right-angle male header, 2.54 mm | the display cable's Dupont plug lies flat on it | CN1 |
+| — | (no part) | eight wire pads for the display cable's wires, Dupont ends cut off | CN1 |
 | 1 | Waveshare 1.9inch LCD Module (ST7789V2) with its cable | glass taped to the panel's rear | DS1 |
 | 4 | male headers 1×6, 1×11, 1×12, 1×7, 2.54 mm | | HF1–HF4 |
 
-Plus a 12HP panel PCB and 4 M3 standoffs for the 8.5 mm gap, with screws.
+Plus a 12HP panel PCB and 3 M3 standoffs for the 8.5 mm gap, with 6
+screws.
 
 ---
 
@@ -646,6 +851,10 @@ writes (preset saves) from stalling the program, as on Side FXy.
 - **Panel:** approved as drawn. That includes CV 3 in the fifth input
   spot, the output LEDs, the landscape screen and the colours.
 - **Main board:** SMD at 12HP.
+- **Placement (mine, check it):** CN1 became wire pads, because a
+  right-angle header's plug would lie over the cable's cutout. Three
+  standoffs, not four, because the faceplate has only one strip with room
+  for them.
 
 **Still open:**
 

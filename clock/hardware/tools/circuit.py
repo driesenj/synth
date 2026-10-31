@@ -210,14 +210,16 @@ def _logic(net):
 
 
 # Split by function, as the user routed Marblesy: the inputs, the outputs, the chain with the encoders
-# and the faceplate's 3V3D, the display. Pin order is a first guess; placement sorts it.
+# and the faceplate's 3V3D, the display. Pin 1 is the top pin. The order is the one with the fewest
+# crossing straight lines from each pin to the nearest pad of its net, both boards counted, searched
+# against the placement in pcb.py (2026-10-31); re-run that search if the placement changes much.
 HEADERS = [
-    ("H1", "HDR6", [_pair(n) for n in ("CLK_IN", "RST_IN", "GND", "CV1", "CV2", "CV3")]),
-    ("H2", "HDR11", [_pair(n) for n in ("RUN_OUT", "OUT1", "OUT2", "OUT3", "OUT4", "GND", "RST_OUT", "OUT5",
-                                        "OUT6", "OUT7", "OUT8")]),
-    ("H3", "HDR12", [_logic(n) for n in ("3V3D", "GND", "SR_CLK", "SR_LOAD", "SR_DIN", "SR_DOUT", "ENC1_A",
-                                         "ENC1_B", "ENC2_A", "ENC2_B", "ENC3_A", "ENC3_B")]),
-    ("H4", "HDR7", [_logic(n) for n in ("LCD_SCK", "LCD_MOSI", "GND", "LCD_CS", "LCD_DC", "LCD_RST", "LCD_BL")]),
+    ("H1", "HDR6", [_pair(n) for n in ("CV3", "CLK_IN", "GND", "CV2", "CV1", "RST_IN")]),
+    ("H2", "HDR11", [_pair(n) for n in ("OUT4", "OUT8", "OUT3", "OUT7", "OUT2", "OUT6", "RUN_OUT", "GND",
+                                        "OUT1", "RST_OUT", "OUT5")]),
+    ("H3", "HDR12", [_logic(n) for n in ("SR_DIN", "SR_LOAD", "SR_CLK", "SR_DOUT", "ENC3_B", "ENC3_A",
+                                         "ENC2_B", "ENC2_A", "3V3D", "GND", "ENC1_B", "ENC1_A")]),
+    ("H4", "HDR7", [_logic(n) for n in ("LCD_CS", "LCD_SCK", "LCD_MOSI", "LCD_DC", "LCD_BL", "LCD_RST", "GND")]),
 ]
 
 
@@ -313,8 +315,10 @@ def faceplate_parts():
         u12[HC595_OUT[k]] = f"L_{label}_F"
         parts.append(R(f"R{21 + k}", BUTTON_LED_R[ref], f"L_{label}_F", f"LED_{label}_F"))
     parts.append(Part("U12", "HC595", "74HC595D", u12))
-    # CN1: a right-angle header, so the cable's Dupont plug lies flat in the 8.5 mm gap between the boards
-    parts.append(Part("CN1", "HDR8RA", "LCD", {str(i + 1): n for i, n in enumerate(LCD_PINS)}, "display cable"))
+    # CN1: eight wire pads in the right margin beside the module. Cut the Dupont ends off the module's cable
+    # and solder the wires in; the module end stays a plug. A right-angle header's plug would lie over the
+    # cable's cutout (see DISPLAY_CUTOUT)
+    parts.append(Part("CN1", "WIRE8", "LCD", {str(i + 1): n for i, n in enumerate(LCD_PINS)}, "display cable"))
     for k, u in enumerate(("U10", "U11", "U12")):
         parts.append(C(f"C{k + 1}", "100n", "3V3D_F", "GND_D_F"))
     parts.append(C("C4", "10u", "3V3D_F", "GND_D_F"))      # the display module, beside CN1 (1206 MLCC)
@@ -351,11 +355,44 @@ for ref, jack in OUTPUT_LEDS:
 PLACEMENT["DS1"] = (BOARD_W / 2, DISPLAY_Y, 0)
 
 # The display module in the panel gap, glass against the panel; nothing with leads may sit on the
-# faceplate behind it (SMD on the rear is fine). Flex end on the left for now (the cable connector on its
-# back then sits 34.3-38.5 mm from the left end, and the cable leaves to the right); placement may flip it.
+# faceplate behind it (SMD on the rear is fine). Flex end on the left: the cable connector on its back sits
+# 34.3-38.5 mm from that end, centred across the module, and the cable leaves to the right.
 _ax, _ay = PLACEMENT["DS1"][:2]
 DISPLAY_MODULE = (round(_ax - DISPLAY_ACTIVE[0] / 2 - 6.25, 2), round(_ay - DISPLAY_ACTIVE[1] / 2 - 2.30, 2),
                   round(_ax + DISPLAY_ACTIVE[0] / 2 + 2.23, 2), round(_ay + DISPLAY_ACTIVE[1] / 2 + 2.30, 2))
+_fx = DISPLAY_MODULE[0]
+DISPLAY_CONNECTOR = (round(_fx + 34.3, 2), round(_ay - 7.8, 2), round(_fx + 38.5, 2), round(_ay + 7.8, 2))
+# The faceplate's cutout under the connector: room for the plug and the cable's bend, as Side FXy's (1.44 mm
+# towards the flex end, 7.86 mm the other way, 0.55 mm either side); x1, y1, x2, y2, corner radius.
+DISPLAY_CUTOUT = (round(_fx + 32.86, 2), round(_ay - 8.35, 2), round(_fx + 46.36, 2), round(_ay + 8.35, 2), 1.0)
+# CN1's wire pads in the right margin, pins along y, pin 1 at the top; the wires run from the cutout to them
+# over the rear, which keeps that strip free of parts.
+CN1_FRONT = (56.4, _ay, 270)
+CABLE_PATH = (DISPLAY_CUTOUT[2], DISPLAY_CUTOUT[1], 54.9, DISPLAY_CUTOUT[3])
+
+# Encoders: the phase row (A, C, B) below the shaft, the switch pins above, the mounting tabs to the sides.
+# That leaves columns free of leads between the encoders and in the margins for the board-to-board headers.
+ENC_PINS = "below"
+
+# Board-to-board headers (front view, board mm): x, y of the middle of the pin row, angle (270 = pins along
+# y, pin 1 at the top). Four columns between the encoder tabs, buttons and jacks, from just above the top
+# jack row's sleeve pads (y 43.8) to just below the display (y 77.5):
+#   H1 (inputs)   x 3.0, the left margin
+#   H2 (outputs)  x 21.08, between ENC1 / SW1 and ENC2 / SW2
+#   H3 (logic)    x 38.33, between ENC2 / SW2 and ENC3 / SW3; on the main board beside the Seed's inner
+#                 pin row (D20-D30)
+#   H4 (display)  x 54.75, the right margin; on the main board in the breakout's channel beside D7-D13
+# On the main board the breakout stands along the front view's right edge (rows at x 42.08 and 57.32).
+HEADERS_FRONT = {
+    "H1": (3.0, 50.35, 270),
+    "H2": (21.08, 56.7, 270),
+    "H3": (38.33, 62.87, 270),
+    "H4": (54.75, 64.73, 270),
+}
+# Mounting holes (front view): three M3 standoffs in the strip between the top jack row and the buttons,
+# between the header columns. Nowhere else on this faceplate leaves a 6 mm circle free on both sides: jacks
+# fill the bottom, the encoders and buttons the middle, the display the top.
+HOLES_FRONT = [(12.04, 48.0), (29.7, 48.0), (46.5, 48.0)]
 
 
 # ------------------------------------------------------------------- checks

@@ -1,6 +1,6 @@
-"""Tempo as an EasyEDA Pro project (.epro2): the schematic of both boards.
-PCB placement and the panel PCB follow in their own step (pcb.py,
-panel_pcb.py, as for Side FXy and Senay).
+"""Tempo as an EasyEDA Pro project (.epro2): the schematic of both boards,
+both PCBs placed and net-assigned (pcb.py) and the panel as a third PCB
+(panel_pcb.py), as for Side FXy and Senay.
 
 Builds on the Plaitsy exporter (../../../plaitsy/hardware/tools) for the
 file format, the connectivity check and the previews, the way Side FXy and
@@ -13,7 +13,7 @@ ground flag, sheet frame). Generated here:
               LM4040 (pads 1 / 2 / 3), SOD-123. Through-hole: the Daisy Seed
               on seed_power_opamps (Marblesy's), the EC11 encoder and the Thonk
               LED button (Side FXy's), 3 mm LED, 1xN headers and the 1x8
-              right-angle header for the display cable
+              wire pads for the display cable
   symbols     Seed, MCP4922, LM4040-2.5 (SOT-23), 74HC165, 74HC595, MMBT3904,
               EC11, LED button, LED, headers
 
@@ -54,6 +54,8 @@ def _load(name):
 
 
 circuit = _load("circuit")
+pcb = _load("pcb")
+panel_pcb = _load("panel_pcb")
 
 NAME = "Tempo"
 OUT = os.path.join(HERE, "..", "easyeda", "Tempo.epro2")
@@ -234,15 +236,14 @@ def fp_header(n):
     return f
 
 
-def fp_header_ra(n):
-    """1xN right-angle male header lying on the board (Side FXy's); the drawn body covers the plastic and the
-    Dupont plug pushed onto the pins (about 16.5 mm out from the row, -y)."""
-    f = Footprint(f"HDR-1x{n}-P2.54-RA", "CN?")
+def fp_wire_pads(n):
+    """1xN wire pads, 2.54 mm: 1.0 mm holes take the display cable's 26-28 AWG wires once the Dupont ends are
+    cut off. Drawn as a header so a 1xN pin strip fits too."""
+    f = Footprint(f"WIRE-PADS-1x{n}-P2.54", "CN?")
     x0 = -(n - 1) * 1.27
     for i in range(n):
         f.pad(i + 1, x0 + i * 2.54, 0, 1.0, 1.7, square=(i == 0))
-    f.rect(x0 - 1.27, -17.8, x0 + (n - 1) * 2.54 + 1.27, 1.27)
-    f.line(x0 - 1.27, -3.8, x0 + (n - 1) * 2.54 + 1.27, -3.8)
+    f.rect(x0 - 1.25, -1.25, x0 + (n - 1) * 2.54 + 1.25, 1.25)
     return f
 
 
@@ -478,6 +479,17 @@ class MProject(Project):
         self.new_docs.append(("FOOTPRINT", fp.build()))
         return fp.doc.uuid
 
+    def footprint_geo(self, uid):
+        if not hasattr(self, "_fpgeo"):
+            self._fpgeo = {}
+            docs = {u: d for u, d in self.lib.items() if d["docType"] == "FOOTPRINT"}
+            for typ, lines in self.new_docs:
+                if typ == "FOOTPRINT":
+                    docs.update(ee.parse(lines))
+            for u, d in docs.items():
+                self._fpgeo[u] = pcb.footprint_geometry(d)
+        return self._fpgeo[uid]
+
     def _symbol(self, sym):
         lines = sym.build()
         self.new_docs.insert(0, ("SYMBOL", lines))
@@ -499,7 +511,7 @@ class MProject(Project):
                     "SOT23BEC": self._footprint(fp_sot23_bec()), "SOT23": self._footprint(fp_sot23()),
                     "SOD123": self._footprint(fp_sod123()), "LED3": self._footprint(fp_led3()),
                     "SEED": self._footprint(fp_seed_breakout()), "ENC": self._footprint(fp_ec11()),
-                    "SWLED": self._footprint(fp_led_button()), "HDR8RA": self._footprint(fp_header_ra(8))})
+                    "SWLED": self._footprint(fp_led_button()), "WIRE8": self._footprint(fp_wire_pads(8))})
         res_sym, cap_sym = self.device_attrs("R1k")["Symbol"], self.device_attrs("C100n")["Symbol"]
         diode = self.device_attrs("D5819")["Symbol"]
         swled = self._symbol(led_button_symbol())
@@ -541,9 +553,9 @@ class MProject(Project):
                  "Rotary encoder with push switch, EC11 pattern, vertical, M7 bushing, D shaft (Alps EC11E or "
                  "Bourns PEC11R). A / B phases, C common, S1 / S2 switch, MP1 / MP2 mounting tabs"),
                 ("LED", led_symbol(), fps["LED3"], "LED 3mm red", "D?", "3 mm LED, red; 1 anode, 2 cathode (flat)"),
-                ("HDR8RA", header_symbol(8), fps["HDR8RA"], "Pin header 1x8 right angle", "CN?",
-                 "Right-angle male header 1x8, 2.54 mm, for the display module's cable (MX1.25 to Dupont); the "
-                 "plug lies flat on the board")):
+                ("WIRE8", header_symbol(8), fps["WIRE8"], "Wire pads 1x8", "CN?",
+                 "Eight wire pads, 2.54 mm, for the display module's cable (MX1.25 to Dupont): cut the Dupont "
+                 "ends off and solder the wires in; the module end stays a plug")):
             self._new(key, self._symbol(sym), fp, title, desig, desc)
         a = dict(self.device_attrs("TL074"))
         a.update({"Footprint": fps["SOIC14"], "Manufacturer Part": "TL074CDT", "Supplier Part": "",
@@ -731,7 +743,7 @@ def faceplate_pages(pr, P):
              "R1-R6", ["U10"] + rr(1, 12)),
             ("LEDs: U11 (outputs 1-8, R13-R20 470R) shifts on into U12 (RUN, TAP, SHIFT: R21 / R22 150R, R23 470R)",
              ["U11"] + rr(13, 20) + ["U12"] + rr(21, 23)),
-            ("Display cable (Waveshare order) on a right-angle header; decoupling at U10-U12, 10 u beside CN1",
+            ("Display cable (Waveshare order) soldered to wire pads; decoupling at U10-U12, 10 u beside CN1",
              ["CN1", "C1", "C2", "C3", "C4"]),
             ("Headers to the main board (male pins here, pin 1 at the top)", ["HF1", "HF2", "HF3", "HF4"])]),
     ]
@@ -801,21 +813,50 @@ def netlist_pins(pr, parts):
 
 
 def validate(path):
-    """Parse the written project: every schematic component's Device, Symbol and Footprint must be in it."""
+    """Parse the written project: every schematic component's Device, Symbol and Footprint must be in it;
+    on the PCBs every PAD_NET must name a pad of its component's footprint and a net with a NET record."""
     with ee.zipfile.ZipFile(path) as z:
         docs = ee.parse(z.read(f"{NAME}.epru").decode("utf-8").split("\n"))
     problems = []
+    pad_ids = {u: {h["id"] for h, p in d["recs"] if h["type"] == "PAD"}
+               for u, d in docs.items() if d["docType"] == "FOOTPRINT"}
     for u, d in docs.items():
         if d["docType"] == "SCH_PAGE":
             for h, p in d["recs"]:
-                if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"] \
-                        and p["value"] not in docs:
+                if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"]                         and p["value"] not in docs:
                     problems.append(f"{meta(d)['title']}: {p['key']} {p['value']} missing")
+        elif d["docType"] == "PCB":
+            title = meta(d)["title"]
+            nets = {ee.json.loads(h["id"])[1] for h, p in d["recs"] if h["type"] == "NET"}
+            fp_of = {}
+            for h, p in d["recs"]:
+                if h["type"] == "ATTR" and p.get("key") in ("Footprint", "Device"):
+                    if p["value"] not in docs:
+                        problems.append(f"{title}: {p['key']} {p['value']} missing")
+                    if p["key"] == "Footprint":
+                        fp_of[p["parentId"]] = p["value"]
+            for h, p in d["recs"]:
+                if h["type"] == "PAD_NET":
+                    _, cid, num, pid = ee.json.loads(h["id"])
+                    if pid not in pad_ids.get(fp_of.get(cid), ()):
+                        problems.append(f"{title}: PAD_NET {cid}.{num} names no pad of its footprint")
+                    if p["padNet"] not in nets:
+                        problems.append(f"{title}: net {p['padNet']} has no NET record")
     return problems, collections.Counter(d["docType"] for d in docs.values())
 
 
 def slug(title):
     return "-".join(re.findall(r"[a-z0-9]+", title.split(":")[0].lower()))
+
+
+def part_info(pages):
+    info = {}
+    for pg in pages:
+        for c in pg.comps:
+            if c["ref"] and c["ref"] not in info:
+                info[c["ref"]] = {"dev": c["dev"], "uid": pg.pr.unique_id(c["ref"]),
+                                  "channel": f"${pg.number}{c['cid']}"}
+    return info
 
 
 def main():
@@ -833,15 +874,32 @@ def main():
     bad += pins_and_pads(pr, used)
     for b in bad:
         print("PROBLEM:", b)
-    pr.write([("Tempo Main", mpages, None), ("Tempo Faceplate", fpages, None)], OUT)
+    board_fb = pcb.faceplate_board(pr, fb, part_info(fpages), circuit)
+    board_mb = pcb.main_board(pr, mb, part_info(mpages), circuit)
+    pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
+               + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb))
+    for b in pcb_bad:
+        print("PCB:", b)
+    template = pcb.load_template(ee)
+    panel_page = MPage(pr, "Panel", 1)
+    panel_page.text(70, Y(60), "Tempo 12HP panel as a PCB: no parts, no nets. Holes, slots, the display window, "
+                               "silkscreen and the bare-copper output band are in the PCB document; the art is "
+                               "hardware/panel/tempo-panel.svg.", 12)
+    board_panel = panel_pcb.PanelBoard()
+    pr.write([("Tempo Main", mpages, board_mb), ("Tempo Faceplate", fpages, board_fb),
+              ("Tempo Panel", [panel_page], board_panel)], OUT, template)
     missing, counts = validate(OUT)
     for b in missing:
         print("FILE:", b)
     for pg in mpages + fpages:
         render(pr, pg, PREVIEW.format(slug(pg.title)))
+    board_mb.render(PREVIEW.format("pcb-main-board"))
+    board_fb.render(PREVIEW.format("pcb-faceplate"))
+    board_panel.render(PREVIEW.format("pcb-panel"))
     n = sum(1 for pg in mpages + fpages for c in pg.comps if c["ref"])
     print(f"{os.path.normpath(OUT)}: {n} part units on {len(mpages) + len(fpages)} pages, "
-          f"{len(bad)} schematic problems; {len(missing)} file problems; docs {dict(counts)}")
+          f"{len(bad)} schematic problems; {len(board_mb.placed)} + {len(board_fb.placed)} parts placed, "
+          f"{len(pcb_bad)} PCB problems; {len(missing)} file problems; docs {dict(counts)}")
 
 
 if __name__ == "__main__":
