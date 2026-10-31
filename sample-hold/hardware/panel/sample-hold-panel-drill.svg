@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="90.5mm" height="158.5mm" viewBox="-20 -15 90.5 158.5">
+<title>S&amp;H 10HP panel - drill template (print at 100%)</title>
+<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444} .lbl{font-size:1.8px;fill:#06c}</style>
+<rect x="-20" y="-15" width="90.5" height="158.5" fill="#ffffff"/>
+<rect x="0" y="0" width="50.5" height="128.5" fill="none" stroke="#000" stroke-width="0.25"/>
+<rect x="0.60" y="10.25" width="49.3" height="108.0" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>
+<rect x="4.75" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="1.10">5.5x3.2</text>
+<rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="123.60">5.5x3.2</text>
+<rect x="40.31" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="46.31" y="1.10">5.5x3.2</text>
+<rect x="40.31" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="46.31" y="123.60">5.5x3.2</text>
+<circle cx="12.00" cy="29.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="10.50" y1="29.00" x2="13.50" y2="29.00" stroke="#000" stroke-width="0.12"/>
+<line x1="12.00" y1="27.50" x2="12.00" y2="30.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="16.15" y="25.05">Ø7.5</text>
+<text class="lbl" x="12.00" y="34.95" text-anchor="middle">RATE</text>
+<circle cx="38.50" cy="29.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="37.00" y1="29.00" x2="40.00" y2="29.00" stroke="#000" stroke-width="0.12"/>
+<line x1="38.50" y1="27.50" x2="38.50" y2="30.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="42.65" y="25.05">Ø7.5</text>
+<text class="lbl" x="38.50" y="34.95" text-anchor="middle">SLEW</text>
+<circle cx="25.25" cy="52.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="23.75" y1="52.00" x2="26.75" y2="52.00" stroke="#000" stroke-width="0.12"/>
+<line x1="25.25" y1="50.50" x2="25.25" y2="53.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="29.40" y="48.05">Ø7.5</text>
+<text class="lbl" x="25.25" y="57.95" text-anchor="middle">LEVEL</text>
+<circle cx="12.00" cy="52.00" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="10.50" y1="52.00" x2="13.50" y2="52.00" stroke="#000" stroke-width="0.12"/>
+<line x1="12.00" y1="50.50" x2="12.00" y2="53.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="14.00" y="50.20">Ø3.2</text>
+<text class="lbl" x="12.00" y="55.80" text-anchor="middle">CLOCK</text>
+<circle cx="12.00" cy="80.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="10.50" y1="80.00" x2="13.50" y2="80.00" stroke="#000" stroke-width="0.12"/>
+<line x1="12.00" y1="78.50" x2="12.00" y2="81.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="15.65" y="76.55">Ø6.5</text>
+<text class="lbl" x="12.00" y="85.45" text-anchor="middle">CLOCK</text>
+<circle cx="25.25" cy="80.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="23.75" y1="80.00" x2="26.75" y2="80.00" stroke="#000" stroke-width="0.12"/>
+<line x1="25.25" y1="78.50" x2="25.25" y2="81.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="28.90" y="76.55">Ø6.5</text>
+<text class="lbl" x="25.25" y="85.45" text-anchor="middle">IN</text>
+<circle cx="38.50" cy="80.00" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="37.00" y1="80.00" x2="40.00" y2="80.00" stroke="#000" stroke-width="0.12"/>
+<line x1="38.50" y1="78.50" x2="38.50" y2="81.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="42.15" y="76.55">Ø6.5</text>
+<text class="lbl" x="38.50" y="85.45" text-anchor="middle">SLEW IN</text>
+<circle cx="12.00" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="10.50" y1="97.18" x2="13.50" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="12.00" y1="95.68" x2="12.00" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="15.65" y="93.73">Ø6.5</text>
+<text class="lbl" x="12.00" y="102.63" text-anchor="middle">GATE</text>
+<circle cx="25.25" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="23.75" y1="97.18" x2="26.75" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="25.25" y1="95.68" x2="25.25" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="28.90" y="93.73">Ø6.5</text>
+<text class="lbl" x="25.25" y="102.63" text-anchor="middle">WHITE</text>
+<circle cx="38.50" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="37.00" y1="97.18" x2="40.00" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="38.50" y1="95.68" x2="38.50" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="42.15" y="93.73">Ø6.5</text>
+<text class="lbl" x="38.50" y="102.63" text-anchor="middle">S&amp;H</text>
+<circle cx="12.00" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="10.50" y1="111.78" x2="13.50" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="12.00" y1="110.28" x2="12.00" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="15.65" y="108.33">Ø6.5</text>
+<text class="lbl" x="12.00" y="117.23" text-anchor="middle">PINK</text>
+<circle cx="25.25" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="23.75" y1="111.78" x2="26.75" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="25.25" y1="110.28" x2="25.25" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="28.90" y="108.33">Ø6.5</text>
+<text class="lbl" x="25.25" y="117.23" text-anchor="middle">BLUE</text>
+<circle cx="38.50" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="37.00" y1="111.78" x2="40.00" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="38.50" y1="110.28" x2="38.50" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="42.15" y="108.33">Ø6.5</text>
+<text class="lbl" x="38.50" y="117.23" text-anchor="middle">SLEW</text>
+<line x1="0" y1="-8" x2="50" y2="-8" stroke="#000" stroke-width="0.3"/>
+<line x1="0" y1="-9.5" x2="0" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<line x1="50" y1="-9.5" x2="50" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<text x="25" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>
+<text x="25.25" y="134.5" font-size="2" text-anchor="middle">S&amp;H 10HP panel, front view. Red circles: final hole size.</text>
+<text x="25.25" y="137.5" font-size="2" text-anchor="middle">Dashed: the faceplate board.</text>
+</svg>
