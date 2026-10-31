@@ -10,8 +10,10 @@ everything else behind them, a PCB panel, everything generated from
 `hardware/tools/`. Every designator here matches `hardware/tools/circuit.py`.
 
 Status (2026-10-31): panel agreed; netlist written, 84 parts, 0 netlist
-problems, 0 circuit check failures (`python circuit.py`). Schematic, PCB
-placement and panel PCB are not started.
+problems, 0 circuit check failures (`python circuit.py`); EasyEDA Pro
+schematic generated, 4 pages, 0 problems against the netlist
+(`hardware/easyeda/SampleHold.epro2`, see [Schematic](#schematic)), not yet
+opened in EasyEDA. PCB placement and the panel PCB are not started.
 
 The p. 60 schematic is vector art that pdftotext and pypdf can't read;
 it was rendered by turning the page's content stream into SVG.
@@ -200,6 +202,40 @@ gate's 10k and 1M swapped.
 
 ---
 
+## Schematic
+
+`python easyeda_export.py` writes `hardware/easyeda/SampleHold.epro2`: one
+board, four A3 pages, previews beside it (`sample-hold-easyeda-*.png`).
+
+| Page | Holds |
+|---|---|
+| Noise | Q1 and its supply filter, U1B white, U1C blue, U1A pink; WHITE, PINK, BLUE jacks |
+| Clock and trigger | U2A with RATE, R204 to CLOCK's lug, the differentiator and U2B, the LED driver; CLOCK jack |
+| S&H, slew, gate | LEVEL, U2D, Q3 with its gate drive, C301, U2C; U3B, SLEW, C401, U3A; U1D gate; IN, SLEW IN, S&H, SLEW, GATE jacks |
+| Power | J10, D901/D902, R901/R902, C901/C902, the three decoupling pairs |
+
+Blocks end in net ports; ports with the same name connect across pages.
+Library parts from your MorrisSynth export (TL074, Thonkiconn, pot symbol,
+LR1F resistors, FG28 capacitors, 1N5819, the 1N4148's DO-35, the
+electrolytic, the 2×8 header). Drawn here: a TL072 (the library TL074's
+units 1–2, supply pins renumbered to 8 / 4), NPN symbols for the BC548
+and the 2N3904 (pin numbers differ), the J113, a 3 mm LED; footprints for
+DIP-14, DIP-8, TO-92, the LED, the Alpha pot, standing resistors and a 5 mm
+film capacitor. The 1N4148 uses the 1N5819 symbol (1 = cathode = the band).
+
+The exporter checks the drawing against `circuit.py` (every pin drawn
+once, every net in one piece and touching no other, no T-junctions), every
+footprint pad against a symbol pin, and every Device, Symbol and Footprint
+in the written file. Eight planted swaps (diode and electrolytic polarity,
+the TL072's supplies, the JFET's and 2N3904's pins, a jack lug, the SLEW
+pot's ends) were each reported.
+
+EasyEDA's own DRC will still warn about floating pins it can't know are
+meant to be open: Q1's collector (pin 1) and the power header's pins 13–16
+(the +5 V, CV and gate bus pins).
+
+---
+
 ## Board
 
 One PCB, 49.3 × 108 mm, behind the 10HP panel. Panel parts on its front:
@@ -233,4 +269,11 @@ the normals.
 - The LED has to reach the panel across the 7 mm between the board and
   the panel: a 3 mm LED on a spacer, or long legs set to height.
 - Film capacitors: C102, C201 (1 µF), C301 (100 nF, the hold cap) and C401
-  (470 nF). C201 and C102 see both polarities, so no electrolytics there.
+  (470 nF). C201 sees both polarities, so no electrolytic there. The film
+  footprint assumes a 7.2 × 5.5 mm body on a 5 mm pitch (WIMA MKS2 1 µF
+  63 V); check the parts bought.
+- The 680p–5n6 filter and trigger caps are C0G ceramics (TDK FG28 C0G
+  part numbers in the schematic; the MKI uses foil). Check that the 2n2 and
+  5n6 exist in that series, or use any C0G or film part on 5 mm.
+- The 47 µF electrolytics use the library 10 µF part's footprint (4.8 mm
+  can, 2.5 mm pitch): a 47 µF 25 V in a 5 mm can fits it.

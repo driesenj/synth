@@ -15,7 +15,8 @@ EasyEDA project.
 |---|---|---|
 | Panel layout, hole table, drill template, artwork | Agreed 2026-10-31 | `hardware/tools/panel.py`, `hardware/panel/` |
 | Netlist | Done: 84 parts on one board, 0 netlist problems, circuit check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
-| Schematic, PCB placement, panel PCB | Not started | |
+| Schematic | Done: EasyEDA Pro, one board, 4 pages, 0 problems against the netlist; not yet opened in EasyEDA | `hardware/tools/easyeda_export.py`, `hardware/easyeda/` |
+| PCB placement, panel PCB | Not started | |
 
 ## Panel
 
@@ -49,4 +50,8 @@ python circuit.py
 
 ```bash
 python panel.py
+```
+
+```bash
+python easyeda_export.py
 ```
