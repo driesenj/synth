@@ -74,6 +74,25 @@ its rows is fine.
 
 ## Lessons
 
+- A placer for any footprint, with no order dependence. It is in
+  `sample-hold/hardware/tools/pcb.py`; copy it, don't import it, because
+  other sessions edit sibling modules.
+  - The Offset's grid placer assumes two-pin parts on 2.54 or 5.08 mm.
+    `place_auto()` test-fits each candidate spot on the real footprint
+    (pads vs pads, edge and front bodies; body vs rear bodies), so 8 mm
+    DO-35s, DO-41s, TO-92s and fat film caps go through it too.
+  - `improve()` then lifts each part and re-places it until a round moves
+    nothing. Greedy order otherwise decides who gets the good spots: on
+    the S&H the trigger chain took the corner by the header and pushed the
+    power entry and a decoupling cap away.
+  - Keep a block in its area with `REGION` boxes (power entry beside the
+    header).
+  - Keep clock pads away from a sensitive input with a distance penalty
+    (`NOISY` / `QUIET`).
+  - Measure the result: ratsnest length, crossings, decoupling distance.
+    Look at a front view with ratsnest; the rear-view preview hides
+    connections.
+
 - Do the user's routing moves before handing over (done on Plaitsy,
   `plaits/hardware/tools/pcb.py` `_stage()` and `circuit.py`):
   - Main board: every resistor standing (2.54 mm, `fp_res_vertical`), each
