@@ -101,8 +101,10 @@ class PanelBoard:
     def slot(self, x, y, w, h):
         self.slots.append((*self.P(x, y), w, h))
 
-    def band(self, x, y, w, h, rx):
-        self.copper.append((*self.P(x, y), w, h, rx))
+    def band(self, x, y, w, h, rx, cuts):
+        """A copper band from its top-left (panel frame) and the clearance circles of the holes through it
+        (PCB frame). Each band keeps its own: a cutout outside a fill's outline would add copper there."""
+        self.copper.append((*self.P(x, y), w, h, rx, cuts))
 
     # -- the artwork, from panel.layout() like the SVG
     def build(self):
@@ -128,10 +130,8 @@ class PanelBoard:
                 _, x, y, r, w = item
                 self.ring(x, y, r, w)
         # copper band and patch, cleared round the holes through them, with the output labels on them
-        self.cuts = []
-        for (x, y, w, h, rx), cuts in panel.bands(pos):
-            self.band(x, y, w, h, rx)
-            self.cuts += [(*self.P(cx, cy), r) for cx, cy, r in cuts]
+        for (x, y, w, h, rx), cuts in panel.bands(pos):      # each band with its own holes
+            self.band(x, y, w, h, rx, [(*self.P(cx, cy), r) for cx, cy, r in cuts])
         for ref in panel.OUTPUTS + ["J15"]:
             self.text(pos[ref][2], panel.jack_label_y(pos, ref), panel.JACK_WORD[ref], panel.ART["label"])
         # holes
@@ -179,9 +179,9 @@ class PanelBoard:
             fill(12, ["CIRCLE", mil(x), mil(y), mil(dia / 2)])
         for x, y, w, h in self.slots:
             fill(12, rounded(x - w / 2, y + h / 2, w, h, h / 2))
-        for x, y, w, h, rx in self.copper:        # (x, y) is the band's top-left in the PCB frame
+        for x, y, w, h, rx, cuts in self.copper:  # (x, y) is the band's top-left in the PCB frame
             for layer in (1, 5):                  # top copper, top solder mask opening; mask stays on the clearances
-                fill(layer, rounded(x, y, w, h, rx), *(cutout(*c) for c in self.cuts))
+                fill(layer, rounded(x, y, w, h, rx), *(cutout(*c) for c in cuts))
         d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 11, "width": 10,
                                 "path": ["R", 0, mil(self.H), mil(self.W), mil(self.H), 0, 0], "locked": False,
                                 "zIndex": d.zi(), "polyType": "BOARD_OUTLINE"})
@@ -213,11 +213,11 @@ class PanelBoard:
         def P(x, y):
             return 1 + x * scale, 1 + (self.H - y) * scale
 
-        for x, y, w, h, rx in self.copper:
+        for x, y, w, h, rx, cuts in self.copper:
             dr.rounded_rectangle([P(x, y), P(x + w, y - h)], radius=rx * scale, fill="#c9a227")
-        for x, y, r in self.cuts:
-            X, Y = P(x, y)
-            dr.ellipse([X - r * scale, Y - r * scale, X + r * scale, Y + r * scale], fill="#141414")
+            for cx, cy, r in cuts:
+                X, Y = P(cx, cy)
+                dr.ellipse([X - r * scale, Y - r * scale, X + r * scale, Y + r * scale], fill="#141414")
         for pts, w in self.silk_lines:
             dr.line([P(*p) for p in pts], fill="#f0efe9", width=max(1, int(w * scale)), joint="curve")
         for p0, sweep, p1, w, (cx, cy, r, b0, b1) in self.arcs:   # panel frame, from 12 o'clock
