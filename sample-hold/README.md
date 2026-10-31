@@ -3,8 +3,8 @@
 Moritz Klein's MKI x ES.EDU S&H/Noise, rebuilt in the house style: a
 JFET sample & hold with its own clock and a slew output, plus white, pink
 and blue noise. One addition: a random GATE output from the op-amp section
-the MKI board leaves unused. 10HP Eurorack like the original, built the
-Marblesy way: two stacked PCBs, Thonk panel parts, generated panel and
+the MKI board leaves unused. 10HP Eurorack on one PCB, like the original;
+otherwise built the Marblesy way: Thonk panel parts, generated panel and
 EasyEDA project.
 
 ![panel](hardware/panel/sample-hold-panel-preview.png)
@@ -13,9 +13,9 @@ EasyEDA project.
 
 | Part | Status | Files |
 |---|---|---|
-| Panel layout, hole table, drill template, artwork | Draft, waiting for review | `hardware/tools/panel.py`, `hardware/panel/` |
-| Circuit plan | Draft, waiting for review | [docs/design.md](docs/design.md) |
-| Netlist, schematic, PCBs, panel PCB | Not started | |
+| Panel layout, hole table, drill template, artwork | Agreed 2026-10-31 | `hardware/tools/panel.py`, `hardware/panel/` |
+| Netlist | Done: 84 parts on one board, 0 netlist problems, circuit check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
+| Schematic, PCB placement, panel PCB | Not started | |
 
 ## Panel
 
@@ -39,7 +39,13 @@ knob. GATE flips a coin on every clock. Patch the clock module into CLOCK to
 lock all three to the tempo; patch an LFO into IN to quantise it in time;
 use SLEW IN alone as a portamento for the sequencer's pitch CV.
 
-Regenerate the panel files from `hardware/tools`:
+From `hardware/tools`, check the netlist (part counts, netlist problems, and
+an ideal-op-amp solve of cases with known answers) and regenerate the panel
+files:
+
+```bash
+python circuit.py
+```
 
 ```bash
 python panel.py
