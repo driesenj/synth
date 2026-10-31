@@ -16,7 +16,8 @@ EasyEDA project.
 | Panel layout, hole table, drill template, artwork | Agreed 2026-10-31 | `hardware/tools/panel.py`, `hardware/panel/` |
 | Netlist | Done: 84 parts on one board, 0 netlist problems, circuit check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
 | Schematic | Done: EasyEDA Pro, one board, 4 pages, 0 problems against the netlist; not yet opened in EasyEDA | `hardware/tools/easyeda_export.py`, `hardware/easyeda/` |
-| PCB placement, panel PCB | Not started | |
+| PCB placement, panel PCB | Done: one board placed and unrouted, 0 problems; the panel as a second PCB; routing notes in the design notes | `hardware/tools/pcb.py`, `hardware/tools/panel_pcb.py`, `hardware/easyeda/` |
+| Routing | Not started (you, in EasyEDA Pro) | |
 
 ## Panel
 

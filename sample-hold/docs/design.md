@@ -12,8 +12,9 @@ everything else behind them, a PCB panel, everything generated from
 Status (2026-10-31): panel agreed; netlist written, 84 parts, 0 netlist
 problems, 0 circuit check failures (`python circuit.py`); EasyEDA Pro
 schematic generated, 4 pages, 0 problems against the netlist
-(`hardware/easyeda/SampleHold.epro2`, see [Schematic](#schematic)), not yet
-opened in EasyEDA. PCB placement and the panel PCB are not started.
+(`hardware/easyeda/SampleHold.epro2`, see [Schematic](#schematic)); the board
+placed and the panel as a PCB in the same project (see [Board](#board)),
+0 problems. Not yet opened in EasyEDA, not routed.
 
 The p. 60 schematic is vector art that pdftotext and pypdf can't read;
 it was rendered by turning the page's content stream into SVG.
@@ -238,11 +239,62 @@ meant to be open: Q1's collector (pin 1) and the power header's pins 13–16
 
 ## Board
 
-One PCB, 49.3 × 108 mm, behind the 10HP panel. Panel parts on its front:
-9 Thonkiconn, 3 Alpha 9 mm pots, the clock LED. Everything else on its
-rear: 2 TL074 and a TL072, three TO-92s, 5 diodes, 39 resistors, 20
-capacitors, the power header. The MKI fits the same circuit on one 10HP
-board, so it fits here. Placement will show where.
+One PCB, 49.3 × 108 mm, behind the 10HP panel, placed, net-assigned and
+unrouted in `SampleHold.epro2` (`pcb.py`; the panel is the project's
+second PCB, `panel_pcb.py`). Preview: `sample-hold-easyeda-pcb.png`, rear
+view (EasyEDA's top layer is the rear).
+
+- **Front (bottom layer):** 9 Thonkiconn, 3 Alpha 9 mm pots, the clock LED,
+  at their panel positions. Output rows at Marblesy's heights.
+- **Rear (top layer):** everything else, every resistor standing. No rear
+  pad sits under a jack or pot body (those leads are soldered on the
+  front, where the bodies lie on the board).
+
+Where things went, front view:
+
+| Area | Holds |
+|---|---|
+| Strip above RATE and SLEW | J10 power header (pin 1, −12 V, red stripe, on the left); D902 / R902 left of it, D901 / R901 right; the 47 µF caps in the margins beside the pots |
+| Between RATE and SLEW, above LEVEL | U2 (clock, trigger, S&H), its oscillator parts, the trigger chain, C201 |
+| Left of LEVEL | U1 (noise, gate), turned so its noise input (pin 5) faces the middle, away from the clock LED; Q1, C102, R103 right beside it; the LED driver above, round D1 |
+| Right of LEVEL, under SLEW | U3 (slew); Q3, C301, D301 for the S&H between U2 and SLEW |
+| Between and beside the jacks | the blue and pink filters, the output resistors |
+
+The op-amps and the header are placed by hand. `place_auto()` places every
+other part where its pins are nearest the pads on their nets. It test-fits
+each spot against the real footprint: 8 mm diodes, TO-92s and film caps up
+to 8.5 mm thick all go through the same placer. An improvement pass then
+lifts each part and re-places it until nothing moves (5 rounds), so the
+result doesn't depend on placing order.
+
+Clock-carrying pads pay a penalty within 8 mm of the noise amp's input.
+The power entry is kept to the strip and margins at the top. The trigger
+chain stays near U2.
+
+Measured: decoupling caps 2.5–4.7 mm from their supply pins. Ratsnest
+(minimum spanning tree per net, ground left out) 1194 mm with 98 crossings.
+
+| Node | Ratsnest length |
+|---|---|
+| NIN (×148 input) | 7.6 mm |
+| NE (noise emitter) | 5.1 mm |
+| JG (JFET gate) | 7.3 mm |
+| HOLD (hold cap) | 15.7 mm |
+
+### Routing notes
+
+- **Rules:**
+  - Clearance 0.25 mm, track 0.3 mm.
+  - POWER net class 0.6 mm: +12V, −12V, P12_IN, N12_IN, P12_D, N12_D.
+  - Vias 0.8 / 0.4 mm; copper 0.5 mm from the edge.
+- **Keepouts:** 3 mm round each jack barrel on the front layer. Ground copper may stay.
+- **Hand-route and lock first:**
+  - The noise front end, on one layer over ground: Q1 emitter, C102, R103, U1 pin 5, and R104 / R105 at pins 6 / 7.
+  - The hold node (Q3 drain, C301, U2 pin 10) and the JFET gate (R301, Q3 gate, D301): short, with nothing switching beside them.
+  - OSC_C (C201, R201, U2 pin 2).
+  - The ±12 V buses from R901 / R902 across the top strip to the three chips.
+- **CLK** (CLOCK jack tip to C202 and R205) runs the length of the left side. Take it up the left board edge, outside U1. Never run it between U1 and Q1 / C102, and keep it on the other layer from the noise front end.
+- **Then autoroute:** both layers, 45° corners, few vias, skipping GND and the POWER class. Then pour GND on both layers and stitch the pours with vias between the jack rows.
 
 ---
 

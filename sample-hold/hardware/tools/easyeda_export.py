@@ -1,6 +1,5 @@
-"""S&H as an EasyEDA Pro project (.epro2): the schematic of its one board.
-PCB placement and the panel PCB follow in their own step (pcb.py,
-panel_pcb.py, as for Marblesy, the mixer and Side FXy).
+"""S&H as an EasyEDA Pro project (.epro2): the schematic of its one board,
+that board placed (pcb.py), and the panel as a second PCB (panel_pcb.py).
 
 Copied from the Offset exporter (attenuverter/hardware/tools; its
 footprints, project helpers and checks are copies here, not imports, so
@@ -42,9 +41,16 @@ from easyeda_export import (Doc, Symbol, Page, Project, meta, attr_payload, Y, r
                             new_uuid, W, H, H_TXT, V_TXT)
 
 
-_spec = importlib.util.spec_from_file_location("sh_circuit", os.path.join(HERE, "circuit.py"))
-circuit = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(circuit)
+def _load(name):
+    spec = importlib.util.spec_from_file_location("sh_" + name, os.path.join(HERE, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+circuit = _load("circuit")
+pcb = _load("pcb")
+panel_pcb = _load("panel_pcb")
 
 LIBFILES = [os.path.join(PLAITSY, "..", "easyeda", "morrissynth-parts.epru"),
             os.path.normpath(os.path.join(HERE, "..", "..", "..", "stereo-mixer", "hardware", "easyeda",
@@ -378,6 +384,18 @@ class MProject(Project):
         self.lib_symbol(sym.doc.uuid, lines)
         return sym.doc.uuid
 
+    def footprint_geo(self, uid):
+        """Pads and body box of a library or generated footprint, by uuid."""
+        if not hasattr(self, "_fpgeo"):
+            self._fpgeo = {}
+            docs = {u: d for u, d in self.lib.items() if d["docType"] == "FOOTPRINT"}
+            for typ, lines in self.new_docs:
+                if typ == "FOOTPRINT":
+                    docs.update(ee.parse(lines))
+            for u, d in docs.items():
+                self._fpgeo[u] = pcb.footprint_geometry(d)
+        return self._fpgeo[uid]
+
     def _new_devices(self):
         r1k = self.device_attrs("R1k")
         for val, (mpn, value) in R_NEW.items():
@@ -455,7 +473,7 @@ class MProject(Project):
                      "3D Model": "", "3D Model Title": "", "3D Model Transform": "", "Description": desc}
             self._device(key, title, attrs)
 
-    def write(self, boards, path):
+    def write(self, boards, path, template=None):
         """boards: [(title, pages, pcb board or None)]; each gets a BOARD doc holding its schematic pages
         and, once placed, its PCB."""
         used = {u for u, m in self.devices.values()}
@@ -473,6 +491,8 @@ class MProject(Project):
             lines += sch.lines({"title": f"{title} Schema", "board": board.uuid, "zIndex": None})
             for pg in pages:
                 lines += pg.lines(sch.uuid)
+            if pcb_board is not None:
+                lines += pcb_board.doc(ee, template, board.uuid, f"{title} PCB")
         lines += Doc("CONFIG", "CONFIG").lines({"defaultSheet": ""})
         lines += next(d for d in self.lib.values() if d["docType"] == "BLOB")["lines"]   # one BLOB doc
         project = {"title": TITLE, "cbb_project": False, "editorVersion": ee.EDIT, "introduction": "",
@@ -1000,18 +1020,54 @@ def pins_and_pads(pr, keys):
     return problems
 
 
+def part_info(pages):
+    """ref -> device key, schematic Unique ID and the PCB's Channel ID ('$' + page number + id of the
+    part's first schematic component)."""
+    info = {}
+    for pg in pages:
+        for c in pg.comps:
+            if c["ref"] and c["ref"] not in info:
+                info[c["ref"]] = {"dev": c["dev"], "uid": pg.pr.unique_id(c["ref"]),
+                                  "channel": f"${pg.number}{c['cid']}"}
+    return info
+
+
 def validate(path):
-    """Parse the written project: every component's Device, Symbol and Footprint must be in it."""
+    """Parse the written project: every schematic component's Device, Symbol and Footprint must be in it;
+    on the PCBs every PAD_NET must name a real pad of its component's footprint and a net with a NET
+    record, and every component's Device must exist (EasyEDA drops a net silently otherwise)."""
     with ee.zipfile.ZipFile(path) as z:
         docs = ee.parse(z.read(f"{NAME}.epru").decode("utf-8").split("\n"))
     problems = []
     for u, d in docs.items():
-        if d["docType"] != "SCH_PAGE":
-            continue
-        for h, p in d["recs"]:
-            if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"] \
-                    and p["value"] not in docs:
-                problems.append(f"{meta(d)['title']}: {p['key']} {p['value']} missing")
+        if d["docType"] == "SCH_PAGE":
+            for h, p in d["recs"]:
+                if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"] \
+                        and p["value"] not in docs:
+                    problems.append(f"{meta(d)['title']}: {p['key']} {p['value']} missing")
+        elif d["docType"] == "PCB":
+            comps, nets, attrs = set(), set(), {}
+            for h, p in d["recs"]:
+                if h["type"] == "COMPONENT":
+                    comps.add(h["id"])
+                elif h["type"] == "NET":
+                    nets.add(ee.json.loads(h["id"])[1])
+                elif h["type"] == "ATTR" and p.get("parentId"):
+                    attrs.setdefault(p["parentId"], {})[p["key"]] = p["value"]
+            for cid in comps:
+                a = attrs.get(cid, {})
+                if a.get("Device") not in docs or a.get("Footprint") not in docs:
+                    problems.append(f"{meta(d)['title']}: component {cid} has no Device or Footprint")
+            for h, p in d["recs"]:
+                if h["type"] != "PAD_NET":
+                    continue
+                _, cid, num, pad_id = ee.json.loads(h["id"])
+                fp = docs.get(attrs.get(cid, {}).get("Footprint"))
+                pad_ids = {hh["id"] for hh, _ in fp["recs"] if hh["type"] == "PAD"} if fp else set()
+                if pad_id not in pad_ids:
+                    problems.append(f"{meta(d)['title']}: PAD_NET {cid}.{num} names no pad of its footprint")
+                if p["padNet"] not in nets:
+                    problems.append(f"{meta(d)['title']}: net {p['padNet']} has no NET record")
     return problems, collections.Counter(d["docType"] for d in docs.values())
 
 
@@ -1027,15 +1083,28 @@ def main():
     bad += pins_and_pads(pr, used)
     for b in bad:
         print("PROBLEM:", b)
-    pr.write([(TITLE, pages, None)], OUT)
+    board = pcb.one_board(pr, parts, part_info(pages), circuit)
+    pcb_bad = board.check() + pcb.placement_check(board, circuit) + pcb.front_housing_check(board)
+    for b in pcb_bad:
+        print("PCB:", b)
+    panel_page = MPage(pr, "Panel", 1)
+    panel_page.page_count = "1"
+    panel_page.text(70, Y(60), "S&H 10HP panel as a PCB: no parts, no nets. Holes, slots, silkscreen and the "
+                               "bare-copper output block are in the PCB document; the art is "
+                               "hardware/panel/sample-hold-panel.svg.", 12)
+    board_panel = panel_pcb.PanelBoard()
+    pr.write([(TITLE, pages, board), (f"{TITLE} Panel", [panel_page], board_panel)], OUT, pcb.load_template(ee))
     missing, counts = validate(OUT)
     for b in missing:
         print("FILE:", b)
     for pg in pages:
         render(pr, pg, PREVIEW.format(pg.title.split(",")[0].lower().replace(" ", "-").replace("&", "")))
+    board.render(PREVIEW.format("pcb"))
+    board_panel.render(PREVIEW.format("pcb-panel"))
     n = sum(1 for pg in pages for c in pg.comps if c["ref"])
-    print(f"{os.path.normpath(OUT)}: {n} part units on {len(pages)} pages, {len(bad)} schematic problems, "
-          f"{len(missing)} file problems; docs {dict(counts)}")
+    print(f"{os.path.normpath(OUT)}: {n} part units on {len(pages)} pages, {len(bad)} schematic problems; "
+          f"{len(board.placed)} parts placed, {len(pcb_bad)} PCB problems; {len(missing)} file problems; "
+          f"docs {dict(counts)}")
 
 
 if __name__ == "__main__":
