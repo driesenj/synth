@@ -1,0 +1,25 @@
+kind,ref,label,board_origin_x,board_origin_y,panel_x_from_left,panel_y_from_top,hole_mm
+jack,J1,IN 1,9.80,21.85,10.40,97.18,6.5
+jack,J2,OUT 1,22.30,21.85,22.90,97.18,6.5
+jack,J3,CLOCK,34.80,21.85,35.40,97.18,6.5
+jack,J4,CV 1,47.30,21.85,47.90,97.18,6.5
+jack,J5,MIDI,59.80,21.85,60.40,97.18,6.5
+jack,J6,IN 2,9.80,7.25,10.40,111.78,6.5
+jack,J7,OUT 2,22.30,7.25,22.90,111.78,6.5
+jack,J8,CV 2,34.80,7.25,35.40,111.78,6.5
+jack,J9,CV 3,47.30,7.25,47.90,111.78,6.5
+jack,J10,CV 4,59.80,7.25,60.40,111.78,6.5
+ledbutton,SW1,PITCH,9.80,101.60,10.40,16.65,6.5
+ledbutton,SW2,DELAY,26.47,101.60,27.07,16.65,6.5
+ledbutton,SW3,TEXTURE,43.13,101.60,43.73,16.65,6.5
+ledbutton,SW4,REVERB,59.80,101.60,60.40,16.65,6.5
+ledbutton,SW5,SHIFT,59.80,85.25,60.40,33.00,6.5
+encoder,ENC1,K1,40.80,81.75,41.40,36.50,7.5
+encoder,ENC2,K2,59.80,68.75,60.40,49.50,7.5
+encoder,ENC3,K3,40.80,55.75,41.40,62.50,7.5
+encoder,ENC4,K4,59.80,42.75,60.40,75.50,7.5
+window,DS1,1.9in IPS 170x320,16.40,62.25,17.00,56.00,23.70 x 43.72 window r1.0
+mount,,mounting slot,,,7.50,3.00,5.5 x 3.2 slot
+mount,,mounting slot,,,7.50,125.50,5.5 x 3.2 slot
+mount,,mounting slot,,,63.38,3.00,5.5 x 3.2 slot
+mount,,mounting slot,,,63.38,125.50,5.5 x 3.2 slot
