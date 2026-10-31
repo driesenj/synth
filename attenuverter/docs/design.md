@@ -7,9 +7,9 @@ source can feed all four channels at different depths. The outputs add into
 the next channel when unpatched, so the module also mixes modulation.
 Reference designators match `hardware/tools/circuit.py`.
 
-Status (2026-10-31): panel draft and circuit plan. The netlist, schematic
-and PCBs follow once the panel and the [open choices](#open-choices) are
-agreed.
+Status (2026-10-31): panel approved; netlist written for one board, 96
+parts, 0 problems, and its DC check passes (see [Netlist](#netlist)). The
+EasyEDA schematic, PCB placement and panel PCB are not started.
 
 ---
 
@@ -112,6 +112,42 @@ common-mode range on ±12 V, where its output can flip. All resistors are 100 k 
 
 ---
 
+## Netlist
+
+`hardware/tools/circuit.py`, one board. `python circuit.py` prints the part
+counts, the netlist problems (single-pin nets, designators used twice,
+TL074 pins left out) and a DC check.
+
+| Designators | What |
+|---|---|
+| J1–J4, J5–J8 | IN 1–4, OUT 1–4 (Thonkiconn: 1 sleeve, 2 switch lug, 3 tip) |
+| RV1, RV3, RV5, RV7 / RV2, RV4, RV6, RV8 | ATTEN / OFFSET (pin 3 = CW end, both on the negative side; lugs 4, 5 on GND) |
+| D1–D4 | output LEDs, 2-lead bicolour: current from pin 1 to pin 2 = green |
+| U1–U4 | TL074 per channel, sections A (pins 1–3), B (5–7), C (8–10), D (12–14) |
+| R*k*01–R*k*12, C*k*01 | channel *k*'s resistors and summer cap (R101 … R412) |
+| D5, D6, R901–R904, C901, C902 | ±5 V references, the +1 V divider |
+| J9, D7, D8, R905, R906, C903–C912 | power entry, bulk and decoupling |
+
+Net names say what they carry: `IN1`, `N1` (−IN), `P1` (+IN), `AW1` / `OW1`
+(the wipers), `SUM1`, `OA1` (summer out), `OUT1` (tip), `OSW1` (its switch
+lug), `CAS2` (OUT 1 inverted, into channel 2), `NORM`, `REF_P`, `REF_N`.
+
+**DC check.** `solve()` builds the netlist's nodal equations with ideal
+op-amps and ideal references, takes pot positions and a patch state
+(patched inputs as sources, patched outputs as 100k loads, an unpatched
+jack's lug shorted to its tip), and returns every node voltage. `dc_check()`
+runs eight patch cases with answers worked out by hand: noon is 0 V, the
++1 V normal, the offset ends, fan-out, a patched IN 3 breaking the chain,
+and cascades to OUT 2 and OUT 4. All pass to 1 µV. Two results worth
+knowing:
+
+- Each cascade step reads the previous channel 1 % low: D takes OUT k's
+  tip, which sits behind the 1k output resistor, into 100k.
+- One source with a 1k output impedance, fanned out to all four inputs
+  (4 × 100k), arrives at 96 %.
+
+---
+
 ## Panel
 
 12HP, in the house style. The channels are columns like the mixer's
@@ -160,22 +196,23 @@ mixer's density, which has proved playable.
 
 ---
 
-## Open choices
+## Choices
 
-1. **Width and channel count.** In 12HP, four channels fit at the mixer's
-   knob spacing. The 10HP in the voice-case list only fits three channels at
-   that spacing, or four with 9 mm knobs at 11 mm pitch, which are
-   hard to turn live.
-2. **IN 1 normal.** +1 V (fine offset, as drawn), +5 V (ATTEN becomes a
-   second coarse offset), or 0 V (unpatched channels are pure offsets). It
-   is one resistor change.
-3. **OFFSET range.** ±5 V as drawn, or ±10 V (50 k from the OFFSET
-   wipers into the summer), which halves the knob's resolution.
-4. **The free strip** between OFFSET and IN (about 20 mm). Leave it empty,
-   or add a per-channel sub-mini toggle there: for example ATTEN ×1 / ×2
-   (gain for small envelopes), or OFFSET ±5 V / ±1 V.
-5. **One board or two.** The circuit is small (4 DIP-14, about 50
-   resistors), so one PCB can carry the panel parts on its front and
-   everything else behind them. That is cheaper and has no board-to-board
-   headers. The two-board stack of the other modules also works, if you want
-   it to match them.
+Settled on 2026-10-31, when the panel was approved ("Start the netlist"),
+as drawn and as recommended. Each can still change:
+
+1. **Width and channel count:** 12HP, four channels. The 10HP in the
+   voice-case list fits only three channels at this knob spacing.
+2. **IN 1 normal:** +1 V, a fine offset. +5 V (ATTEN becomes a second
+   coarse offset) or 0 V (unpatched channels are pure offsets) is one
+   resistor change: R903 / R904.
+3. **OFFSET range:** ±5 V. ±10 V would take 50 k for R*k*06, and the
+   knob's resolution would halve.
+4. **The free strip** between OFFSET and IN (about 20 mm): left empty. It
+   could later take a per-channel sub-mini toggle (ATTEN ×1 / ×2, or OFFSET
+   ±5 V / ±1 V).
+5. **One board:** the panel parts on its front, everything else on its
+   rear. That is cheaper, and there are no board-to-board headers. The
+   generators for the next steps are therefore a one-board cut of the
+   mixer's. If you want the two-board stack instead, the nets that cross
+   the boards get `_F` names and headers.

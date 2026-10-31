@@ -13,17 +13,17 @@ so OUT 4 can be a mix. Built the Marblesy way, with Thonk panel parts.
 
 | Part | Status | Files |
 |---|---|---|
-| Panel layout, drill template, artwork | Draft (2026-10-31), not yet approved | `hardware/tools/panel.py`, `hardware/panel/` |
-| Circuit plan | Written; [open choices](docs/design.md#open-choices) to settle | [docs/design.md](docs/design.md) |
-| Netlist, EasyEDA schematic, PCBs, panel PCB | Not started | |
+| Panel layout, drill template, artwork | Done (approved 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
+| Netlist | Done: one board, 96 parts, 0 problems, DC check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md#netlist) |
+| EasyEDA schematic, PCB placement, panel PCB | Not started | |
 
 ## Files
 
 ```
-docs/design.md            behaviour, circuit, op-amp map, references and power, BOM, open choices
+docs/design.md            behaviour, circuit, netlist, op-amp map, references and power, BOM, choices
 hardware/
   tools/
-    circuit.py            panel parts and their placement (the netlist goes here next)
+    circuit.py            the netlist with its checks and DC solve, and the panel placement
     panel.py              hole list, drill template and the panel artwork from the placement
   panel/
     offset-panel-holes.csv, offset-panel-drill.svg
@@ -33,5 +33,5 @@ hardware/
 Regenerate from `hardware/tools`:
 
 ```bash
-python panel.py
+python circuit.py && python panel.py
 ```
