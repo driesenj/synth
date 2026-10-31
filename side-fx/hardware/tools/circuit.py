@@ -161,9 +161,10 @@ JACKS = [
     ("J6", "IN 2", "IN2_F", "IN1_F"), ("J7", "OUT 2", "OUT2_F", None), ("J8", "CV 2", "CV2_F", "GND_F"),
     ("J9", "CV 3", "CV3_F", "GND_F"), ("J10", "CV 4", "CV4_F", "GND_F"),
 ]
-# J5 is a stereo Thonkiconn (PJ366ST): tip and ring to the MIDI input, sleeve left open (MIDI IN
-# leaves the shield unconnected), switch lugs unused
-MIDI_JACK = {"T": "MIDI_TIP_F", "R": "MIDI_RING_F"}
+# J5 is a stereo Thonkiconn (PJ366ST): the mono jack's three-pin row with the ring where the switch lug
+# was (1 sleeve, 2 ring, 3 tip; no switches). Tip and ring to the MIDI input, the sleeve left open (MIDI
+# IN leaves the shield unconnected).
+MIDI_JACK = {"3": "MIDI_TIP_F", "2": "MIDI_RING_F"}
 # ref, panel label, switch net. Thonk low-profile LED buttons, red: switch on pins 1+2 / 3+4, LED on
 # 5 (anode) and 6; the three plastic feet clipped off. The sends sit on a 74HC165, SHIFT on its own
 # Seed pin (the two 165s are full).
@@ -171,8 +172,8 @@ BUTTONS = [
     ("SW1", "PITCH", "BTN_PITCH_F"), ("SW2", "DELAY", "BTN_DELAY_F"), ("SW3", "TEXTURE", "BTN_TEXTURE_F"),
     ("SW4", "REVERB", "BTN_REVERB_F"), ("SW5", "SHIFT", "BTN_SHIFT_F"),
 ]
-# EC11 encoders with push (KiCad pad names A, B, C, S1, S2, MP): common and switch to GND, the
-# phases and the switch pulled up into the 165s
+# EC11 encoders with push (KiCad pad names A, B, C, S1, S2; the two mounting tabs MP1 / MP2): common,
+# switch and tabs to GND, the phases and the switch pulled up into the 165s
 ENCODERS = [("ENC1", "K1"), ("ENC2", "K2"), ("ENC3", "K3"), ("ENC4", "K4")]
 DISPLAY = ("DS1", "1.9in IPS 170x320")   # the module; CN1 below is the header for its cable
 DISPLAY_ACTIVE = (22.70, 42.72)         # active area, portrait, mm (Waveshare 1.9inch LCD Module)
@@ -219,7 +220,8 @@ def faceplate_parts():
     parts.append(R("R6", "10k", "3V3D_F", "BTN_SHIFT_F"))
     for k, (ref, label) in enumerate(ENCODERS):
         parts.append(Part(ref, "ENC", "EC11", {"A": f"ENC{k + 1}_A_F", "B": f"ENC{k + 1}_B_F", "C": "GND_D_F",
-                                               "S1": "GND_D_F", "S2": f"BTN_K{k + 1}_F", "MP": "GND_D_F"}, label))
+                                               "S1": "GND_D_F", "S2": f"BTN_K{k + 1}_F", "MP1": "GND_D_F",
+                                               "MP2": "GND_D_F"}, label))
     # the two 74HC165s: U2.Q7 -> U1.DS, U1.Q7 -> SR_DIN; every input pulled up by its network
     for u, ds, q7 in (("U1", "SR_CHAIN", "SR_DIN_F"), ("U2", "GND_D_F", "SR_CHAIN")):
         pins = {"1": "SR_LOAD_F", "2": "SR_CLK_F", "8": "GND_D_F", "9": q7, "10": ds, "15": "GND_D_F",

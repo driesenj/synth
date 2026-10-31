@@ -144,3 +144,26 @@ too big for a dense panel.
   sockets on the main board); Thonk's "Male + Female Header Bag". Standard
   sockets give an 8.5 mm board gap: enough for DIPs and axial parts on the
   faceplate's rear, not for anything tall.
+- H11L1 (MIDI in at 3.3 V; works from 3 V): DIP-6, 1 anode, 2 cathode, 3 NC,
+  4 open-collector output (idles high), 5 GND, 6 VCC. Give the symbol pin 3.
+
+## EC11 encoder with switch (Side FXy)
+
+KiCad `RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm`, in its own frame (y
+down, origin on pad A): A (0, 0), C (0, 2.5), B (0, 5), S2 (14.5, 0), S1
+(14.5, 5), mounting tabs MP (7.5, −3.1) and (7.5, 8.1), 3.2 × 2 pads with
+2.8 × 1.5 oval slots; shaft at (7.5, 2.5); body 12 × 11.6. The phase pins
+sit 7.5 mm from the shaft, the switch pins 7.0 mm on the other side.
+`side-fx/hardware/tools/easyeda_export.py` `fp_ec11()` moves the origin onto the shaft and names
+the tabs MP1 / MP2 (EasyEDA wants unique pad numbers). Bourns PEC11R uses
+the same pattern. Thonk doesn't sell EC11s; Tayda and Mouser do.
+
+## Stereo Thonkiconn (QingPu PJ366ST)
+
+Three pins in the mono jack's row, no switches: sleeve, ring where the mono's
+switch lug is, tip (KiCad frame 0 / 3.1 / 11.4 mm). In the library
+WQP518MA's frame: 1 sleeve (0, −5.7), 2 ring (0, −2.6), 3 tip (0, 5.7), so
+the barrel offset (0.78 mm) and the panel hole are the mono jack's. Slots
+from KiCad merge request 1073 (closed, not merged): S 1.9 × 0.68, R 2.1 ×
+0.68, T 2.0 × 0.57, slightly longer than the mono's. `fp_pj366st()` in the
+Side FXy exporter.

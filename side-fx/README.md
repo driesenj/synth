@@ -16,7 +16,8 @@ Rob Heel's seed_power_opamps breakout.
 |---|---|---|
 | Panel layout, drill template, artwork | Done (approved 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
 | Netlist | Done, 75 parts over two boards, checks pass; no SD card (presets in QSPI flash) | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
-| Schematic, PCBs, panel PCB | Not started | |
+| EasyEDA Pro schematic | Done, 3 A3 pages (main board 1, faceplate 2), every footprint assigned, drawing checked against the netlist; not yet imported | `hardware/easyeda/SideFXy.epro2`, previews `hardware/easyeda/side-fx-easyeda-*.png` |
+| PCB placement, panel PCB | Not started | |
 | Firmware | Not started | |
 
 ## Panel
@@ -49,6 +50,33 @@ enough to leave room for the knob stack in 14HP.
 | **1.9" IPS 170 × 320, ST7789V2** | 22.7 × 42.7 | Not in libDaisy: a small SPI + DMA driver to write; 170 × 320 × 16 bit = 109 KB frame, or 27 KB at 4 bit | **Chosen.** Same shape as the original's window, sharp, no burn-in, a few euros. IPS black is not OLED black: use a black UI and PWM the backlight |
 | 2.42" OLED 128 × 64, SSD1309 | 27.5 × 55 (portrait) | libDaisy `oled_ssd130x` | True black, but only 64 px across in portrait, and the 37 mm wide glass collides with the knob column |
 | 1.5" OLED 128 × 128 greyscale, SSD1327 | 26.9 × 26.9 | libDaisy `oled_ssd1327` | True black and 16 greys, but too short for four knob rows; a mostly static preset page burns in |
+
+## Files
+
+```
+docs/design.md            pin map, circuits, headers, schematic notes, BOM, firmware notes
+hardware/
+  tools/
+    circuit.py            the netlist, headers and the panel placement
+    easyeda_export.py     builds SideFXy.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
+    panel.py              hole list, drill template and the panel artwork from the placement
+  easyeda/
+    SideFXy.epro2         schematic of both boards (no PCBs yet)
+    side-fx-easyeda-*.png page previews
+  panel/
+    side-fx-panel-holes.csv, side-fx-panel-drill.svg
+    side-fx-panel.svg     panel artwork (groups: copper, silk, holes, mockup), side-fx-panel-preview.png
+```
+
+Regenerate from `hardware/tools`:
+
+```bash
+python easyeda_export.py && python panel.py
+```
+
+Import with File > Import > EasyEDA (Professional) > `SideFXy.epro2`, then
+run Design > Check DRC on both schematics; [design.md](docs/design.md#schematic)
+lists the floating-pin warnings to expect.
 
 ## Open questions
 

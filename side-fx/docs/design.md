@@ -6,9 +6,11 @@ work, and Thonk supplies the panel parts where it can. Every reference designato
 matches `hardware/tools/circuit.py`; `python circuit.py` prints the part
 counts and runs the netlist checks.
 
-Status: panel drafted (2026-10-31), netlist written and checked (0
-problems). The schematic export, PCB placement, panel PCB and firmware are not
-started.
+Status (2026-10-31): panel approved, netlist written and checked (0
+problems), and the EasyEDA Pro schematic generated and checked against the
+netlist (`hardware/easyeda/SideFXy.epro2`, see [Schematic](#schematic)). It has
+not been imported into EasyEDA yet. PCB placement, the panel PCB and the
+firmware are not started.
 
 ---
 
@@ -194,6 +196,62 @@ for the fewest crossings.
 The faceplate keeps two grounds: GND_F (jack sleeves and lugs, the audio
 and CV return) and GND_D_F (logic, encoders, display). They join only on the
 main board, through their own header pins.
+
+---
+
+## Schematic
+
+`hardware/tools/easyeda_export.py` writes `hardware/easyeda/SideFXy.epro2`:
+two boards (SideFXy Main, SideFXy Faceplate), each with its schematic and
+no PCB yet, and three A3 pages:
+
+| Page | Holds |
+|---|---|
+| Main board | Seed, CV stages, clock, MIDI, bias, U6 decoupling, H1–H4 |
+| Faceplate 1 | jacks, encoders, LED buttons (and R6) |
+| Faceplate 2 | U1/U2 + RN1/RN2, U3 + R1–R5, CN1, C1–C4, HF1–HF4 |
+
+Run `python easyeda_export.py` from `hardware/tools` (needs Pillow for
+the previews). It reports the schematic problems (every pin of the netlist
+drawn exactly once and on its net, with no T-junctions or pins in the middle
+of a wire), any symbol pin without a footprint pad or the reverse, and any
+missing device, symbol or footprint in the written file. All three are 0.
+
+Parts come from your MorrisSynth library caches: the TL074ACN symbol, the
+WQP518MA jack, LR1F resistors, FG28 / SR305 / 178MU0033 capacitors, the 1N4148
+footprint with the 1N5819 symbol, the 74HC595N's DIP-16, net ports, ground
+flags and the frame. Everything else is drawn in the same style:
+
+- **Footprints:**
+  - Taken over from Marblesy and the mixer: the Seed breakout, DIP-14 and
+    DIP-6 on 7.62 mm rows, TO-92, the Thonk LED button, standing resistors,
+    1×N headers.
+  - New:
+    - SIP-9 for the networks.
+    - EC11 with its origin on the shaft (KiCad's Alps EC11E footprint).
+    - PJ366ST in the library jack's frame (slots from a KiCad merge request
+      that was never merged).
+- **Symbols:** Seed, 74HC165, 74HC595, H11L1, 2N3904, LED button, EC11,
+  bussed network, stereo jack, headers.
+- **Resistors:** they stand up on the main board, like the mixer's and the
+  re-routed Marblesy's. On the faceplate they lie flat, because the 8.5 mm
+  header gap has no room for standing ones.
+
+**What EasyEDA's DRC will still say** (all intentional, floating-pin warnings):
+
+| Where | Pins left open |
+|---|---|
+| U5 (Seed) | D1–D6, D9, D19, D21–D25, D28, VIN, and the four codec pins 16–19, which the breakout's op-amps take over |
+| U7 (H11L1) | pin 3 (NC) |
+| U1, U2 (74HC165) | /Q7 |
+| U3 (74HC595) | QF–QH and QH' |
+| J5 | the sleeve |
+| J2, J7 (outputs) | the switch lugs |
+
+**Check before the PCB step:**
+
+- The EC11 you order against `fp_ec11()`.
+- A PJ366ST's leads against the slots.
 
 ---
 
