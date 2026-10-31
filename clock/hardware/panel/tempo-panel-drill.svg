@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100.6mm" height="158.5mm" viewBox="-20 -15 100.6 158.5">
+<title>Tempo 12HP panel - drill template (print at 100%)</title>
+<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444} .lbl{font-size:1.8px;fill:#06c}</style>
+<rect x="-20" y="-15" width="100.6" height="158.5" fill="#ffffff"/>
+<rect x="0" y="0" width="60.6" height="128.5" fill="none" stroke="#000" stroke-width="0.25"/>
+<rect x="0.60" y="10.25" width="59.4" height="108.0" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>
+<rect x="4.75" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="1.10">5.5x3.2</text>
+<rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="123.60">5.5x3.2</text>
+<rect x="50.47" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="56.47" y="1.10">5.5x3.2</text>
+<rect x="50.47" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="56.47" y="123.60">5.5x3.2</text>
+<circle cx="7.30" cy="82.58" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="5.80" y1="82.58" x2="8.80" y2="82.58" stroke="#000" stroke-width="0.12"/>
+<line x1="7.30" y1="81.08" x2="7.30" y2="84.08" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="10.95" y="79.13">Ø6.5</text>
+<text class="lbl" x="7.30" y="88.03" text-anchor="middle">CLOCK</text>
+<circle cx="18.80" cy="82.58" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="17.30" y1="82.58" x2="20.30" y2="82.58" stroke="#000" stroke-width="0.12"/>
+<line x1="18.80" y1="81.08" x2="18.80" y2="84.08" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="22.45" y="79.13">Ø6.5</text>
+<text class="lbl" x="18.80" y="88.03" text-anchor="middle">RESET</text>
+<circle cx="30.30" cy="82.58" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.80" y1="82.58" x2="31.80" y2="82.58" stroke="#000" stroke-width="0.12"/>
+<line x1="30.30" y1="81.08" x2="30.30" y2="84.08" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.95" y="79.13">Ø6.5</text>
+<text class="lbl" x="30.30" y="88.03" text-anchor="middle">CV 1</text>
+<circle cx="41.80" cy="82.58" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="40.30" y1="82.58" x2="43.30" y2="82.58" stroke="#000" stroke-width="0.12"/>
+<line x1="41.80" y1="81.08" x2="41.80" y2="84.08" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="45.45" y="79.13">Ø6.5</text>
+<text class="lbl" x="41.80" y="88.03" text-anchor="middle">CV 2</text>
+<circle cx="53.30" cy="82.58" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="51.80" y1="82.58" x2="54.80" y2="82.58" stroke="#000" stroke-width="0.12"/>
+<line x1="53.30" y1="81.08" x2="53.30" y2="84.08" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="56.95" y="79.13">Ø6.5</text>
+<text class="lbl" x="53.30" y="88.03" text-anchor="middle">CV 3</text>
+<circle cx="7.30" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="5.80" y1="97.18" x2="8.80" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="7.30" y1="95.68" x2="7.30" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="10.95" y="93.73">Ø6.5</text>
+<text class="lbl" x="7.30" y="102.63" text-anchor="middle">RUN</text>
+<circle cx="18.80" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="17.30" y1="97.18" x2="20.30" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="18.80" y1="95.68" x2="18.80" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="22.45" y="93.73">Ø6.5</text>
+<text class="lbl" x="18.80" y="102.63" text-anchor="middle">1</text>
+<circle cx="30.30" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.80" y1="97.18" x2="31.80" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="30.30" y1="95.68" x2="30.30" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.95" y="93.73">Ø6.5</text>
+<text class="lbl" x="30.30" y="102.63" text-anchor="middle">2</text>
+<circle cx="41.80" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="40.30" y1="97.18" x2="43.30" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="41.80" y1="95.68" x2="41.80" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="45.45" y="93.73">Ø6.5</text>
+<text class="lbl" x="41.80" y="102.63" text-anchor="middle">3</text>
+<circle cx="53.30" cy="97.18" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="51.80" y1="97.18" x2="54.80" y2="97.18" stroke="#000" stroke-width="0.12"/>
+<line x1="53.30" y1="95.68" x2="53.30" y2="98.68" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="56.95" y="93.73">Ø6.5</text>
+<text class="lbl" x="53.30" y="102.63" text-anchor="middle">4</text>
+<circle cx="7.30" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="5.80" y1="111.78" x2="8.80" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="7.30" y1="110.28" x2="7.30" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="10.95" y="108.33">Ø6.5</text>
+<text class="lbl" x="7.30" y="117.23" text-anchor="middle">RESET</text>
+<circle cx="18.80" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="17.30" y1="111.78" x2="20.30" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="18.80" y1="110.28" x2="18.80" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="22.45" y="108.33">Ø6.5</text>
+<text class="lbl" x="18.80" y="117.23" text-anchor="middle">5</text>
+<circle cx="30.30" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.80" y1="111.78" x2="31.80" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="30.30" y1="110.28" x2="30.30" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.95" y="108.33">Ø6.5</text>
+<text class="lbl" x="30.30" y="117.23" text-anchor="middle">6</text>
+<circle cx="41.80" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="40.30" y1="111.78" x2="43.30" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="41.80" y1="110.28" x2="41.80" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="45.45" y="108.33">Ø6.5</text>
+<text class="lbl" x="41.80" y="117.23" text-anchor="middle">7</text>
+<circle cx="53.30" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="51.80" y1="111.78" x2="54.80" y2="111.78" stroke="#000" stroke-width="0.12"/>
+<line x1="53.30" y1="110.28" x2="53.30" y2="113.28" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="56.95" y="108.33">Ø6.5</text>
+<text class="lbl" x="53.30" y="117.23" text-anchor="middle">8</text>
+<circle cx="13.05" cy="61.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="11.55" y1="61.25" x2="14.55" y2="61.25" stroke="#000" stroke-width="0.12"/>
+<line x1="13.05" y1="59.75" x2="13.05" y2="62.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="16.70" y="57.80">Ø6.5</text>
+<text class="lbl" x="13.05" y="66.70" text-anchor="middle">RUN</text>
+<circle cx="30.30" cy="61.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.80" y1="61.25" x2="31.80" y2="61.25" stroke="#000" stroke-width="0.12"/>
+<line x1="30.30" y1="59.75" x2="30.30" y2="62.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.95" y="57.80">Ø6.5</text>
+<text class="lbl" x="30.30" y="66.70" text-anchor="middle">TAP</text>
+<circle cx="47.55" cy="61.25" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="46.05" y1="61.25" x2="49.05" y2="61.25" stroke="#000" stroke-width="0.12"/>
+<line x1="47.55" y1="59.75" x2="47.55" y2="62.75" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="51.20" y="57.80">Ø6.5</text>
+<text class="lbl" x="47.55" y="66.70" text-anchor="middle">SHIFT</text>
+<circle cx="13.05" cy="49.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="11.55" y1="49.00" x2="14.55" y2="49.00" stroke="#000" stroke-width="0.12"/>
+<line x1="13.05" y1="47.50" x2="13.05" y2="50.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="17.20" y="45.05">Ø7.5</text>
+<text class="lbl" x="13.05" y="54.95" text-anchor="middle">K1</text>
+<circle cx="30.30" cy="49.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.80" y1="49.00" x2="31.80" y2="49.00" stroke="#000" stroke-width="0.12"/>
+<line x1="30.30" y1="47.50" x2="30.30" y2="50.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="34.45" y="45.05">Ø7.5</text>
+<text class="lbl" x="30.30" y="54.95" text-anchor="middle">K2</text>
+<circle cx="47.55" cy="49.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="46.05" y1="49.00" x2="49.05" y2="49.00" stroke="#000" stroke-width="0.12"/>
+<line x1="47.55" y1="47.50" x2="47.55" y2="50.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="51.70" y="45.05">Ø7.5</text>
+<text class="lbl" x="47.55" y="54.95" text-anchor="middle">K3</text>
+<circle cx="14.60" cy="90.65" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="13.10" y1="90.65" x2="16.10" y2="90.65" stroke="#000" stroke-width="0.12"/>
+<line x1="14.60" y1="89.15" x2="14.60" y2="92.15" stroke="#000" stroke-width="0.12"/>
+<circle cx="26.10" cy="90.65" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="24.60" y1="90.65" x2="27.60" y2="90.65" stroke="#000" stroke-width="0.12"/>
+<line x1="26.10" y1="89.15" x2="26.10" y2="92.15" stroke="#000" stroke-width="0.12"/>
+<circle cx="37.60" cy="90.65" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="36.10" y1="90.65" x2="39.10" y2="90.65" stroke="#000" stroke-width="0.12"/>
+<line x1="37.60" y1="89.15" x2="37.60" y2="92.15" stroke="#000" stroke-width="0.12"/>
+<circle cx="49.10" cy="90.65" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="47.60" y1="90.65" x2="50.60" y2="90.65" stroke="#000" stroke-width="0.12"/>
+<line x1="49.10" y1="89.15" x2="49.10" y2="92.15" stroke="#000" stroke-width="0.12"/>
+<circle cx="14.60" cy="105.25" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="13.10" y1="105.25" x2="16.10" y2="105.25" stroke="#000" stroke-width="0.12"/>
+<line x1="14.60" y1="103.75" x2="14.60" y2="106.75" stroke="#000" stroke-width="0.12"/>
+<circle cx="26.10" cy="105.25" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="24.60" y1="105.25" x2="27.60" y2="105.25" stroke="#000" stroke-width="0.12"/>
+<line x1="26.10" y1="103.75" x2="26.10" y2="106.75" stroke="#000" stroke-width="0.12"/>
+<circle cx="37.60" cy="105.25" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="36.10" y1="105.25" x2="39.10" y2="105.25" stroke="#000" stroke-width="0.12"/>
+<line x1="37.60" y1="103.75" x2="37.60" y2="106.75" stroke="#000" stroke-width="0.12"/>
+<circle cx="49.10" cy="105.25" r="1.60" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="47.60" y1="105.25" x2="50.60" y2="105.25" stroke="#000" stroke-width="0.12"/>
+<line x1="49.10" y1="103.75" x2="49.10" y2="106.75" stroke="#000" stroke-width="0.12"/>
+<rect x="8.44" y="14.35" width="43.72" height="23.70" rx="1.0" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="8.44" y="13.95">43.72 x 23.70, r1.0</text>
+<text class="lbl" x="30.30" y="26.20" text-anchor="middle">1.9in IPS 320x170</text>
+<line x1="5" y1="-8" x2="55" y2="-8" stroke="#000" stroke-width="0.3"/>
+<line x1="5" y1="-9.5" x2="5" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<line x1="55" y1="-9.5" x2="55" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<text x="30" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>
+<text x="30.3" y="136.5" font-size="2" text-anchor="middle">Tempo 12HP panel, front view. Red: final hole size (LEDs 3.2). Dashed: the faceplate board.</text>
+</svg>
