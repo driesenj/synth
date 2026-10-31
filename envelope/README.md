@@ -18,17 +18,19 @@ Built the Marblesy way, with Thonk panel parts.
 
 | Part | Status | Files |
 |---|---|---|
-| Panel layout, drill template, artwork | Draft, awaiting review | `hardware/tools/panel.py`, `hardware/panel/` |
-| Circuit plan | Done, with five open choices | [docs/design.md](docs/design.md) |
-| Netlist, EasyEDA schematic, PCB placement, panel PCB | Not started | |
+| Panel layout, drill template, artwork | Agreed (defaults, 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
+| Netlist | Done: one board, 167 parts, 0 problems | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md#netlist) |
+| Simulation | Done: 28 checks pass (burst, peak, sustain, tails, times, LOOP, normals) | `hardware/tools/sim.py`, [docs/design.md](docs/design.md#simulation) |
+| EasyEDA schematic, PCB placement, panel PCB | Not started | |
 
 ## Files
 
 ```
-docs/design.md            behaviour, circuit, changes from the kit, op-amp map, power, panel, parts, choices
+docs/design.md            behaviour, circuit, changes from the kit, netlist, simulation, board, panel, parts
 hardware/
   tools/
-    circuit.py            panel parts and their placement; the netlist goes here next
+    circuit.py            the netlist with its checks, and the panel placement
+    sim.py                the netlist run in time: envelope numbers checked against the design notes
     panel.py              hole list, drill template and the panel artwork from the placement
   panel/
     envy-panel-holes.csv, envy-panel-drill.svg
@@ -38,5 +40,5 @@ hardware/
 Regenerate from `hardware/tools`:
 
 ```bash
-python circuit.py && python panel.py
+python circuit.py && python sim.py && python panel.py
 ```
