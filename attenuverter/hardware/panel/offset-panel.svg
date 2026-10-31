@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="60.6mm" height="128.5mm" viewBox="0 0 60.6 128.5">
+<title>Offset 12HP panel - artwork</title>
+<style>text{font-family:Arial, Helvetica, sans-serif;font-weight:bold;fill:#f0efe9} .serif{font-family:Georgia, Times New Roman, serif;font-style:italic;font-weight:normal} .silk{stroke:#f0efe9;fill:none;stroke-linecap:round;stroke-linejoin:round} .dots{stroke-dasharray:0.1 1.0;stroke-width:0.45} .copper{fill:#c9a227} .cu-text{fill:#121212} .hole{fill:#ffffff;stroke:none}</style>
+<rect x="0" y="0" width="60.6" height="128.5" fill="#121212"/>
+<g id="copper">
+<rect x="5.90" y="87.60" width="51.10" height="20.50" rx="1.4" class="copper"/>
+<circle cx="11.50" cy="102.50" r="3.65" class="cu-text"/>
+<circle cx="11.50" cy="91.00" r="2.00" class="cu-text"/>
+<circle cx="24.80" cy="102.50" r="3.65" class="cu-text"/>
+<circle cx="24.80" cy="91.00" r="2.00" class="cu-text"/>
+<circle cx="38.10" cy="102.50" r="3.65" class="cu-text"/>
+<circle cx="38.10" cy="91.00" r="2.00" class="cu-text"/>
+<circle cx="51.40" cy="102.50" r="3.65" class="cu-text"/>
+<circle cx="51.40" cy="91.00" r="2.00" class="cu-text"/>
+<text x="18.15" y="103.50" font-size="2.8" text-anchor="middle" class="cu-text">+</text>
+<text x="31.45" y="103.50" font-size="2.8" text-anchor="middle" class="cu-text">+</text>
+<text x="44.75" y="103.50" font-size="2.8" text-anchor="middle" class="cu-text">+</text>
+</g>
+<g id="silk">
+<text x="12.00" y="7.40" font-size="5.2" text-anchor="start" class="serif">Offset</text>
+<text x="48.60" y="6.60" font-size="2.1" text-anchor="end">Quad attenuverter</text>
+<polyline points="3.00,9.60 57.60,9.60" class="silk dots"/>
+<polyline points="3.00,10.60 57.60,10.60" class="silk dots"/>
+<text x="30.30" y="122.40" font-size="2.2" text-anchor="middle">Seedable Instruments</text>
+<polyline points="3.00,118.60 57.60,118.60" class="silk" stroke-width="0.3"/>
+<text x="11.50" y="16.00" font-size="3.0" text-anchor="middle">1</text>
+<text x="24.80" y="16.00" font-size="3.0" text-anchor="middle">2</text>
+<text x="38.10" y="16.00" font-size="3.0" text-anchor="middle">3</text>
+<text x="51.40" y="16.00" font-size="3.0" text-anchor="middle">4</text>
+<path d="M 7.26 31.24 A 6.0 6.0 0 1 1 15.74 31.24" class="silk" stroke-width="0.3"/>
+<polyline points="7.26,31.24 6.55,31.95" class="silk" stroke-width="0.3"/>
+<polyline points="5.96,24.70 5.40,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="11.50,21.00 11.50,20.00" class="silk" stroke-width="0.3"/>
+<polyline points="17.04,24.70 17.60,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="15.74,31.24 16.45,31.95" class="silk" stroke-width="0.3"/>
+<text x="6.60" y="33.60" font-size="1.9" text-anchor="middle">−</text>
+<text x="16.40" y="33.60" font-size="1.9" text-anchor="middle">+</text>
+<path d="M 7.26 52.74 A 6.0 6.0 0 1 1 15.74 52.74" class="silk" stroke-width="0.3"/>
+<polyline points="7.26,52.74 6.55,53.45" class="silk" stroke-width="0.3"/>
+<polyline points="5.96,46.20 5.40,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="11.50,42.50 11.50,41.50" class="silk" stroke-width="0.3"/>
+<polyline points="17.04,46.20 17.60,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="15.74,52.74 16.45,53.45" class="silk" stroke-width="0.3"/>
+<text x="6.60" y="55.10" font-size="1.9" text-anchor="middle">−</text>
+<text x="16.40" y="55.10" font-size="1.9" text-anchor="middle">+</text>
+<path d="M 20.56 31.24 A 6.0 6.0 0 1 1 29.04 31.24" class="silk" stroke-width="0.3"/>
+<polyline points="20.56,31.24 19.85,31.95" class="silk" stroke-width="0.3"/>
+<polyline points="19.26,24.70 18.70,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="24.80,21.00 24.80,20.00" class="silk" stroke-width="0.3"/>
+<polyline points="30.34,24.70 30.90,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="29.04,31.24 29.75,31.95" class="silk" stroke-width="0.3"/>
+<text x="19.90" y="33.60" font-size="1.9" text-anchor="middle">−</text>
+<text x="29.70" y="33.60" font-size="1.9" text-anchor="middle">+</text>
+<path d="M 20.56 52.74 A 6.0 6.0 0 1 1 29.04 52.74" class="silk" stroke-width="0.3"/>
+<polyline points="20.56,52.74 19.85,53.45" class="silk" stroke-width="0.3"/>
+<polyline points="19.26,46.20 18.70,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="24.80,42.50 24.80,41.50" class="silk" stroke-width="0.3"/>
+<polyline points="30.34,46.20 30.90,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="29.04,52.74 29.75,53.45" class="silk" stroke-width="0.3"/>
+<text x="19.90" y="55.10" font-size="1.9" text-anchor="middle">−</text>
+<text x="29.70" y="55.10" font-size="1.9" text-anchor="middle">+</text>
+<path d="M 33.86 31.24 A 6.0 6.0 0 1 1 42.34 31.24" class="silk" stroke-width="0.3"/>
+<polyline points="33.86,31.24 33.15,31.95" class="silk" stroke-width="0.3"/>
+<polyline points="32.56,24.70 32.00,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="38.10,21.00 38.10,20.00" class="silk" stroke-width="0.3"/>
+<polyline points="43.64,24.70 44.20,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="42.34,31.24 43.05,31.95" class="silk" stroke-width="0.3"/>
+<text x="33.20" y="33.60" font-size="1.9" text-anchor="middle">−</text>
+<text x="43.00" y="33.60" font-size="1.9" text-anchor="middle">+</text>
+<path d="M 33.86 52.74 A 6.0 6.0 0 1 1 42.34 52.74" class="silk" stroke-width="0.3"/>
+<polyline points="33.86,52.74 33.15,53.45" class="silk" stroke-width="0.3"/>
+<polyline points="32.56,46.20 32.00,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="38.10,42.50 38.10,41.50" class="silk" stroke-width="0.3"/>
+<polyline points="43.64,46.20 44.20,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="42.34,52.74 43.05,53.45" class="silk" stroke-width="0.3"/>
+<text x="33.20" y="55.10" font-size="1.9" text-anchor="middle">−</text>
+<text x="43.00" y="55.10" font-size="1.9" text-anchor="middle">+</text>
+<path d="M 47.16 31.24 A 6.0 6.0 0 1 1 55.64 31.24" class="silk" stroke-width="0.3"/>
+<polyline points="47.16,31.24 46.45,31.95" class="silk" stroke-width="0.3"/>
+<polyline points="45.86,24.70 45.30,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="51.40,21.00 51.40,20.00" class="silk" stroke-width="0.3"/>
+<polyline points="56.94,24.70 57.50,24.47" class="silk" stroke-width="0.3"/>
+<polyline points="55.64,31.24 56.35,31.95" class="silk" stroke-width="0.3"/>
+<text x="46.50" y="33.60" font-size="1.9" text-anchor="middle">−</text>
+<text x="56.30" y="33.60" font-size="1.9" text-anchor="middle">+</text>
+<path d="M 47.16 52.74 A 6.0 6.0 0 1 1 55.64 52.74" class="silk" stroke-width="0.3"/>
+<polyline points="47.16,52.74 46.45,53.45" class="silk" stroke-width="0.3"/>
+<polyline points="45.86,46.20 45.30,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="51.40,42.50 51.40,41.50" class="silk" stroke-width="0.3"/>
+<polyline points="56.94,46.20 57.50,45.97" class="silk" stroke-width="0.3"/>
+<polyline points="55.64,52.74 56.35,53.45" class="silk" stroke-width="0.3"/>
+<text x="46.50" y="55.10" font-size="1.9" text-anchor="middle">−</text>
+<text x="56.30" y="55.10" font-size="1.9" text-anchor="middle">+</text>
+<text x="3.65" y="27.00" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 27.00)">ATTEN</text>
+<polyline points="4.50,20.00 2.90,20.00 2.90,23.07" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,30.93 2.90,34.00 4.50,34.00" class="silk" stroke-width="0.3"/>
+<text x="3.65" y="48.50" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 48.50)">OFFSET</text>
+<polyline points="4.50,41.50 2.90,41.50 2.90,43.92" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,53.08 2.90,55.50 4.50,55.50" class="silk" stroke-width="0.3"/>
+<text x="3.65" y="76.50" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 76.50)">IN</text>
+<polyline points="4.50,72.50 2.90,72.50 2.90,74.51" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,78.49 2.90,80.50 4.50,80.50" class="silk" stroke-width="0.3"/>
+<text x="3.65" y="102.50" font-size="1.9" text-anchor="middle" transform="rotate(-90 3.65 102.50)">OUT</text>
+<polyline points="4.50,97.86 2.90,97.86 2.90,99.86" class="silk" stroke-width="0.3"/>
+<polyline points="2.90,105.14 2.90,107.14 4.50,107.14" class="silk" stroke-width="0.3"/>
+<polyline points="16.40,76.50 19.90,76.50" class="silk dots"/>
+<polyline points="29.70,76.50 33.20,76.50" class="silk dots"/>
+<polyline points="43.00,76.50 46.50,76.50" class="silk dots"/>
+</g>
+<g id="holes">
+<circle cx="11.50" cy="27.00" r="3.75" class="hole"/>
+<circle cx="11.50" cy="48.50" r="3.75" class="hole"/>
+<circle cx="11.50" cy="76.50" r="3.25" class="hole"/>
+<circle cx="11.50" cy="102.50" r="3.25" class="hole"/>
+<circle cx="11.50" cy="91.00" r="1.60" class="hole"/>
+<circle cx="24.80" cy="27.00" r="3.75" class="hole"/>
+<circle cx="24.80" cy="48.50" r="3.75" class="hole"/>
+<circle cx="24.80" cy="76.50" r="3.25" class="hole"/>
+<circle cx="24.80" cy="102.50" r="3.25" class="hole"/>
+<circle cx="24.80" cy="91.00" r="1.60" class="hole"/>
+<circle cx="38.10" cy="27.00" r="3.75" class="hole"/>
+<circle cx="38.10" cy="48.50" r="3.75" class="hole"/>
+<circle cx="38.10" cy="76.50" r="3.25" class="hole"/>
+<circle cx="38.10" cy="102.50" r="3.25" class="hole"/>
+<circle cx="38.10" cy="91.00" r="1.60" class="hole"/>
+<circle cx="51.40" cy="27.00" r="3.75" class="hole"/>
+<circle cx="51.40" cy="48.50" r="3.75" class="hole"/>
+<circle cx="51.40" cy="76.50" r="3.25" class="hole"/>
+<circle cx="51.40" cy="102.50" r="3.25" class="hole"/>
+<circle cx="51.40" cy="91.00" r="1.60" class="hole"/>
+<rect x="4.75" y="1.40" width="5.5" height="3.2" rx="1.6" class="hole"/>
+<rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" class="hole"/>
+<rect x="50.47" y="1.40" width="5.5" height="3.2" rx="1.6" class="hole"/>
+<rect x="50.47" y="123.90" width="5.5" height="3.2" rx="1.6" class="hole"/>
+</g>
+<g id="mockup">
+<circle cx="11.50" cy="27.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="11.50" cy="27.00" r="3.10" fill="#e8e8e4"/>
+<line x1="12.91" y1="27.51" x2="15.96" y2="28.62" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="11.50" cy="48.50" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="11.50" cy="48.50" r="3.10" fill="#e8e8e4"/>
+<line x1="11.50" y1="47.00" x2="11.50" y2="43.75" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="11.50" cy="76.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="11.50" cy="76.50" r="1.75" fill="#111"/>
+<circle cx="11.50" cy="102.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="11.50" cy="102.50" r="1.75" fill="#111"/>
+<circle cx="11.50" cy="91.00" r="3.2" fill="#57d163" opacity="0.28"/>
+<circle cx="11.50" cy="91.00" r="1.75" fill="#57d163" stroke="#000" stroke-width="0.2"/>
+<circle cx="24.80" cy="27.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="24.80" cy="27.00" r="3.10" fill="#e8e8e4"/>
+<line x1="23.39" y1="26.49" x2="20.34" y2="25.38" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="24.80" cy="48.50" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="24.80" cy="48.50" r="3.10" fill="#e8e8e4"/>
+<line x1="25.66" y1="47.27" x2="27.52" y2="44.61" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="24.80" cy="76.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="24.80" cy="76.50" r="1.75" fill="#111"/>
+<circle cx="24.80" cy="102.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="24.80" cy="102.50" r="1.75" fill="#111"/>
+<circle cx="24.80" cy="91.00" r="3.2" fill="#e04848" opacity="0.28"/>
+<circle cx="24.80" cy="91.00" r="1.75" fill="#e04848" stroke="#000" stroke-width="0.2"/>
+<circle cx="38.10" cy="27.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="38.10" cy="27.00" r="3.10" fill="#e8e8e4"/>
+<line x1="38.10" y1="25.50" x2="38.10" y2="22.25" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="38.10" cy="48.50" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="38.10" cy="48.50" r="3.10" fill="#e8e8e4"/>
+<line x1="36.80" y1="49.25" x2="33.99" y2="50.88" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="38.10" cy="76.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="38.10" cy="76.50" r="1.75" fill="#111"/>
+<circle cx="38.10" cy="102.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="38.10" cy="102.50" r="1.75" fill="#111"/>
+<circle cx="38.10" cy="91.00" r="1.75" fill="#3a3a36" stroke="#000" stroke-width="0.2"/>
+<circle cx="51.40" cy="27.00" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="51.40" cy="27.00" r="3.10" fill="#e8e8e4"/>
+<line x1="52.70" y1="26.25" x2="55.51" y2="24.62" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="51.40" cy="48.50" r="5.0" fill="#2a2a2a" stroke="#000" stroke-width="0.2"/>
+<circle cx="51.40" cy="48.50" r="3.10" fill="#e8e8e4"/>
+<line x1="51.40" y1="47.00" x2="51.40" y2="43.75" stroke="#555" stroke-width="0.6" stroke-linecap="round"/>
+<circle cx="51.40" cy="76.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="51.40" cy="76.50" r="1.75" fill="#111"/>
+<circle cx="51.40" cy="102.50" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
+<circle cx="51.40" cy="102.50" r="1.75" fill="#111"/>
+<circle cx="51.40" cy="91.00" r="3.2" fill="#57d163" opacity="0.28"/>
+<circle cx="51.40" cy="91.00" r="1.75" fill="#57d163" stroke="#000" stroke-width="0.2"/>
+<circle cx="7.50" cy="3.00" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
+<circle cx="7.50" cy="125.50" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
+<circle cx="53.22" cy="3.00" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
+<circle cx="53.22" cy="125.50" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
+</g>
+</svg>
