@@ -103,6 +103,20 @@ its rows is fine.
   Keep part info per board: the exporter once gave the faceplate's 470 R
   the main board's 100k devices.
 
+- A display module behind the panel (Side FXy, `side-fx/hardware/tools/pcb.py`):
+  it lives in the panel gap, glass against the panel, and nothing with leads
+  may sit on the faceplate behind it (the soldered ends press into its back).
+  Model it as a front-side keep-out (`Board.keepout_front`, checked by
+  `front_housing_check`), mill a cutout under its rear connector
+  (`cutout_front`, a layer-12 region) and land the cable on a right-angle
+  header so the Dupont plug lies flat in the 8.5 mm board gap. The keep-out
+  ate so much faceplate that the 74HC595 moved to the main board. A Waveshare
+  module's M2 holes sit under the glass: tape it, don't screw it.
+- The breakout stands on its sockets: screw heads may sit under it (Side
+  FXy puts two holes and two header sockets in the channel between its rows),
+  so the screw-head check skips its body.
+- Jack sleeve lugs reach 2 mm above the jack body: a DIP strip above a jack
+  row needs its pins at least ~7.5 mm above the jack origins' row.
 - Panel first. The first Marblesy placement passed every check and looked
   nothing like Marbles; the redo cost an hour.
 - A footprint's origin is rarely the mechanical centre: jack barrel 0.78

@@ -15,9 +15,11 @@ Rob Heel's seed_power_opamps breakout.
 | Part | Status | Files |
 |---|---|---|
 | Panel layout, drill template, artwork | Done (approved 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
-| Netlist | Done, 75 parts over two boards, checks pass; no SD card (presets in QSPI flash) | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
-| EasyEDA Pro schematic | Done, 3 A3 pages (main board 1, faceplate 2), every footprint assigned, drawing checked against the netlist; not yet imported | `hardware/easyeda/SideFXy.epro2`, previews `hardware/easyeda/side-fx-easyeda-*.png` |
-| PCB placement, panel PCB | Not started | |
+| Netlist | Done, 74 parts over two boards, checks pass; no SD card (presets in QSPI flash); the 74HC595 moved to the main board for the display's keep-out | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
+| EasyEDA Pro schematic | Done, 4 A3 pages (main board 1, faceplate 2, panel note), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/SideFXy.epro2`, previews `hardware/easyeda/side-fx-easyeda-*.png` |
+| PCB placement | Done, both boards placed and net-assigned, not routed; every clearance, header and keep-out check at 0 | `hardware/tools/pcb.py`, previews `hardware/easyeda/side-fx-easyeda-pcb-*.png` |
+| Panel PCB | Done: the panel as the project's third board, window milled out, gold band and block stack | `hardware/tools/panel_pcb.py` |
+| Routing | Not started (yours, in EasyEDA Pro; notes in [design.md](docs/design.md#routing-notes)) | |
 | Firmware | Not started | |
 
 ## Panel
@@ -59,10 +61,12 @@ hardware/
   tools/
     circuit.py            the netlist, headers and the panel placement
     easyeda_export.py     builds SideFXy.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
+    pcb.py                the two PCBs: placement, clearance checks, the PCB documents
     panel.py              hole list, drill template and the panel artwork from the placement
+    panel_pcb.py          the panel as a PCB document, from the same lists as the artwork
   easyeda/
-    SideFXy.epro2         schematic of both boards (no PCBs yet)
-    side-fx-easyeda-*.png page previews
+    SideFXy.epro2         schematic, both PCBs placed (unrouted) and the panel PCB
+    side-fx-easyeda-*.png page and PCB previews
   panel/
     side-fx-panel-holes.csv, side-fx-panel-drill.svg
     side-fx-panel.svg     panel artwork (groups: copper, silk, holes, mockup), side-fx-panel-preview.png
@@ -75,13 +79,14 @@ python easyeda_export.py && python panel.py
 ```
 
 Import with File > Import > EasyEDA (Professional) > `SideFXy.epro2`, then
-run Design > Check DRC on both schematics; [design.md](docs/design.md#schematic)
-lists the floating-pin warnings to expect.
+run Design > Check DRC on the schematics; [design.md](docs/design.md#schematic)
+lists the floating-pin warnings to expect. The PCBs are placed but not
+routed; [design.md](docs/design.md#routing-notes) has the routing notes.
 
 ## Open questions
 
-- Mounting the screen: the module (glass plus its PCB, about 4 mm) has to sit
-  with the glass right behind the panel, in the gap the jacks set. To be
-  settled in the PCB step, from Waveshare's drawing.
+- The panel gap: the placement assumes about 7 mm between panel and
+  faceplate (the module is about 4 mm plus 2 mm of parts on its back; its
+  connector gets a cutout). Measure a Thonkiconn on a board before ordering.
 - Encoder height: an EC11's body is lower than a Thonkiconn, so the bushing
   may need a washer. Check against the part that gets ordered.

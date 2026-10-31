@@ -3,13 +3,14 @@ whole circuit as one netlist, split over two boards.
 
 Main board (MB): Daisy Seed on Rob Heel's seed_power_opamps breakout (audio
 in and out through the breakout's op-amps), four TL074 CV input stages, a
-transistor clock input, an H11L1 MIDI input. Presets live in the Seed's
-QSPI flash; there is no SD card.
+transistor clock input, an H11L1 MIDI input, the 74HC595 and 470R for the
+button LEDs. Presets live in the Seed's QSPI flash; there is no SD card.
 Faceplate board (FB): 9 Thonkiconn jacks and a stereo Thonkiconn for MIDI,
 4 EC11 encoders with push, 5 Thonk LED buttons, two 74HC165 (encoders and
-buttons) and a 74HC595 (button LEDs) on one bit-banged chain, the header for
-the display module's cable. The display (Waveshare 1.9inch LCD Module,
-ST7789V2) sits behind the panel window on its own board.
+buttons) on the chain the main board's 74HC595 ends, the header for the
+display module's cable. The display (Waveshare 1.9inch LCD Module, ST7789V2)
+sits behind the panel window, in the gap between panel and faceplate, and
+nothing with leads may sit on the faceplate behind it.
 
 Net naming
   IN1/IN2, OUT1/OUT2  audio jack tips <-> the breakout's audio headers (J5 in, J4 out)
@@ -20,9 +21,9 @@ Net naming
   MIDI_TIP/MIDI_RING  TRS MIDI (type A: ring = source, tip = sink) -> H11L1 -> MIDI_RX
   LCD_*      Seed SPI1 and GPIO -> the display module's cable
   SR_*       the shift-register chain: SR_CLK and SR_LOAD (74HC165 /PL and 74HC595
-             RCLK together), SR_DIN (165 -> Seed), SR_DOUT (Seed -> 595)
+             RCLK together), SR_DIN (165 -> Seed), SR_DOUT (Seed -> 595, main board)
   ENCn_A/B, BTN_*  encoder phases and switches into the 74HC165s (FB)
-  L_*        74HC595 outputs (before the 470R), LED_* after it
+  L_*        74HC595 outputs (before the 470R), LED_* after it, to the buttons' anodes
   nets that cross the board-to-board headers carry the same name on both
   boards, with _F on the faceplate side (GND -> GND_F, the logic ground
   GND -> GND_D_F).
@@ -120,6 +121,15 @@ def main_board_parts():
                                                "6": "3V3D"}))                          # 1 A, 2 K, 4 Vo, 5 GND, 6 Vcc
     parts.append(R("R27", "1k", "3V3D", "MIDI_RX"))
     parts.append(C("C17", "100n", "3V3D", "GND"))
+    # button LEDs: the 74HC595 at the end of the chain, 470R each (about 3 mA into a red LED at 3.3 V),
+    # then through H3 to the buttons' anodes; it lives here because the faceplate has no room left for it
+    sr = dict(HC595_PINS)
+    for k, ref in enumerate(LED_ORDER):
+        word = LED_WORD[ref]
+        sr[HC595_OUT[k]] = f"L_{word}"
+        parts.append(R(f"R{k + 1}", "470", f"L_{word}", f"LED_{word}"))
+    parts.append(Part("U3", "HC595", "74HC595", sr))
+    parts.append(C("C3", "100n", "3V3D", "GND"))
     # board-to-board headers (female sockets on this board)
     for ref, kind, nets in HEADERS:
         parts.append(Part(ref, kind, "", {str(i + 1): mb for i, (mb, fb) in enumerate(nets) if mb}))
@@ -137,14 +147,14 @@ def _logic(net):
 
 
 # Split by function, as the user routed Marblesy: audio, CV + clock + MIDI,
-# the shift-register chain, the display. Pin order is a first guess; the PCB
-# step sorts it for the fewest crossings.
+# the shift-register chain with the button LEDs and the display's power, the
+# display's signals. Pin order is a first guess; the routing may sort it.
 HEADERS = [
-    ("H1", "HDR6", [_pair(n) for n in ("IN1", "GND", "IN2", "OUT1", "GND", "OUT2")]),
+    ("H1", "HDR5", [_pair(n) for n in ("IN1", "IN2", "GND", "OUT1", "OUT2")]),
     ("H2", "HDR8", [_pair(n) for n in ("CV1", "CV2", "CV3", "CV4", "CLK_IN", "GND", "MIDI_TIP", "MIDI_RING")]),
-    ("H3", "HDR7", [_logic(n) for n in ("3V3D", "GND", "SR_CLK", "SR_LOAD", "SR_DIN", "SR_DOUT", "BTN_SHIFT")]),
-    ("H4", "HDR8", [_logic(n) for n in ("3V3D", "GND", "LCD_SCK", "LCD_MOSI", "LCD_CS", "LCD_DC", "LCD_RST",
-                                        "LCD_BL")]),
+    ("H3", "HDR11", [_logic(n) for n in ("3V3D", "GND", "SR_CLK", "SR_LOAD", "SR_DIN", "BTN_SHIFT", "LED_PITCH",
+                                         "LED_DELAY", "LED_TEXTURE", "LED_REVERB", "LED_SHIFT")]),
+    ("H4", "HDR6", [_logic(n) for n in ("LCD_SCK", "LCD_MOSI", "LCD_CS", "LCD_DC", "LCD_RST", "LCD_BL")]),
 ]
 
 # ---------------------------------------------------------------- faceplate
@@ -167,11 +177,12 @@ JACKS = [
 MIDI_JACK = {"3": "MIDI_TIP_F", "2": "MIDI_RING_F"}
 # ref, panel label, switch net. Thonk low-profile LED buttons, red: switch on pins 1+2 / 3+4, LED on
 # 5 (anode) and 6; the three plastic feet clipped off. The sends sit on a 74HC165, SHIFT on its own
-# Seed pin (the two 165s are full).
+# Seed pin with the Seed's internal pull-up (the two 165s are full).
 BUTTONS = [
     ("SW1", "PITCH", "BTN_PITCH_F"), ("SW2", "DELAY", "BTN_DELAY_F"), ("SW3", "TEXTURE", "BTN_TEXTURE_F"),
     ("SW4", "REVERB", "BTN_REVERB_F"), ("SW5", "SHIFT", "BTN_SHIFT_F"),
 ]
+LED_WORD = {ref: lbl for ref, lbl, _ in BUTTONS}
 # EC11 encoders with push (KiCad pad names A, B, C, S1, S2; the two mounting tabs MP1 / MP2): common,
 # switch and tabs to GND, the phases and the switch pulled up into the 165s
 ENCODERS = [("ENC1", "K1"), ("ENC2", "K2"), ("ENC3", "K3"), ("ENC4", "K4")]
@@ -188,10 +199,9 @@ SR_INPUTS = {
            "BTN_REVERB_F"],
 }
 PULLUPS = {"U1": "RN1", "U2": "RN2"}    # 8 x 10k bussed SIP-9, pin 1 common
-# 74HC595 outputs QA..QH = pins 15, 1..7; SRCLR high, OE low
+# 74HC595 (main board) outputs QA..QH = pins 15, 1..7; SRCLR high, OE low
 HC595_OUT = ["15", "1", "2", "3", "4", "5", "6", "7"]
-HC595_PINS = {"8": "GND_D_F", "10": "3V3D_F", "11": "SR_CLK_F", "12": "SR_LOAD_F", "13": "GND_D_F",
-              "14": "SR_DOUT_F", "16": "3V3D_F"}
+HC595_PINS = {"8": "GND", "10": "3V3D", "11": "SR_CLK", "12": "SR_LOAD", "13": "GND", "14": "SR_DOUT", "16": "3V3D"}
 LED_ORDER = ["SW1", "SW2", "SW3", "SW4", "SW5"]   # QA..QE; QF..QH spare
 
 
@@ -205,19 +215,10 @@ def faceplate_parts():
         if tn:
             nets["2"] = tn
         parts.append(Part(ref, "JACK", "", nets, label))
-    # button LEDs through the 74HC595, 470R each (about 2.5 mA at 3.3 V)
-    sr = dict(HC595_PINS)
-    led = {}
-    for k, ref in enumerate(LED_ORDER):
-        word = dict((r, lbl) for r, lbl, _ in BUTTONS)[ref]
-        sr[HC595_OUT[k]] = f"L_{word}"
-        parts.append(R(f"R{k + 1}", "470", f"L_{word}", f"LED_{word}"))
-        led[ref] = f"LED_{word}"
-    parts.append(Part("U3", "HC595", "74HC595", sr))
+    # the LEDs' anodes come from the main board's 74HC595 and 470R through H3
     for ref, label, net in BUTTONS:
         parts.append(Part(ref, "SWLED", "", {"1": "GND_D_F", "2": "GND_D_F", "3": net, "4": net,
-                                             "5": led[ref], "6": "GND_D_F"}, label))
-    parts.append(R("R6", "10k", "3V3D_F", "BTN_SHIFT_F"))
+                                             "5": f"LED_{LED_WORD[ref]}_F", "6": "GND_D_F"}, label))
     for k, (ref, label) in enumerate(ENCODERS):
         parts.append(Part(ref, "ENC", "EC11", {"A": f"ENC{k + 1}_A_F", "B": f"ENC{k + 1}_B_F", "C": "GND_D_F",
                                                "S1": "GND_D_F", "S2": f"BTN_K{k + 1}_F", "MP1": "GND_D_F",
@@ -232,11 +233,12 @@ def faceplate_parts():
             rn[str(i + 2)] = net
         parts.append(Part(u, "HC165", "74HC165", pins))
         parts.append(Part(PULLUPS[u], "RN9", "10k x8 bussed", rn))
-    parts.append(Part("CN1", "HDR8", "LCD", {str(i + 1): n for i, n in enumerate(LCD_PINS)}, "display cable"))
+    # CN1: a right-angle header, so the cable's Dupont plug lies flat in the 8.5 mm gap between the boards
+    parts.append(Part("CN1", "HDR8RA", "LCD", {str(i + 1): n for i, n in enumerate(LCD_PINS)}, "display cable"))
     parts.append(C("C1", "100n", "3V3D_F", "GND_D_F"))    # U1
     parts.append(C("C2", "100n", "3V3D_F", "GND_D_F"))    # U2
-    parts.append(C("C3", "100n", "3V3D_F", "GND_D_F"))    # U3
-    parts.append(C("C4", "10u", "3V3D_F", "GND_D_F"))     # the display module, beside CN1
+    parts.append(C("C4", "10u", "3V3D_F", "GND_D_F"))     # the display module, beside CN1: an MLCC on 5.08 mm,
+    #                                                       an electrolytic stands too tall for the 8.5 mm gap
     # board-to-board headers (male pins on this board)
     for ref, kind, nets in HEADERS:
         parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets) if fb}))
@@ -268,6 +270,37 @@ PLACEMENT["SW5"] = (JACK_X[4], 85.25, 0)
 for k, (ref, _) in enumerate(ENCODERS):
     PLACEMENT[ref] = (KNOB_X[k % 2], KNOB_Y[k], 0)
 PLACEMENT["DS1"] = (16.4, (KNOB_Y[0] + KNOB_Y[3]) / 2, 0)   # centred on the knob stack
+
+# The display module (Waveshare drawing): 51.2 x 27.3 mm, the active area 6.25 mm from the flex end,
+# 2.23 from the other end and 2.30 from the long sides; the 8-pin cable connector on its back 34.3-38.5 mm
+# from the flex end, centred across, the cable leaving towards the other end. Portrait, flex end up, so
+# the strip under it is tall enough for the 74HC165s. It sits in the panel gap with its glass against the
+# panel; nothing with leads may sit on the faceplate behind it (their soldered ends would press into the
+# module's back), and the faceplate has a cutout under the connector for the cable.
+_ax, _ay = PLACEMENT["DS1"][:2]
+DISPLAY_MODULE = (round(_ax - 13.65, 2), round(_ay - DISPLAY_ACTIVE[1] / 2 - 2.23, 2),
+                  round(_ax + 13.65, 2), round(_ay + DISPLAY_ACTIVE[1] / 2 + 6.25, 2))   # x1, y1, x2, y2 front view
+_top = DISPLAY_MODULE[3]
+DISPLAY_CONNECTOR = (round(_ax - 7.8, 2), round(_top - 38.5, 2), round(_ax + 7.8, 2), round(_top - 34.3, 2))
+DISPLAY_CUTOUT = (8.0, 43.5, 24.7, 57.0, 1.0)     # x1, y1, x2, y2, corner radius: connector, plug and the bend
+
+# Headers (front view, board mm): x, y of the middle of the pin row and the angle (270 = pins along y, pin
+# 1 at the top; 180 = pins along x, pin 1 on the left). H4 and H3 stand in the strip between the display
+# module and the left encoder column, which lands in the channel between the breakout's pin rows on the
+# main board; H2 at the right edge beside the encoders; H1 in the jack strip's right end, beside U2.
+HEADERS_FRONT = {
+    "H4": (32.4, 45.85, 270),
+    "H3": (32.4, 67.9, 270),
+    "H2": (67.6, 57.91, 270),
+    "H1": (62.48, 31.0, 180),
+}
+# Mounting holes, the same four on both boards (front view): one in the jack strip between U1 and U2,
+# one between the encoder columns, two between the send buttons. On the main board two of them fall
+# between the breakout's pin rows, under the raised breakout.
+HOLES_FRONT = [(30.0, 33.1), (50.3, 49.0), (34.8, 104.5), (51.5, 104.5)]
+# Encoders: which side of the shaft the phase pins (A, C, B) go, so the right column clears H2 and the
+# bottom strip: ENC1..3 phase row below the shaft, ENC4 (above U2 and H1) phase row on its left.
+ENC_PINS = {"ENC1": "below", "ENC2": "below", "ENC3": "below", "ENC4": "left"}
 
 
 def all_parts():

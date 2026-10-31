@@ -88,6 +88,13 @@ project's own BOARD with a note page and a PCB.
   bare copper, put the labels on the mask layer instead (gold letters on
   black). Non-plated holes through the band may draw a DFM remark; add
   clearance rings if so.
+- Copper whose holes sit on its edge (Side FXy's block stack, knobs on the
+  blocks' corners): a cutout circle crossing the outline adds copper, so
+  `side-fx/hardware/tools/panel_pcb.py` `rect_minus_discs()` walks the outline
+  and replaces the part inside each crossing hole's clearance with the arc
+  that runs inside the block (no shapely here; sampled, then simplified).
+- A display window is a layer-12 rounded-rectangle region like a slot
+  (corner radius ≥ 0.5 mm for the mill).
 - Order: 1.6 mm FR4, black mask, white silk, ENIG.
 - Serif italics and exact fonts do not exist in EasyEDA's stroke font;
   tell the user to expect to nudge labels after import.

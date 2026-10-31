@@ -6,11 +6,12 @@ work, and Thonk supplies the panel parts where it can. Every reference designato
 matches `hardware/tools/circuit.py`; `python circuit.py` prints the part
 counts and runs the netlist checks.
 
-Status (2026-10-31): panel approved, netlist written and checked (0
-problems), and the EasyEDA Pro schematic generated and checked against the
-netlist (`hardware/easyeda/SideFXy.epro2`, see [Schematic](#schematic)). It has
-not been imported into EasyEDA yet. PCB placement, the panel PCB and the
-firmware are not started.
+Status (2026-10-31): panel approved; netlist written and checked (0
+problems). The EasyEDA Pro project (`hardware/easyeda/SideFXy.epro2`) has the
+schematic, checked against the netlist, plus both PCBs placed and
+net-assigned (not routed), with every clearance check at 0, and the panel as
+a third PCB. See [Schematic](#schematic) and [PCB placement](#pcb-placement).
+Not yet imported into EasyEDA; no firmware.
 
 ---
 
@@ -35,19 +36,21 @@ From RYK's product page and photos (no manual published yet):
 ## Architecture
 
 ```
- panel ─┬─ faceplate board (FB)   9 Thonkiconn + 1 stereo Thonkiconn, 4 EC11 encoders,
-        │   69.6 x 108 mm          5 LED buttons, 2x 74HC165 + 74HC595 on one chain,
-        │                          2 bussed 10k networks, LED resistors, CN1 for the display cable
-        │   display module (Waveshare 1.9inch LCD) behind the window, cable to CN1
-        │      29 pins in 4 headers (male on the FB, female on the MB)
+ panel ─┬─ display module (Waveshare 1.9inch LCD) in the panel gap, glass to the window
+        ├─ faceplate board (FB)   9 Thonkiconn + 1 stereo Thonkiconn, 4 EC11 encoders,
+        │   69.6 x 108 mm          5 LED buttons, 2x 74HC165, 2 bussed 10k networks,
+        │                          CN1 (right-angle) for the display cable, cutout for its plug
+        │      30 pins in 4 headers (male on the FB, female on the MB)
         └─ main board (MB)        Daisy Seed on the seed_power_opamps breakout (audio in/out),
             69.6 x 108 mm          TL074 with 4 CV input stages, clock input stage,
-                                   H11L1 MIDI input
+                                   H11L1 MIDI input, 74HC595 + 470R for the button LEDs
 ```
 
 The stack is Marblesy's: panel parts on the FB's front, logic and male
 headers on its rear, sockets on the MB's front, the breakout and everything
-else on the MB's rear.
+else on the MB's rear. The display adds one rule: nothing with leads on the
+faceplate behind the module (see [PCB placement](#pcb-placement)), which is
+why the 74HC595 lives on the main board.
 
 ### Daisy Seed pin map
 
@@ -60,9 +63,9 @@ else on the MB's rear.
 | 20, 40 | AGND, DGND | GND | both on the main board's GND |
 | 21 | 3V3A | 3V3A | CV bias divider |
 | 22–25 | A0–A3 | ADC_CV1..ADC_CV4 | CV inputs |
-| 27 | D20 | BTN_SHIFT | SHIFT button, 10k pull-up on the FB |
+| 27 | D20 | BTN_SHIFT | SHIFT button, the Seed's internal pull-up |
 | 33, 34 | D26, D27 | SR_CLK, SR_LOAD | shift-register chain clock; 165 /PL and 595 RCLK |
-| 36, 37 | D29, D30 | SR_DOUT, SR_DIN | to the 595 SER, from U1's Q7 |
+| 36, 37 | D29, D30 | SR_DOUT, SR_DIN | to the 595 SER (main board), from U1's Q7 (faceplate) |
 | 38 | 3V3D | 3V3D | logic, display, MIDI pull-up |
 | 2–7, 10, 26, 28–32, 35, 39 | D1–D6, D9, A4, A6–A10, A11, VIN | — | free (D1–D6 are SDMMC1 should a card ever come back; D9 is SPI1 MISO, and the display never talks back) |
 
@@ -123,6 +126,13 @@ The H11L1 runs from 3 V and its output idles high, as a UART wants. The
 sleeve is left open (a MIDI input leaves the shield unconnected). Type B
 gear (tip and ring swapped) needs a type B adapter cable.
 
+### Button LEDs
+
+U3 (74HC595) at the end of the chain drives the five LED-button anodes
+through R1–R5 (470R, about 3 mA into a red LED) and H3. The cathodes go to
+the faceplate's GND_D_F. QF–QH are spare. C3 100n at pin 16. It used to be
+on the faceplate; the display's keep-out left no room for it there.
+
 ### Presets
 
 No hardware: presets go in the Seed's 8 MB QSPI flash, next to the
@@ -151,9 +161,9 @@ C18, up to 100 mA on 3V3D, and seven Seed pins.
 
 ### Encoders, buttons and LEDs on one chain
 
-U1 and U2 (74HC165) read all 16 switch lines; U3 (74HC595) drives the five
-button LEDs. They share SR_CLK, and SR_LOAD goes to both the 165s' /PL and
-the 595's RCLK. A scan: SR_LOAD low (the 165s load), SR_LOAD high (the 595
+U1 and U2 (74HC165) read all 16 switch lines; U3 (74HC595, on the main
+board) drives the five button LEDs. They share SR_CLK, and SR_LOAD goes to
+both the 165s' /PL and the 595's RCLK. A scan: SR_LOAD low (the 165s load), SR_LOAD high (the 595
 latches the LED byte shifted in by the previous scan), then 16 clocks that
 read SR_DIN and shift the next LED byte out on SR_DOUT. Bit-banged from a
 2 kHz timer, that's a few µs per scan, and fast enough to decode the
@@ -163,35 +173,46 @@ encoders' quadrature in software.
 |---|---|
 | U1 (read first, Q7 = SR_DIN) | ENC1 A, B; ENC2 A, B; ENC3 A, B; ENC4 A, B |
 | U2 (Q7 → U1 DS, DS to ground) | K1–K4 push, PITCH, DELAY, TEXTURE, REVERB |
-| U3 74HC595 QA..QE | PITCH, DELAY, TEXTURE, REVERB, SHIFT LEDs (QF–QH spare) |
+| U3 74HC595 QA..QE (main board) | PITCH, DELAY, TEXTURE, REVERB, SHIFT LEDs (QF–QH spare) |
 
 Every 165 input has its own 10k pull-up from a bussed network (RN1 for U1,
 RN2 for U2; pin 1 common to 3V3D_F). Encoder common and switch go to
-ground. SHIFT has its own Seed pin and pull-up (R6 10k), because the two
-165s are full. LED resistors R1–R5 are 470R, about 3 mA per red LED.
-Decoupling C1–C3 100n.
+ground. SHIFT goes straight to its own Seed pin, which uses its internal
+pull-up, because the two 165s are full. The LED-button anodes come from the
+main board through H3. Decoupling C1 and C2 100n.
 
 ### Display
 
 The Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, 3.3 V, 40 mA max)
 comes with an MX1.25 cable that ends in 2.54 mm Dupont sockets. They plug
-onto CN1, in Waveshare's order: VCC, GND, DIN, CLK, CS, DC, RST, BL. C4
-10 µ beside CN1. BL takes the Seed's PWM directly; the module switches the
+onto CN1, a right-angle header so the plug lies flat in the 8.5 mm gap
+between the boards, in Waveshare's order: VCC, GND, DIN, CLK, CS, DC, RST,
+BL. Alternatively, cut the Dupont ends off and solder the wires into CN1. C4
+is a 10 µ ceramic on 5.08 mm, beside CN1; an electrolytic stands too tall
+for the gap. BL takes the Seed's PWM directly; the module switches the
 backlight itself (check the module schematic before relying on that).
+
+Mounting: the module sits in the panel gap, glass against the panel's rear
+(thin double-sided tape round the window). Its four M2 holes are under the
+glass, so they can't take screws from the front. The cable connector on its
+back stands about 3.5 mm proud; the faceplate has a 16.7 × 13.5 mm cutout
+under it, and the cable runs through that to CN1 on the rear.
 
 ---
 
 ## Board-to-board headers
 
-Split by function. The pin order is a first guess, and the PCB step sorts it
-for the fewest crossings.
+Split by function. The pin order is a first guess; reorder it while routing
+if that untangles the lines (both boards follow from `circuit.HEADERS`).
 
-| Header | Pins (MB net / FB net) |
-|---|---|
-| H1 / HF1 (6) | IN1, GND/GND_F, IN2, OUT1, GND/GND_F, OUT2 |
-| H2 / HF2 (8) | CV1, CV2, CV3, CV4, CLK_IN, GND/GND_F, MIDI_TIP, MIDI_RING |
-| H3 / HF3 (7) | 3V3D, GND/GND_D_F, SR_CLK, SR_LOAD, SR_DIN, SR_DOUT, BTN_SHIFT |
-| H4 / HF4 (8) | 3V3D, GND/GND_D_F, LCD_SCK, LCD_MOSI, LCD_CS, LCD_DC, LCD_RST, LCD_BL |
+| Header | Where (front view) | Pins (MB net / FB net) |
+|---|---|---|
+| H1 / HF1 (5) | jack strip, right end, pins along x | IN1, IN2, GND/GND_F, OUT1, OUT2 |
+| H2 / HF2 (8) | right edge beside the encoders | CV1, CV2, CV3, CV4, CLK_IN, GND/GND_F, MIDI_TIP, MIDI_RING |
+| H3 / HF3 (11) | strip beside the display, upper | 3V3D, GND/GND_D_F, SR_CLK, SR_LOAD, SR_DIN, BTN_SHIFT, LED_PITCH, LED_DELAY, LED_TEXTURE, LED_REVERB, LED_SHIFT |
+| H4 / HF4 (6) | strip beside the display, lower | LCD_SCK, LCD_MOSI, LCD_CS, LCD_DC, LCD_RST, LCD_BL |
+
+The display's power comes from H3's 3V3D and GND_D_F on the faceplate.
 
 The faceplate keeps two grounds: GND_F (jack sleeves and lugs, the audio
 and CV return) and GND_D_F (logic, encoders, display). They join only on the
@@ -202,14 +223,15 @@ main board, through their own header pins.
 ## Schematic
 
 `hardware/tools/easyeda_export.py` writes `hardware/easyeda/SideFXy.epro2`:
-two boards (SideFXy Main, SideFXy Faceplate), each with its schematic and
-no PCB yet, and three A3 pages:
+three boards (SideFXy Main, SideFXy Faceplate, SideFXy Panel), each with its
+schematic and its PCB, and four A3 pages:
 
 | Page | Holds |
 |---|---|
-| Main board | Seed, CV stages, clock, MIDI, bias, U6 decoupling, H1–H4 |
-| Faceplate 1 | jacks, encoders, LED buttons (and R6) |
-| Faceplate 2 | U1/U2 + RN1/RN2, U3 + R1–R5, CN1, C1–C4, HF1–HF4 |
+| Main board | Seed, CV stages, clock, MIDI, bias, U6 decoupling, U3 + R1–R5 + C3, H1–H4 |
+| Faceplate 1 | jacks, encoders, LED buttons |
+| Faceplate 2 | U1/U2 + RN1/RN2, CN1, C1, C2, C4, HF1–HF4 |
+| Panel | a note: the panel PCB has no parts |
 
 Run `python easyeda_export.py` from `hardware/tools` (needs Pillow for
 the previews). It reports the schematic problems (every pin of the netlist
@@ -248,10 +270,87 @@ flags and the frame. Everything else is drawn in the same style:
 | J5 | the sleeve |
 | J2, J7 (outputs) | the switch lugs |
 
-**Check before the PCB step:**
+**Check before ordering boards:**
 
 - The EC11 you order against `fp_ec11()`.
 - A PJ366ST's leads against the slots.
+
+---
+
+## PCB placement
+
+`pcb.py` places both boards (unrouted, net-assigned) and checks them; the
+exporter writes them into the project and reports 0 problems on all of these:
+
+- every part placed once;
+- pads 0.25 mm apart, 0.5 mm from the edge, clear of the holes and the cutout;
+- bodies not overlapping on one side;
+- nothing under a standoff (the gap side) or a screw head (the other side);
+- every header pin at the same spot on both boards;
+- the panel parts exactly at their panel positions;
+- no faceplate rear pad under a jack, encoder or button body or under the
+  display module.
+
+The written file is read back: every PAD_NET names a real pad of its
+footprint and a net with a NET record. Previews:
+`hardware/easyeda/side-fx-easyeda-pcb-{faceplate,main-board,panel}.png`.
+
+**Faceplate** (front view coordinates):
+
+| Area | Front side (panel side) | Rear side |
+|---|---|---|
+| y 0–26 | jack rows | — |
+| y 29–40 | — | U1 (x 10.4) and U2 (x 44.0) at y 33.1, C1 and C2 beside them, H1 at the right end; hole at (30.0, 33.1) |
+| x 2.75–30.05, y 38.7–89.9 | the display module | nothing with leads; the cable's cutout at x 8.0–24.7, y 43.5–57.0; CN1's plug lies over this area |
+| x 32.4, y 39–81 | — | H4 (lower) and H3 (upper) |
+| x 35–66, y 37–88 | encoders (phase pins below the shaft; ENC4's on its left), SW5 | RN1 and RN2 standing between the encoder columns at x 50.3; H2 at the right edge, x 67.6 |
+| y 90–97 | — | CN1 (right-angle, pins along x at y 92.6) and C4 |
+| y 98–106 | send buttons | holes at (34.8, 104.5) and (51.5, 104.5) |
+| | | another hole between the encoder columns at (50.3, 49.0) |
+
+**Main board** (rear view, as EasyEDA shows the top layer, so the front
+view's right is on the left):
+
+- **Breakout:** stands in the middle, pins 21–40 (3V3A, the ADC inputs,
+  the chain, 3V3D) in its left row and pins 1–20 (clock, display, MIDI) in
+  its right row. The USB end is at the bottom and J1 / J3 (±12 V) at the top.
+- **Channel between its rows:** H3's and H4's sockets and two of the
+  mounting holes, under the raised breakout.
+- **Left side, top to bottom:**
+  - the TL074 with its four CV stages clustered at its corners (Rf, then
+    Rin / Rs, then Cf going outwards) and a 100 n per rail beside pins 4 / 11;
+  - the bias divider and its 1 µ;
+  - the H11L1 with its 220R, 1N4148, pull-up and 100 n;
+  - the clock stage;
+  - H1's sockets;
+  - the 74HC595 with R1–R5 beside QA–QE and C3 at pin 16.
+- **Right of the breakout:** left empty for routing.
+
+### Routing notes
+
+- **Rules:** clearance 0.25 mm, tracks 0.3 mm, a POWER class of 0.6 mm
+  (±12 V, 3V3A, 3V3D and their _F twins), vias 0.8 / 0.4 mm, copper 0.5 mm
+  from the edge.
+- **Main board ground:** one GND, poured on both layers.
+- **Main board, CV:**
+  - The CV stages' summing nodes are short by placement. Keep them and the
+    ADC lines (pins 22–25, left row) on one layer, over the pour.
+  - The ADC lines cross from the TL074 to the breakout's left row; the CV
+    inputs come in from H2 at the left edge.
+- **Main board, right row (display, MIDI, clock):** pins 8–15 and 1 sit in
+  the breakout's right row. Run these down the channel between the rows
+  (free on both layers apart from the H3 / H4 sockets) and out through the
+  gaps of the left row, or round the breakout's ends.
+- **Main board, ±12 V:** from J3 (left row, +12 V) and J1 (right row,
+  −12 V) at the top, as 0.6 mm tracks to C15 / C16.
+- **Faceplate grounds:** GND_F poured on the panel side (front) under the
+  jack, CV and audio lines; GND_D_F on the rear for the logic, encoders,
+  buttons and display. They meet only on the main board.
+- **Faceplate, under the display:** tracks may run under the module (only
+  leads are kept out); the cutout needs its 0.3 mm copper clearance.
+- **Faceplate, encoder and button lines:** they run down to U1 / U2 in the
+  jack strip, the networks sitting on them between the encoder columns.
+  Keep them off the audio lines (IN / OUT to H1).
 
 ---
 
@@ -271,7 +370,8 @@ the display its own 3.3 V regulator.
 |---|---|---|---|
 | 1 | Daisy Seed (Thonk) | | U5 |
 | 1 | seed_power_opamps breakout (Rob Heel), built with its audio in and out | | U5 |
-| 1 | Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI) with its cable | | DS1, CN1 |
+| 1 | Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI) with its cable | glass taped to the panel's rear | DS1 |
+| 1 | 1×8 right-angle male header, 2.54 mm | the cable's Dupont plug lies flat on it | CN1 |
 | 9 | Thonkiconn PJ398SM (Thonk) | | J1–J4, J6–J10 |
 | 1 | Thonkiconn stereo PJ366ST (Thonk) | MIDI | J5 |
 | 5 | Thonk low-profile LED button, red | clip the three feet | SW1–SW5 |
@@ -288,14 +388,15 @@ the display its own 3.3 V regulator.
 | 4 | 27k | | R11, R14, R17, R20 |
 | 5 | 1k | | R12, R15, R18, R21, R27 |
 | 1 | 15k | | R22 |
-| 3 | 10k | | R6, R23, R25 |
+| 2 | 10k | | R23, R25 |
 | 1 | 220R | | R26 |
 | 5 | 470R | | R1–R5 |
 | 4 | 1n film/C0G | | C10–C13 |
 | 6 | 100n | | C1–C3, C15–C17 |
 | 1 | 1 µ | | C14 |
-| 1 | 10 µ electrolytic | | C4 |
-| — | Male + female 2.54 mm headers (Thonk header bag): 6, 7, 8, 8 pins per side; sockets for the breakout | | H1–H4, HF1–HF4 |
+| 1 | 10 µ ceramic (X5R / X7R, 16 V or more), leads on 5.08 mm | an electrolytic is too tall for the gap | C4 |
+| — | Male + female 2.54 mm headers (Thonk header bag): 5, 8, 11, 6 pins per side; sockets for the breakout | | H1–H4, HF1–HF4 |
+| 4 | M3 standoffs for the 8.5 mm board gap, with screws | | holes |
 
 ---
 

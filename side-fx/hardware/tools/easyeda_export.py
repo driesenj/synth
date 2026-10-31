@@ -1,6 +1,5 @@
-"""Side FXy as an EasyEDA Pro project (.epro2): the schematic of both boards.
-PCB placement and the panel PCB follow in their own step (pcb.py,
-panel_pcb.py, as for Marblesy and the mixer).
+"""Side FXy as an EasyEDA Pro project (.epro2): schematic pages, both PCBs
+placed (not routed), and the panel PCB.
 
 Builds on the Plaitsy exporter (../../../plaitsy/hardware/tools) for the
 file format, the connectivity check and the previews, the way the mixer
@@ -21,8 +20,10 @@ Drawn or generated here, in the same style and with real pin numbers:
               resistor network, stereo jack, headers
 
 Pages: main board (one page), faceplate (jacks, encoders, buttons; shift
-registers, display, headers). Net ports with the same name connect within a
-board; nets that cross between the boards are the header pins.
+registers, display, headers), panel note. Net ports with the same name
+connect within a board; nets that cross between the boards are the header
+pins. pcb.py places both PCBs (unrouted) and panel_pcb.py draws the panel as
+the third board.
 
 Run from side-fx/hardware/tools:  python easyeda_export.py
 """
@@ -44,9 +45,16 @@ LIBFILES = [os.path.join(PLAITSY, "..", "easyeda", "morrissynth-parts.epru"),
             os.path.normpath(os.path.join(HERE, "..", "..", "..", "stereo-mixer", "hardware", "easyeda",
                                           "stereo-mixer-parts.epru"))]
 
-_spec = importlib.util.spec_from_file_location("sidefx_circuit", os.path.join(HERE, "circuit.py"))
-circuit = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(circuit)
+def _load(name):
+    spec = importlib.util.spec_from_file_location("sidefx_" + name, os.path.join(HERE, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+circuit = _load("circuit")
+pcb = _load("pcb")
+panel_pcb = _load("panel_pcb")
 SECTION = circuit.SECTION
 
 NAME = "SideFXy"
@@ -166,6 +174,18 @@ def fp_header(n):
     for i in range(n):
         f.pad(i + 1, x0 + i * 2.54, 0, 1.0, 1.7, square=(i == 0))
     f.rect(x0 - 1.27, -1.27, x0 + (n - 1) * 2.54 + 1.27, 1.27)
+    return f
+
+
+def fp_header_ra(n):
+    """1xN right-angle male header lying on the board, pins in a row like fp_header; the drawn body
+    covers the plastic and the Dupont plug pushed onto the pins (about 16.5 mm out from the row, -y)."""
+    f = Footprint(f"HDR-1x{n}-P2.54-RA", "CN?")
+    x0 = -(n - 1) * 1.27
+    for i in range(n):
+        f.pad(i + 1, x0 + i * 2.54, 0, 1.0, 1.7, square=(i == 0))
+    f.rect(x0 - 1.27, -17.8, x0 + (n - 1) * 2.54 + 1.27, 1.27)
+    f.line(x0 - 1.27, -3.8, x0 + (n - 1) * 2.54 + 1.27, -3.8)    # where the plastic ends and the plug begins
     return f
 
 
@@ -451,6 +471,18 @@ class MProject(Project):
         self.new_docs.append(("FOOTPRINT", lines))
         return fp.doc.uuid
 
+    def footprint_geo(self, uid):
+        """Pads and body box of a library or generated footprint, by uuid."""
+        if not hasattr(self, "_fpgeo"):
+            self._fpgeo = {}
+            docs = {u: d for u, d in self.lib.items() if d["docType"] == "FOOTPRINT"}
+            for typ, lines in self.new_docs:
+                if typ == "FOOTPRINT":
+                    docs.update(ee.parse(lines))
+            for u, d in docs.items():
+                self._fpgeo[u] = pcb.footprint_geometry(d)
+        return self._fpgeo[uid]
+
     def _copy(self, key, src, title, tags, **changes):
         a = dict(self.device_attrs(src))
         a.update(changes)
@@ -478,6 +510,12 @@ class MProject(Project):
                       "LCSC Part Name": f"{value} ±5% 50V C0G",
                       "Description": f"Capacitance:{value} Tolerance:±5% Voltage Rating:50V Temperature Coefficient:C0G"})
             self._device("C" + val, mpn, a, ["Capacitors", "Multilayer Ceramic Capacitors MLCC - Leaded"])
+        self._copy("C10uK", "C100n", "10uF MLCC", ["Capacitors", "Multilayer Ceramic Capacitors MLCC - Leaded"],
+                   **{"Manufacturer Part": "10uF MLCC 5.08mm", "Value": "10uF", "Supplier Part": "", "Datasheet": "",
+                      "Tolerance": "±10%", "Temperature Coefficient": "X5R / X7R",
+                      "LCSC Part Name": "10uF 16V+ X5R/X7R, leaded, 5.08 mm",
+                      "Description": "10 uF ceramic, 16 V or more, leads on 5.08 mm: low enough for the 8.5 mm "
+                                     "gap between the boards, where an electrolytic is not"})
         fps = {"RV": self._footprint(fp_res_vertical()), "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
                "DIP6": self._footprint(fp_dip(6, "DIP-6-W7.62-P2.54")), "TO92": self._footprint(fp_to92()),
                "SEED": self._footprint(fp_seed_breakout()), "SWLED": self._footprint(fp_led_button()),
@@ -486,6 +524,7 @@ class MProject(Project):
         sizes = sorted({int(kind[3:]) for _, kind, _ in circuit.HEADERS})
         for n in sizes:
             fps[f"HDR{n}"] = self._footprint(fp_header(n))
+        fps["HDR8RA"] = self._footprint(fp_header_ra(8))
         dip16 = self.device_attrs("HC595N")["Footprint"]
         for key in STANDING:                                      # each main-board resistor again, standing up
             a = self.device_attrs(key)
@@ -521,7 +560,10 @@ class MProject(Project):
         ]
         for n in sizes:
             new.append((f"HDR{n}", header_symbol(n), f"Pin header 1x{n}", "H?", fps[f"HDR{n}"],
-                        f"Board-to-board header (or the display cable's), 1x{n}, 2.54 mm"))
+                        f"Board-to-board header, 1x{n}, 2.54 mm"))
+        new.append(("HDR8RA", header_symbol(8), "Pin header 1x8 right angle", "CN?", fps["HDR8RA"],
+                    "Right-angle male header 1x8, 2.54 mm, for the display module's cable (MX1.25 to Dupont); the "
+                    "plug lies flat on the board"))
         for key, sym, title, desig, fp, desc in new:
             su = self._symbol(sym)
             attrs = {"Name": "={Manufacturer Part}", "Manufacturer Part": title, "Designator": desig,
@@ -529,9 +571,8 @@ class MProject(Project):
                      "3D Model": "", "3D Model Title": "", "3D Model Transform": "", "Description": desc}
             self._device(key, title, attrs)
 
-    def write(self, boards, path):
-        """boards: [(title, pages, pcb board or None)]; each gets a BOARD doc holding its schematic pages
-        and, once placed, its PCB."""
+    def write(self, boards, path, template):
+        """boards: [(title, pages, pcb board)]; each gets a BOARD doc holding its schematic pages and its PCB."""
         used = {u for u, m in self.devices.values()}
         refs = {m["attributes"].get(k) for u, m in self.devices.values() for k in ("Symbol", "Footprint")}
         keep = {"FOOTPRINT": refs, "SYMBOL": refs, "DEVICE": used}
@@ -547,6 +588,7 @@ class MProject(Project):
             lines += sch.lines({"title": f"{title} Schema", "board": board.uuid, "zIndex": None})
             for pg in pages:
                 lines += pg.lines(sch.uuid)
+            lines += pcb_board.doc(ee, template, board.uuid, f"{title} PCB")
         lines += Doc("CONFIG", "CONFIG").lines({"defaultSheet": ""})
         lines += next(d for d in self.lib.values() if d["docType"] == "BLOB")["lines"]   # one BLOB doc
         project = {"title": NAME, "cbb_project": False, "editorVersion": ee.EDIT, "introduction": "",
@@ -566,7 +608,7 @@ def dev_of(part):
     if part.kind == "R":
         return {"1k": "R1k", "10k": "R10k"}.get(part.value, "R" + part.value)
     if part.kind == "C":
-        return {"100n": "C100n", "1u": "C1u", "10u": "C10u"}.get(part.value, "C" + part.value)
+        return {"100n": "C100n", "1u": "C1u", "10u": "C10uK"}.get(part.value, "C" + part.value)
     return {"TL074": "TL074N", "1N4148": "D4148"}.get(part.kind, part.kind)
 
 
@@ -763,13 +805,18 @@ def main_page(pr, P):
     clock_block(pg, P, 1060, Y(250))
     pg.text(1000, Y(400), "MIDI in, TRS type A (ring = source, tip = sink); sleeve left open on the jack", 12)
     midi_block(pg, P, 1290, Y(470))
-    pg.text(1000, Y(690), "Bias 1.32 V for the CV stages; U6 decoupling", 12)
-    bias_block(pg, P, 1080, Y(750))
-    decoupling_pair(pg, P, "C15", "C16", 1300, Y(750))
-    pg.text(1295, Y(890), "C15 / C16 at U6", 8)
+    pg.text(1400, Y(100), "Bias 1.32 V; U6 decoupling", 12)
+    bias_block(pg, P, 1440, Y(160))
+    decoupling_pair(pg, P, "C15", "C16", 1580, Y(160))
+    pg.text(1545, Y(300), "C15 / C16 at U6", 8)
     pg.text(40, Y(810), "Board-to-board headers: female sockets on this board, pin 1 at the top; the faceplate has "
                         "the male pins (HF1..HF4)", 12)
-    headers_row(pg, P, [r for r, _, _ in circuit.HEADERS], 140, Y(900), 230, ("GND",))
+    headers_row(pg, P, [r for r, _, _ in circuit.HEADERS], 140, Y(900), 200, ("GND",))
+    pg.text(900, Y(700), "Button LEDs: 74HC595 at the chain's end (QF..QH spare), 470R per LED to H3", 12)
+    sr595_block(pg, P, 1000, Y(820))
+    led_resistors(pg, P, 1330, Y(770))
+    cap_to_rail(pg, P["C3"], 1560, Y(770))
+    pg.text(1525, Y(860), "C3 at U3 pin 16", 8)
     pg.text(40, Y(1090), "Net ports with the same name connect. GND is one net here: AGND (Seed pin 20), DGND "
                          "(pin 40) and the breakout's GND pins; the faceplate's GND_F and GND_D_F join it at the "
                          "headers.", 10)
@@ -888,8 +935,8 @@ def sr595_block(pg, P, x, y):
     nets = P["U3"].nets
     for num in ("14", "11", "12", "10", "16"):
         pg.stub_port(sr[num], nets[num], "IN", "left")
-    pg.stub_flag(sr["13"], "GND_D_F", "left", 15)
-    pg.stub_flag(sr["8"], "GND_D_F", "left", 15)
+    pg.ground(sr["13"], nets["13"], "left", 15)
+    pg.ground(sr["8"], nets["8"], "left", 15)
     for num in ("15", "1", "2", "3", "4", "5", "6", "7"):
         if nets.get(num):
             pg.stub_port(sr[num], nets[num], "OUT", "right")
@@ -905,7 +952,7 @@ def led_resistors(pg, P, x, y):
 
 
 def lcd_block(pg, P, x, y):
-    h = pg.place("CN1", "HDR8", x, y, des=(-10, -50, "LEFT_BOTTOM"), name=False)
+    h = pg.place("CN1", "HDR8RA", x, y, des=(-10, -50, "LEFT_BOTTOM"), name=False)
     names = ["VCC", "GND", "DIN", "CLK", "CS", "DC", "RST", "BL"]
     for i, net in enumerate(circuit.LCD_PINS):
         p = h[str(i + 1)]
@@ -919,20 +966,17 @@ def lcd_block(pg, P, x, y):
 def faceplate_page_2(pr, P):
     pg = MPage(pr, "Faceplate 2: shift registers, display, headers", 2)
     pg.page_count = "2"
-    pg.text(40, Y(40), "One chain: SR_CLK to all three chips, SR_LOAD = 74HC165 /PL and 74HC595 RCLK; U2 shifts "
-                       "into U1, U1 Q7 = SR_DIN; every 165 input pulled up by its network", 12)
+    pg.text(40, Y(40), "One chain: SR_CLK to the 74HC165s here and the main board's 74HC595, SR_LOAD = /PL and "
+                       "RCLK; U2 shifts into U1, U1 Q7 = SR_DIN; every 165 input pulled up by its network", 12)
     sr165_block(pg, P, "U1", 230, Y(200))
     sr165_block(pg, P, "U2", 230, Y(440))
     network_block(pg, P, "RN1", 640, Y(200))
     network_block(pg, P, "RN2", 640, Y(440))
-    pg.text(900, Y(100), "Button LEDs: 74HC595 (QF..QH spare), 470R per LED", 12)
-    sr595_block(pg, P, 990, Y(220))
-    led_resistors(pg, P, 1230, Y(180))
-    pg.text(1420, Y(100), "Display cable (Waveshare order)", 12)
-    lcd_block(pg, P, 1560, Y(220))
-    pg.text(900, Y(380), "Decoupling: C1..C3 at U1..U3 pin 16, C4 beside CN1", 12)
-    for k, ref in enumerate(("C1", "C2", "C3", "C4")):
-        cap_to_rail(pg, P[ref], 960 + k * 110, Y(430))
+    pg.text(1100, Y(100), "Display cable (Waveshare order), right-angle header", 12)
+    lcd_block(pg, P, 1300, Y(220))
+    pg.text(950, Y(380), "Decoupling: C1 / C2 at U1 / U2 pin 16, C4 (10 uF MLCC) beside CN1", 12)
+    for k, ref in enumerate(("C1", "C2", "C4")):
+        cap_to_rail(pg, P[ref], 1010 + k * 120, Y(430))
     pg.text(40, Y(640), "Headers to the main board (male pins here, pin 1 at the top)", 12)
     headers_row(pg, P, [circuit.fb_ref(r) for r, _, _ in circuit.HEADERS], 140, Y(740), 260, ("GND_F", "GND_D_F"))
     return pg
@@ -977,18 +1021,50 @@ def pins_and_pads(pr, keys):
 
 
 def validate(path):
-    """Parse the written project: every component's Device, Symbol and Footprint must be in it."""
+    """Parse the written project: every schematic component's Device, Symbol and Footprint must be in it;
+    on every PCB, each component's Device and Footprint exist, each PAD_NET names a real pad of that
+    footprint and a net with a NET record (else EasyEDA drops the net silently)."""
     with ee.zipfile.ZipFile(path) as z:
         docs = ee.parse(z.read(f"{NAME}.epru").decode("utf-8").split("\n"))
     problems = []
+    pad_ids = {u: {h["id"] for h, p in d["recs"] if h["type"] == "PAD"}
+               for u, d in docs.items() if d["docType"] == "FOOTPRINT"}
     for u, d in docs.items():
-        if d["docType"] != "SCH_PAGE":
-            continue
-        for h, p in d["recs"]:
-            if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"] \
-                    and p["value"] not in docs:
-                problems.append(f"{meta(d)['title']}: {p['key']} {p['value']} missing")
+        if d["docType"] == "SCH_PAGE":
+            for h, p in d["recs"]:
+                if h["type"] == "ATTR" and p["key"] in ("Device", "Symbol", "Footprint") and p["value"] \
+                        and p["value"] not in docs:
+                    problems.append(f"{meta(d)['title']}: {p['key']} {p['value']} missing")
+        elif d["docType"] == "PCB":
+            title = meta(d)["title"]
+            nets = {ee.json.loads(h["id"])[1] for h, p in d["recs"] if h["type"] == "NET"}
+            fp_of = {}
+            for h, p in d["recs"]:
+                if h["type"] == "ATTR" and p.get("key") in ("Footprint", "Device"):
+                    if p["value"] not in docs:
+                        problems.append(f"{title}: {p['key']} {p['value']} missing")
+                    if p["key"] == "Footprint":
+                        fp_of[p["parentId"]] = p["value"]
+            for h, p in d["recs"]:
+                if h["type"] == "PAD_NET":
+                    _, cid, num, pid = ee.json.loads(h["id"])
+                    if pid not in pad_ids.get(fp_of.get(cid), ()):
+                        problems.append(f"{title}: PAD_NET {cid}.{num} names no pad of its footprint")
+                    if p["padNet"] not in nets:
+                        problems.append(f"{title}: net {p['padNet']} has no NET record")
     return problems, collections.Counter(d["docType"] for d in docs.values())
+
+
+def part_info(pages):
+    """ref -> device key, schematic Unique ID and the PCB's Channel ID ('$' + page number + id of the
+    part's first schematic component)."""
+    info = {}
+    for pg in pages:
+        for c in pg.comps:
+            if c["ref"] and c["ref"] not in info:
+                info[c["ref"]] = {"dev": c["dev"], "uid": pg.pr.unique_id(c["ref"]),
+                                  "channel": f"${pg.number}{c['cid']}"}
+    return info
 
 
 def main():
@@ -1004,15 +1080,33 @@ def main():
     bad += pins_and_pads(pr, used)
     for b in bad:
         print("PROBLEM:", b)
-    pr.write([("SideFXy Main", main_pages, None), ("SideFXy Faceplate", fp_pages, None)], OUT)
+    board_fb = pcb.faceplate_board(pr, fb, part_info(fp_pages), circuit)
+    board_mb = pcb.main_board(pr, mb, part_info(main_pages), circuit)
+    pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
+               + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb))
+    for b in pcb_bad:
+        print("PCB:", b)
+    template = pcb.load_template(ee)
+    # the panel: a board of its own, no parts; its schematic page only carries a note
+    panel_page = MPage(pr, "Panel", 1)
+    panel_page.text(70, Y(60), "Side FXy 14HP panel as a PCB: no parts, no nets. Holes, slots, the display window, "
+                               "silkscreen and the bare-copper output band and block stack are in the PCB document; "
+                               "the art is hardware/panel/side-fx-panel.svg.", 12)
+    board_panel = panel_pcb.PanelBoard()
+    pr.write([("SideFXy Main", main_pages, board_mb), ("SideFXy Faceplate", fp_pages, board_fb),
+              ("SideFXy Panel", [panel_page], board_panel)], OUT, template)
     missing, counts = validate(OUT)
     for b in missing:
         print("FILE:", b)
     for pg in main_pages + fp_pages:
         render(pr, pg, PREVIEW.format(pg.title.split(":")[0].lower().replace(" ", "-")))
+    board_mb.render(PREVIEW.format("pcb-main-board"))
+    board_fb.render(PREVIEW.format("pcb-faceplate"))
+    board_panel.render(PREVIEW.format("pcb-panel"))
     n = sum(1 for pg in main_pages + fp_pages for c in pg.comps if c["ref"])
     print(f"{os.path.normpath(OUT)}: {n} part units on {len(main_pages) + len(fp_pages)} pages, "
-          f"{len(bad)} schematic problems, {len(missing)} file problems; docs {dict(counts)}")
+          f"{len(bad)} schematic problems; {len(board_mb.placed)} + {len(board_fb.placed)} parts placed, "
+          f"{len(pcb_bad)} PCB problems; {len(missing)} file problems; docs {dict(counts)}")
 
 
 if __name__ == "__main__":
