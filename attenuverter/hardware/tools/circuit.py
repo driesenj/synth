@@ -102,7 +102,8 @@ def panel_parts():
     for ref, label, net in LEDS:
         parts.append(Part(ref, "LED_BI", "red/green", {"1": net, "2": GND}, label))
     for ref, label, pins in TOGGLES:
-        parts.append(Part(ref, "TOGGLE", "SPDT ON-ON", {str(i + 1): n for i, n in enumerate(pins) if n}, label))
+        parts.append(Part(ref, "TOGGLE_SPDT", "2MS1T1B1M2QES", {str(i + 1): n for i, n in enumerate(pins) if n},
+                          label))
     return parts
 
 
@@ -238,14 +239,14 @@ def solve(atten, offset, inputs=None, patched_outs=(), source_r=0.0, ten_volt=()
                 res.append((src, tip, max(source_r, 1e-3)))
             elif patched:
                 res.append((tip, GND, 100e3))
-        elif p.kind == "TOGGLE":
+        elif p.kind == "TOGGLE_SPDT":
             if int(p.label.split()[-1]) in ten_volt:
                 res.append((p.nets["2"], p.nets["3"], 1e-3))
         elif p.kind == "TL074":
             for out, inm, inp in SECTION.values():
                 amps.append((p.nets[out], p.nets[inm], p.nets[inp]))
     for p in all_parts():                    # a toggle's open throw leaves its resistor dangling: tie it down
-        if p.kind == "TOGGLE" and int(p.label.split()[-1]) not in ten_volt:
+        if p.kind == "TOGGLE_SPDT" and int(p.label.split()[-1]) not in ten_volt:
             res.append((p.nets["3"], GND, 1e12))
     nodes = sorted({n for a, b, _ in res for n in (a, b)} | {n for amp in amps for n in amp} - set(fixed))
     nodes = [n for n in nodes if n not in fixed]

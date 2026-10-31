@@ -8,10 +8,11 @@ channels at different depths. The outputs add into the next channel when
 unpatched, so the module also mixes modulation. Reference designators
 match `hardware/tools/circuit.py`.
 
-Status (2026-10-31): netlist written for one board, 81 parts, 0 problems,
-and its DC check passes (see [Netlist](#netlist)). The panel was redrawn
-for 10HP with the RANGE toggles and needs a look. The EasyEDA schematic,
-PCB placement and panel PCB are not started.
+Status (2026-10-31): panel approved; netlist for one board (81 parts, 0
+problems, DC check passing, see [Netlist](#netlist)); EasyEDA Pro
+schematic generated and checked against the netlist (see
+[Schematic](#schematic)), not yet imported. PCB placement and the panel
+PCB are not started.
 
 ---
 
@@ -164,6 +165,51 @@ All pass to 1 µV. Two results worth knowing:
   tip, which sits behind the 1k output resistor, into 100k.
 - One source with a 1k output impedance, fanned out to all three inputs
   (3 × 100k), arrives at 97 %.
+
+---
+
+## Schematic
+
+`hardware/easyeda/Offset.epro2`, written by `hardware/tools/easyeda_export.py`:
+one board, four A3 pages, previews in `hardware/easyeda/offset-easyeda-*.png`.
+
+| Page | Holds |
+|---|---|
+| Channel 1–3 | IN jack; A and B; ATTEN and OFFSET pots; the summer with the output resistor and the LED; OUT jack; RANGE toggle; the cascade inverter D (channels 1 and 2) |
+| References, +1 V normal, power | both LM4040s, the 39k / 10k divider and U3 D, the 16-pin header with its diodes, 10 Ω and 10 µF, the three decoupling pairs |
+
+Each block ends in net ports, and ports with the same name connect across
+the pages.
+
+**Parts.** They come from your library where it has them: the TL074ACN symbol, the
+WQP518MA jack, the PTV09A pot symbol, LR1F resistors, FG28 capacitors,
+1N5819, the 10 µF and the 2×8 box header. The rest is drawn here in the
+same style:
+- **footprints:** the DIP-14 on the 7.62 mm row pitch and the Alpha 9 mm
+  pot (both the mixer's), TO-92, and a 2-lead 3 mm LED. The Dailywell 2MS1
+  toggle has three pins at 2.54 mm and a 6 mm bushing, from Dailywell's
+  2MS sheet.
+- **symbols:** the LM4040 (Marblesy's, labelled 5.0 V), the bicolour LED
+  as two LEDs back to back (green from pin 1 to pin 2), and the SPDT
+  toggle.
+
+All resistors are standing (the 2.54 mm footprint).
+
+**Checks** (`python easyeda_export.py`):
+- The drawing's connectivity matches the netlist on every page, with no
+  T-junctions.
+- Every pin with a net is drawn exactly once.
+- Every symbol pin has a pad and every pad a pin.
+- Every Device, Symbol and Footprint in the written file resolves.
+- Result: 0 problems, 90 part units.
+
+**What EasyEDA's DRC will still report** (all intended):
+- floating pins: SW1–SW3 pin 1 (the open throw), D4 / D5 pin 3 (the TO-92's
+  NC lead), J6 pin 2 (OUT 3's switch lug: nothing after it), J7 pins 13–16
+  (+5 V and the CV / gate bus, unused).
+
+Import with File > Import > EasyEDA (Professional) > `Offset.epro2`, then
+Design > Check DRC.
 
 ---
 

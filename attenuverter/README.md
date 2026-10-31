@@ -14,9 +14,10 @@ panel parts.
 
 | Part | Status | Files |
 |---|---|---|
-| Panel layout, drill template, artwork | Redrawn for 10HP with RANGE toggles (2026-10-31), to be looked at | `hardware/tools/panel.py`, `hardware/panel/` |
+| Panel layout, drill template, artwork | Done (approved 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
 | Netlist | Done: one board, 81 parts, 0 problems, DC check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md#netlist) |
-| EasyEDA schematic, PCB placement, panel PCB | Not started | |
+| EasyEDA Pro schematic | Done: 4 A3 pages, drawing checked against the netlist (0 problems); not yet imported | `hardware/easyeda/Offset.epro2`, previews `hardware/easyeda/offset-easyeda-*.png` |
+| PCB placement, panel PCB | Not started | |
 
 ## Files
 
@@ -25,7 +26,11 @@ docs/design.md            behaviour, circuit, netlist, op-amp map, references an
 hardware/
   tools/
     circuit.py            the netlist with its checks and DC solve, and the panel placement
+    easyeda_export.py     builds Offset.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
     panel.py              hole list, drill template and the panel artwork from the placement
+  easyeda/
+    Offset.epro2          schematic, one board (no PCB yet)
+    offset-easyeda-*.png  page previews
   panel/
     offset-panel-holes.csv, offset-panel-drill.svg
     offset-panel.svg      panel artwork (groups: copper, silk, holes, mockup), offset-panel-preview.png
@@ -34,5 +39,9 @@ hardware/
 Regenerate from `hardware/tools`:
 
 ```bash
-python circuit.py && python panel.py
+python circuit.py && python easyeda_export.py && python panel.py
 ```
+
+Import with File > Import > EasyEDA (Professional) > `Offset.epro2`, then
+run Design > Check DRC; [design.md](docs/design.md#schematic) lists the
+floating-pin warnings to expect.
