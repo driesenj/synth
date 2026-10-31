@@ -36,7 +36,7 @@ OUT = os.path.join(HERE, "..", "panel")
 def features():
     """[(kind, ref, label, origin_x, origin_y, hole_x, hole_y)] in board mm, y up."""
     labels = {r: lbl for r, lbl, *_ in circuit.JACKS}
-    labels.update({r: lbl for r, lbl in circuit.BUTTONS + circuit.ENCODERS})
+    labels.update({r: lbl for r, lbl, *_ in circuit.BUTTONS + circuit.ENCODERS})
     labels[circuit.DISPLAY[0]] = circuit.DISPLAY[1]
     out = []
     for ref, (x, y, rot) in circuit.PLACEMENT.items():
@@ -217,7 +217,7 @@ def layout(pos):
     out.append(("line", [(3, 118.6), (W - 3, 118.6)], 0.3))
     # the send buttons: ring and word under each; SHIFT sits bare on the block stack's corner (no silk on
     # the copper)
-    labels = dict(circuit.BUTTONS)
+    labels = {r: lbl for r, lbl, *_ in circuit.BUTTONS}
     for ref in SENDS:
         x, y = pos[ref][2], pos[ref][3]
         out.append(("ring", x, y, A["ring"], 0.35))

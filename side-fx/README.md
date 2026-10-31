@@ -14,8 +14,9 @@ Rob Heel's seed_power_opamps breakout.
 
 | Part | Status | Files |
 |---|---|---|
-| Panel layout, drill template, artwork | Draft, waiting for review | `hardware/tools/panel.py`, `hardware/panel/` |
-| Netlist, schematic, PCBs, panel PCB | Not started | |
+| Panel layout, drill template, artwork | Done (approved 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
+| Netlist | Done, 77 parts over two boards, checks pass | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
+| Schematic, PCBs, panel PCB | Not started | |
 | Firmware | Not started | |
 
 ## Panel
