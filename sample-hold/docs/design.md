@@ -26,7 +26,7 @@ it was rendered by turning the page's content stream into SVG.
 |---|---|---|
 | Noise | white, pink, blue outputs | the same |
 | S&H | JFET (J113) switch, 100 nF hold cap, CV IN with level pot, normalled to white noise | the same |
-| Clock | internal square-wave clock (RATE), CLOCK IN normalled to it, LED | the same, RATE range halved at the slow end |
+| Clock | internal square-wave clock (RATE), CLOCK IN normalled to it, LED | the same, slower: 0.8–103 Hz |
 | Slew | SLEW IN normalled to the S&H, slew pot, SLEW OUT | the same, with a ten times longer slew |
 | Random gate | — | **new**: GATE out, high when the held voltage is above 0 V |
 | Jacks / pots | 8 / 3 | 9 / 3 |
@@ -36,7 +36,7 @@ Changes from the MKI design, each easy to undo:
 
 | Change | Why |
 |---|---|
-| RATE pot B250k → **B500k** (C201 stays 1 µF) | The internal clock runs 0.9–228 Hz instead of 1.8–228 Hz. A new random value every second or so is the dark-ambient speed; anything tighter comes from the clock module anyway |
+| Clock timing cap C201 1 µF → **2.2 µF** (RATE stays the MKI's B250k) | The internal clock runs 0.8–103 Hz instead of 1.8–228 Hz. A new random value every second or so is the dark-ambient speed; the top octave lived in the last 2–3 % of the travel, and anything tempo-locked comes from the clock module anyway. The first plan, B500k with 1 µF, played the same, but Thonk has no B500K |
 | SLEW pot B100k → **A1M** | The MKI slew tops out at τ = 47 ms: enough for glide, but at slow rates the steps keep their corners. 1 MΩ gives τ up to 0.47 s, so stepped random becomes smooth random. The log taper keeps the MKI's whole range in the first half of the travel |
 | **GATE output** from the TL074 section the MKI board leaves idle (U1D) | A comparator on the held voltage: one coin toss per clock, about 50 % high with noise at the input. Random hats and accents for techno with no extra chip. 5 parts and one jack |
 | SLEW IN normalled from the S&H **buffer output**, not from the bare hold cap | On the MKI board the jack's switch lug hangs straight on the hold cap. From the buffer, nothing outside the module touches the hold node. Same voltage |
@@ -91,18 +91,18 @@ Klein drew them.
 
 ### Internal clock (R201–R204, C201, U2A)
 
-A Schmitt-trigger relaxation oscillator. C201 1 µF (film; it sees ±5.5 V)
+A Schmitt-trigger relaxation oscillator. C201 2.2 µF (film; it sees ±5.5 V)
 runs from the inverting input to ground. It charges from the output through
 R201 2k and RATE (RV1, wired as a rheostat; fully CW = 0 Ω, the fastest).
 R202 100k / R203 100k feed back to the non-inverting input, so the output
 switches at ±5.5 V. f = 1 / (2.2 · R · C), with R = 2k + RATE.
 
-| RATE | MKI (B250k) | Here (B500k) |
+| RATE (B250k) | MKI (C201 1 µF) | Here (2.2 µF) |
 |---|---|---|
-| fully CCW | 1.8 Hz | 0.9 Hz |
-| noon | 3.6 Hz | 1.8 Hz |
-| 90 % | 17 Hz | 8.7 Hz |
-| fully CW | 228 Hz | 228 Hz |
+| fully CCW | 1.8 Hz | 0.8 Hz |
+| noon | 3.6 Hz | 1.6 Hz |
+| 90 % | 17 Hz | 7.7 Hz |
+| fully CW | 228 Hz | 103 Hz |
 
 The output (±11 V) goes through R204 100k to CLOCK's switch lug. The 100k
 limits the ±22 V edges to about 8 V spikes at the differentiator.
@@ -171,7 +171,7 @@ op-amp (C903–C908). Draw: about 25 mA on +12 V, 15 mA on −12 V.
 
 | Ref | Label | Pin 3 (CW) | Wiper | Pin 1 (CCW) |
 |---|---|---|---|---|
-| RV1 | RATE, B500k | RT (R201) | OSC | OSC |
+| RV1 | RATE, B250k | RT (R201) | OSC | OSC |
 | RV2 | LEVEL, B100k | IN | LV | GND |
 | RV3 | SLEW, A1M | SLC | SLC | SLB |
 
@@ -260,18 +260,16 @@ the normals.
 
 ## To verify before ordering
 
-- Thonk stock of Alpha 9 mm **B500k** and **A1M** (Thonk's site sat behind
-  a bot check during the draft). Fallbacks: B1M for RATE (0.45–228 Hz,
-  more travel at the slow end), B1M for SLEW (linear, fine glide crowded
-  into the first 10 %).
+- Pots, checked against Thonk's list (2026-10-31): Alpha 9 mm vertical T18
+  **B250K** (RATE), **B100K** (LEVEL) and **A1M** (SLEW) are all in stock.
 - **J113**: onsemi's TO-92 part is getting scarce. J112 also works (pinch-off
   −1 to −5 V, so the clean input range shrinks to about −5 V); J111 does not.
 - The LED has to reach the panel across the 7 mm between the board and
   the panel: a 3 mm LED on a spacer, or long legs set to height.
-- Film capacitors: C102, C201 (1 µF), C301 (100 nF, the hold cap) and C401
-  (470 nF). C201 sees both polarities, so no electrolytic there. The film
-  footprint assumes a 7.2 × 5.5 mm body on a 5 mm pitch (WIMA MKS2 1 µF
-  63 V); check the parts bought.
+- Film capacitors: C102 (1 µF), C201 (2.2 µF), C301 (100 nF, the hold
+  cap) and C401 (470 nF). C201 sees both polarities, so no electrolytic
+  there. The film footprints assume a 7.2 mm long body on a 5 mm pitch,
+  5.5 mm thick (8.5 mm for C201's 2.2 µF); check the parts bought.
 - The 680p–5n6 filter and trigger caps are C0G ceramics (TDK FG28 C0G
   part numbers in the schematic; the MKI uses foil). Check that the 2n2 and
   5n6 exist in that series, or use any C0G or film part on 5 mm.

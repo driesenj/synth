@@ -9,9 +9,9 @@ Blocks (MKI designators in brackets):
           U1B, x148 (R21 / R20) = WN: white, about 10 V p-p
           U1C: WN through three series RC legs into 20k = +3 dB/oct, x1.33  BLUE
           U1A: WN through 100k into three shunt RC legs = -3 dB/oct, x5.5   PINK
-  clock   U2A Schmitt relaxation oscillator: 1u from in- to GND, charged from
-          the output through 2k + RATE (B500k rheostat, CW = 2k); 100k / 100k
-          to in+. 0.9-227 Hz. Out -> 100k -> CLOCK's switch lug
+  clock   U2A Schmitt relaxation oscillator: 2u2 from in- to GND, charged from
+          the output through 2k + RATE (B250k rheostat, CW = 2k); 100k / 100k
+          to in+. 0.8-103 Hz. Out -> 100k -> CLOCK's switch lug
   trigger CLOCK's tip -> 1n / 100k differentiator -> 1N4148 / 100k -> U2B
           in+, against 3 V (100k / 33k from +12 V) on in-: SAMP, a short
           +-11 V pulse per rising edge. CLOCK's tip also drives the LED:
@@ -29,7 +29,7 @@ Blocks (MKI designators in brackets):
           header; -12 V: cathode on the header), 10R + 47u per rail, a 100n
           pair at each op-amp
 
-Changes from the MKI board: RATE B500k (MKI B250k), SLEW A1M (B100k), the
+Changes from the MKI board: C201 2u2 (MKI 1u: 1.8-228 Hz), SLEW A1M (B100k), the
 GATE output, SLEW IN normalled from SHB rather than the bare hold cap, the
 house power entry. Test points left out.
 
@@ -111,7 +111,7 @@ INPUTS = ("J1", "J2", "J3")
 # ref, label, value (Alpha 9 mm), (CW end, wiper, CCW end). Pins 3 / 1 are the CW / CCW ends: fully CW
 # puts the wiper on pin 3. RATE and SLEW are rheostats with the wiper tied to one end.
 POTS = [
-    ("RV1", "RATE", "B500k", ("RT", "OSC", "OSC")),     # CW: 0 ohm between RT and OSC = fastest
+    ("RV1", "RATE", "B250k", ("RT", "OSC", "OSC")),     # CW: 0 ohm between RT and OSC = fastest
     ("RV2", "LEVEL", "B100k", ("IN", "LV", GND)),
     ("RV3", "SLEW", "A1M", ("SLC", "SLC", "SLB")),      # CCW: 0 ohm = no slew; the A taper grows slowly at first
 ]
@@ -167,7 +167,7 @@ def noise_parts():
 
 def clock_parts():
     return [
-        C("C201", "1u", "OSC_C", GND, "film, clock timing"),
+        C("C201", "2u2", "OSC_C", GND, "film, clock timing"),
         R("R201", "2k", "OSC_C", "RT", "clock, fastest rate"),
         R("R202", "100k", "OSC", "OSC_P", "clock hysteresis"),
         R("R203", "100k", "OSC_P", GND, "clock hysteresis"),
@@ -268,7 +268,7 @@ def check():
 
 # ------------------------------------------------------------ circuit check
 def value(v):
-    """'100k' -> 1e5, '4k7' -> 4700, '10R' -> 10, '5n6' -> 5.6e-9, '47u' -> 4.7e-5, 'B500k' -> 5e5."""
+    """'100k' -> 1e5, '4k7' -> 4700, '10R' -> 10, '5n6' -> 5.6e-9, '47u' -> 4.7e-5, 'B250k' -> 2.5e5."""
     v = v.lstrip("AB")
     for unit, mul in (("k", 1e3), ("M", 1e6), ("R", 1.0), ("u", 1e-6), ("n", 1e-9), ("p", 1e-12)):
         if unit in v:

@@ -85,7 +85,7 @@ R_NEW = {"100k": ("LR1F100K", "100kΩ"), "4k7": ("LR1F4K7", "4.7kΩ"), "680": ("
 C_NEW = {"680p": ("FG28C0G1H681JNT00", "680pF"), "1n": ("FG28C0G1H102JNT00", "1nF"),
          "2n2": ("FG28C0G1H222JNT00", "2.2nF"), "5n6": ("FG28C0G1H562JNT00", "5.6nF")}
 # film capacitors: the hold, slew and clock-timing caps and the noise coupling cap (MKI: foil)
-C_FILM = {"100n": "100nF", "470n": "470nF", "1u": "1uF"}
+C_FILM = {"100n": "100nF", "470n": "470nF", "1u": "1uF", "2u2": "2.2uF"}
 
 
 # ---------------------------------------------------------------- footprints
@@ -228,12 +228,13 @@ def fp_alpha_pot():
     return f
 
 
-def fp_film():
-    """Box film capacitor, 5 mm lead pitch (WIMA MKS2 and the like; 1 uF 63 V is 7.2 x 5.5 mm)."""
-    f = Footprint("CAP-FILM-P5.08-7.2x5.5", "C?")
+def fp_film(width=5.5):
+    """Box film capacitor, 5 mm lead pitch, 7.2 mm long (WIMA MKS2 and the like): 5.5 mm thick fits up to 1 uF
+    63 V; the 2.2 uF gets a generous 8.5 mm."""
+    f = Footprint(f"CAP-FILM-P5.08-7.2x{width}", "C?")
     f.pad(1, -2.54, 0, 0.8, 1.6, square=True)
     f.pad(2, 2.54, 0, 0.8, 1.6)
-    f.rect(-3.6, -2.75, 3.6, 2.75)
+    f.rect(-3.6, -width / 2, 3.6, width / 2)
     return f
 
 
@@ -396,11 +397,12 @@ class MProject(Project):
         fps = {"RV": self._footprint(fp_res_vertical()), "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
                "DIP8": self._footprint(fp_dip(8, "DIP-8-W7.62-P2.54")), "TO92": self._footprint(fp_to92()),
                "LED2": self._footprint(fp_led2()), "POT": self._footprint(fp_alpha_pot()),
-               "FILM": self._footprint(fp_film())}
+               "FILM": self._footprint(fp_film()), "FILM_L": self._footprint(fp_film(8.5))}
         for val, value in C_FILM.items():
             a = dict(c100n)
             a.update({"Manufacturer Part": f"Film capacitor {value} 63V P5", "Value": value, "Supplier Part": "",
-                      "Datasheet": "", "Tolerance": "±5%", "Temperature Coefficient": "", "Footprint": fps["FILM"],
+                      "Datasheet": "", "Tolerance": "±5%", "Temperature Coefficient": "",
+                      "Footprint": fps["FILM_L" if val == "2u2" else "FILM"],
                       "LCSC Part Name": f"Film capacitor {value} 63V", "Manufacturer": "",
                       "Description": f"Polyester or polypropylene film capacitor {value} 63 V, 5 mm lead pitch "
                                      "(WIMA MKS2 or similar)"})
@@ -420,7 +422,7 @@ class MProject(Project):
                        Footprint=fps["RV"])
         self._copy("TL074N", "TL074", "TL074ACN", ["Amplifiers"], Footprint=fps["DIP14"],
                    Description="Quad JFET op-amp, DIP-14 on the 7.62 mm row pitch")
-        for value, mpn in (("B500k", "Alpha RD901F-40-15R1 B500K"), ("B100k", "Alpha RD901F-40-15R1 B100K"),
+        for value, mpn in (("B250k", "Alpha RD901F-40-15R1 B250K"), ("B100k", "Alpha RD901F-40-15R1 B100K"),
                            ("A1M", "Alpha RD901F-40-15R1 A1M")):
             self._copy("POT" + value, "POT", f"Alpha 9mm {value}", ["Potentiometers"], Footprint=fps["POT"],
                        Name="={Value}", Value=value, **{"Manufacturer Part": mpn, "Supplier Part": "",
@@ -697,7 +699,7 @@ def noise_page(pr, P):
 def clock_page(pr, P):
     pg = MPage(pr, "Clock and trigger", 2)
     pg.text(40, Y(40), "Internal clock (Schmitt relaxation oscillator), trigger shaping and the clock LED", 12)
-    pg.text(40, Y(70), "f = 1 / (2.2 x (2k + RATE) x 1u): 0.9 Hz (CCW) .. 228 Hz (CW). CLOCK unpatched takes it "
+    pg.text(40, Y(70), "f = 1 / (2.2 x (2k + RATE) x 2u2): 0.8 Hz (CCW) .. 103 Hz (CW). CLOCK unpatched takes it "
                        "through R204.", 10)
     # -- oscillator
     ox, oy = 400, Y(320)

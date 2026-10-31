@@ -22,7 +22,7 @@ EasyEDA project.
 
 | Control | Part | Notes |
 |---|---|---|
-| RATE | Alpha 9 mm B500k | Internal clock, 0.9–227 Hz (MKI: B250k, 1.8–227 Hz) |
+| RATE | Alpha 9 mm B250k | Internal clock, 0.8–103 Hz (MKI: 1.8–228 Hz; the timing cap here is 2.2 µF) |
 | LEVEL | Alpha 9 mm B100k | Attenuates IN before the S&H |
 | SLEW | Alpha 9 mm A1M | Glide time constant 0–0.47 s (MKI: B100k, 0–47 ms) |
 | Clock LED | 3 mm red | Lights with the clock in use, internal or patched |
