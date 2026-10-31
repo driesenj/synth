@@ -169,31 +169,78 @@ as Alfa recommends) is centred by an inverting stage with an offset from
 | LED symbol's pin names swapped (Compressor) | LED pin 1 = anode, 2 = cathode |
 | VCO squares 0.2 mm from an op-amp summing node (FM drum) | pulses only on channels 3 and 4, LEDs from the triangle; summing nodes (pins 13, 15, the folder's S1) stay on the main board, short, no square nearby |
 | A word between two rows reads as either's (stereo mixer) | row brackets; column words once on top |
-| Count the slots before promising a layout (Plaitsy) | the area budget below |
+| Count the slots before promising a layout (Plaitsy) | the area budget, which decided SMD on two boards |
 
-## Open before the PCB stage
+## Boards (SMD, two boards, decided 2026-10-31)
 
-1. **The stack.** The main side has 254 parts. THT footprints add up to
-   about 7,900 mm²; hand-routable density is about half that, so ≈ 15,800
-   mm². One 14HP board is 7,500 mm². Options:
-   - **A. 14HP, three boards** (faceplate + two main boards), THT: the
-     oscillator cores and pitch CV on one, modifiers, noise and power on the
-     other. Keeps Sena's width and your parts; about 40 mm deep.
-   - **B. 14HP, two boards, SMD** (0805 + SOIC, JLC assembly): like the
-     real Sena (30 mm deep). Needs SMD footprints in the generator and the
-     AS3340D (SOIC) from a source JLC can use.
-   - **C. 20HP, two boards**, THT: a new, wider panel; the main board is
-     still as dense as the mixer's.
-2. **Pulse polarity (PHASE).** The design assumes the AS3340's pulse is high
+All-THT, the main side would need about 15,800 mm² hand-routed against
+7,500 mm² per 14HP board. With 0603 parts the same circuit covers about 44 %
+of one board, so: two boards, SMD, with the panel parts and a few chips still
+through-hole.
+
+| Board | Front (towards the panel) | Rear |
+|---|---|---|
+| Faceplate | 16 jacks, 8 Alpha pots, 12 toggles, 4 LEDs | U5 (the four FREQ followers, SOIC-14) with its 8 resistors and 2 caps; male headers HF1 / HF2 |
+| Main | female sockets H1 / H2 | everything else: 4 × AS3340 (DIP-16, socketed), 9 × 3296W trimmers, 3 × TL074 + LM13700 (SOIC), MMBT3904s, SOD-123 diodes, SOT-89 regulators, 0603 / 0805 / 1206 passives, the 2 × 8 power header |
+
+- **AS3340 stays DIP.** No SOIC AS3340 turned up at a retailer; sockets also
+  take a CEM3340 / V3340. JLC won't have the chip: solder the sockets, plug
+  the chips in.
+- **Trimmers on the main board's rear**, so SCALE, PITCH and LEVEL stay
+  reachable with the stack assembled. That is also why the oscillator cores
+  are there: their summing nodes (pins 13, 15) must stay short.
+- **The FREQ followers on the faceplate.** The FREQ jacks, the chain through
+  their switch lugs and the V/O–FM toggles are all there, so FREQ k and the
+  followers' outputs never cross the headers.
+- **Headers:** two 1×N columns in the panel's left margin (front x 2.6 and
+  5.14 mm, clear of the jacks' bodies from 6.5): H1, 29 pins (each channel's
+  LED, OUT, CV, modifier pot, LFO cap; the noise outputs), H2, 25 pins (±5 V,
+  ±12 V, each channel's V/O, FM, coarse, fine throws). GND between every
+  group. 44 nets cross.
+- **Mounting holes:** four M3, found by a search clear of every part on both
+  boards: (8, 18), (61.5, 18), (8, 86.75), (24, 64.75) in the PCB frame. The
+  top-right corner has none: the headers and the modifier pots fill it.
+- **Placement** (`pcb.py`): chips, trimmers, sockets and the power header are
+  anchored by hand, one band per channel level with its panel row (AS3340
+  next to the sockets, its trimmers under it, the modifier chip towards the
+  far edge; the noise bank beside channel 4; power along the bottom). Every
+  other part goes to the free spot nearest the pads it shares a signal net
+  with, and each decoupling cap to its chip's supply pin. It's a start for
+  routing, not a finished layout.
+
+## Routing notes
+
+- Pins 13 and 15 of each AS3340, the folder's summing node S1, the OTA
+  inputs (OA1P/N, OB2P/N) and the Iabc pins are the sensitive nodes: keep
+  their traces short, on one layer, with ground pour around them.
+- PU3 and PU4 (the 10 V pulses) and the LED drives: route them away from
+  those nodes (the FM drum's bleed came from a square 0.2 mm from a summing
+  node).
+- LC1–4 (the LFO caps' switched ends) touch the timing node through 47 nF
+  when the toggle is on VCO: run each beside a GND header pin, not beside a
+  pulse.
+- Ground pour on both layers of both boards, stitched; the header GND pins
+  every 5–6 positions carry the faceplate's return.
+- Power: J17 → 1N5819HW → 10 Ω → 10 µF, then out to the four bands; the
+  ±5 V references sit by J17 and feed the pots through H2.
+
+## Open before ordering
+
+1. **Pulse polarity (PHASE).** The design assumes the AS3340's pulse is high
    from the saw's reset until the saw crosses the PW level (0 V = 0 %). If
    it is the other way round, the pulse term changes sign. Check one chip on
    a breadboard (saw and pulse on two scope channels) before ordering.
-3. **PW full scale.** Taken as V9 (Vcc / 3, ≈ 3.7 V here), ratiometric like
+2. **PW full scale.** Taken as V9 (Vcc / 3, ≈ 3.7 V here), ratiometric like
    the datasheet's 5 V at 15 V. Channel 4's 50 % point comes from pin 9 for
    that reason.
-4. **Toggle bushing**: see Panel.
-5. **AS3340 sourcing**: Thonk, Electric Druid, Tayda carry the DIP. The A
+3. **Toggle:** the 6.0 mm panel hole and the footprint (pins 2.54 mm, body
+   8.13 × 5.08 from Tayda's listing) are not checked against a drawing.
+   Measure one switch first.
+4. **AS3340 sourcing:** Thonk, Electric Druid and Tayda carry the DIP. The A
    version (AS3340A) is the better one.
+5. **EasyEDA import:** not done yet. Expect DRC to flag the open pins
+   (AS3340 pins 4, 6, 8 where unused; the LM13700's buffers and diode-bias
+   pins; the VCO / LFO toggles' pin 3; Q5's collector).
 
 ## Calibration (per channel, 10 minutes warm)
 
@@ -205,27 +252,31 @@ the chain. V/O mode, FINE on, FREQ knobs at noon.
    SCALE the slope, so one pass does it.
 3. **LEVEL** (noise): WHITE about 10 Vpp on its peaks, not clipping.
 
-## BOM (main side, as netlisted)
+## BOM
 
-| Qty | Part | Notes |
+Main board (SMD unless noted):
+
+| Qty | Part | Package / notes |
 |---|---|---|
-| 4 | AS3340 (or AS3340A, CEM3340) | DIP-16, socketed |
-| 4 | TL074 | DIP-14 |
-| 1 | LM13700 | DIP-16 |
-| 1 / 1 | 78L05 / 79L05 | TO-92 |
-| 5 | 2N3904 | 4 LED followers, 1 noise source (try a few) |
-| 8 | 1N4148 | folder |
-| 2 | BZX55C4V7 | SHAPE clip |
-| 1 / 2 | BAT85 / 1N5819 | PW clamp / reverse protection |
-| 4 + 4 + 1 | Bourns 3296W 500 Ω, 2 MΩ, 10 kΩ | SCALE, PITCH, LEVEL (multi-turn) |
-| 4 | 1 nF C0G (or polystyrene) | timing |
-| 4 + 4 | 47 nF, 1 µF film | LFO caps; FM coupling |
-| 4 | 3.3 MΩ, 3.0 MΩ, 1.2 MΩ each | FM depth, FINE, reference current (1 % metal film goes this high) |
-| ~165 | 1 % metal film resistors | values in circuit.py |
-| ~50 | ceramic caps | 100 n, 10 n, 1 µ, small values |
-| 6 | electrolytics | 10 µ ×4, 1 µ ×2 |
-| 1 | 2 × 8 box header, 2.54 mm | power |
+| 4 | AS3340 (AS3340A, CEM3340 or V3340) | DIP-16 in sockets (through-hole) |
+| 3 + 1 | TL074CDT; one more on the faceplate (U5) | SOIC-14 |
+| 1 | LM13700M | SOIC-16 |
+| 1 / 1 | 78L05 / 79L05 | SOT-89 (1 OUT 2 GND 3 IN / 1 GND 2 IN 3 OUT) |
+| 5 | MMBT3904 | SOT-23 (4 LED followers; 1 noise source, try a few) |
+| 8 | 1N4148W | SOD-123, folder |
+| 2 | BZT52C4V7 | SOD-123, SHAPE clip |
+| 3 | 1N5819HW | SOD-123, reverse protection and the PW clamp |
+| 4 + 4 + 1 | Bourns 3296W 500 Ω, 2 MΩ, 10 kΩ | through-hole: SCALE, PITCH, LEVEL |
+| 4 | 1 nF C0G 0603 | timing |
+| 4 | 47 nF C0G 0603 | LFO range |
+| 11 + 4 | 1 µF X7R 0805; 10 µF 25 V X7R 1206 | FM coupling, pin 9, references; bulk and noise coupling |
+| ~170 | 0603 1 % resistors | values in circuit.py |
+| ~45 | 0603 ceramics | 100 n X7R, the rest C0G |
+| 1 | 2 × 8 box header, 2.54 mm | through-hole, power |
+| 1 + 1 | 1 × 29 and 1 × 25 female sockets | through-hole |
 
-Panel side: 16 Thonkiconn, 7 Alpha 9 mm B10k, 1 Alpha B100k (PWM), 12
+Faceplate: 16 Thonkiconn, 7 Alpha 9 mm B10k, 1 Alpha B100k (PWM), 12
 sub-mini SPDT on-on toggles (Dailywell 2MS1T1B1M2QES or equal, PCB pins),
-4 × 3 mm LEDs, 8 knobs.
+4 × 3 mm LEDs, 1 × 29 and 1 × 25 male headers, 8 knobs; U5 with eight 0603
+resistors and two 100 n on its rear. M3 standoffs (8.5 mm with standard
+sockets) and screws for the four holes.

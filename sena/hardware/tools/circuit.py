@@ -3,6 +3,13 @@ with one waveform and one voltage-controlled modifier, plus an analog noise
 bank. 14HP Eurorack, built the Marblesy way (panel first, one netlist,
 generated files). Single source of truth for the circuit and the panel.
 
+Build: two boards, SMD (the user's choice, 2026-10-31). Faceplate board:
+panel parts on its front, the four FREQ followers (U5) in 0603 on its rear.
+Main board: everything else on its rear, 0603 / SOIC / SOT, except the four
+AS3340s (DIP-16 in sockets: the SOIC version is not sold retail as far as
+we could find) and the nine 3296W trimmers, which stay reachable on the
+stack's rear. Headers: two 1xN columns in the panel's left margin.
+
 Sena's panel (Vostok product photo and user manual, October 2026), one row
 per channel, then the noise bank:
   jacks   FREQ (V/oct or linear FM, daisy-chained down the rows), the
@@ -91,12 +98,12 @@ def C(ref, value, a, b, label=""):
 
 
 def CP(ref, value, plus, minus, label=""):
-    """Electrolytic: pin 1 = +, pin 2 = -."""
-    return Part(ref, "CP", value, {"1": plus, "2": minus}, label)
+    """A bulk capacitor: ceramic on the SMD boards (1206 / 0805), so the polarity is only a habit."""
+    return Part(ref, "C", value, {"1": plus, "2": minus}, label)
 
 
 def D(ref, kind, value, anode, cathode, label=""):
-    """Diodes: pin 1 = cathode (the band), pin 2 = anode, as in the mixer's 1N5819."""
+    """Diodes, all SOD-123: pin 1 = cathode (the band), pin 2 = anode, as in the mixer's 1N5819."""
     return Part(ref, kind, value, {"1": cathode, "2": anode}, label)
 
 
@@ -106,12 +113,12 @@ def TRIM(ref, value, end, wiper_end, label=""):
 
 
 def NPN(ref, e, b, c, label=""):
-    """2N3904, TO-92 flat side towards you, legs down: E B C. Pins named by function so the
-    footprint can't swap them (the Compressor's BC549C-order footprint did)."""
+    """MMBT3904 (SOT-23: 1 B, 2 E, 3 C). Pins named by function, and the footprint's pads carry the
+    same names, so nothing can swap them (the Compressor's BC549C-order footprint did)."""
     nets = {"E": e, "B": b}
     if c:
         nets["C"] = c
-    return Part(ref, "NPN", "2N3904", nets, label)
+    return Part(ref, "NPN", "MMBT3904", nets, label)
 
 
 CHANNELS = [1, 2, 3, 4]
@@ -153,9 +160,7 @@ def core(k):
         pins["8"] = f"SAW{k}"
     return [
         Part(f"U{k}", "AS3340", "AS3340", pins, f"oscillator {k}"),
-        # FREQ input and the daisy chain
-        R(f"R{r + 1}", "1k", f"FREQ{k}", f"FB{k}", "follower input"),
-        R(f"R{r + 2}", "100k", f"FREQ{k}", GND, "FREQ input impedance"),
+        # the FREQ follower and the daisy chain are on the faceplate (buffers())
         R(f"R{r + 3}", "100k", f"VO{k}", f"EXP{k}", "1 V/oct into pin 15"),
         R(f"R{r + 4}", "1M", f"VO{k}", GND, "V/O throw idle"),
         C(f"C{c + 1}", "1u", f"FM{k}", f"FMC{k}", "linear FM coupling (film)"),
@@ -205,17 +210,17 @@ def fold1():
         R("R128", "20k", "X1", "S1", "folder input"),
         R("R129", "270k", "Y1", "S1", "folder feedback: +/-4.5 V out"),
         C("C122", "22p", "Y1", "S1"),
-        D("D101", "D4148", "1N4148", "S1", "F1A", "fold 1, positive"),
+        D("D101", "D4148", "1N4148W", "S1", "F1A", "fold 1, positive"),
         R("R130", "8.2k", "F1A", "NX1"),
         R("R131", "8.2k", "NX1", "F1B", "fold 1, negative"),
-        D("D102", "D4148", "1N4148", "F1B", "S1"),
+        D("D102", "D4148", "1N4148W", "F1B", "S1"),
         R("R132", "4.7k", "X1", "F1C", "fold 2, positive"),
-        D("D103", "D4148", "1N4148", "F1C", "F1D"),
-        D("D104", "D4148", "1N4148", "F1D", "F1E"),
-        D("D105", "D4148", "1N4148", "F1E", "S1"),
-        D("D106", "D4148", "1N4148", "S1", "F1F", "fold 2, negative"),
-        D("D107", "D4148", "1N4148", "F1F", "F1G"),
-        D("D108", "D4148", "1N4148", "F1G", "F1H"),
+        D("D103", "D4148", "1N4148W", "F1C", "F1D"),
+        D("D104", "D4148", "1N4148W", "F1D", "F1E"),
+        D("D105", "D4148", "1N4148W", "F1E", "S1"),
+        D("D106", "D4148", "1N4148W", "S1", "F1F", "fold 2, negative"),
+        D("D107", "D4148", "1N4148W", "F1F", "F1G"),
+        D("D108", "D4148", "1N4148W", "F1G", "F1H"),
         R("R133", "4.7k", "F1H", "X1"),
         R("R134", "1k", "Y1", "OUT1", "output"),
     ] + control(1, "75k")
@@ -243,8 +248,8 @@ def shape2():
         R("R224", "1k", "OB2N", GND),
         R("R225", "100k", "Y2", "OTA2", "transimpedance: +/-3.6 V triangle at SHAPE min"),
         C("C221", "100p", "Y2", "OTA2"),
-        D("ZD201", "ZENER", "BZX55C4V7", "ZM2", "Y2", "clip at +/-5.3 V"),
-        D("ZD202", "ZENER", "BZX55C4V7", "ZM2", "OTA2"),
+        D("ZD201", "ZENER", "BZT52C4V7", "ZM2", "Y2", "clip at +/-5.3 V"),
+        D("ZD202", "ZENER", "BZT52C4V7", "ZM2", "OTA2"),
         R("R226", "1k", "Y2", "OUT2", "output"),
     ] + control(2, "22k")
 
@@ -256,7 +261,7 @@ def phase3():
         R("R322", "91k", "MP3", "PW3", "pot 0..12 V -> 0..3.95 V"),
         R("R323", "75k", "MCV3", "PW3", "CV: 10 Vpp covers the range"),
         R("R324", "110k", "PW3", GND),
-        D("D301", "BAT85", "BAT85", GND, "PW3", "keeps pin 5 above -0.3 V"),
+        D("D301", "D5819", "1N5819HW", GND, "PW3", "keeps pin 5 above -0.3 V"),
         R("R325", "180k", "MP3", "SP3", "PW copy for the summer's in+"),
         R("R326", "150k", "MCV3", "SP3"),
         R("R327", "27k", "SP3", GND),
@@ -322,13 +327,13 @@ def power():
     hdr.update({str(n): GND for n in range(3, 11)})
     parts = [
         Part("J17", "HDR16", "16-pin Eurorack, 2.54 mm", hdr, "POWER (red stripe = -12 V = pin 1)"),
-        D("D901", "D5819", "1N5819", "P12_IN", "P12_D", "+12 V reverse protection: anode on the header"),
-        D("D902", "D5819", "1N5819", "N12_D", "N12_IN", "-12 V reverse protection: cathode on the header"),
+        D("D901", "D5819", "1N5819HW", "P12_IN", "P12_D", "+12 V reverse protection: anode on the header"),
+        D("D902", "D5819", "1N5819HW", "N12_D", "N12_IN", "-12 V reverse protection: cathode on the header"),
         R("R901", "10R", "P12_D", VP, "+12 V filter"),
         R("R902", "10R", "N12_D", VN, "-12 V filter"),
         CP("C901", "10u", VP, GND, "+12 V bulk"),
         CP("C902", "10u", GND, VN, "-12 V bulk"),
-        # 78L05: 1 OUT, 2 GND, 3 IN.  79L05: 1 GND, 2 IN, 3 OUT (TO-92, flat side towards you)
+        # 78L05: 1 OUT, 2 GND, 3 IN.  79L05: 1 GND, 2 IN, 3 OUT (SOT-89, the same as TO-92)
         Part("U10", "78L05", "78L05", {"3": VP, "2": GND, "1": P5}, "+5 V reference for pots and pitch"),
         Part("U11", "79L05", "79L05", {"2": VN, "1": GND, "3": N5}, "-5 V reference for pots"),
         C("C903", "100n", VP, GND, "78L05 in"),
@@ -336,15 +341,17 @@ def power():
         C("C905", "100n", GND, VN, "79L05 in"),
         CP("C906", "1u", GND, N5, "79L05 out"),
     ]
-    for i, u in enumerate(("U5", "U6", "U7", "U8", "U9")):       # one pair per op-amp chip, beside its supply pins
-        parts.append(C(f"C{911 + 2 * i}", "100n", VP, GND, f"{u} +12 V"))
-        parts.append(C(f"C{912 + 2 * i}", "100n", GND, VN, f"{u} -12 V"))
+    for i, u in enumerate(("U6", "U7", "U8", "U9")):       # one pair per op-amp chip, beside its supply pins
+        parts.append(C(f"C{913 + 2 * i}", "100n", VP, GND, f"{u} +12 V"))
+        parts.append(C(f"C{914 + 2 * i}", "100n", GND, VN, f"{u} -12 V"))
     return parts
 
 
 def chips():
-    nets = {u: {"4": VP, "11": VN} for u in ("U5", "U6", "U7", "U8")}
+    nets = {u: {"4": VP, "11": VN} for u in ("U6", "U7", "U8")}
     for (u, s), fn in OPAMPS.items():
+        if u == "U5":
+            continue
         out, inm, inp = SECTION[s]
         p, m, o = OPAMP_NETS[fn]
         nets[u].update({inp: p, inm: m, out: o})
@@ -363,19 +370,60 @@ def main_board_parts():
     for k in CHANNELS:
         parts += core(k)
     parts += fold1() + shape2() + phase3() + pwm4() + noise() + power() + chips()
+    for ref, kind, pins in HEADERS:                 # female sockets on this board
+        parts.append(Part(ref, kind, "", {str(i + 1): m for i, (m, f) in enumerate(pins)}))
     return parts
 
 
 # ------------------------------------------------- the faceplate's nets
 def fp(net):
-    return {"GND": "GND_F", VP: "P12_F", P5: "P5_F", N5: "N5_F"}.get(net, net + "_F")
+    return {"GND": "GND_F", VP: "P12_F", VN: "N12_F", P5: "P5_F", N5: "N5_F"}.get(net, net + "_F")
 
 
-# Nets that cross between the boards (main name). Headers come once the stack is decided.
-INTERFACE = [GND, VP, P5, N5, "NWH", "NPK", "NBL", "NBR"]
+# Nets that cross between the boards (main name). FREQ k and the followers' outputs stay on the
+# faceplate, where the jacks, the chain and the V/O - FM toggles are.
+INTERFACE = [GND, VP, VN, P5, N5, "NWH", "NPK", "NBL", "NBR"]
 for _k in CHANNELS:
-    INTERFACE += [f"FREQ{_k}", f"BUF{_k}", f"VO{_k}", f"FM{_k}", f"CR{_k}", f"FN{_k}", f"LC{_k}", f"MP{_k}",
-                  f"OUT{_k}", f"LED{_k}"] + ([f"MCV{_k}"] if _k != 4 else [])
+    INTERFACE += [f"VO{_k}", f"FM{_k}", f"CR{_k}", f"FN{_k}", f"LC{_k}", f"MP{_k}", f"OUT{_k}", f"LED{_k}"] + \
+        ([f"MCV{_k}"] if _k != 4 else [])
+
+
+def buffers():
+    """Faceplate rear: FREQ k -> 1k -> TL074 follower (U5) = BUF k; 100k sets the input impedance."""
+    nets = {"4": fp(VP), "11": fp(VN)}
+    parts = []
+    for k in CHANNELS:
+        out, inm, inp = SECTION[k]
+        nets.update({inp: f"FB{k}_F", inm: f"BUF{k}_F", out: f"BUF{k}_F"})
+        parts += [R(f"R{100 * k + 1}", "1k", f"FREQ{k}_F", f"FB{k}_F", "follower input"),
+                  R(f"R{100 * k + 2}", "100k", f"FREQ{k}_F", "GND_F", "FREQ input impedance")]
+    return [Part("U5", "TL074", "TL074", nets, "FREQ followers")] + parts + [
+        C("C911", "100n", fp(VP), "GND_F", "U5 +12 V"), C("C912", "100n", "GND_F", fp(VN), "U5 -12 V")]
+
+
+# Board-to-board headers: two columns in the panel's left margin (front view x 2.6 and 5.14, clear of
+# the jacks' bodies from x 6.5), male on the faceplate's rear, female on the main board's front. Pin 1
+# at the top; each channel's nets level with its row, a GND between the groups.
+HEADER_X = (2.6, 5.14)                    # panel mm from the left
+HEADER_TOP = (97.0, 99.0)                 # board y of pin 1
+_COL_A = []
+_COL_B = [P5, N5, VP, VN, GND]
+for _k in CHANNELS:
+    _COL_A += [GND, f"LED{_k}", f"OUT{_k}"] + ([f"MCV{_k}"] if _k != 4 else []) + [f"MP{_k}", f"LC{_k}"]
+    _COL_B += [f"VO{_k}", f"FM{_k}", f"CR{_k}", f"FN{_k}", GND]
+_COL_A += [GND, "NWH", "NPK", "NBL", "NBR", GND]
+HEADERS = [("H1", f"HDR{len(_COL_A)}", [(n, fp(n)) for n in _COL_A]),
+           ("H2", f"HDR{len(_COL_B)}", [(n, fp(n)) for n in _COL_B])]
+
+
+def header_xy(i):
+    """Front-view board position of pin 1 of header i (0 = H1) and the step to the next pin."""
+    return HEADER_X[i] - (PANEL_W - BOARD_W) / 2, HEADER_TOP[i], -2.54
+
+
+def fb_ref(ref):
+    """Faceplate-side designator of a header: H1 -> HF1 (EasyEDA wants letters, then digits)."""
+    return "HF" + ref[1:]
 
 # ---------------------------------------------------------- panel parts
 # ref, panel label, tip net, switch-lug net (None = open)
@@ -419,6 +467,9 @@ def faceplate_parts():
         parts.append(Part(ref, "TOGGLE", "SPDT on-on", nets, label))
     for ref, label, anode in LEDS:
         parts.append(Part(ref, "LED", "3 mm", {"1": anode, "2": "GND_F"}, label))
+    parts += buffers()
+    for ref, kind, pins in HEADERS:
+        parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): f for i, (m, f) in enumerate(pins)}))
     return parts
 
 
@@ -508,6 +559,13 @@ def check():
     for n in INTERFACE:
         if not mb.get(n) or not fb.get(fp(n)):
             problems.append(f"interface net {n} missing on one side")
+    in_headers = {m for _, _, pins in HEADERS for m, f in pins}
+    problems += [f"interface net {n} has no header pin" for n in INTERFACE if n not in in_headers]
+    problems += [f"header net {n} is not an interface net" for n in in_headers if n not in INTERFACE]
+    for ref, kind, pins in HEADERS:
+        for m, f in pins:
+            if len(mb[m]) < 2 or len(fb[f]) < 2:
+                problems.append(f"{ref}: {m} / {f} used on one side only")
     for n in fb:
         if n not in {fp(i) for i in INTERFACE} and len(fb[n]) < 2:
             problems.append(f"faceplate: {n} is neither local nor crossing")

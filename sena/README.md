@@ -8,7 +8,8 @@ the rows, so one pitch CV plays all four; each channel switches between V/oct
 and linear FM, coarse and fine tuning, VCO and LFO.
 
 Built like Marblesy and the stereo mixer: panel first, one netlist in
-Python, generated panel files (EasyEDA project to follow).
+Python, generated panel files and EasyEDA project. Two boards, SMD on
+the rear.
 
 ![panel](hardware/panel/senay-panel-preview.png)
 
@@ -37,19 +38,28 @@ Circuit, values, lessons applied, calibration and BOM: [docs/design.md](docs/des
 | Part | Status | Files |
 |---|---|---|
 | Panel | Drafted from Sena's own layout: hole list, drill template, artwork | `hardware/panel/`, `hardware/tools/panel.py` |
-| Netlist | Done: 254 main-side parts, 40 panel parts, 51 nets to the faceplate, no single-pin nets | `hardware/tools/circuit.py` |
-| Board stack | Open: 14HP needs three THT boards, or SMD (design.md) | — |
-| EasyEDA project, PCBs, panel PCB | Not started | — |
+| Netlist | Done: 245 main-board parts, 53 faceplate parts, 44 nets over two headers, no single-pin nets | `hardware/tools/circuit.py` |
+| EasyEDA Pro project | Done: 8 schematic pages, 0 problems; both PCBs placed (SMD, unrouted), 0 placement problems; the panel PCB. Not yet opened in EasyEDA | `hardware/easyeda/Senay.epro2` |
+| Routing | Not started (yours, in EasyEDA Pro; notes in design.md) | — |
+
+Before ordering: the AS3340 pulse polarity, the toggle's hole and footprint
+(design.md, "Open before ordering").
 
 ## Files
 
 ```
 README.md
-docs/design.md                    circuit, values, lessons, open points, calibration, BOM
+docs/design.md                    circuit, values, boards, routing notes, open points, calibration, BOM
 hardware/
   tools/
-    circuit.py                    the whole circuit and the panel positions: the single source of truth
+    circuit.py                    the whole circuit, the board split, headers, panel positions: the source of truth
+    easyeda_export.py             schematic pages, SMD and THT footprints, devices, project writer (+ previews)
+    pcb.py                        both PCBs: anchors, the placer, checks, PCB documents, previews
     panel.py                      hole list, drill template, artwork
+    panel_pcb.py                  the panel as the project's third PCB
+  easyeda/
+    Senay.epro2                   EasyEDA Pro 3.x project: Senay Main, Senay Faceplate, Senay Panel
+    senay-easyeda-*.png           previews of the eight pages and the three PCBs
   panel/
     senay-panel.svg               artwork, 1:1 in mm
     senay-panel-preview.png       the same as a picture
@@ -57,5 +67,6 @@ hardware/
     senay-panel-holes.csv         every hole: board origin, panel x/y from the top-left, diameter
 ```
 
-Regenerate from `hardware/tools`: `python circuit.py` (netlist check),
-`python panel.py`.
+In EasyEDA Pro, import `hardware/easyeda/Senay.epro2` as a project. To
+regenerate after editing `circuit.py`, run from `hardware/tools`:
+`python panel.py && python easyeda_export.py`.
