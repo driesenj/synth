@@ -1,0 +1,82 @@
+kind,ref,label,board_origin_x,board_origin_y,panel_x_from_left,panel_y_from_top,hole_mm
+jack,J1,IN 1,6.40,98.03,7.00,21.00,6.5
+jack,J2,FREQ 1,16.40,98.03,17.00,21.00,6.5
+jack,J3,FM2/RES 1,26.40,98.03,27.00,21.00,6.5
+jack,J4,OUT 1,36.40,98.03,37.00,21.00,6.5
+pot,RV1,FREQ 1,51.90,93.25,52.50,21.00,7.5
+pot,RV2,RES 1,71.90,93.25,72.50,21.00,7.5
+toggle,SW1,MODE 1,22.40,87.25,23.00,31.00,6.5
+toggle,SW5,FM2/RES 1,61.90,87.25,62.50,31.00,6.5
+led,D1,CH 1,44.00,90.25,44.60,28.00,no hole: behind the numeral
+dot,D1,numeral 1,,,44.60,25.10,0.8
+dot,D1,numeral 1,,,43.15,26.55,0.8
+dot,D1,numeral 1,,,44.60,26.55,0.8
+dot,D1,numeral 1,,,44.60,28.00,0.8
+dot,D1,numeral 1,,,44.60,29.45,0.8
+dot,D1,numeral 1,,,43.15,30.90,0.8
+dot,D1,numeral 1,,,44.60,30.90,0.8
+dot,D1,numeral 1,,,46.05,30.90,0.8
+jack,J5,IN 2,6.40,76.03,7.00,43.00,6.5
+jack,J6,FREQ 2,16.40,76.03,17.00,43.00,6.5
+jack,J7,FM2/RES 2,26.40,76.03,27.00,43.00,6.5
+jack,J8,OUT 2,36.40,76.03,37.00,43.00,6.5
+pot,RV3,FREQ 2,51.90,71.25,52.50,43.00,7.5
+pot,RV4,RES 2,71.90,71.25,72.50,43.00,7.5
+toggle,SW2,MODE 2,22.40,65.25,23.00,53.00,6.5
+toggle,SW6,FM2/RES 2,61.90,65.25,62.50,53.00,6.5
+led,D2,CH 2,44.00,68.25,44.60,50.00,no hole: behind the numeral
+dot,D2,numeral 2,,,43.15,47.10,0.8
+dot,D2,numeral 2,,,44.60,47.10,0.8
+dot,D2,numeral 2,,,46.05,47.10,0.8
+dot,D2,numeral 2,,,46.05,48.55,0.8
+dot,D2,numeral 2,,,43.15,50.00,0.8
+dot,D2,numeral 2,,,44.60,50.00,0.8
+dot,D2,numeral 2,,,46.05,50.00,0.8
+dot,D2,numeral 2,,,43.15,51.45,0.8
+dot,D2,numeral 2,,,43.15,52.90,0.8
+dot,D2,numeral 2,,,44.60,52.90,0.8
+dot,D2,numeral 2,,,46.05,52.90,0.8
+jack,J9,IN 3,6.40,54.03,7.00,65.00,6.5
+jack,J10,FREQ 3,16.40,54.03,17.00,65.00,6.5
+jack,J11,FM2/RES 3,26.40,54.03,27.00,65.00,6.5
+jack,J12,OUT 3,36.40,54.03,37.00,65.00,6.5
+pot,RV5,FREQ 3,51.90,49.25,52.50,65.00,7.5
+pot,RV6,RES 3,71.90,49.25,72.50,65.00,7.5
+toggle,SW3,MODE 3,22.40,43.25,23.00,75.00,6.5
+toggle,SW7,FM2/RES 3,61.90,43.25,62.50,75.00,6.5
+led,D3,CH 3,44.00,46.25,44.60,72.00,no hole: behind the numeral
+dot,D3,numeral 3,,,43.15,69.10,0.8
+dot,D3,numeral 3,,,44.60,69.10,0.8
+dot,D3,numeral 3,,,46.05,69.10,0.8
+dot,D3,numeral 3,,,46.05,70.55,0.8
+dot,D3,numeral 3,,,44.60,72.00,0.8
+dot,D3,numeral 3,,,46.05,72.00,0.8
+dot,D3,numeral 3,,,46.05,73.45,0.8
+dot,D3,numeral 3,,,43.15,74.90,0.8
+dot,D3,numeral 3,,,44.60,74.90,0.8
+dot,D3,numeral 3,,,46.05,74.90,0.8
+jack,J13,IN 4,6.40,32.03,7.00,87.00,6.5
+jack,J14,FREQ 4,16.40,32.03,17.00,87.00,6.5
+jack,J15,FM2/RES 4,26.40,32.03,27.00,87.00,6.5
+jack,J16,OUT 4,36.40,32.03,37.00,87.00,6.5
+pot,RV7,FREQ 4,51.90,27.25,52.50,87.00,7.5
+pot,RV8,RES 4,71.90,27.25,72.50,87.00,7.5
+toggle,SW4,MODE 4,22.40,21.25,23.00,97.00,6.5
+toggle,SW8,FM2/RES 4,61.90,21.25,62.50,97.00,6.5
+led,D4,CH 4,44.00,24.25,44.60,94.00,no hole: behind the numeral
+dot,D4,numeral 4,,,43.15,91.10,0.8
+dot,D4,numeral 4,,,46.05,91.10,0.8
+dot,D4,numeral 4,,,43.15,92.55,0.8
+dot,D4,numeral 4,,,46.05,92.55,0.8
+dot,D4,numeral 4,,,43.15,94.00,0.8
+dot,D4,numeral 4,,,44.60,94.00,0.8
+dot,D4,numeral 4,,,46.05,94.00,0.8
+dot,D4,numeral 4,,,46.05,95.45,0.8
+dot,D4,numeral 4,,,46.05,96.90,0.8
+jack,J17,SCAN,26.40,7.23,27.00,111.80,6.5
+jack,J18,SCAN OUT,36.40,7.23,37.00,111.80,6.5
+fader,RV9,SCAN,60.90,6.45,61.50,111.80,22.4 x 2.4 slot
+mount,,mounting slot,,,7.50,3.00,5.5 x 3.2 slot
+mount,,mounting slot,,,7.50,125.50,5.5 x 3.2 slot
+mount,,mounting slot,,,73.54,3.00,5.5 x 3.2 slot
+mount,,mounting slot,,,73.54,125.50,5.5 x 3.2 slot
