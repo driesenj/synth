@@ -167,3 +167,18 @@ the barrel offset (0.78 mm) and the panel hole are the mono jack's. Slots
 from KiCad merge request 1073 (closed, not merged): S 1.9 × 0.68, R 2.1 ×
 0.68, T 2.0 × 0.57, slightly longer than the mono's. `fp_pj366st()` in the
 Side FXy exporter.
+
+## Dailywell 2MS sub-mini toggle (Thonk; Atlas, Offset)
+
+Dailywell's 2MS sheet: SPDT 2MS1 (ON-ON) and 2MS3 (ON-OFF-ON), DPDT 2MD.
+- **Mounting:** 6.00 mm bushing, panel hole 6.5 mm (nut and washer on
+  the panel).
+- **Pins:** PC terminals (M2) at 2.54 mm in one row, 0.51 mm thick; body
+  about 8.1 × 9.4 mm.
+- **Positions:** 2MS1 joins 2-3 in position 1 and 2-1 in the other; DPDT
+  2-3 + 5-6, then 2-1 + 5-4. Ring one out before soldering a set.
+- **Footprint:** `fp_toggle()` in `attenuverter/hardware/tools/easyeda_export.py`
+  puts the three pins in a column at 2.54 mm, 1.1 mm holes, common under
+  the bushing. Mounted with pin 3 at the bottom, lever up joins 2-3.
+- **Library:** the user's library holds only the Nidec ATE1D, which has no
+  panel nut.
