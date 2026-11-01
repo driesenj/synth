@@ -32,10 +32,12 @@ hardware/
     pcb.py              the two PCBs: placement from the routed project, clearance checks, the PCB documents
     panel.py            hole list, drill template and the panel artwork from the placement
     panel_pcb.py        the panel as a PCB document (holes, slots, silk, copper band), same source as the artwork
+    copper_audit.py     audits a routed export: nets, shorts, gaps, keepouts, headers, panel holes
+    value_labels.py     adds the value / part-name silkscreen labels to a routed export
   easyeda/
-    Marblesy-routed.epro2   the routed project, the layout master
+    Marblesy-routed.epro2   the routed project with its value labels, the layout master
     Marbles.epro2       the generated project (schematic, placed but unrouted PCBs, panel)
-    marbles-easyeda-*.png   schematic page and PCB placement previews
+    marbles-easyeda-*.png   schematic page and PCB placement previews; marbles-labels-*.png where the labels went
     pcb-template.epru   canvas, layer and rule records copied from one of your own PCBs
   panel/
     marbles-panel-holes.csv, marbles-panel-drill.svg

@@ -478,6 +478,33 @@ pads and the computed pour islands with their thermal spokes):
   enters the faceplate at H6 while GND_D_F leaves at H5, so the LED current
   loop spans the board.
 
+`hardware/tools/copper_audit.py <export>` (copied from Plaitsy) runs these
+checks on any export: nets through tracks, vias, pads, pour islands and
+spokes; shorts; gaps with exact pad shapes; standoff keepouts; pads against
+the generator; header pins on both boards; panel holes against
+`panel_pcb.py`. Its "barrel" lines are the CV and output tracks under the
+jacks on the panel side, fine here as above. Its footprint differences are
+names only: the routed boards use the library's `1/4W-RESISTOR-VERTICAL`
+and `HDR-TH_3P-P2.54_CS-1165SDIG` where the generator writes its own, on
+the same pads.
+
+**Value labels.** Every resistor, capacitor and pot carries its value on the
+silkscreen beside it, and the three diodes their part name (BAT85 at D22
+and D23, LM4040-2.5 at D21): 35 labels on the faceplate (B10k on the pots,
+on the panel-side silk; 470, 10k, 3k3 and 100n on the rear) and 76 on the
+main board, all on its top. `hardware/tools/value_labels.py` (copied from
+Plaitsy) put them in the first free spot beside each part where no other
+labelled part is nearer; the values come per board, since R80–R85 exist on
+both (100k / 1k / 24k / 47k on the main board, 470 on the faceplate). R33
+and R39 have theirs under the Seed breakout (they are soldered before it
+goes on). R80 on the main board has no label: its only free spot sat
+against R78. R42 and R66 share a near-tie with R47 and R67, which have their
+own labels right beside them. 101 labels are at the designators' 45 mil,
+six at 38 and four at 32 mil (0.8 mm, readable but under the 1 mm many fabs
+recommend). Previews: `hardware/easyeda/marbles-labels-*.png`. The labels
+are in `Marblesy-routed.epro2`; run `value_labels.py` again only on an
+export that does not carry them yet.
+
 ### Re-route: pots back on the drawn layout, standard footprints (2026-10-30)
 
 The eight pots moved so their shafts land on the symmetric layout
@@ -601,6 +628,6 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
-- Panel PCB: import `Marblesy-routed.epro2` again (its panel board is now
-  the corrected one), run DRC on the panel, and make the panel's Gerbers
-  from that import.
+- Import `Marblesy-routed.epro2` again (the corrected panel board and the
+  value labels are in it), run DRC on all three boards, and make the
+  Gerbers from that import.
