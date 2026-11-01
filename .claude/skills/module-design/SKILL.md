@@ -53,6 +53,10 @@ look nothing like the original. Do it in this order:
    generator and the routed boards agree. Audit the copper (connectivity
    with pour spokes, clearances, standoffs, analog beside digital) before
    the user orders; the swaps change the firmware's channel tables.
+   `plaits/hardware/tools/copper_audit.py` does the whole audit from the
+   export (copy it into the module: exact pad shapes, the pour graph,
+   keepouts, netlist and placement against the generator, headers, panel
+   holes); the write-up pattern is `plaits/docs/routing-audit-2026-11-01.md`.
 7. **Docs and BOM** in `docs/design.md` and `README.md`, updated with every
    change; the BOM lists real purchasable parts (Thonk first).
 

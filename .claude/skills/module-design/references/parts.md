@@ -18,6 +18,10 @@ missing, in the same style, with real pin numbers.
   6.78 mm below the origin to 3.73 mm above it: the sleeve lug sticks out
   of the back of the body, and the strip above a jack row is wider than it
   looks (a row at origin y 22.8 ends at 26.6).
+- The sleeve pad (1.8 × 1.1) reaches 7.03 mm above the barrel, past the
+  body's 6.5: a rear pad row above a jack row has to clear the pad, not the
+  body. Eight's Mega socket row was 0.13 mm into J1's sleeve pad until
+  `circuit.front_bodies()` modelled the jack pads (`JACK_PADS`).
 - Place at 11–12 mm pitch side by side; nuts are about 8 mm across.
 - In a column with the same orientation, keep the barrels at least 13 mm
   apart. The tip pad sits 4.92 mm below one barrel and the next jack's

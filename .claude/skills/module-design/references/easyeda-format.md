@@ -74,6 +74,15 @@ and `marbles/hardware/tools/{easyeda_export,pcb,panel_pcb}.py`.
   no JSON); a parser must skip them (`pcb.routed_boards()` does,
   `ee.parse` does not). Stale `POURED` records outlive their `POUR`: match
   them by id.
+- Tracks are `LINE` records: `layerId` 1 / 2, `netName`, `startX/Y`,
+  `endX/Y`, `width`, all in mil. Vias: `VIA` with `centerX/Y`,
+  `holeDiameter`, `viaDiameter`, `netName`. Pad shapes in a footprint's
+  `defaultPad.padType`: `RECT`, `ELLIPSE` (round or stadium when w ≠ h),
+  `OVAL` (stadium; the Alpha pot's lugs are 2.72 × 3.24 OVAL). The user's
+  boards carry the 1 oz default rule set: clearance 0.152 mm (5.9843 mil
+  in the `SAFE` rules), track 0.3 mm default, hole clearance 0.3 mm, vias
+  tented (`viaTopExpan` −1000). `ELE_PLACEHOLDER` records are empty
+  slots, not copper.
 
 ## PCB document records (what a placed, unrouted PCB needs)
 
