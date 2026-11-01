@@ -22,7 +22,7 @@ Bottom-layer parts: EasyEDA Pro mirrors the footprint about its own X axis
 MorrisSynth export). The pad records (PAD_NET) carry the net names, so the
 ratsnest, DRC and the netlist check are live as soon as the project opens.
 
-The boards were then routed by hand in EasyEDA Pro (Plaitsy-routed.epro2,
+The boards were then routed by hand in EasyEDA Pro (Plaits-routed.epro2,
 2026-11-01). That export is the master for everything on the rear sides and
 for the main board: faceplate_board() and main_board() read those parts'
 positions from it (routed_boards()), the panel parts still come from
@@ -39,7 +39,7 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "..", "..", "..", "marbles", "hardware", "easyeda", "pcb-template.epru")
-ROUTED = os.path.join(HERE, "..", "easyeda", "Plaitsy-routed.epro2")
+ROUTED = os.path.join(HERE, "..", "easyeda", "Plaits-routed.epro2")
 ROUTED_TITLES = {"Faceplate": "Plaitsy Faceplate PCB", "Main board": "Plaitsy Main PCB"}
 VERTICAL_FP = "RES-TH-VERTICAL-P2.54"    # the main board stands most of its resistors up
 MIL = 1 / 0.0254

@@ -310,7 +310,7 @@ within a standoff's or a screw head's 3 mm on either side). Previews:
 `hardware/easyeda/plaits-easyeda-pcb-*.png`.
 
 **Routed, 2026-11-01.** Both boards were routed by hand in EasyEDA Pro;
-the export is `hardware/easyeda/Plaitsy-routed.epro2` and is the layout
+the export is `hardware/easyeda/Plaits-routed.epro2` and is the layout
 master: `pcb.py` reads the rear sides and the main board from it
 (`routed_boards()`), the panel parts stay on `circuit.PLACEMENT`, and
 `routed_check()` fails the exporter run if the generator and the routed

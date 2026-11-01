@@ -21,7 +21,7 @@ main board (100k / 13k / 33k / 1k / 1n / 100p at the stages, the bias
 dividers, R60 / R61). The four 100 n decoupling capacitors C31–C34 between
 the stage clusters have no room for a label: everything 5.08 mm pitch
 beside a TL074 is 100 n. The labelled project is the committed
-`Plaitsy-routed.epro2`; import it and the labels come along. Previews of
+`Plaits-routed.epro2`; import it and the labels come along. Previews of
 where they landed: `hardware/easyeda/plaits-labels-*.png`.
 
 This is the state to order from.
@@ -36,7 +36,7 @@ a roomier home for R12), and the PROBE_F via left J5's barrel (the track
 still passes 2.2 mm from it). Every net is still one
 piece, no net touches another, the main board is unchanged, the headers
 and the panel still match, and the generator agrees with this export pad
-for pad (0 problems). This export is now `Plaitsy-routed.epro2`.
+for pad (0 problems). This export is now `Plaits-routed.epro2`.
 
 One thing before Gerbers: **the ground pours were not rebuilt.** The
 `POURED` records are byte for byte those of the first export while 26
@@ -144,7 +144,7 @@ generator with the routed export, see below).
 
 The routed export is the placement master from here, as for Marblesy:
 `pcb.py` reads the rear sides and the whole main board from
-`Plaitsy-routed.epro2`, keeps the panel parts on `circuit.PLACEMENT`, and
+`Plaits-routed.epro2`, keeps the panel parts on `circuit.PLACEMENT`, and
 `routed_check()` fails the exporter if they ever disagree.
 
 - **Mounting holes: three, not four.** The centre hole at front (29.9, 48.5)
