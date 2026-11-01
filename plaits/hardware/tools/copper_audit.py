@@ -416,17 +416,21 @@ class RoutedBoard:
                 d = math.hypot(a["c"][0] - b["c"][0], a["c"][1] - b["c"][1]) - a["r"] - b["r"]
                 if d < limit:
                     out.append((d, f"via {a['net']} / via {b['net']} at ({a['c'][0]:.1f}, {a['c'][1]:.1f})"))
-        # other-net copper sitting inside a pour island (outside its cutouts) is a short
+        # other-net copper sitting inside a pour island (outside its cutouts): a short, unless the pour
+        # was not rebuilt after that copper moved (EasyEDA keeps the old POURED until "rebuild copper")
+        note = " (or a pour not rebuilt since this moved: rebuild all copper areas and re-export)"
         for isl in self.islands:
             for p in self.pads:
                 if p.net != isl.net and isl.contains((p.x, p.y)):
-                    out.append((0.0, f"pad {p.ref}.{p.num} ({p.net}) inside the {isl.net} pour on layer {isl.layer}"))
+                    out.append((0.0, f"pad {p.ref}.{p.num} ({p.net}) inside the {isl.net} pour on layer {isl.layer}{note}"))
             for v in self.vias:
                 if v["net"] != isl.net and isl.contains(v["c"]):
-                    out.append((0.0, f"via {v['net']} inside the {isl.net} pour on layer {isl.layer}"))
+                    out.append((0.0, f"via {v['net']} at ({v['c'][0]:.1f}, {v['c'][1]:.1f}) inside the {isl.net} pour "
+                                     f"on layer {isl.layer}{note}"))
             for t in self.tracks:
                 if t["net"] != isl.net and t["layer"] == isl.layer and (isl.contains(t["a"]) or isl.contains(t["b"])):
-                    out.append((0.0, f"track {t['net']} inside the {isl.net} pour on layer {isl.layer}"))
+                    out.append((0.0, f"track {t['net']} ({t['a'][0]:.1f}, {t['a'][1]:.1f})-({t['b'][0]:.1f}, {t['b'][1]:.1f}) "
+                                     f"inside the {isl.net} pour on layer {isl.layer}{note}"))
         return sorted(out)
 
     # -- keepouts and edges

@@ -1,8 +1,30 @@
 # Plaitsy routing audit, 2026-11-01
 
-Audit of `ProPrj_SI - Plaits_2026-11-01.epro2` (EasyEDA Pro 3.2.209), the
-first routed export of both Plaitsy boards, committed here as
-`hardware/easyeda/Plaitsy-routed.epro2`. Run by
+## Second export, `ProPrj_SI - Plaits_2026-11-01(1).epro2`
+
+The fixes are in. LED_D3_G no longer touches D2's pad, the 3V3D_F track is
+clear of D7, R12 moved 0.2 mm towards the edge (0.44 mm from it; the fab
+wants 0.3, the generator's rule is now 0.4), and the PROBE_F via left J5's
+barrel (the track still passes 2.2 mm from it). Every net is still one
+piece, no net touches another, the main board is unchanged, the headers
+and the panel still match, and the generator agrees with this export pad
+for pad (0 problems). This export is now `Plaitsy-routed.epro2`.
+
+One thing before Gerbers: **the ground pours were not rebuilt.** The
+`POURED` records are byte for byte those of the first export while 26
+faceplate tracks moved (3V3D_F, LED_D3_G, PROBE_F), so the moved copper
+now lies inside the old pour outline: the audit shows eleven "inside the
+GND_F pour" items, all on those three nets. Rebuild all copper areas in
+EasyEDA Pro, run DRC, export once more, and the audit should come back
+with nothing under 0.152 mm. Still worth a look from the first pass: J1's
+sleeve pad 2.66 mm from the (55.9, 30) standoff (a ground joint; use a
+5 mm or nylon standoff), and the PROBE_F track within J5's barrel keepout
+on the panel side.
+
+## First export, `ProPrj_SI - Plaits_2026-11-01.epro2`
+
+Audit of the first routed export of both Plaitsy boards (EasyEDA Pro
+3.2.209). Run by
 `hardware/tools/copper_audit.py`: it rebuilds every pad from the footprints
 in the export, joins tracks, vias, pads and EasyEDA's computed pours
 (thermal spokes included) into one copper graph per net, and compares the
