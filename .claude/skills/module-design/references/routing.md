@@ -15,6 +15,27 @@ Marblesy version is in `marbles/docs/design.md`.
 - Hand-route and lock: power buses, the SPI bundle, summing nodes and
   references. Then autoroute the rest.
 
+- Set track to track to 0.152 mm in Design Rules > Safe Spacing. The
+  template's first safe-spacing entry, which appears to be track to track,
+  is 0.102 mm (4 mil), under JLCPCB's 2-layer minimum of 0.127 mm. Side
+  FXy's power tracks were widened to 0.6 mm after routing at a 0.6 mm pitch,
+  which left 0.12–0.15 mm gaps that DRC passed.
+
+## Mistakes seen in first exports
+
+- **A header pair moved while routing with different rotations.** On Side
+  FXy, HF1 (top) was at 90° and H1 (bottom) at 270°, so inputs and outputs
+  were swapped. A 1×N header's pads lie on its own axis, so the bottom-layer
+  mirror keeps their order: give both the same rotation.
+- **The faceplate's GND_F pour forgotten.** On Side FXy every jack sleeve
+  floated.
+- **Tracks squeezed past mounting holes and milled cutouts.** JLCPCB needs
+  0.254 mm from a track to an NPTH and 0.2 mm to a milled edge.
+
+The copy of `copper_audit.py` in `side-fx/hardware/tools` reports all of
+these. It also renders the routed boards with numbered marks
+(`RoutedBoard.render`).
+
 ## Autorouter settings
 
 Both layers; preferred direction vertical on top, horizontal on bottom

@@ -1083,7 +1083,8 @@ def main():
     board_fb = pcb.faceplate_board(pr, fb, part_info(fp_pages), circuit)
     board_mb = pcb.main_board(pr, mb, part_info(main_pages), circuit)
     pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
-               + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb))
+               + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb)
+               + pcb.routed_check(board_fb, board_mb))
     for b in pcb_bad:
         print("PCB:", b)
     template = pcb.load_template(ee)

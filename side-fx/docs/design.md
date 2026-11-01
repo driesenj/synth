@@ -202,12 +202,12 @@ under it, and the cable runs through that to CN1 on the rear.
 
 ## Board-to-board headers
 
-Split by function. The pin order is a first guess; reorder it while routing
-if that untangles the lines (both boards follow from `circuit.HEADERS`).
+Split by function. The pin order is in `circuit.HEADERS`, shared by both
+boards; the positions are the routed export's.
 
 | Header | Where (front view) | Pins (MB net / FB net) |
 |---|---|---|
-| H1 / HF1 (5) | jack strip, right end, pins along x | IN1, IN2, GND/GND_F, OUT1, OUT2 |
+| H1 / HF1 (5) | bottom-left corner beside IN 2, x 2.6, y 2.9–13.1, pins along y | IN1, IN2, GND/GND_F, OUT1, OUT2 |
 | H2 / HF2 (8) | right edge beside the encoders | CV1, CV2, CV3, CV4, CLK_IN, GND/GND_F, MIDI_TIP, MIDI_RING |
 | H3 / HF3 (11) | strip beside the display, upper | 3V3D, GND/GND_D_F, SR_CLK, SR_LOAD, SR_DIN, BTN_SHIFT, LED_PITCH, LED_DELAY, LED_TEXTURE, LED_REVERB, LED_SHIFT |
 | H4 / HF4 (6) | strip beside the display, lower | LCD_SCK, LCD_MOSI, LCD_CS, LCD_DC, LCD_RST, LCD_BL |
@@ -278,6 +278,19 @@ flags and the frame. Everything else is drawn in the same style:
 ---
 
 ## PCB placement
+
+**Routed, 2026-11-01.** The routed export `hardware/easyeda/SideFXy-routed.epro2`
+is now the layout master. `pcb.py` reads the faceplate's rear side and the
+whole main board from it; the panel parts still come from
+`circuit.PLACEMENT`. `routed_check()` makes the exporter fail if the
+generator and the routed boards disagree.
+
+The first export's audit lists five fixes:
+[routing-audit-2026-11-01.md](routing-audit-2026-11-01.md). Until the first
+one is done, the exporter reports H1's four mirrored pins.
+
+The tables below describe the placement that routing started from. The
+audit's last section lists what moved while routing.
 
 `pcb.py` places both boards (unrouted, net-assigned) and checks them; the
 exporter writes them into the project and reports 0 problems on all of these:
@@ -408,10 +421,14 @@ the display its own 3.3 V regulator.
 - **Display:** libDaisy has no ST7789 driver, so write a small one: SPI1
   transmit-only with DMA, 16-bit colour, a frame of 170 × 320 × 2 = 109 KB,
   or a 4-bit frame expanded into line buffers. The 170-pixel panels sit at
-  a column offset (35 on most 1.9" modules; check yours).
+  a column offset (35 on most 1.9" modules; check yours). The SPI lines run
+  about 9 cm over the two boards plus the module's cable: start the SPI
+  clock modest and raise it on the bench.
 - **Controls:** a 2 kHz timer runs the shift chain; quadrature decoding with a
   state table and debouncing happen in software. The send LEDs can dim with
-  software PWM in the same loop.
+  software PWM in the same loop. SR_CLK and SR_LOAD are about 19 cm long
+  over both boards: leave those pins at libDaisy's default
+  `GPIO::Speed::LOW` so the edges stay slow.
 - **MIDI:** USART1, receive only (D13 is the display's reset, so no TX
   pin).
 - **Presets:** libDaisy's QSPI driver (or `PersistentStorage` for the

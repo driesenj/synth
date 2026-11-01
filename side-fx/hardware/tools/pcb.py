@@ -17,15 +17,22 @@ above the jacks, the pull-up networks between the encoder columns, the
 display cable's header under the send buttons, the four male headers; and
 nothing with leads behind the display module.
 Main board: the four female sockets on the bottom layer; everything else on
-the top layer, every resistor standing up. The breakout stands in the middle
-with its pin rows either side of the sockets of H3 / H4; the TL074 and its
-four CV stages, the bias, MIDI and clock stages and the 74HC595 fill the
-side towards H2 (the rear view's left).
+the top layer, every resistor standing up.
 
 Bottom-layer parts: EasyEDA Pro mirrors the footprint about its own X axis
-(y -> -y) and then rotates it. Nothing here is routed.
+(y -> -y) and then rotates it.
+
+The boards were routed by hand in EasyEDA Pro (SideFXy-routed.epro2,
+2026-11-01). That export is the master for everything on the rear sides and
+for the main board: faceplate_board() and main_board() read those parts'
+positions from it (routed_boards()), the panel parts still come from
+circuit.PLACEMENT, and routed_check() compares the result pad by pad with
+the export so circuit.py, the footprints and PLACEMENT cannot drift from
+the routed boards. copper_audit.py checks the export's copper itself. The
+placement the routing started from is in git (7ea3159).
 """
 import collections
+import functools
 import json
 import math
 import os
@@ -33,6 +40,8 @@ import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "..", "..", "..", "marbles", "hardware", "easyeda", "pcb-template.epru")
+ROUTED = os.path.join(HERE, "..", "easyeda", "SideFXy-routed.epro2")
+ROUTED_TITLES = {"Faceplate": "SideFXy Faceplate PCB", "Main board": "SideFXy Main PCB"}
 MIL = 1 / 0.0254
 CLEAR = 0.25          # mm, pad to pad / pad to hole, what the checker insists on
 EDGE = 0.5            # mm, pad to board edge
@@ -420,33 +429,91 @@ class Board:
         img.save(path)
 
 
+# ---------------------------------------------------------- routed project
+@functools.lru_cache(maxsize=None)
+def routed_boards():
+    """The routed export, read once: {PCB title: {"parts": {ref: placement}, "holes": [(x, y, d)]}} in
+    Board's frame (mm). A placement has x, y, angle, bottom, the footprint geometry, its pads' board
+    positions and their nets."""
+    with zipfile.ZipFile(ROUTED) as z:
+        name = next(n for n in z.namelist() if n.endswith(".epru"))
+        lines = z.read(name).decode("utf-8").split("\n")
+    docs, cur = {}, None
+    for line in lines:
+        if not line:
+            continue
+        h, _, p = line.partition("||")
+        h, p = json.loads(h), p[:-1] if p.endswith("|") else p
+        p = json.loads(p) if p else None          # EasyEDA keeps deleted records with an empty payload
+        if h["type"] == "DOCHEAD":
+            cur = docs[p["uuid"]] = {"docType": p["docType"], "recs": []}
+        if p is not None:
+            cur["recs"].append((h, p))
+    fps = {u: footprint_geometry(d) for u, d in docs.items() if d["docType"] == "FOOTPRINT"}
+    boards = {}
+    for d in docs.values():
+        if d["docType"] != "PCB":
+            continue
+        comps, attrs, nets, holes = {}, collections.defaultdict(dict), collections.defaultdict(dict), []
+        for h, p in d["recs"]:
+            if h["type"] == "COMPONENT":
+                comps[h["id"]] = p
+            elif h["type"] == "ATTR" and p.get("parentId"):
+                attrs[p["parentId"]][p["key"]] = p["value"]
+            elif h["type"] == "PAD_NET":
+                _, cid, num, _ = json.loads(h["id"])
+                nets[cid][num] = p["padNet"]
+            elif h["type"] == "FILL" and p["layerId"] == 12 and p["path"][0][0] == "CIRCLE":
+                _, x, y, r = p["path"][0]
+                holes.append((x * 0.0254, y * 0.0254, 2 * r * 0.0254))
+        parts = {}
+        for cid, p in comps.items():
+            pl = {"x": p["x"] * 0.0254, "y": p["y"] * 0.0254, "angle": p["angle"] % 360, "bottom": p["layerId"] == 2,
+                  "geo": fps[attrs[cid]["Footprint"]]}
+            pl["pads"] = {num: Board.pad_xy(pl, pd["x"], pd["y"]) for num, pd in pl["geo"]["pads"].items()}
+            pl["nets"] = {num: n for num, n in nets[cid].items() if n}
+            parts[attrs[cid]["Designator"]] = pl
+        meta = next(p for h, p in d["recs"] if h["type"] == "META")
+        boards[meta["title"]] = {"parts": parts, "holes": holes}
+    return boards
+
+
+def routed_check(fb, mb):
+    """The generated boards against the routed export: the same parts, every pad at the same spot (0.01 mm)
+    with the same net, the same holes. A difference means circuit.py, a footprint or PLACEMENT no longer
+    describes the routed boards."""
+    bad = []
+    for b in (fb, mb):
+        routed = routed_boards()[ROUTED_TITLES[b.title]]
+        mine = {pl["ref"]: pl for pl in b.placed}
+        for ref in sorted(set(routed["parts"]) ^ set(mine)):
+            side = "routed" if ref in routed["parts"] else "generated"
+            bad.append(f"{b.title}: {ref} is only on the {side} board")
+        for ref in sorted(set(routed["parts"]) & set(mine)):
+            rp, pads = routed["parts"][ref], b.pads(mine[ref])
+            for num in sorted(set(pads) | set(rp["pads"])):
+                if num not in pads or num not in rp["pads"]:
+                    side = "routed" if num in rp["pads"] else "generated"
+                    bad.append(f"{b.title}: {ref} pad {num} is only in the {side} footprint")
+                elif math.hypot(pads[num][0] - rp["pads"][num][0], pads[num][1] - rp["pads"][num][1]) > 0.01:
+                    bad.append(f"{b.title}: {ref}.{num} at ({pads[num][0]:.2f}, {pads[num][1]:.2f}), routed at "
+                               f"({rp['pads'][num][0]:.2f}, {rp['pads'][num][1]:.2f})")
+            nets = b.P[ref].nets
+            for num in sorted(set(nets) | set(rp["nets"])):
+                if nets.get(num) != rp["nets"].get(num):
+                    bad.append(f"{b.title}: {ref}.{num} is {nets.get(num)} here, {rp['nets'].get(num)} on the routed board")
+
+        def key(h):
+            return round(h[0], 2), round(h[1], 2), round(h[2], 2)
+        if sorted(map(key, b.holes)) != sorted(map(key, routed["holes"])):
+            bad.append(f"{b.title}: mounting holes differ from the routed board")
+    return bad
+
+
 # ------------------------------------------------------------- placement
-def place_pins(b, ref, targets, bottom=False):
-    """Place ref so that the first of two pins lands exactly on its target and the second points the
-    same way as its target (angles 0 / 90 / 180 / 270 tried). targets: {pin: (x, y)}, PCB frame."""
-    (pa, ta), (pb, tb) = list(targets.items())
-    b.place(ref, 0, 0, 0, bottom)
-    pl = b.placed[-1]
-    want = math.atan2(tb[1] - ta[1], tb[0] - ta[0])
-    best = None
-    for a in (0, 90, 180, 270):
-        pl["angle"] = a
-        pads = b.pads(pl)
-        got = math.atan2(pads[pb][1] - pads[pa][1], pads[pb][0] - pads[pa][0])
-        err = abs((got - want + math.pi) % (2 * math.pi) - math.pi)
-        if best is None or err < best[0]:
-            best = (err, a, pads[pa])
-    _, a, (px, py, _) = best
-    pl["angle"], pl["x"], pl["y"] = a, ta[0] - px, ta[1] - py
-
-
 def faceplate_board(pr, parts, info, circuit):
     W, H = circuit.BOARD_W, circuit.BOARD_H
     b = Board("Faceplate", pr, parts, info, W, H)
-
-    def F(x, y):                          # front view -> this board's frame
-        return W - x, y
-
     for xf, y in circuit.HOLES_FRONT:      # the same four on the main board
         b.hole_front(xf, y)
     # panel parts on the bottom layer, at the PLACEMENT origins, oriented by rule
@@ -464,48 +531,12 @@ def faceplate_board(pr, parts, info, circuit):
     b.keepout_front(*circuit.DISPLAY_MODULE, "display module (front)")
     b.outline_front(*circuit.DISPLAY_MODULE, "DISPLAY")
     b.cutout_front(*circuit.DISPLAY_CUTOUT)
-    # rear (top layer): the 74HC165s in the strip above the jacks, a 100 n at each
-    b.place_front("U1", 10.4, 33.1, 0)
-    b.place_front("U2", 44.0, 33.1, 0)
-    place_pins(b, "C1", {"1": F(22.0, 35.64), "2": F(22.0, 30.56)})
-    place_pins(b, "C2", {"1": F(39.0, 39.6), "2": F(44.08, 39.6)})
-    # pull-up networks in the channel between the encoder columns, pin 1 (common) at the lower end
-    place_pins(b, "RN1", {"1": F(50.3, 53.5), "9": F(50.3, 73.82)})
-    place_pins(b, "RN2", {"1": F(50.3, 77.0), "9": F(50.3, 97.32)})
-    # the display cable's right-angle header under the send buttons, its plug lying over the empty strip
-    # behind the module; pin 1 (VCC) on the right
-    place_pins(b, "CN1", {"1": F(21.78, 92.6), "8": F(4.0, 92.6)})
-    place_pins(b, "C4", {"1": F(24.5, 92.6), "2": F(29.58, 92.6)})
-    for ref, (xf, y, a) in circuit.HEADERS_FRONT.items():   # male headers on the top (rear) layer
-        b.place_front(circuit.fb_ref(ref), xf, y, a)
+    # the rear side (shift registers, networks, caps, CN1, male headers) where the routed board has it
+    for ref, pl in sorted(routed_boards()[ROUTED_TITLES[b.title]]["parts"].items()):
+        if not pl["bottom"]:
+            b.place(ref, pl["x"], pl["y"], pl["angle"])
     b.text(W - 20, H - 2.6, "Side FXy faceplate", 1.6)
     return b
-
-
-# Main board, top (rear) layer, PCB frame: x = BOARD_W - x_front, so H2 (the right edge seen from the
-# front) is on the left. The breakout stands in the middle, USB end down, pins 21-40 (3V3A, the ADC
-# inputs, the chain, 3V3D) in its left row and pins 1-20 (clock, display, MIDI) in its right row; H3 and
-# H4 sit in the channel between the rows. Left of it, bottom to top: the 74HC595 with its LED resistors,
-# H1's sockets, the clock stage, the MIDI opto, the bias, the TL074 with its four CV stages clustered at
-# its corners (the Plaitsy way) and a 100 n per rail beside its supply pins.
-SEED_XY = (37.2, 41.0, 270)
-TL074_XY = (14.5, 83.0, 90)
-HC595_XY = (16.0, 17.0, 90)
-H11L1_XY = (12.0, 58.8, 90)
-
-
-def _cv_cluster(b, sec, rin, rf, rs, cf):
-    """Rf on IN- / OUT one column out from the chip, Rin and Rs the next column, Cf lying in the third."""
-    out, inm, inp = (b.pin("U6", n) for n in {1: ("1", "2", "3"), 2: ("7", "6", "5"), 3: ("8", "9", "10"),
-                                                4: ("14", "13", "12")}[sec])
-    sx = 1 if out[0] > TL074_XY[0] else -1
-    step = out[1] - inm[1]                 # +-2.54: the way the section's rows run from the chip's middle
-    c1, c2, c3 = (inm[0] + sx * 2.54 * k for k in (1, 2, 3))
-    y4 = out[1] + step
-    place_pins(b, rf, {"1": (c1, inm[1]), "2": (c1, out[1])})
-    place_pins(b, rin, {"1": (c2, inp[1]), "2": (c2, inm[1])})
-    place_pins(b, rs, {"1": (c2, out[1]), "2": (c2, y4)})
-    place_pins(b, cf, {"1": (c3, inm[1]), "2": (c3, y4)})
 
 
 def main_board(pr, parts, info, circuit):
@@ -513,43 +544,9 @@ def main_board(pr, parts, info, circuit):
     b = Board("Main board", pr, parts, info, W, H)
     for xf, y in circuit.HOLES_FRONT:
         b.hole_front(xf, y)
-    for ref, (xf, y, a) in circuit.HEADERS_FRONT.items():   # female sockets, bottom layer, same spot
-        b.place_front(ref, xf, y, a, bottom=True)
-    b.place("U5", *SEED_XY)
-    # TL074, its four CV stages and a 100 n per rail beside pins 4 / 11
-    b.place("U6", *TL074_XY)
-    for i, (name, sec) in enumerate(circuit.CV_CHANNELS):
-        _cv_cluster(b, sec, f"R{10 + 3 * i}", f"R{11 + 3 * i}", f"R{12 + 3 * i}", f"C{10 + i}")
-    (x4, y4), (x11, y11) = b.pin("U6", "4"), b.pin("U6", "11")
-    place_pins(b, "C15", {"1": (x4 + 2.54, y4), "2": (x4 + 7.62, y4)})
-    place_pins(b, "C16", {"2": (x11 - 2.54, y11), "1": (x11 - 7.62, y11)})
-    # bias divider and its 1 u under the TL074
-    place_pins(b, "R22", {"1": (5.0, 69.5), "2": (5.0, 66.96)})
-    place_pins(b, "R23", {"1": (7.54, 66.96), "2": (7.54, 69.5)})
-    place_pins(b, "C14", {"1": (10.5, 68.6), "2": (15.58, 68.6)})
-    # MIDI: H11L1 standing, the 220R at pin 1, the 1N4148 lying under it, the pull-up at pin 4, a 100 n at pin 6
-    b.place("U7", *H11L1_XY)
-    (x1, y1), (x2, y2) = b.pin("U7", "1"), b.pin("U7", "2")
-    (x4, y4), (x6, y6) = b.pin("U7", "4"), b.pin("U7", "6")
-    place_pins(b, "R26", {"1": (x1 + 5.08, y1), "2": (x1 + 2.54, y1)})
-    place_pins(b, "D2", {"1": (x1 + 9.0, y1 - 2.54), "2": (x1 + 1.0, y1 - 2.54)})
-    place_pins(b, "R27", {"1": (x4 - 2.54, y4 + 2.54), "2": (x4 - 2.54, y4)})
-    place_pins(b, "C17", {"1": (x6 - 2.54, y6), "2": (x6 - 2.54, y6 - 5.08)})
-    # clock input: the 2N3904 with its base resistor below it, the clamp lying under that, the pull-up
-    place_pins(b, "Q1", {"1": (18.46, 41.5), "3": (23.54, 41.5)})
-    place_pins(b, "R24", {"1": (21.0, 35.0), "2": (21.0, 37.54)})
-    place_pins(b, "D1", {"1": (24.5, 32.4), "2": (16.5, 32.4)})
-    place_pins(b, "R25", {"1": (26.08, 44.04), "2": (23.54, 44.04)})
-    # the 74HC595 near the chain's pins, its LED resistors beside QA..QE, a 100 n at pin 16
-    b.place("U3", *HC595_XY)
-    for k, ref in enumerate(circuit.LED_ORDER):
-        x, y = b.pin("U3", circuit.HC595_OUT[k])
-        sx = 1 if x > HC595_XY[0] else -1
-        place_pins(b, f"R{k + 1}", {"1": (x + sx * 2.54, y), "2": (x + sx * 5.08, y)})
-    x, y = b.pin("U3", "16")
-    sx = 1 if x > HC595_XY[0] else -1
-    sy = 1 if y > HC595_XY[1] else -1
-    place_pins(b, "C3", {"1": (x + sx * 2.54, y), "2": (x + sx * 2.54, y + sy * 5.08)})
+    # everything where the routed board has it: female sockets on the bottom, the rest on top
+    for ref, pl in sorted(routed_boards()[ROUTED_TITLES[b.title]]["parts"].items()):
+        b.place(ref, pl["x"], pl["y"], pl["angle"], bottom=pl["bottom"])
     b.text(48.0, H - 2.6, "Side FXy main board", 1.6)
     return b
 

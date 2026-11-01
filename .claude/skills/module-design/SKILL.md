@@ -57,6 +57,9 @@ look nothing like the original. Do it in this order:
    export (copy it into the module: exact pad shapes, the pour graph,
    keepouts, netlist and placement against the generator, headers, panel
    holes); the write-up pattern is `plaits/docs/routing-audit-2026-11-01.md`.
+   `side-fx/hardware/tools/copper_audit.py` is the newer copy: it adds
+   JLCPCB's limits, cutout and display checks, the panel's slots and window,
+   pad rotations, and a marked render; start from that one.
 7. **Docs and BOM** in `docs/design.md` and `README.md`, updated with every
    change; the BOM lists real purchasable parts (Thonk first).
 

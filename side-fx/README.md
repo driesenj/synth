@@ -19,7 +19,7 @@ Rob Heel's seed_power_opamps breakout.
 | EasyEDA Pro schematic | Done, 4 A3 pages (main board 1, faceplate 2, panel note), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/SideFXy.epro2`, previews `hardware/easyeda/side-fx-easyeda-*.png` |
 | PCB placement | Done, both boards placed and net-assigned, not routed; every clearance, header and keep-out check at 0 | `hardware/tools/pcb.py`, previews `hardware/easyeda/side-fx-easyeda-pcb-*.png` |
 | Panel PCB | Done: the panel as the project's third board, window milled out, gold band and block stack | `hardware/tools/panel_pcb.py` |
-| Routing | Not started (yours, in EasyEDA Pro; notes in [design.md](docs/design.md#routing-notes)) | |
+| Routing | First export routed and audited 2026-11-01; it is the layout master now. Five fixes before ordering: the audio header's pins mirrored between the boards, GND_F not poured, two tracks at holes, two gaps under 0.127 mm, copper at the display cutout ([audit](docs/routing-audit-2026-11-01.md)) | `hardware/easyeda/SideFXy-routed.epro2`, `hardware/tools/copper_audit.py` |
 | Firmware | Not started | |
 
 ## Panel
@@ -61,12 +61,15 @@ hardware/
   tools/
     circuit.py            the netlist, headers and the panel placement
     easyeda_export.py     builds SideFXy.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
-    pcb.py                the two PCBs: placement, clearance checks, the PCB documents
+    pcb.py                the two PCBs: placement (rear sides and main board read from the routed export), checks, the PCB documents
+    copper_audit.py       audits a routed export: nets, copper graph, clearances, holes, cutout, headers, panel
     panel.py              hole list, drill template and the panel artwork from the placement
     panel_pcb.py          the panel as a PCB document, from the same lists as the artwork
   easyeda/
-    SideFXy.epro2         schematic, both PCBs placed (unrouted) and the panel PCB
+    SideFXy.epro2         schematic, both PCBs placed (unrouted) and the panel PCB, generated
+    SideFXy-routed.epro2  your routed export, the layout master
     side-fx-easyeda-*.png page and PCB previews
+    side-fx-routed-*.png  the routed boards with the audit's items marked
   panel/
     side-fx-panel-holes.csv, side-fx-panel-drill.svg
     side-fx-panel.svg     panel artwork (groups: copper, silk, holes, mockup), side-fx-panel-preview.png

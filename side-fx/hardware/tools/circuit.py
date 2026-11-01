@@ -284,19 +284,9 @@ _top = DISPLAY_MODULE[3]
 DISPLAY_CONNECTOR = (round(_ax - 7.8, 2), round(_top - 38.5, 2), round(_ax + 7.8, 2), round(_top - 34.3, 2))
 DISPLAY_CUTOUT = (8.0, 43.5, 24.7, 57.0, 1.0)     # x1, y1, x2, y2, corner radius: connector, plug and the bend
 
-# Headers (front view, board mm): x, y of the middle of the pin row and the angle (270 = pins along y, pin
-# 1 at the top; 180 = pins along x, pin 1 on the left). H4 and H3 stand in the strip between the display
-# module and the left encoder column, which lands in the channel between the breakout's pin rows on the
-# main board; H2 at the right edge beside the encoders; H1 in the jack strip's right end, beside U2.
-HEADERS_FRONT = {
-    "H4": (32.4, 45.85, 270),
-    "H3": (32.4, 67.9, 270),
-    "H2": (67.6, 57.91, 270),
-    "H1": (62.48, 31.0, 180),
-}
-# Mounting holes, the same four on both boards (front view): one in the jack strip between U1 and U2,
-# one between the encoder columns, two between the send buttons. On the main board two of them fall
-# between the breakout's pin rows, under the raised breakout.
+# The headers, the rear-side parts and the whole main board sit where the routed export has them
+# (pcb.routed_boards()). Mounting holes, the same four on both boards (front view): one in the jack strip
+# between U1 and U2, one between the encoder columns, two between the send buttons.
 HOLES_FRONT = [(30.0, 33.1), (50.3, 49.0), (34.8, 104.5), (51.5, 104.5)]
 # Encoders: which side of the shaft the phase pins (A, C, B) go, so the right column clears H2 and the
 # bottom strip: ENC1..3 phase row below the shaft, ENC4 (above U2 and H1) phase row on its left.
