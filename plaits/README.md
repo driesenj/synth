@@ -4,8 +4,9 @@ A Mutable Instruments Plaits clone for Eurorack, 12HP, built the way
 [Marblesy](../marbles/README.md) is: two stacked PCBs behind a PCB panel,
 Thonk panel parts, a Daisy Seed on Rob Heel's
 [seed_power_opamps](https://oshwlab.com/scape_rob/seed_power_opamps)
-breakout for power and the audio output stage. The firmware will be a port
-of Plaits 1.2 with all 24 models, so the official
+breakout for power and the audio output stage. The firmware
+([`firmware/`](firmware/README.md)) is a port of Plaits 1.2 with all 24
+models, so the official
 [Plaits manual](https://pichenettes.github.io/mutable-instruments-documentation/modules/plaits/manual/)
 applies as written.
 
@@ -26,13 +27,14 @@ PCB placement, routing notes, the BOM and the firmware plan.
 | Panel layout (Plaits arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
 | PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked. Reworked with what routing Marblesy taught: standing resistors clustered on the op-amps (summing nodes 8.7 mm), 100 n at every supply pin, header pins, mux channels and 595 outputs ordered for the fewest crossings, no LED-button foot holes, a DRC-clean copper band | `hardware/tools/pcb.py`, previews `hardware/easyeda/plaits-easyeda-pcb-*.png` |
 | PCB routing | Done by hand in EasyEDA Pro (2026-11-01, third export: pours rebuilt, stitching vias); the export is the layout master and `routed_check()` keeps the generator on it. Audited clean: every net complete, no shorts between nets, nothing under the clearance rule, headers aligned. Value labels added to the silkscreen by `value_labels.py`. Ready to order | `hardware/easyeda/Plaits-routed.epro2`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py`, `docs/routing-audit-2026-11-01.md` |
-| Firmware | Not started | |
+| Firmware | Written (2026-11-01): Plaits 1.2 with all 24 models and its two-button switch to the 2022 bank, on libDaisy 9.0.0 and the Daisy bootloader. Builds (253 kB of the bootloader's 480 kB), passes the host tests; not yet run on hardware | `firmware/`, see [firmware/README.md](firmware/README.md) |
 
 ## Layout
 
 ```
 README.md
 docs/design.md
+firmware/               the Plaits 1.2 port for the Seed (firmware/README.md)
 hardware/
   tools/
     circuit.py          the netlist and the panel placement (PANEL_XY -> PLACEMENT)

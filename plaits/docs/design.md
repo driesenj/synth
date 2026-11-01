@@ -12,8 +12,9 @@ and net-assigned (see [PCB placement](#pcb-placement)), the panel as the
 third board. The placement carries what routing Marblesy taught (standing
 resistors clustered on the op-amps, decoupling at the supply pins, header
 pins, mux channels and 595 outputs ordered for the fewest crossing lines, no
-LED-button foot holes, a DRC-clean copper band). PCB routing and firmware
-not started.
+LED-button foot holes, a DRC-clean copper band). For the routing see the
+README's status table; the firmware is in `firmware/`
+([firmware/README.md](../firmware/README.md)).
 
 ---
 
@@ -116,8 +117,8 @@ and calibration apply unchanged.
 ### Button LEDs
 
 R60, R61 (470 Ω) from D2 / D3 to the headers; the LED inside each Thonk
-button returns to GND_D_F. Plaits has no button LEDs, so the firmware is
-free to use them (the yellow bank, button feedback) or leave them dark.
+button returns to GND_D_F. Plaits has no button LEDs; the firmware lights
+both while the 2022 navigation (all 24 models) is on.
 
 ---
 
@@ -168,8 +169,9 @@ the pots and sets the LED bits by these tables.
 | U9 (red) | D1 | D8 | D7 | D6 | D2 | D5 | D3 | D4 |
 | U10 (green) | D4 | D3 | D2 | D5 | D1 | D6 | D7 | D8 |
 
-libDaisy: `AdcChannelConfig::InitMux(A10, 8, D26, D27, D28)` for the pots;
-SPI1 at about 1 MHz for the shift registers, 16 bits per update, latch on
+libDaisy: `AdcChannelConfig::InitMux(A10, 7, D26, D27, D28)` for the pots
+(Y7 is grounded and not scanned); SPI1 at 1.56 MHz (PLL2P 25 MHz / 16) for
+the shift registers, 16 bits per update with U10's byte first, latch on
 D13.
 
 ---
@@ -510,24 +512,27 @@ is room (Marblesy has 118 on the main board and 166 on the faceplate).
 
 ---
 
-## Firmware (not started)
+## Firmware
 
-The plan is to port the Plaits 1.2 source to the Seed with libDaisy,
-keeping all 24 engines:
+Written 2026-11-01, not yet run on hardware: [`firmware/`](../firmware/README.md)
+holds the build, flashing steps, controls and how the port works. In
+short, Plaits 1.2's code (all 24 engines) runs unchanged on libDaisy 9.0.0
+with the Daisy bootloader:
 
-- Audio at 48 kHz, block size 12, as on Plaits; OUT on channel 1, AUX on
-  channel 2 of the Seed's codec.
-- CV and pot handling as mapped above: eight ADC channels plus the mux on
-  A10 (`InitMux(A10, 8, D26, D27, D28)`) in the channel order of the mux
-  table, each reading converted back to the jack voltage and then to
-  Plaits' own ADC scale.
-- The normalization probe on D14 into the TIMBRE, FM, MORPH, TRIG and
-  LEVEL lugs, read back on their ADC channels, with thresholds set from
-  the measured swing (about 0.4 V peak to peak after the −0.13 stage).
-- The LEDs through the two 74HC595 on SPI1 (16 bits, latch on D13, bit
-  order per the 595 table: U9 the reds, U10 the greens) at the 1 ms UI
-  rate, red / green / both; the buttons on D0 / D1 with pull-ups;
-  `ui.cc` ported so the panel behaves as the manual describes.
-- Settings and calibration in QSPI flash.
+- Audio at 48 kHz, block size 12, as on Plaits; OUT on the codec's left
+  channel, AUX on the right.
+- Eight ADC channels plus the mux on A10 (seven pots), each CV reading
+  converted back to the jack voltage and then to the value Plaits' own
+  SDADC would read, so Plaits' calibration, cable-detection thresholds and
+  UI code apply unchanged (the probe's swing on Plaitsy, 0.13 V / 3.13 V
+  at the jack, straddles Plaits' thresholds at about 0.83 V).
+- The probe on D14, held low during calibration (Plaitsy's stages float
+  at their bias, not at 0 V); the 0.13 V that leaves on the unpatched
+  normalized inputs is subtracted.
+- The LEDs through the two 74HC595s per the 595 table, the buttons on
+  D0 / D1, their LEDs on D2 / D3; `ui.cc` is Plaits' with three marked
+  changes.
+- Settings, calibration and custom data in QSPI flash, below the
+  bootloader's program area.
 
 The Plaits firmware is © Emilie Gillet, MIT licence.
