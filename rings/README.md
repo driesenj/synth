@@ -18,7 +18,8 @@ applies as written.
 |---|---|---|
 | Panel layout, drill template, artwork | Approved 2026-10-31 | `hardware/tools/panel.py`, `hardware/panel/` |
 | Netlist (two boards), circuit values, Seed pin map, BOM | Done, checks at 0 problems | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
-| EasyEDA Pro schematic, PCB placement, panel PCB | Next | |
+| EasyEDA Pro schematic, three pages | Done 2026-11-01, checks at 0 problems | `hardware/tools/easyeda_export.py`, `hardware/easyeda/Ringsy.epro2` |
+| PCB placement, panel PCB | Next | |
 | Firmware | Not started | |
 
 ## Panel
@@ -53,7 +54,11 @@ docs/design.md                 what Rings needs, panel, circuit, Seed pin map, h
 hardware/
   tools/
     circuit.py                 netlist (both boards), headers, PLACEMENT; netlist, circuit-value and front checks
+    easyeda_export.py          EasyEDA Pro project: the schematic of both boards (builds on plaitsy/'s exporter)
     panel.py                   hole list, drill template and the panel artwork from the placement
+  easyeda/
+    Ringsy.epro2               import into EasyEDA Pro
+    rings-easyeda-*.png        page previews
   panel/
     rings-panel-holes.csv, rings-panel-drill.svg
     rings-panel.svg            panel artwork (groups: copper, tint, silk, holes, mockup)
@@ -63,8 +68,11 @@ hardware/
 Regenerate from `hardware/tools`:
 
 ```bash
-python circuit.py && python panel.py
+python circuit.py && python easyeda_export.py && python panel.py
 ```
+
+The exporter needs Pillow for the previews and the MorrisSynth library
+cache in `plaitsy/hardware/easyeda/`.
 
 The preview PNG is a headless-Edge screenshot of `rings-panel.svg` (see
 docs/design.md).

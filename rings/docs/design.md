@@ -12,11 +12,13 @@ applies as written.
 In the rig it serves as a resonator for Plaitsy, noise and drums, and its
 ODD / EVEN outputs go to the stereo mixer as a real stereo pair.
 
-Status: **panel approved (2026-10-31); netlist done.**
-`hardware/tools/circuit.py` holds the whole circuit as one netlist over the
-two boards, the panel placement, and three checks (netlist, circuit
-values, faceplate front), all at 0 problems. Next: the EasyEDA Pro
-schematic, then both boards placed and the panel as a PCB.
+Status: **panel approved (2026-10-31); netlist and EasyEDA Pro schematic
+done (2026-11-01).** `hardware/tools/circuit.py` holds the whole circuit as
+one netlist over the two boards, the panel placement, and three checks
+(netlist, circuit values, faceplate front); `easyeda_export.py` draws it as
+`hardware/easyeda/Ringsy.epro2` (three pages, "Schematic" below). All checks
+are at 0 problems. Next: both boards placed (`pcb.py`) and the panel as a
+PCB (`panel_pcb.py`).
 
 Sources used for the original (all in pichenettes/eurorack, checked
 2026-10-31):
@@ -382,6 +384,49 @@ checks, all at 0 problems:
 
 ---
 
+## Schematic (EasyEDA Pro)
+
+`python easyeda_export.py` (from `hardware/tools`) writes
+`hardware/easyeda/Ringsy.epro2` and a preview PNG per page
+(`rings-easyeda-*.png`). Two boards, each with its own schematic:
+
+| Page | Holds |
+|---|---|
+| Main board 1: Seed, CV inputs | U2 with a port on every used pin, the six CV stages drawn with wires, BIAS_A / BIAS_V, the V/OCT clamps, the TL074 decoupling |
+| Main board 2: outputs, STRUM, probe, headers | ODD and EVEN output stages (R52, the EVEN → ODD normal, into ODD's summing node), STRUM's 2N3904, the probe clamps, the six LED resistors, H1–H4 |
+| Faceplate: panel parts, normals, mux | J1–J10 with their lugs, the lug networks R1–R5 with what each normal does, RV1–RV10, U1 + C1, D1 / D2, SW1 / SW2, HF1–HF4 |
+
+Parts are your MorrisSynth library parts where it has them (LR1F
+resistors, FG28 / SR305 capacitors, TL074ACN, WQP518MA, the PTV09A symbol,
+the 1N5819 symbol, the 1N4148's DO-35, the 74HC595N's DIP-16), new values
+on the same symbols and footprints. Drawn or generated here, as on Plaitsy:
+the Seed on seed_power_opamps, DIP-14 on 7.62 mm rows for the TL074, the
+Alpha 9 mm pot, the Thonk LED button (no foot holes), the 3 mm bicolour
+LED, 1×N headers, every main-board resistor standing up (Plaitsy's 2.54 mm
+footprint). New for Ringsy: the 2N3904 with its symbol pins and TO-92 pads
+both named E / B / C, so they cannot be swapped, and a 6.3 mm radial can on
+2.5 mm leads for the bipolar 10 µ.
+
+The exporter's checks, all at 0 problems:
+
+- every netlist pin exists on its device's symbol;
+- every part is drawn, every netlist pin exactly once on its board's pages;
+- per page, the drawing's connectivity (wires, ports, flags) against the
+  netlist: no net split, no two nets touching, no pin connected that the
+  netlist leaves open, no junction in the middle of a wire. Tried with
+  deliberate errors (a swapped feedback resistor, a reversed clamp, two mux
+  inputs swapped): each is reported;
+- every symbol pin has a footprint pad and the reverse;
+- the written file resolves: every component's device, symbol and
+  footprint is in it.
+
+EasyEDA's own schematic DRC will still list the pins left open on purpose:
+the Seed's free pins (D8, D10–D13, A7, A8, D29, D30, AIN2, VIN) and the
+breakout's J4 / J5 pins the netlist does not use, and ODD's switch lug
+(J9 pin 2).
+
+---
+
 ## Board estimate
 
 | Board | Parts | Fits? |
@@ -418,7 +463,7 @@ way; the stack depth is Plaitsy's.
 | 4 | 330R | | R57–R60 |
 | 6 | 1 n C0G / film | | C21–C26 |
 | 2 | 1 µ | | C27, C28 |
-| 2 | 10 µ bipolar (NP) electrolytic | | C29, C30 |
+| 2 | 10 µ bipolar (NP) electrolytic, 25 V or more | 6.3 mm can, 2.5 mm leads (Nichicon UES1H100MPM) | C29, C30 |
 | 2 | 10 p C0G | | C31, C32 |
 | 4 | 100 n | | C33–C36 |
 | 4 | female sockets 1×6, 1×7, 1×8, 1×9, 2.54 mm | | H1–H4 |
