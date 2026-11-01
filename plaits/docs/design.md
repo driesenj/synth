@@ -317,7 +317,9 @@ master: `pcb.py` reads the rear sides and the main board from it
 boards disagree on any pad or net. `hardware/tools/copper_audit.py` audits
 the export's copper (connectivity through pours and spokes, shorts,
 clearances, keepouts, headers, panel holes); its findings are in
-`docs/routing-audit-2026-11-01.md`. The paragraphs below describe the
+`docs/routing-audit-2026-11-01.md`. `hardware/tools/value_labels.py` adds
+the pot, resistor and capacitor values to the silkscreen of a routed
+export, each in a free spot beside its part. The paragraphs below describe the
 placement the routing started from; what moved while routing is listed in
 the audit (C8, C9, R9–R13 on the faceplate; the bias dividers, D21 / D22
 and R60 / R61 on the main board, the last two lying flat).

@@ -1,5 +1,31 @@
 # Plaitsy routing audit, 2026-11-01
 
+## Third export, `ProPrj_SI - Plaits_2026-11-01(3).epro2`: clean
+
+Pours rebuilt (four GND_F islands on the faceplate now, all reached) and
+stitching vias added (121 vias on the faceplate, 148 on the main board).
+Nothing under the 0.152 mm rule on either board, every net one piece, no
+net touching another, the generator at 0 problems against it, headers and
+panel as before. R12 moved once more, to the strip left of the TIMBRE
+attenuverter (front x 16.9, y 31–42), clear of everything. The only
+remarks left are the ground stitching vias 2.3–2.9 mm from the top corner
+holes (tented, ground: a standoff may sit on them) and J1's sleeve pad
+2.66 mm from the (55.9, 30) standoff, both harmless.
+
+**Value labels.** `hardware/tools/value_labels.py` added silkscreen values
+for every pot, resistor and capacitor to this export, on each part's own
+side, in the first free spot beside it (not over pads, housings,
+designators or holes): 31 on the faceplate (B10k on the pots, 470 on the
+LED resistors, 10k on the probe resistors, 100n on C8–C10) and 40 on the
+main board (100k / 13k / 33k / 1k / 1n / 100p at the stages, the bias
+dividers, R60 / R61). The four 100 n decoupling capacitors C31–C34 between
+the stage clusters have no room for a label: everything 5.08 mm pitch
+beside a TL074 is 100 n. The labelled project is the committed
+`Plaitsy-routed.epro2`; import it and the labels come along. Previews of
+where they landed: `hardware/easyeda/plaits-labels-*.png`.
+
+This is the state to order from.
+
 ## Second export, `ProPrj_SI - Plaits_2026-11-01(1).epro2`
 
 The fixes are in. LED_D3_G no longer touches D2's pad, the 3V3D_F track is

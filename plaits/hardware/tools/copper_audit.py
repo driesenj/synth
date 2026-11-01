@@ -262,13 +262,19 @@ class RoutedBoard:
             geo = fps[attrs[cid]["Footprint"]]
             ref = attrs[cid]["Designator"]
             pl = {"x": p["x"] * MIL, "y": p["y"] * MIL, "angle": p["angle"] % 360, "bottom": p["layerId"] == 2,
-                  "fp": geo["title"], "pads": {}, "nets": {n: v for n, v in nets[cid].items() if v}}
+                  "fp": geo["title"], "cid": cid, "pads": {}, "nets": {n: v for n, v in nets[cid].items() if v}}
             for num, pd in geo["pads"].items():
                 px, py = pd["x"], -pd["y"] if pl["bottom"] else pd["y"]
                 dx, dy = rot(px, py, pl["angle"])
                 pad = Pad(ref, num, pl["x"] + dx, pl["y"] + dy, pd["w"], pd["h"], pd["shape"], pl["angle"], pl["nets"].get(num))
                 pl["pads"][num] = pad
                 self.pads.append(pad)
+            x1, y1, x2, y2 = geo["bbox"]          # the drawn housing, in the board frame
+            cs = []
+            for px, py in ((x1, y1), (x2, y1), (x2, y2), (x1, y2)):
+                dx, dy = rot(px, -py if pl["bottom"] else py, pl["angle"])
+                cs.append((pl["x"] + dx, pl["y"] + dy))
+            pl["body"] = (min(c[0] for c in cs), min(c[1] for c in cs), max(c[0] for c in cs), max(c[1] for c in cs))
             self.parts[ref] = pl
 
     # -- connectivity
@@ -320,6 +326,8 @@ class RoutedBoard:
             if kinds == {"pad", "via"}:
                 p, v = (da, db) if ta == "pad" else (db, da)
                 return p.d_circle(v["c"], v["r"]) <= 0.001
+            if kinds == {"island"}:
+                return False                # islands are separate pieces by construction
             if "island" in kinds:
                 isl, o, tk = (da, db, tb) if ta == "island" else (db, da, ta)
                 if isl.net != (o["net"] if tk != "pad" else o.net):
