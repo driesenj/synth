@@ -3,9 +3,11 @@
 ## Second export, `ProPrj_SI - Plaits_2026-11-01(1).epro2`
 
 The fixes are in. LED_D3_G no longer touches D2's pad, the 3V3D_F track is
-clear of D7, R12 moved 0.2 mm towards the edge (0.44 mm from it; the fab
-wants 0.3, the generator's rule is now 0.4), and the PROBE_F via left J5's
-barrel (the track still passes 2.2 mm from it). Every net is still one
+clear of D7, R12 moved 0.2 mm towards the edge (its 1.8 mm pads now end
+0.30 mm from the board edge, exactly the fab's minimum; the generator's
+edge rule is that 0.3 now, and the free strip above the buttons would be
+a roomier home for R12), and the PROBE_F via left J5's barrel (the track
+still passes 2.2 mm from it). Every net is still one
 piece, no net touches another, the main board is unchanged, the headers
 and the panel still match, and the generator agrees with this export pad
 for pad (0 problems). This export is now `Plaitsy-routed.epro2`.
