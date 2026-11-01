@@ -34,6 +34,7 @@ FAB_SPACING = 0.127     # JLCPCB's minimum spacing on a 2-layer board
 NPTH_TRACK = 0.254      # JLCPCB's minimum from a non-plated hole to a track
 HOLE_KEEPOUT = 3.0      # standoff / screw head around a mounting hole
 BARREL_KEEPOUT = 3.0    # the Thonkiconn's metal barrel, panel side
+THONK_TIP_R = 1.75      # Thonk's datasheet: a 3 mm hole (or no copper) under the barrel, where a plug tip reaches; +0.25
 CUTOUT_EDGE = 0.3       # copper to a milled edge, the fab's minimum
 
 
@@ -474,7 +475,8 @@ class RoutedBoard:
                     continue
                 d = d_point_seg((bx, by), t["a"], t["b"]) - t["w"] / 2
                 if d < BARREL_KEEPOUT:
-                    out.append(f"track {t['net']} on the panel side {d:.2f} mm from {ref}'s barrel")
+                    out.append(f"track {t['net']} on the panel side {d:.2f} mm from {ref}'s barrel"
+                               + (" (INSIDE THONK'S 3 MM PLUG-TIP AREA)" if d < THONK_TIP_R else ""))
             for v in self.vias:
                 d = math.hypot(v["c"][0] - bx, v["c"][1] - by) - v["r"]
                 if d < BARREL_KEEPOUT and not v["net"].startswith("GND"):

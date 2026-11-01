@@ -1,5 +1,52 @@
 # Side FXy routing audit, 2026-11-01
 
+## Third export, `ProPrj_SI FX_2026-11-02.epro2`: rebuild the pours
+
+Both items are fixed in the tracks:
+
+- **Item 5, the cutout.** ENC1_A_F and ENC1_B_F now go round the cutout.
+  Nothing is closer than 0.3 mm.
+- **Item 6, the jack barrels.**
+  - ENC4_A_F moved to y 23.5 on the bottom layer, 2.28 mm from J2's and
+    J3's barrel centres, with its via at (31.5, 23.5), 4 mm from J3's.
+  - OUT1_F moved to y 8.5, 1.88 mm from J6's barrel centre.
+  - Both are now outside the 3 mm plug-tip area that Thonk's datasheet
+    note describes.
+
+**The pours were not rebuilt.** The faceplate's two `POURED` records are
+identical to the second export's, while 30 track segments changed. In this
+export the new tracks of eight nets therefore lie inside the old GND_F
+copper:
+
+- CV3_F
+- ENC1_A_F
+- ENC1_B_F
+- ENC4_A_F
+- ENC4_B_F
+- IN2_F
+- LCD_CS_F
+- OUT1_F
+
+That accounts for 25 "inside the GND_F pour" items. As exported, the
+Gerbers would short all of those nets to ground.
+
+Rebuild all copper areas in EasyEDA Pro, run DRC, and export once more.
+Once the pours are rebuilt, the audit should show:
+
+- GND_F in one piece;
+- nothing under 0.127 mm.
+
+Everything else checks out:
+
+- **Tracks.** Nothing is under 0.152 mm between tracks, pads and vias,
+  apart from the exact-0.152 via pass at (34.0, 47.4) that was there
+  before.
+- **Generator.** It matches the export pad for pad (0 PCB problems).
+- **Headers, panel and main board.** Unchanged and clean.
+
+This export replaces the second as `SideFXy-routed.epro2`: its placement
+and tracks are the newest.
+
 ## Second export, `ProPrj_SI FX_2026-11-01(1).epro2`
 
 Four of the five fixes are in. One item is still open, and one new item

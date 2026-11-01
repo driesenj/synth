@@ -286,9 +286,9 @@ whole main board from it; the panel parts still come from
 generator and the routed boards disagree.
 
 The audit is in [routing-audit-2026-11-01.md](routing-audit-2026-11-01.md).
-The second export fixed four of the first's five items, and the exporter
-reports 0 problems. Two things are left before ordering: the tracks at the
-display cutout, and two panel-side signal tracks under jack barrels.
+The third export (2026-11-02) has every fix in its tracks, and the exporter
+reports 0 problems. Its copper pours were not rebuilt, so rebuild them and
+export once more before ordering.
 
 The tables below describe the placement that routing started from. The
 audit's last section lists what moved while routing.
