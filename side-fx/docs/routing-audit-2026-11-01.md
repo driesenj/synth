@@ -1,5 +1,41 @@
 # Side FXy routing audit, 2026-11-01
 
+## Fourth export, `ProPrj_SI FX_2026-11-02(1).epro2`: clean
+
+The pours are rebuilt. The faceplate now has seven GND_F pour pieces: one
+over each whole layer and small ones by HF2 and in the jack strip.
+
+Every GND_F pad, HF1.3 and HF2.6 are in one connected piece, and no other
+net's copper lies inside the pours. Nothing is under 0.127 mm. The only
+spot under 0.152 mm is the BTN_K3_F via at (34.0, 47.4), which
+BTN_TEXTURE_F passes exactly on the rule, as in every export.
+
+The cutout and the jack barrels stay clear:
+
+- ENC4_A_F is 2.3 mm from the barrel centre and OUT1_F 1.9 mm.
+- Nothing is behind the display module.
+- The two mounting holes keep at least 1.15 mm to the nearest signal track.
+
+The main board, the headers and the panel are unchanged and clean. The
+generator matches this export pad for pad and reports 0 PCB problems.
+
+**One cosmetic leftover.** A floating sliver of GND_F, about 0.1 × 0.3 mm
+(0.01 mm²), sits on the bottom layer at (64.1, 40.3). It is wedged between
+the LCD_BL_F via at (64.0, 39.5), the LCD_RST_F via at (63.5, 40.5) and
+ENC1_B_F at x 64.7.
+
+It connects to nothing, so it is electrically harmless. A fab's DFM check
+may still call it a sliver, which can lift off. If you want it gone, draw a
+small no-copper area over it and rebuild.
+
+This export is now `SideFXy-routed.epro2`, and this is the state to order
+from. The checks still open from the design notes concern parts, not the
+routing:
+
+- measure the panel gap (about 7 mm assumed);
+- check an EC11 and a PJ366ST against their footprints;
+- order 1.6 mm FR4.
+
 ## Third export, `ProPrj_SI FX_2026-11-02.epro2`: rebuild the pours
 
 Both items are fixed in the tracks:
