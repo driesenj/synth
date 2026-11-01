@@ -285,9 +285,10 @@ whole main board from it; the panel parts still come from
 `circuit.PLACEMENT`. `routed_check()` makes the exporter fail if the
 generator and the routed boards disagree.
 
-The first export's audit lists five fixes:
-[routing-audit-2026-11-01.md](routing-audit-2026-11-01.md). Until the first
-one is done, the exporter reports H1's four mirrored pins.
+The audit is in [routing-audit-2026-11-01.md](routing-audit-2026-11-01.md).
+The second export fixed four of the first's five items, and the exporter
+reports 0 problems. Two things are left before ordering: the tracks at the
+display cutout, and two panel-side signal tracks under jack barrels.
 
 The tables below describe the placement that routing started from. The
 audit's last section lists what moved while routing.

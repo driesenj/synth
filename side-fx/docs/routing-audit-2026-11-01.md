@@ -1,5 +1,98 @@
 # Side FXy routing audit, 2026-11-01
 
+## Second export, `ProPrj_SI FX_2026-11-01(1).epro2`
+
+Four of the five fixes are in. One item is still open, and one new item
+came from the re-route. This export replaces the first as
+`SideFXy-routed.epro2`. `easyeda_export.py` now reports 0 PCB problems, and
+the generator agrees with the export pad for pad.
+
+### Fixed
+
+1. **H1 / HF1.** HF1 on the faceplate is now at 270°, like H1, so all five
+   pins mate: IN to IN and OUT to OUT. The main board's copper is identical
+   to the first export, track for track and via for via.
+2. **GND_F.**
+   - Poured on both layers, with 96 stitching vias.
+   - Every piece is connected: the two whole-board pours, the small islands
+     by HF2.6 and in the jack strip, all 17 GND_F pads, HF1.3 and HF2.6.
+   - GND_D_F still never touches it.
+3. **Mounting holes.** ENC4_A_F and BTN_DELAY_F were re-routed. The closest
+   copper is now GND_D_F and SR_CHAIN, 1.15–1.20 mm from the edge of the
+   hole at (39.6, 33.1), at the rim of the screw head. Only GND_F vias and
+   ENC4's A pad remain near (19.3, 49.0).
+4. **Gaps.** Nothing is under 0.127 mm. The only item under 0.152 mm is the
+   same as before: BTN_TEXTURE_F passes the BTN_K3_F via at (34.0, 47.4)
+   exactly on the rule.
+
+### Still open
+
+5. **Copper at the display cutout.** Unchanged:
+
+   | Track | Layer | Segment | Gap |
+   |---|---|---|---|
+   | ENC1_A_F | top | (61.0, 57.45) to (63.01, 55.44) | 0.16 mm |
+   | ENC1_B_F | bottom | (54.47, 64.05) to (64.67, 53.85) | 0.21 mm |
+
+   Both pass the upper right corner of the cutout. Move each about 0.2 mm
+   out.
+
+### New
+
+6. **Signal tracks under jack barrels on the panel side.** Thonk's jack
+   datasheet, as Control quotes it, asks for a 3 mm hole under each barrel's
+   centre, or no tracks or ground plane there, because a fully inserted
+   plug's tip can reach the board. Two bottom-layer tracks now pass close
+   to barrel centres:
+
+   | Track | Segment | Distance from barrel centre |
+   |---|---|---|
+   | ENC4_A_F | along y 22.0, x 32.0–52.4 | 0.78 mm from J3's (34.8, 21.07) and J2's (47.3, 21.07) |
+   | OUT1_F | along y 5.46, x 58.0–67.0 | 0.86 mm from J6's (59.8, 6.47) |
+
+   ENC4_A_F matters most. It is a 3.3 V input on the 74HC165 with only its
+   pull-up, so a ±10 V plug tip that wears through the mask would land on
+   the chip.
+
+   **Fix:** put those stretches on the top layer, with the vias outside the
+   3 mm circles, or route round the barrels. Top-layer copper is on the far
+   side of the board from the plug, so ENC4_B_F crossing J1–J3's centres on
+   the top layer is fine.
+
+   I called OUT1_F under J1 fine in the first audit (item 9 below). Thonk's
+   note says otherwise.
+
+   The GND_F pour now also lies under all ten barrels, with a few tented
+   stitching vias 0.5–1.6 mm from their centres. A plug tip on ground can't
+   hurt anything: it only grounds the plugged-in source through that
+   module's output resistor. So clearing it is optional:
+   - Option one: a 3 mm no-copper circle on the bottom layer at each barrel
+     centre.
+   - Option two: the datasheet's 3 mm holes. These would also need ENC4_B_F
+     moved off J1–J3's centres, and I would add them to the generator.
+
+The barrel centres (PCB frame) are at y 21.07 for J1–J5 and y 6.47 for
+J6–J10:
+
+| x | Top row (y 21.07) | Bottom row (y 6.47) |
+|---|---|---|
+| 59.8 | J1 | J6 |
+| 47.3 | J2 | J7 |
+| 34.8 | J3 | J8 |
+| 22.3 | J4 | J9 |
+| 9.8 | J5 | J10 |
+
+`hardware/easyeda/side-fx-routed-faceplate.png` marks items 5 and 6.
+
+After fixing 5 and 6:
+
+1. Rebuild the pours.
+2. Run DRC.
+3. Re-export.
+
+The audit should then come back with nothing at the cutout and no signal
+track within 3 mm of a barrel on the panel side.
+
 ## First export, `ProPrj_SI FX_2026-11-01.epro2`
 
 This audits the first routed export of both Side FXy boards. The audit ran
@@ -26,8 +119,8 @@ Coordinates below are in the PCB frame that EasyEDA shows: mm, origin at the
 bottom-left, looking at the top layer, which is the rear of the stack. "Top"
 is the rear layer and "bottom" the panel side.
 
-The export is committed as `hardware/easyeda/SideFXy-routed.epro2` and is
-now the layout master (see the last section).
+This export was the layout master until the second export replaced it (see
+the last section).
 
 ![faceplate](../hardware/easyeda/side-fx-routed-faceplate.png)
 
@@ -247,7 +340,8 @@ to couple into. No action.
 ### 9. OUT1_F under J1
 
 OUT1_F crosses under J1 on the panel side, 1.3 mm from its barrel's
-centre. It sits under the plastic body, so it is fine.
+centre. This first pass called it fine because it sits under the plastic
+body. That was wrong: see the second export's item 6.
 
 ---
 
@@ -292,8 +386,9 @@ Plaitsy.
   `SideFXy-routed.epro2`.
 - The panel parts stay on `circuit.PLACEMENT`.
 - `routed_check()` fails the exporter if the generator and the routed
-  boards ever disagree. Right now they agree pad for pad, and the only
-  problems `easyeda_export.py` reports are item 1's four header pins.
+  boards ever disagree. With the first export they agreed pad for pad, and
+  the only problems `easyeda_export.py` reported were item 1's four header
+  pins. With the second export it reports 0.
 
 ### Moves on the main board
 

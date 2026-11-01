@@ -19,7 +19,7 @@ Rob Heel's seed_power_opamps breakout.
 | EasyEDA Pro schematic | Done, 4 A3 pages (main board 1, faceplate 2, panel note), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/SideFXy.epro2`, previews `hardware/easyeda/side-fx-easyeda-*.png` |
 | PCB placement | Done, both boards placed and net-assigned, not routed; every clearance, header and keep-out check at 0 | `hardware/tools/pcb.py`, previews `hardware/easyeda/side-fx-easyeda-pcb-*.png` |
 | Panel PCB | Done: the panel as the project's third board, window milled out, gold band and block stack | `hardware/tools/panel_pcb.py` |
-| Routing | First export routed and audited 2026-11-01; it is the layout master now. Five fixes before ordering: the audio header's pins mirrored between the boards, GND_F not poured, two tracks at holes, two gaps under 0.127 mm, copper at the display cutout ([audit](docs/routing-audit-2026-11-01.md)) | `hardware/easyeda/SideFXy-routed.epro2`, `hardware/tools/copper_audit.py` |
+| Routing | Second export audited 2026-11-01 and the layout master; header, GND_F pour, hole and gap fixes in. Before ordering: two tracks 0.16–0.21 mm from the display cutout, and ENC4_A_F / OUT1_F under jack barrels on the panel side ([audit](docs/routing-audit-2026-11-01.md)) | `hardware/easyeda/SideFXy-routed.epro2`, `hardware/tools/copper_audit.py` |
 | Firmware | Not started | |
 
 ## Panel

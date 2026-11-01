@@ -31,6 +31,11 @@ Marblesy version is in `marbles/docs/design.md`.
   floated.
 - **Tracks squeezed past mounting holes and milled cutouts.** JLCPCB needs
   0.254 mm from a track to an NPTH and 0.2 mm to a milled edge.
+- **Signal tracks under a jack's barrel on the panel side.** Thonk's jack
+  datasheet, as Control quotes it, asks for a 3 mm hole under the barrel's
+  centre, or no tracks or ground plane there, because a plug's tip can reach
+  the board. Side FXy's re-route ran a 74HC165 input 0.8 mm from two barrel
+  centres. Logic lines must stay out; ground is the lesser evil.
 
 The copy of `copper_audit.py` in `side-fx/hardware/tools` reports all of
 these. It also renders the routed boards with numbered marks
