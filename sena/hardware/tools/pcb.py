@@ -12,15 +12,16 @@ same x/y on both PCBs (checked below).
 
 Faceplate board: jacks, pots, toggles and LEDs on the bottom layer (towards
 the panel) at their panel positions; U5 (the four FREQ followers) and its
-resistors in 0603 on the top layer; the two male headers in the left margin.
-Main board: the two female sockets on the bottom layer, everything else on
-the top layer. One band per channel at the height of its panel row: the
-AS3340 (DIP-16, socketed) near the header column, its SCALE and PITCH
-trimmers below it, the channel's modifier chips towards the far edge; the
-noise bank beside channel 4, the power entry along the bottom.
+resistors in 0603 on the top layer; the two male headers, one on each side
+edge. Main board: the two female sockets on the bottom layer, everything else
+on the top layer. One band per channel, level with its pins on the headers:
+the AS3340 (DIP-16, socketed) in the middle with its pitch pins towards H1,
+its SCALE and PITCH trimmers below it, the channel's modifier chips on the H2
+side; the noise bank and the power entry below channel 4.
 
 Placer. Chips, trimmers, the power header and the sockets are anchored by
-hand. Every other part goes, in netlist order, to the free spot nearest the
+hand round the mounting holes, which go where the faceplate allows. Every
+other part goes, in netlist order, to the free spot nearest the
 pads it shares a signal net with (power nets do not pull; a decoupling cap
 is pulled to its chip's supply pin), trying the four angles and keeping
 0.3 mm between courtyards. The user routes by hand and will move parts; the
@@ -370,14 +371,19 @@ class Placer:
     MARGIN = 0.3          # courtyard gap
     STEP = 0.5
 
-    def __init__(self, b, region=None):
+    def __init__(self, b, region=None, tht=False):
+        """tht: through-hole parts go on the top layer, so a bottom part's body is an obstacle too (their leads
+        would be soldered under it)."""
         self.b = b
         self.region = region or (EDGE, EDGE, b.W - EDGE, b.H - EDGE)
+        self.overflow = []                     # parts that did not fit their block's region
         self.rects = []                        # occupied boxes on the top layer (and through-hole pads)
         for pl in b.placed:
             if not pl["bottom"]:
                 self.rects.append(b.extent(pl))
             else:
+                if tht:
+                    self.rects.append(b.body(pl))
                 for num, (a, c, r, side) in b.pad_shapes(pl).items():
                     if "T" in side:
                         self.rects.append((min(a[0], c[0]) - r, min(a[1], c[1]) - r, max(a[0], c[0]) + r,
@@ -445,6 +451,10 @@ class Placer:
                 if best is None or cost < best[1]:
                     best = (dist, cost, pl["x"], pl["y"], a)
         if best is None:
+            if region != self.region or radius < 80:    # the block is full: anywhere on the board, nearest first
+                self.b.placed.remove(pl)
+                self.overflow.append(ref)
+                return self.put(ref, None, pull, near, radius=80)
             raise ValueError(f"no room for {ref} in {region}")
         _, _, pl["x"], pl["y"], pl["angle"] = best
         self.rects.append(b.extent(pl))
@@ -459,7 +469,7 @@ class Placer:
 
 # ------------------------------------------------------------- the boards
 def header_positions(circuit, b):
-    """Place a board's two headers (front view: two columns in the left margin)."""
+    """Place a board's two headers (front view: one column on each side edge)."""
     for i, (ref, kind, pins) in enumerate(circuit.HEADERS):
         x, y0, step = circuit.header_xy(i)
         n = len(pins)
@@ -534,8 +544,25 @@ def faceplate_board(pr, parts, info, circuit, holes=None):
     return b
 
 
+def channel_bands(b, circuit):
+    """Board y of each channel's middle: the middle of its seven-pin group on H1 (H2's groups line up)."""
+    ys = [b.pin("H1", str(i))[1] for i in range(1, 29)]
+    return {k: sum(ys[7 * (k - 1):7 * k]) / 7 for k in circuit.CHANNELS}
+
+
+def utilisation(b):
+    """Share of the board covered by top-layer parts (body and pads), and by everything incl. the sockets."""
+    top = sum((x2 - x1) * (y2 - y1) for pl in b.placed if not pl["bottom"] for x1, y1, x2, y2 in [b.extent(pl)])
+    return top / (b.W * b.H)
+
+
 def main_board(pr, parts, info, circuit, holes=None):
-    """holes=None: only the sockets and the anchored parts (for find_holes)."""
+    """holes=None: only the sockets (for find_holes).
+
+    Rear view: H1 (pitch inputs, CV, outputs, white / pink, +-12 V) along the right edge, H2 (LFO caps, pots,
+    LEDs, blue / brown, the supplies) along the left. Each channel in a band level with its two header
+    groups: the AS3340 in the middle, turned so its pitch pins (13-16) face H1, SCALE and PITCH under
+    them; the modifier chips on the H2 side. Noise bank and power entry below the channels."""
     W, H = circuit.BOARD_W, circuit.BOARD_H
     b = Board("Main board", pr, parts, info, W, H)
     for ref, xf, y, n in header_positions(circuit, b):        # female sockets, bottom layer, same spot
@@ -543,26 +570,25 @@ def main_board(pr, parts, info, circuit, holes=None):
         b.orient(ref, lambda r: abs(r["1"][0] - r["2"][0]) < 0.01 and r["1"][1] > r["2"][1])
     for x, y in holes or ():
         b.hole(x, y)
-    pc = Placer(b)
-    rows = [circuit.board_xy(0, y)[1] for y in circuit.ROW_Y]        # jack row of each channel, board y
-    band = {k: (EDGE, rows[k - 1] - 15.5, 61.5, rows[k - 1] + 6.5) for k in circuit.CHANNELS}
-    band[1] = (EDGE, band[1][1], 61.5, H - EDGE)
-    # oscillators: DIP-16 along x near the sockets, pin 1 at the lower left; SCALE and PITCH trimmers below
-    for k in circuit.CHANNELS:
-        y = rows[k - 1] - 2.0
-        pc.fix(f"U{k}", 47.5, y, 0)
-        pc.fix(f"TR{k}", 41.0, y - 10.2, 0)
-        pc.fix(f"TR{k + 4}", 52.5, y - 10.2, 0)
-    # modifier chips towards the far edge
-    pc.fix("U6", 14.0, rows[0] - 1.0, 90)          # channel 1 folder and control
-    pc.fix("U9", 27.0, (rows[0] + rows[1]) / 2 - 2.0, 90)   # LM13700: OTA A channel 1, OTA B channel 2
-    pc.fix("U7", 14.0, (rows[1] + rows[2]) / 2 - 2.0, 90)   # channels 2-4 outputs, channel 2 control
-    pc.fix("U8", 14.0, rows[3] - 2.0, 90)          # noise bank
-    pc.fix("TR9", 26.0, rows[3] - 12.0, 0)         # noise LEVEL
-    # power along the bottom: the box header, its diodes and filters, the references
-    pc.fix("J17", 14.5, 6.0, 0)
-    if holes is None:
+    if holes is None:                 # the holes go where the faceplate allows; the main board works round them
         return b
+    pc = Placer(b, tht=True)
+    mid = channel_bands(b, circuit)
+    half = (mid[1] - mid[2]) / 2
+    band = {k: (EDGE, mid[k] - half, W - EDGE, mid[k] + half) for k in circuit.CHANNELS}
+    band[1] = (EDGE, band[1][1], W - EDGE, H - EDGE)
+    low = (EDGE, EDGE, W - EDGE, band[4][1])
+    for k in circuit.CHANNELS:
+        y = mid[k]
+        pc.fix(f"U{k}", 44.0, y + 3.3, 180)             # pins 13-16 at the lower right
+        pc.fix(f"TR{k}", 40.0, y - 6.2, 0)              # SCALE: pin 14 through 1.5k
+        pc.fix(f"TR{k + 4}", 51.0, y - 6.2, 0)          # PITCH: pin 13
+    pc.fix("U6", 17.0, mid[1] + 3.3, 0)               # channel 1: TIA, inverter, folder summer, FOLD control
+    pc.fix("U9", 19.0, mid[2] - 0.5, 0)               # LM13700: A for channel 1, B for channel 2
+    pc.fix("U7", 19.0, mid[3] + 1.2, 0)               # TIA 2, SHAPE control, the summers of 3 and 4
+    pc.fix("U8", 17.0, low[3] - 9.0, 0)               # noise bank
+    pc.fix("TR9", 33.0, low[3] - 9.0, 90)
+    pc.fix("J17", 45.0, 6.0, 0)                       # power, bottom middle
     order = [p.ref for p in parts if p.ref not in {pl["ref"] for pl in b.placed}]
 
     def region_of(ref):
@@ -574,10 +600,8 @@ def main_board(pr, parts, info, circuit, holes=None):
             block = 2
         if block in (1, 2, 3, 4):
             return band[block]
-        if block == 5 or ref == "Q5":
-            return (EDGE, EDGE + 9.0, 40.0, rows[3] + 6.5)
-        if block == 9 or ref in ("U10", "U11"):      # power entry and references, beside the box header
-            return (EDGE, EDGE, 61.5, 16.0)
+        if block in (5, 9) or ref in ("U10", "U11"):
+            return low
         return None
 
     supplies = {"U6": ("4", "11"), "U7": ("4", "11"), "U8": ("4", "11"), "U9": ("11", "6")}
@@ -588,6 +612,7 @@ def main_board(pr, parts, info, circuit, holes=None):
     for k in circuit.CHANNELS:
         decoupling[f"C{100 * k + 5}"] = (f"U{k}", "16")
         decoupling[f"C{100 * k + 4}"] = (f"U{k}", "3")
+    order = [r for r in order if r in decoupling] + [r for r in order if r not in decoupling]   # beside the chips
     for ref in order:
         if ref in decoupling:
             u, which = decoupling[ref]
@@ -597,7 +622,8 @@ def main_board(pr, parts, info, circuit, holes=None):
             pc.put(ref, pull={cpin: b.pin(u, pin)}, radius=12)
         else:
             pc.put(ref, region=region_of(ref))
-    b.text(30.0, H - 2.6, "Senay main board", 1.6)
+    b.overflow = pc.overflow
+    b.text(4.0, H - 2.6, "Senay main board", 1.6)
     return b
 
 

@@ -147,7 +147,8 @@ as Alfa recommends) is centred by an inverting stage with an offset from
 
 ## Power
 
-- 2 × 8 box header at **2.54 mm**, −12 V on pins 1–2 (red stripe).
+- 2 × 5 box header at **2.54 mm**, −12 V on pins 1–2 (red stripe), +12 V on
+  pins 9–10. Nothing here needs the bus's +5 V.
 - 1N5819 in each rail: +12 V anode on the header; **−12 V cathode on the
   header, anode to the board's −12 V** (the lesson of the ten module boards
   that have it backwards). 10 Ω and 10 µF per rail.
@@ -178,10 +179,25 @@ All-THT, the main side would need about 15,800 mm² hand-routed against
 of one board, so: two boards, SMD, with the panel parts and a few chips still
 through-hole.
 
+Through-hole re-checked on 2026-11-01, with the real footprints (standing
+resistors and diodes, your FG28 and SR305 caps, 5 mm electrolytics, DIP
+sockets, TO-92) and the placer, share of the main board under parts:
+
+| Main board | Under parts |
+|---|---|
+| All SMD (as built) | 33 % |
+| Resistors through-hole, the rest SMD | 47 % |
+| Everything through-hole but the caps | 56 % |
+| Everything through-hole but the resistors | 59 % |
+| All through-hole | does not fit: the board is full before the noise bank is placed |
+
+So through-hole only works as a mix, and the user wants all SMD rather than
+a mix. `SENAY_PKG="R=THT,C=THT,..."` reruns the comparison.
+
 | Board | Front (towards the panel) | Rear |
 |---|---|---|
 | Faceplate | 16 jacks, 8 Alpha pots, 12 toggles, 4 LEDs | U5 (the four FREQ followers, SOIC-14) with its 8 resistors and 2 caps; male headers HF1 / HF2 |
-| Main | female sockets H1 / H2 | everything else: 4 × AS3340 (DIP-16, socketed), 9 × 3296W trimmers, 3 × TL074 + LM13700 (SOIC), MMBT3904s, SOD-123 diodes, SOT-89 regulators, 0603 / 0805 / 1206 passives, the 2 × 8 power header |
+| Main | female sockets H1 / H2 | everything else: 4 × AS3340 (DIP-16, socketed), 9 × 3296W trimmers, 3 × TL074 + LM13700 (SOIC), MMBT3904s, SOD-123 diodes, SOT-89 regulators, 0603 / 0805 / 1206 passives, the 2 × 5 power header |
 
 - **AS3340 stays DIP.** No SOIC AS3340 turned up at a retailer; sockets also
   take a CEM3340 / V3340. JLC won't have the chip: solder the sockets, plug
@@ -192,21 +208,26 @@ through-hole.
 - **The FREQ followers on the faceplate.** The FREQ jacks, the chain through
   their switch lugs and the V/O–FM toggles are all there, so FREQ k and the
   followers' outputs never cross the headers.
-- **Headers:** two 1×N columns in the panel's left margin (front x 2.6 and
-  5.14 mm, clear of the jacks' bodies from 6.5): H1, 29 pins (each channel's
-  LED, OUT, CV, modifier pot, LFO cap; the noise outputs), H2, 25 pins (±5 V,
-  ±12 V, each channel's V/O, FM, coarse, fine throws). GND between every
-  group. 44 nets cross.
-- **Mounting holes:** four M3, found by a search clear of every part on both
-  boards: (8, 18), (61.5, 18), (8, 86.75), (24, 64.75) in the PCB frame. The
-  top-right corner has none: the headers and the modifier pots fill it.
+- **Headers:** one 1×N column on each side edge (2026-11-01, the user's
+  idea). H1, 35 pins, on the left edge (panel x 2.6, clear of the jacks'
+  bodies from 6.5): each channel's V/O, FM, coarse and fine throws, CV and
+  OUT; WHITE, PINK; ±12 V for U5. H2, 36 pins, on the right edge (panel x
+  68.7): each channel's LFO cap, modifier pot and LED; BLUE, BROWN; ±5 V and
+  +12 V for the pots. The modifier pots' mounting lugs end at panel x 67.4,
+  so H2's pads clear them by 0.45 mm. Seven pins per channel on both, so the
+  groups line up; GND between the groups and on both sides of each LFO cap
+  net. 44 nets cross. Cut both from 1 × 40 strips.
+- **Mounting holes:** four M3, where the faceplate allows them, near the four
+  corners: (17, 8), (61.5, 18), (8, 86.75), (61.5, 88) in the PCB frame. The
+  main board's chips are anchored round them.
 - **Placement** (`pcb.py`): chips, trimmers, sockets and the power header are
-  anchored by hand, one band per channel level with its panel row (AS3340
-  next to the sockets, its trimmers under it, the modifier chip towards the
-  far edge; the noise bank beside channel 4; power along the bottom). Every
-  other part goes to the free spot nearest the pads it shares a signal net
-  with, and each decoupling cap to its chip's supply pin. It's a start for
-  routing, not a finished layout.
+  anchored by hand. Each channel has a band level with its two header groups:
+  the AS3340 in the middle, turned so pins 13–16 face H1's pitch pins, SCALE
+  and PITCH under them, the modifier chips (U6, U9, U7) on the H2 side. The
+  noise bank and the power entry sit below channel 4. Every other part goes
+  to the free spot nearest the pads it shares a signal net with, and each
+  decoupling cap to its chip's supply pin. It's a start for routing, not a
+  finished layout.
 
 ## Routing notes
 
@@ -217,12 +238,14 @@ through-hole.
   those nodes (the FM drum's bleed came from a square 0.2 mm from a summing
   node).
 - LC1–4 (the LFO caps' switched ends) touch the timing node through 47 nF
-  when the toggle is on VCO: run each beside a GND header pin, not beside a
-  pulse.
+  when the toggle is on VCO, and run from H2 across to the AS3340's pin 11:
+  keep the 47 n at pin 11 and the LC trace in ground pour, away from the
+  pulses. H2 has GND on both sides of each LC pin.
 - Ground pour on both layers of both boards, stitched; the header GND pins
   every 5–6 positions carry the faceplate's return.
-- Power: J17 → 1N5819HW → 10 Ω → 10 µF, then out to the four bands; the
-  ±5 V references sit by J17 and feed the pots through H2.
+- Power: J17 (2 × 5, bottom middle) → 1N5819HW → 10 Ω → 10 µF, then up
+  to the four bands; the ±5 V references sit by J17 and reach the pots
+  through H2's bottom pins.
 
 ## Open before ordering
 
@@ -272,11 +295,11 @@ Main board (SMD unless noted):
 | 11 + 4 | 1 µF X7R 0805; 10 µF 25 V X7R 1206 | FM coupling, pin 9, references; bulk and noise coupling |
 | ~170 | 0603 1 % resistors | values in circuit.py |
 | ~45 | 0603 ceramics | 100 n X7R, the rest C0G |
-| 1 | 2 × 8 box header, 2.54 mm | through-hole, power |
-| 1 + 1 | 1 × 29 and 1 × 25 female sockets | through-hole |
+| 1 | 2 × 5 box header, 2.54 mm | through-hole, power |
+| 1 + 1 | 1 × 35 and 1 × 36 female sockets | through-hole, cut from 1 × 40 |
 
 Faceplate: 16 Thonkiconn, 7 Alpha 9 mm B10k, 1 Alpha B100k (PWM), 12
 sub-mini SPDT on-on toggles (Dailywell 2MS1T1B1M2QES or equal, PCB pins),
-4 × 3 mm LEDs, 1 × 29 and 1 × 25 male headers, 8 knobs; U5 with eight 0603
+4 × 3 mm LEDs, 1 × 35 and 1 × 36 male headers, 8 knobs; U5 with eight 0603
 resistors and two 100 n on its rear. M3 standoffs (8.5 mm with standard
 sockets) and screws for the four holes.

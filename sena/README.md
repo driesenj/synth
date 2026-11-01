@@ -38,7 +38,7 @@ Circuit, values, lessons applied, calibration and BOM: [docs/design.md](docs/des
 | Part | Status | Files |
 |---|---|---|
 | Panel | Drafted from Sena's own layout: hole list, drill template, artwork | `hardware/panel/`, `hardware/tools/panel.py` |
-| Netlist | Done: 245 main-board parts, 53 faceplate parts, 44 nets over two headers, no single-pin nets | `hardware/tools/circuit.py` |
+| Netlist | Done: 245 main-board parts, 53 faceplate parts, 44 nets over two headers (one per side edge), 10-pin power, no single-pin nets | `hardware/tools/circuit.py` |
 | EasyEDA Pro project | Done: 8 schematic pages, 0 problems; both PCBs placed (SMD, unrouted), 0 placement problems; the panel PCB. Not yet opened in EasyEDA | `hardware/easyeda/Senay.epro2` |
 | Routing | Not started (yours, in EasyEDA Pro; notes in design.md) | — |
 

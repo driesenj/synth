@@ -8,7 +8,9 @@ panel parts on its front, the four FREQ followers (U5) in 0603 on its rear.
 Main board: everything else on its rear, 0603 / SOIC / SOT, except the four
 AS3340s (DIP-16 in sockets: the SOIC version is not sold retail as far as
 we could find) and the nine 3296W trimmers, which stay reachable on the
-stack's rear. Headers: two 1xN columns in the panel's left margin.
+stack's rear. Headers: one 1xN column on each side edge; 10-pin power.
+Through-hole on the main board only fits as a mix of THT and SMD, so it stays
+SMD (checked 2026-11-01, docs/design.md).
 
 Sena's panel (Vostok product photo and user manual, October 2026), one row
 per channel, then the noise bank:
@@ -69,7 +71,7 @@ Brown: leaky integrator (-6 dB/oct above 22 Hz). All four about the same
 rms (white x 1.1 / 0.8 / 0.7).
 
 Lessons carried over from the earlier boards (see docs/design.md):
-2.54 mm 16-pin power header, both 1N5819s the right way round, DIP-14 at
+2.54 mm 10-pin power header, both 1N5819s the right way round, DIP-14 at
 7.62 mm rows, Alpha pot shaft 4.0 mm from the PTV09A origin, transistor
 pins named by function, decoupling beside each chip, LED pins by function,
 no square wave next to a summing node.
@@ -323,10 +325,10 @@ def noise():
 
 
 def power():
-    hdr = {"1": "N12_IN", "2": "N12_IN", "11": "P12_IN", "12": "P12_IN"}
-    hdr.update({str(n): GND for n in range(3, 11)})
+    hdr = {"1": "N12_IN", "2": "N12_IN", "9": "P12_IN", "10": "P12_IN"}
+    hdr.update({str(n): GND for n in range(3, 9)})
     parts = [
-        Part("J17", "HDR16", "16-pin Eurorack, 2.54 mm", hdr, "POWER (red stripe = -12 V = pin 1)"),
+        Part("J17", "HDR10", "10-pin Eurorack, 2.54 mm", hdr, "POWER (red stripe = -12 V = pin 1)"),
         D("D901", "D5819", "1N5819HW", "P12_IN", "P12_D", "+12 V reverse protection: anode on the header"),
         D("D902", "D5819", "1N5819HW", "N12_D", "N12_IN", "-12 V reverse protection: cathode on the header"),
         R("R901", "10R", "P12_D", VP, "+12 V filter"),
@@ -401,17 +403,22 @@ def buffers():
         C("C911", "100n", fp(VP), "GND_F", "U5 +12 V"), C("C912", "100n", "GND_F", fp(VN), "U5 -12 V")]
 
 
-# Board-to-board headers: two columns in the panel's left margin (front view x 2.6 and 5.14, clear of
-# the jacks' bodies from x 6.5), male on the faceplate's rear, female on the main board's front. Pin 1
-# at the top; each channel's nets level with its row, a GND between the groups.
-HEADER_X = (2.6, 5.14)                    # panel mm from the left
-HEADER_TOP = (97.0, 99.0)                 # board y of pin 1
-_COL_A = []
-_COL_B = [P5, N5, VP, VN, GND]
-for _k in CHANNELS:
-    _COL_A += [GND, f"LED{_k}", f"OUT{_k}"] + ([f"MCV{_k}"] if _k != 4 else []) + [f"MP{_k}", f"LC{_k}"]
-    _COL_B += [f"VO{_k}", f"FM{_k}", f"CR{_k}", f"FN{_k}", GND]
-_COL_A += [GND, "NWH", "NPK", "NBL", "NBR", GND]
+# Board-to-board headers: one column on each side edge (front view), male on the faceplate's rear, female
+# on the main board's front. Pin 1 at the top, each channel's group from the top down, a GND between the
+# groups, the noise outputs and the supplies at the bottom.
+#   H1, left edge (panel x 2.6, clear of the jacks' bodies from x 6.5): the nets of the jacks and the
+#       V/O - FM and FINE toggles, WHITE and PINK, +-12 V for U5.
+#   H2, right edge (panel x 68.7): the nets of the pots, the VCO / LFO toggles and the LEDs, BLUE and
+#       BROWN, +-5 V and +12 V for the pots. The modifier pots' mounting lugs end at panel x 67.4, so
+#       the pads clear them by 0.45 mm.
+HEADER_X = (2.6, 68.7)                    # panel mm from the left
+HEADER_TOP = (104.0, 104.0)               # board y of pin 1
+_COL_A, _COL_B = [], []
+for _k in CHANNELS:                       # seven pins per channel on both, so the groups line up
+    _COL_A += [GND, f"VO{_k}", f"FM{_k}", f"CR{_k}", f"FN{_k}", f"MCV{_k}" if _k != 4 else GND, f"OUT{_k}"]
+    _COL_B += [GND, f"LC{_k}", GND, f"MP{_k}", GND, f"LED{_k}", GND]
+_COL_A += [GND, "NWH", "NPK", GND, VP, VN, GND]
+_COL_B += [GND, "NBL", "NBR", GND, P5, N5, VP, GND]
 HEADERS = [("H1", f"HDR{len(_COL_A)}", [(n, fp(n)) for n in _COL_A]),
            ("H2", f"HDR{len(_COL_B)}", [(n, fp(n)) for n in _COL_B])]
 

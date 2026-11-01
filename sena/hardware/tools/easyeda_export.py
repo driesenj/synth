@@ -4,16 +4,19 @@
 Builds on the Plaitsy exporter (../../../plaitsy/hardware/tools) for the
 file format, the connectivity check and the previews, the way Side FXy does.
 Library parts come from the two caches of your MorrisSynth export (resistor,
-capacitor, diode, TL074 and pot symbols, the WQP518MA jack, the 2x8 box
-header, net ports, ground flag, sheet frame). Generated here:
+capacitor, diode, TL074 and pot symbols, the WQP518MA jack, net ports,
+ground flag, sheet frame). Generated here:
 
   footprints  SMD: 0603 / 0805 / 1206 chips, SOIC-14, SOIC-16, SOT-23 (pads
               named B / E / C), SOD-123, SOT-89, in the pad format of your
               library's SOIC-16 and SOT-23; through-hole: DIP-16 (7.62 mm
               rows), Bourns 3296W, the sub-mini toggle, 3 mm LED, 1xN headers,
-              the Alpha 9 mm pot (the mixer's)
+              the 2x5 power header, the Alpha 9 mm pot (the mixer's);
+              through-hole alternatives behind PKG (standing resistors and
+              diodes, your FG28 / SR305 caps, electrolytic, DIP-14, TO-92),
+              kept to measure the fit
   symbols     AS3340, LM13700, MMBT3904, trimmer, 78L05 / 79L05, toggle, LED,
-              headers
+              headers, 2x5 power header, electrolytic
 
 Pages: one per channel (oscillator + its modifier), the noise bank, power and
 headers, the faceplate. Every pin ends in a net port (or a ground flag) with
@@ -64,7 +67,7 @@ DEV = {
     "JACK": "f4a247c302d346488553de1a1eb440e9",      # WQP-WQP518MA (Thonkiconn)
     "POT": "be9d2c8f5f814271a402f956f18b56f9",       # PTV09A-4025F-B103 (its symbol)
     "D5819": "f1e2836d6b9a4bf1bb0838127f6aa231",     # 1N5819 (its symbol: 1 = cathode)
-    "HDR16": "bbe47e9fd91b42bbaf0d36b9504a3a5e",     # DC3-2.54-16PAS, 2x8 box header
+    "C1u": "bf1fe821a3774bf48d0873f872221180",       # SR305C105KAR, 1 uF ceramic, 5.08 mm (its footprint)
     "GND": "eec77ec4c1d94de692d165be3817a3c4",       # Ground-GND
     "IN": "6a70cfa1bc80484e8decf4f8a0b61a9e",        # Netport-IN
     "OUT": "7956696325094941b2d15526d9c13967",       # Netport-OUT
@@ -187,14 +190,15 @@ def fp_soic(n):
 
 
 def fp_dip(n, title):
-    """DIP on the standard 300 mil (7.62 mm) row pitch, pin 1 bottom-left, counting anticlockwise."""
+    """DIP on the standard 300 mil (7.62 mm) row pitch, pin 1 bottom-left, counting anticlockwise. Every DIP
+    here sits in a socket, so the outline is the socket's (about 10 mm wide)."""
     f = Footprint(title, "U?")
     half = n // 2
     x0 = -(half - 1) * 1.27
     for i in range(half):
         f.pad(i + 1, x0 + i * 2.54, -3.81, 0.9, 1.6, square=(i == 0))
         f.pad(n - i, x0 + i * 2.54, 3.81, 0.9, 1.6)
-    hx, hy = half * 1.27 + 0.7, 3.25
+    hx, hy = half * 1.27 + 0.6, 5.0
     f.rect(-hx, -hy, hx, hy)
     f.circle(-hx + 0.9, -hy + 0.9, 0.3)
     return f
@@ -277,6 +281,64 @@ def fp_alpha_pot():
         f.pad(num, x, 4.0, size=2.7, h=3.2, slot=(1.1, 1.8))
     f.rect(-4.75, -2.5, 4.75, 8.85)
     f.circle(0, 4.0, 3.5)
+    return f
+
+
+def fp_res_vertical():
+    """A resistor standing up, 2.54 mm: the body over pad 1, the bent lead to pad 2 (the Plaitsy / Offset
+    footprint)."""
+    f = Footprint("RES-TH-VERTICAL-P2.54", "R?")
+    f.pad(1, 0, 0.48006, 0.8, 1.6)
+    f.pad(2, 0, -2.0574, 0.8, 1.6)
+    f.circle(0, 0.48006, 1.1)
+    f.line(0, -0.79, 0, -1.11)
+    return f
+
+
+def fp_diode_vertical(title, pitch, hole, pad, body_r):
+    """A diode standing up: the body over pad 1 (the cathode, square, the band on top), the bent lead to
+    pad 2. DO-35 at 2.54 mm (Envy's), DO-41 at 5.08 mm."""
+    f = Footprint(title, "D?")
+    f.pad(1, 0, pitch / 2, hole, pad, square=True)
+    f.pad(2, 0, -pitch / 2, hole, pad)
+    f.circle(0, pitch / 2, body_r)
+    f.line(-body_r, pitch / 2 + body_r + 0.4, body_r, pitch / 2 + body_r + 0.4)
+    return f
+
+
+def fp_elec(d=5.0, pitch=2.0):
+    """Radial electrolytic, pad 1 = + (square), as CP() numbers it."""
+    f = Footprint(f"CAP-ELEC-D{d}-P{pitch}", "C?")
+    f.pad(1, -pitch / 2, 0, 0.8, 1.5, square=True)
+    f.pad(2, pitch / 2, 0, 0.8, 1.5)
+    f.circle(0, 0, d / 2 + 0.15)
+    f.line(-d / 2 - 0.9, -0.5, -d / 2 - 0.9, 0.5)            # + beside pad 1
+    f.line(-d / 2 - 1.4, 0, -d / 2 - 0.4, 0)
+    return f
+
+
+def fp_to92(title, names):
+    """TO-92 inline, 2.54 mm, pads named left to right looking at the flat face (2N3904: E B C)."""
+    f = Footprint(title, "Q?")
+    for i, n in enumerate(names):
+        f.pad(n, (i - 1) * 2.54, 0, 0.8, 1.5, square=(i == 0))
+    f.line(-2.4, -1.0, 2.4, -1.0)                              # the flat face
+    f.circle(0, 0.6, 2.45)
+    return f
+
+
+def fp_box_header(n):
+    """Shrouded 2 x n/2 box header, 2.54 mm, odd pins in the row at -1.27 (pin 1 square, the red stripe)
+    (Envy's)."""
+    f = Footprint(f"IDC-TH_{n}P-P2.54-BOX", "J?")
+    cols = n // 2
+    x0 = -(cols - 1) * 1.27
+    for i in range(cols):
+        f.pad(2 * i + 1, x0 + 2.54 * i, -1.27, 1.0, 1.6, square=(i == 0))
+        f.pad(2 * i + 2, x0 + 2.54 * i, 1.27, 1.0, 1.6)
+    hx = (cols - 1) * 1.27 + 5.08
+    f.rect(-hx, -4.45, hx, 4.45)
+    f.rect(-2.25, 4.45, 2.25, 3.6)                             # the key slot
     return f
 
 
@@ -380,6 +442,31 @@ def header_symbol(n):
     return s
 
 
+def cp_symbol():
+    """Polarised capacitor: pin 1 (left) is +, as CP() numbers it."""
+    s = Symbol("Electrolytic capacitor", "CPOL.2", "C?", [NAME])
+    s.poly([(-20, 0), (-4, 0)])
+    s.poly([(-4, -8), (-4, 8)])
+    s.poly([(4, -8), (4, 8)])
+    s.poly([(4, 0), (20, 0)])
+    s.poly([(-12, -10), (-8, -10)])
+    s.poly([(-10, -12), (-10, -8)])
+    s.pin("1", "+", -20, 0, 0)
+    s.pin("2", "-", 20, 0, 180)
+    return s
+
+
+def hdr10_symbol():
+    """2 x 5 Eurorack power header: odd pins on the left, even on the right, pin 1 at the top (-12 V)."""
+    s = Symbol("Eurorack power 2x5", "HDR2X5.1", "J?", [NAME])
+    s.rect(-20, -25, 20, 25)
+    for i in range(5):
+        y = -20 + 10 * i
+        s.pin(str(2 * i + 1), str(2 * i + 1), -30, y, 0, show=True, edge=-20)
+        s.pin(str(2 * i + 2), str(2 * i + 2), 30, y, 180, show=True, edge=20)
+    return s
+
+
 # ------------------------------------------------------------------ project
 class MPage(Page):
     page_count = "1"
@@ -413,15 +500,29 @@ class MPage(Page):
 
 GROUNDS = ("GND", "GND_F")
 
+# Packages on the main board, by kind: "SMD" or "THT". SENAY_PKG="R=THT,C=THT" overrides them, to measure
+# the fit: all through-hole does not fit the main board, and the user wants one or the other, not a mix
+# (2026-11-01, docs/design.md). The faceplate's rear keeps U5 and its parts in SMD either way: there is no
+# spot for a DIP's pads clear of the panel parts' bodies.
+PKG = {"R": "SMD", "C": "SMD", "D": "SMD", "Q": "SMD", "U": "SMD"}
+for _kv in filter(None, os.environ.get("SENAY_PKG", "").split(",")):
+    _k, _v = _kv.split("=")
+    PKG[_k] = _v
+SMD_SIZE = "0603"
+FACE_SMD = {p.ref for p in circuit.buffers()}
+THT_FILM = ("15n", "22n", "47n")        # C0G or film box, 5.08 mm, in the FG28 footprint
+
 
 def dev_of(part):
     k, v = part.kind, part.value
-    return {"R": f"R_{v}", "C": f"C_{v}", "TRIM": f"TRIM_{v}", "POT": f"POT_{v}", "D4148": "D_1N4148W",
-            "D5819": "D_1N5819HW", "ZENER": "D_BZT52C4V7", "TL074": "TL074S"}.get(k, k)
+    if part.ref in FACE_SMD:
+        return {"R": f"RS_{v}", "C": f"CS_{v}", "TL074": "TL074S"}[k]
+    return {"R": f"R_{v}", "C": f"C_{v}", "TRIM": f"TRIM_{v}", "POT": f"POT_{v}", "D4148": "D_1N4148",
+            "D5819": "D_1N5819", "ZENER": "D_ZENER", "TL074": "TL074M"}.get(k, k)
 
 
 def chip_size(value):
-    return {"10u": "1206", "1u": "0805"}.get(value, "0603")
+    return {"10u": "1206", "1u": "0805"}.get(value, SMD_SIZE)
 
 
 class MProject(Project):
@@ -471,32 +572,66 @@ class MProject(Project):
     def _new_devices(self, parts):
         fps = {s: {p: self._footprint(fp_chip(s, p)) for p in ("R", "C")} for s in ("0603", "0805", "1206")}
         fps.update({"SOIC14": self._footprint(fp_soic(14)), "SOIC16": self._footprint(fp_soic(16)),
+                    "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
                     "DIP16": self._footprint(fp_dip(16, "DIP-16-W7.62-P2.54")), "SOT23": self._footprint(fp_sot23()),
                     "SOD123": self._footprint(fp_sod123()), "SOT89": self._footprint(fp_sot89()),
                     "3296W": self._footprint(fp_3296w()), "TOGGLE": self._footprint(fp_toggle()),
-                    "LED3": self._footprint(fp_led3()), "POT": self._footprint(fp_alpha_pot())})
+                    "LED3": self._footprint(fp_led3()), "POT": self._footprint(fp_alpha_pot()),
+                    "RV": self._footprint(fp_res_vertical()),
+                    "DO35V": self._footprint(fp_diode_vertical("DIODE-DO35-VERTICAL-P2.54", 2.54, 0.8, 1.6, 1.0)),
+                    "DO41V": self._footprint(fp_diode_vertical("DIODE-DO41-VERTICAL-P5.08", 5.08, 1.1, 2.0, 1.45)),
+                    "ELEC": self._footprint(fp_elec()), "HDR10": self._footprint(fp_box_header(10)),
+                    "TO92Q": self._footprint(fp_to92("TO-92-2N3904-EBC", ("E", "B", "C"))),
+                    "TO92": self._footprint(fp_to92("TO-92-INLINE-P2.54", ("1", "2", "3"))),
+                    "FG28": self.device_attrs("C100n")["Footprint"], "SR305": self.device_attrs("C1u")["Footprint"]})
         res_sym, cap_sym = self.device_attrs("R1k")["Symbol"], self.device_attrs("C100n")["Symbol"]
         diode = self.device_attrs("D5819")["Symbol"]
         trim_sym = self._symbol(trimmer_symbol())
+        cp_sym = None
         seen = set()
         for p in parts:
             key = dev_of(p)
             if key in seen or key in self.devices:
                 continue
             seen.add(key)
-            if p.kind == "R":
-                self._new(key, res_sym, fps["0603"]["R"], f"0603 {p.value} 1%", "R?",
-                          f"Thick film resistor {p.value} 1% 0603", p.value)
-            elif p.kind == "C":
+            face = p.ref in FACE_SMD
+            if p.kind == "R" and (face or PKG["R"] == "SMD"):
+                self._new(key, res_sym, fps[SMD_SIZE]["R"], f"{SMD_SIZE} {p.value} 1%", "R?",
+                          f"Thick film resistor {p.value} 1% {SMD_SIZE}", p.value)
+            elif p.kind == "R":
+                self._new(key, res_sym, fps["RV"], f"MF 1/4W {p.value} 1%", "R?",
+                          f"Metal film resistor {p.value} 1% 0.25 W, standing (2.54 mm)", p.value)
+            elif p.kind == "C" and (face or PKG["C"] == "SMD"):
                 size = chip_size(p.value)
                 diel = "X7R" if p.value in ("100n", "1u", "10u") else "C0G"
                 volts = "25V" if p.value == "10u" else "50V"
                 self._new(key, cap_sym, fps[size]["C"], f"{size} {p.value} {volts} {diel}", "C?",
                           f"MLCC {p.value} {volts} {diel} {size}", p.value)
-            elif p.kind in ("D4148", "D5819", "ZENER"):
-                self._new(key, diode, fps["SOD123"], p.value, "D?" if p.kind != "ZENER" else "ZD?",
+            elif p.kind == "C" and p.value == "10u":
+                cp_sym = cp_sym or self._symbol(cp_symbol())
+                self._new(key, cp_sym, fps["ELEC"], "10uF 25V radial 5x11", "C?",
+                          "Electrolytic 10 uF 25 V, 5 mm can, 2.0 mm pitch; pin 1 = +", p.value)
+            elif p.kind == "C" and p.value == "1u":
+                self._new(key, cap_sym, fps["SR305"], "SR305C105KAR", "C?",
+                          "1 uF 50 V X7R ceramic, 5.08 mm (the library's SR305)", p.value)
+            elif p.kind == "C":
+                diel = "X7R" if p.value == "100n" else "C0G"
+                what = "C0G ceramic or film box" if p.value in THT_FILM else f"{diel} ceramic"
+                self._new(key, cap_sym, fps["FG28"], f"{p.value} 50V {diel} 5.08mm", "C?",
+                          f"{p.value} 50 V {what}, 5.08 mm leads (TDK FG28 size)", p.value)
+            elif p.kind in ("D4148", "D5819", "ZENER") and PKG["D"] == "SMD":
+                self._new(key, diode, fps["SOD123"], {"D4148": "1N4148W", "D5819": "1N5819HW",
+                                                      "ZENER": "BZT52C4V7"}[p.kind],
+                          "D?" if p.kind != "ZENER" else "ZD?",
                           {"D4148": "Switching diode 1N4148W, SOD-123", "D5819": "Schottky 1N5819HW, 40 V 1 A, SOD-123",
                            "ZENER": "Zener 4.7 V, BZT52C4V7, SOD-123"}[p.kind])
+            elif p.kind in ("D4148", "D5819", "ZENER"):
+                self._new(key, diode, fps["DO41V" if p.kind == "D5819" else "DO35V"],
+                          {"D4148": "1N4148", "D5819": "1N5819", "ZENER": "BZX79-C4V7"}[p.kind],
+                          "D?" if p.kind != "ZENER" else "ZD?",
+                          {"D4148": "Switching diode 1N4148, DO-35, standing",
+                           "D5819": "Schottky 1N5819, 40 V 1 A, DO-41, standing",
+                           "ZENER": "Zener 4.7 V 0.5 W, BZX79-C4V7 (or 1N750), DO-35, standing"}[p.kind])
             elif p.kind == "TRIM":
                 self._new(key, trim_sym, fps["3296W"], f"3296W {p.value}", "TR?",
                           f"Bourns 3296W-1-xxxLF multi-turn trimmer {p.value}, top adjust", p.value)
@@ -505,23 +640,33 @@ class MProject(Project):
                 a.update({"Footprint": fps["POT"], "Manufacturer Part": f"Alpha RD901F {p.value}", "Value": p.value,
                           "Supplier Part": "", "Description": f"Alpha 9 mm vertical pot {p.value} (Thonk)"})
                 self._device(key, f"Alpha 9mm {p.value}", a)
+        tht_u, tht_q = PKG["U"] == "THT", PKG["Q"] == "THT"
         for key, sym, fp, title, desig, desc in (
                 ("AS3340", as3340_symbol(), fps["DIP16"], "AS3340", "U?",
                  "Alfa AS3340 (or AS3340A, CEM3340) VCO, DIP-16 in a socket"),
-                ("LM13700", lm13700_symbol(), fps["SOIC16"], "LM13700M", "U?", "Dual OTA LM13700, SOIC-16"),
-                ("78L05", reg_symbol("78L05", {"1": "OUT", "2": "GND", "3": "IN"}), fps["SOT89"], "78L05 SOT-89", "U?",
-                 "+5 V 100 mA regulator, SOT-89: 1 OUT, 2 GND, 3 IN"),
-                ("79L05", reg_symbol("79L05", {"1": "GND", "2": "IN", "3": "OUT"}), fps["SOT89"], "79L05 SOT-89", "U?",
-                 "-5 V 100 mA regulator, SOT-89: 1 GND, 2 IN, 3 OUT"),
-                ("NPN", npn_symbol(), fps["SOT23"], "MMBT3904", "Q?", "NPN MMBT3904, SOT-23: 1 B, 2 E, 3 C"),
+                ("LM13700", lm13700_symbol(), fps["DIP16" if tht_u else "SOIC16"],
+                 "LM13700N" if tht_u else "LM13700M", "U?",
+                 "Dual OTA LM13700, " + ("DIP-16 in a socket" if tht_u else "SOIC-16")),
+                ("78L05", reg_symbol("78L05", {"1": "OUT", "2": "GND", "3": "IN"}), fps["TO92" if tht_q else "SOT89"],
+                 "78L05" + ("" if tht_q else " SOT-89"), "U?",
+                 "+5 V 100 mA regulator, " + ("TO-92" if tht_q else "SOT-89") + ": 1 OUT, 2 GND, 3 IN"),
+                ("79L05", reg_symbol("79L05", {"1": "GND", "2": "IN", "3": "OUT"}), fps["TO92" if tht_q else "SOT89"],
+                 "79L05" + ("" if tht_q else " SOT-89"), "U?",
+                 "-5 V 100 mA regulator, " + ("TO-92" if tht_q else "SOT-89") + ": 1 GND, 2 IN, 3 OUT"),
+                ("NPN", npn_symbol(), fps["TO92Q" if tht_q else "SOT23"], "2N3904" if tht_q else "MMBT3904", "Q?",
+                 "NPN 2N3904, TO-92: E B C facing the flat" if tht_q else "NPN MMBT3904, SOT-23: 1 B, 2 E, 3 C"),
+                ("HDR10", hdr10_symbol(), fps["HDR10"], "Box header 2x5 2.54mm", "J?",
+                 "Eurorack power, 2 x 5 shrouded box header, 2.54 mm; pin 1 = -12 V (red stripe)"),
                 ("TOGGLE", toggle_symbol(), fps["TOGGLE"], "Sub-mini toggle SPDT on-on", "SW?",
                  "Sub-mini toggle SPDT on-on, PCB pins 2.54 mm (Dailywell 2MS1T1B1M2QES or equal)"),
                 ("LED", led_symbol(), fps["LED3"], "LED 3mm", "LED?", "3 mm LED, red; 1 anode, 2 cathode (flat)")):
             self._new(key, self._symbol(sym), fp, title, desig, desc)
-        a = dict(self.device_attrs("TL074"))
-        a.update({"Footprint": fps["SOIC14"], "Manufacturer Part": "TL074CDT", "Supplier Part": "",
-                  "Description": "Quad JFET op-amp, SOIC-14"})
-        self._device("TL074S", "TL074 SOIC-14", a)
+        for key, fp, mp, desc in (("TL074S", fps["SOIC14"], "TL074CDT", "Quad JFET op-amp, SOIC-14"),
+                                  ("TL074M", fps["DIP14" if tht_u else "SOIC14"], "TL074CN" if tht_u else "TL074CDT",
+                                   "Quad JFET op-amp, " + ("DIP-14 in a socket" if tht_u else "SOIC-14"))):
+            a = dict(self.device_attrs("TL074"))
+            a.update({"Footprint": fp, "Manufacturer Part": mp, "Supplier Part": "", "Description": desc})
+            self._device(key, mp, a)
         for ref, kind, pins in circuit.HEADERS:
             n = len(pins)
             self._new(kind, self._symbol(header_symbol(n)), self._footprint(fp_header(n)), f"Pin header 1x{n}", "H?",
@@ -672,7 +817,7 @@ def main_pages(pr, P):
         ("Noise bank", [("Avalanche source, WHITE amp (LEVEL trimmer), PINK and BLUE ladders, BROWN integrator (U8)",
                          circuit.noise() + [P["U8"]])]),
         ("Power, references, headers", [
-            ("Eurorack power: 1N5819HW per rail (-12 V: cathode on the header), 10R + 10 uF; +-5 V references; "
+            ("Eurorack power, 2 x 5: 1N5819 per rail (-12 V: cathode on the header), 10R + 10 uF; +-5 V references; "
              "op-amp decoupling", circuit.power()),
             ("Board-to-board sockets (female on this board, pin 1 at the top)", [P["H1"], P["H2"]])]),
     ]
@@ -805,13 +950,22 @@ def main():
     fi, mi = part_info(fpages), part_info(mpages)
     holes = pcb.find_holes([pcb.faceplate_board(pr, fb, fi, circuit), pcb.main_board(pr, mb, mi, circuit)])
     board_fb = pcb.faceplate_board(pr, fb, fi, circuit, holes)
-    board_mb = pcb.main_board(pr, mb, mi, circuit, holes)
+    try:
+        board_mb = pcb.main_board(pr, mb, mi, circuit, holes)
+    except ValueError as e:
+        print(f"main board with packages {PKG} does not fit: {e}")
+        return
     pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
                + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb))
     if len(board_fb.holes) != 4:
         pcb_bad.append(f"only {len(board_fb.holes)} mounting holes found")
     for b in pcb_bad:
         print("PCB:", b)
+    print(f"main board: packages {PKG}; {pcb.utilisation(board_mb):.0%} of the board under parts, "
+          f"{len(board_mb.overflow)} parts outside their block {board_mb.overflow[:12]}")
+    if os.environ.get("SENAY_DRY"):
+        board_mb.render(PREVIEW.format("try-" + "-".join(f"{k}{v}" for k, v in PKG.items())))
+        return
     template = pcb.load_template(ee)
     panel_page = MPage(pr, "Panel", 1)
     panel_page.text(70, Y(60), "Senay 14HP panel as a PCB: no parts, no nets. Holes, slots, silkscreen and the "
