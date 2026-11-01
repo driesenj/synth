@@ -197,15 +197,16 @@ def _logic(net):
 
 
 # Split by what they carry: the six CV inputs, the other jacks with the probe, the pots, the buttons
-# and LEDs. The probe sits two pins away from IN, with a ground between. Pin order is a first guess;
-# placement sorts it.
+# and LEDs. The pin order is the one with the fewest crossing ratsnest lines on both boards for the
+# placement in pcb.py (brute force over every order, 2026-11-01), with two rules: the probe never next to
+# IN, ODD, EVEN or EVEN's lug, and 3V3A next to a ground.
 HEADERS = [
-    ("H1", "HDR6", [_pair(f"CV_{n}") for n in ("BRIGHTNESS", "FM", "DAMPING", "STRUCTURE", "POSITION", "VOCT")]),
-    ("H2", "HDR7", [_pair(n) for n in ("PROBE", "STRUM_IN", GND, "IN", "ODD", "TN_EVEN", "EVEN")]),
-    ("H3", "HDR8", [_pair(n) for n in ("3V3A", GND, "POT_FREQUENCY", "POT_STRUCTURE", "MUX_OUT", "MUX_S0",
-                                       "MUX_S1", "MUX_S2")]),
-    ("H4", "HDR9", [_logic(n) for n in (GND, "BTN_POLY", "BTN_LED_POLY", "LED_POLY_R", "LED_POLY_G",
-                                        "LED_MODEL_G", "LED_MODEL_R", "BTN_LED_MODEL", "BTN_MODEL")]),
+    ("H1", "HDR6", [_pair(f"CV_{n}") for n in ("BRIGHTNESS", "VOCT", "FM", "STRUCTURE", "POSITION", "DAMPING")]),
+    ("H2", "HDR7", [_pair(n) for n in ("TN_EVEN", GND, "PROBE", "STRUM_IN", "IN", "ODD", "EVEN")]),
+    ("H3", "HDR8", [_pair(n) for n in ("POT_FREQUENCY", GND, "3V3A", "MUX_S2", "MUX_S1", "MUX_S0", "MUX_OUT",
+                                       "POT_STRUCTURE")]),
+    ("H4", "HDR9", [_logic(n) for n in ("BTN_POLY", "BTN_MODEL", GND, "BTN_LED_POLY", "LED_POLY_R", "LED_POLY_G",
+                                        "LED_MODEL_G", "BTN_LED_MODEL", "LED_MODEL_R")]),
 ]
 
 
@@ -265,10 +266,11 @@ POT_WIPER = {
     "RV6": "ATT_BRIGHTNESS_F", "RV7": "ATT_FM_F", "RV8": "ATT_DAMPING_F", "RV9": "ATT_STRUCTURE_F",
     "RV10": "ATT_POSITION_F",
 }
-# 74HC4051 channel -> pin; the channel of each muxed pot (a first guess: placement sorts it, and the
-# firmware reads the pots by this table, not in panel order)
+# 74HC4051 channel -> pin; the channel of each muxed pot, the assignment with the fewest crossing
+# ratsnest lines on the faceplate (brute force, 2026-11-01). The firmware reads the pots by this table,
+# not in panel order.
 MUX_PIN = {0: "13", 1: "14", 2: "15", 3: "12", 4: "1", 5: "5", 6: "2", 7: "4"}
-MUX_CHANNEL = {"RV3": 0, "RV4": 1, "RV5": 2, "RV6": 3, "RV7": 4, "RV8": 5, "RV9": 6, "RV10": 7}
+MUX_CHANNEL = {"RV6": 0, "RV9": 1, "RV5": 2, "RV3": 3, "RV10": 4, "RV4": 5, "RV8": 6, "RV7": 7}
 # ref, label, the firmware's name. Thonk low-profile LED buttons (5.5 mm cap; clip their three feet);
 # Rings' own buttons have no LED, these get a Seed GPIO each for the firmware to use or not.
 BUTTONS = [("SW1", "polyphony", "POLY"), ("SW2", "resonator model", "MODEL")]

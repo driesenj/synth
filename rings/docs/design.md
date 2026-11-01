@@ -12,13 +12,14 @@ applies as written.
 In the rig it serves as a resonator for Plaitsy, noise and drums, and its
 ODD / EVEN outputs go to the stereo mixer as a real stereo pair.
 
-Status: **panel approved (2026-10-31); netlist and EasyEDA Pro schematic
-done (2026-11-01).** `hardware/tools/circuit.py` holds the whole circuit as
-one netlist over the two boards, the panel placement, and three checks
-(netlist, circuit values, faceplate front); `easyeda_export.py` draws it as
-`hardware/easyeda/Ringsy.epro2` (three pages, "Schematic" below). All checks
-are at 0 problems. Next: both boards placed (`pcb.py`) and the panel as a
-PCB (`panel_pcb.py`).
+Status: **panel approved (2026-10-31); netlist, EasyEDA Pro schematic,
+both PCBs placed and the panel as a PCB done (2026-11-01).**
+`hardware/tools/circuit.py` holds the whole circuit as one netlist over the
+two boards, the panel placement, and three checks (netlist, circuit values,
+faceplate front). `easyeda_export.py` writes `hardware/easyeda/Ringsy.epro2`:
+the schematic ("Schematic" below), both boards placed with `pcb.py`, and the
+panel from `panel_pcb.py` ("PCBs" below). All checks are at 0 problems.
+Next: you import it into EasyEDA Pro and route (routing notes below).
 
 Sources used for the original (all in pichenettes/eurorack, checked
 2026-10-31):
@@ -296,12 +297,12 @@ audio block from a random bit, as Rings does.
 Ten B10k Alpha pots, CCW end to GND, CW end to 3V3A. FREQUENCY and
 STRUCTURE go straight to A6 and A9, the other eight through a 74HC4051 on
 the faceplate (Rings' own split; all eight channels used). The channels are
-a first guess; placement sorts them for the fewest crossing lines, and the
-firmware reads by `MUX_CHANNEL`:
+the assignment with the fewest crossing ratsnest lines on the placed
+faceplate (all 40 320 tried), and the firmware reads by `MUX_CHANNEL`:
 
 | Channel (pin) | 0 (13) | 1 (14) | 2 (15) | 3 (12) | 4 (1) | 5 (5) | 6 (2) | 7 (4) |
 |---|---|---|---|---|---|---|---|---|
-| Pot | BRIGHTNESS | DAMPING | POSITION | BRIGHTNESS att. | FREQUENCY att. | DAMPING att. | STRUCTURE att. | POSITION att. |
+| Pot | BRIGHTNESS att. | STRUCTURE att. | POSITION | BRIGHTNESS | POSITION att. | DAMPING | DAMPING att. | FREQUENCY att. |
 
 ### Buttons and LEDs
 
@@ -351,16 +352,18 @@ Nothing in Rings needs SPI, I2C or the DACs; D1–D6 are SDMMC1, unused.
 ## Board-to-board headers
 
 Male on the faceplate (HF1–HF4), female sockets on the main board (H1–H4),
-2.54 mm. Grouped by what they carry; the pin order is a first guess that
-placement sorts, as on Marblesy. The probe sits two pins from IN with a
-ground between.
+2.54 mm, at the same spot on both boards. Grouped by what they carry. The
+pin order is the one with the fewest crossing ratsnest lines on both
+placed boards (every order tried, as on Plaitsy), with two rules: the probe
+never next to IN, ODD, EVEN or EVEN's lug, and 3V3A next to a ground.
+Positions are front view (pin 1, then the way the pins run).
 
-| Header | Pins |
-|---|---|
-| H1 (6) | CV_BRIGHTNESS, CV_FM, CV_DAMPING, CV_STRUCTURE, CV_POSITION, CV_VOCT |
-| H2 (7) | PROBE, STRUM_IN, GND, IN, ODD, TN_EVEN, EVEN |
-| H3 (8) | 3V3A, GND, POT_FREQUENCY, POT_STRUCTURE, MUX_OUT, MUX_S0, MUX_S1, MUX_S2 |
-| H4 (9) | GND (GND_D_F), BTN_POLY, BTN_LED_POLY, LED_POLY_R, LED_POLY_G, LED_MODEL_G, LED_MODEL_R, BTN_LED_MODEL, BTN_MODEL |
+| Header | Where | Pins, from pin 1 |
+|---|---|---|
+| H1 (6) | (53.6, 31.0) → +x: lying between the CV jacks and the attenuverters, right of centre | CV_BRIGHTNESS, CV_VOCT, CV_FM, CV_STRUCTURE, CV_POSITION, CV_DAMPING |
+| H2 (7) | (54.3, 18.2) → down: standing in the gap between ODD's and EVEN's columns | TN_EVEN, GND, PROBE, STRUM_IN, IN, ODD, EVEN |
+| H3 (8) | (3.0, 68.7) → +x: lying between the medium knobs and FREQUENCY | POT_FREQUENCY, GND, 3V3A, MUX_S2, MUX_S1, MUX_S0, MUX_OUT, POT_STRUCTURE |
+| H4 (9) | (3.0, 95.0) → +x: lying under the polyphony button and LED | BTN_POLY, BTN_MODEL, GND (GND_D_F), BTN_LED_POLY, LED_POLY_R, LED_POLY_G, LED_MODEL_G, BTN_LED_MODEL, LED_MODEL_R |
 
 ---
 
@@ -427,12 +430,115 @@ breakout's J4 / J5 pins the netlist does not use, and ODD's switch lug
 
 ---
 
+## PCBs (placed, not routed)
+
+`Ringsy.epro2` holds three boards: Main and Faceplate, each with its
+schematic and its PCB placed and net-assigned (the ratsnest is live), and
+the Panel. `pcb.py` places the two boards, `panel_pcb.py` draws the panel.
+Previews: `rings-easyeda-pcb-*.png`, rear view (EasyEDA's top layer).
+
+**Faceplate** (top layer = rear; front-view coordinates below):
+- **Panel parts:** on the bottom layer at `PLACEMENT`, oriented by rule.
+  - Jacks: sleeve above the tip.
+  - Pots: pins on the side `pot_pins` gives.
+  - LED buttons: LED pins along x, anode right.
+  - LEDs: red anode left.
+- **Rear parts:** only in the strips the panel parts leave free.
+  - The 74HC4051 lies at (33, 71), between the medium knobs and
+    FREQUENCY / STRUCTURE, with C1 beside pin 16.
+  - The five lug resistors stand upright in the 3.9 mm gaps between the jack
+    columns, at x 2.4, 15.3, 28.3 and 41.3. Each sits beside its jack's lug:
+    STRUM, V/OCT and IN on the bottom row, FM in the upper row.
+  - The headers are as in the table above.
+- No rear pad sits under a pot, jack or button body, which `front_housing_check`
+  confirms.
+
+**Main board** (PCB frame, rear view):
+- **Breakout:** stands on its sockets near the centre (x 25.6–44.4), USB
+  end down. That puts:
+  - J5 (IN) at the bottom, 27 mm from H2's IN pin.
+  - Pins 21–40 (A0–A5, A6, A9, A10, the mux address, 3V3A) facing the
+    op-amps on the left.
+  - Pins 1–20 (buttons, LEDs, STRUM, probe, AOUT) facing the logic on the
+    right.
+
+  This follows the move you made on Marblesy. Nothing is placed between
+  its pad rows: the breakout's underside is unknown.
+- **TL074s:** both stand left of the breakout, each with its four stages
+  as Plaitsy's clusters (Rf against IN− and OUT, Rin and Rs one column out,
+  Cf the next, each 100 n 3.6 mm from its supply pin).
+  - U4 sits low, between H1 and the ADC pins: POSITION, V/OCT, ODD, EVEN.
+  - U3 sits above it, level with A0–A3: FM, STRUCTURE, BRIGHTNESS, DAMPING.
+- **Everything else** goes through the greedy placer, each block in its own
+  area:
+  - Below U4: the output coupling caps and DC resistors, the EVEN → ODD
+    normal and the V/OCT clamps.
+  - Above U3: the bias dividers.
+  - Right of the breakout: STRUM, the probe clamps and the LED resistors.
+
+**Standoffs:** four M3, the same on both boards, where both have room. The
+jacks and attenuverters fill the faceplate's lower corners, so the four go
+here (front view):
+- (5.0, 49.4) and (21.8, 49.4), in the strip between the attenuverters'
+  pins and the medium knobs. On the main board both land right of the
+  breakout.
+- (22.0, 100.0) and (48.0, 100.0), in the top strip either side of H4.
+
+The main board's front-right corner below y 49 has no standoff; H1 and H2
+hold it there.
+
+**Checks** (in the exporter's output, all at 0):
+- pads ≥ 0.25 mm apart and ≥ 0.5 mm from the edge;
+- no two bodies overlapping on one side;
+- nothing under a standoff or screw head;
+- every header pin at the same spot on both boards;
+- panel parts exactly at `PLACEMENT`;
+- no rear pad under a panel part's body, and no panel part's pad under
+  another's body;
+- every PAD_NET on a real pad and a declared net.
+
+**Ratsnest crossings** (each net as a minimum spanning tree, grounds left
+out): faceplate 22, main board 202. Most of the main board's are the
+3V3A and ±12 V buses and the CV lines entering the clusters; Plaitsy's
+main board ended at 120.
+
+### Routing notes
+
+- **Rules:** clearance 0.25 mm, track 0.3 mm, POWER class 0.6 mm (±12 V,
+  3V3A, 3V3D, 3V3A_F), via 0.8 / 0.4 mm, copper 0.5 mm from the edge.
+  Keep out 3.5 mm round each standoff on its side.
+- **Lock by hand first:**
+  - the six CV and two output summing nodes (already a few mm each);
+  - BIAS_A and BIAS_V as short trees from C27 and C28;
+  - ADC_VOCT to pin 27 with its clamps;
+  - the power buses up the decoupling columns.
+  Then autoroute the rest: both layers, vertical on top, horizontal
+  underneath, grounds and the POWER class skipped.
+- **Main board ground:** one GND, poured on both layers. The socket side is
+  nearly empty and is the plane. It must reach Seed pins 20 and 40 and the
+  breakout's GND pins.
+- **Faceplate grounds:**
+  - GND_F (jacks, pots, mux) poured on the panel side.
+  - GND_D_F (buttons, LEDs) as tracks on the rear.
+  - They meet only on the main board, through their own header pins.
+- **IN:** H2 → J5-1 along the bottom on the bottom layer, under the pour,
+  away from the probe and STRUM.
+- **AOUT_ODD / AOUT_EVEN:** from pins 18 / 19 across to C29 / C30. Keep them
+  off the LED lines.
+- **PROBE** (a 1 kHz square at 3.3 V): along the board edge, never beside
+  a summing node or IN. On the faceplate it runs along the bottom past R4,
+  R3 and R2.
+- **Faceplate signal layers:** pot wipers and mux lines on the panel side
+  under GND_F. LED and button lines on the rear, away from the wipers.
+
+---
+
 ## Board estimate
 
 | Board | Parts | Fits? |
 |---|---|---|
-| Faceplate 69.6 × 108 | 24 panel parts, 74HC4051 + 100 n, 5 lug resistors, 4 male headers (30 pins): 35 | Easily: Plaitsy's 59.4 mm faceplate held a 4051, two 595s, 21 resistors and three headers |
-| Main board 69.6 × 108 | breakout on sockets, 2 TL074, 39 resistors, 16 capacitors, 2N3904, 5 diodes, 4 socket strips: 68 | Yes: Plaitsy did 2 TL074 and 8 stages beside the breakout on 59.4 mm, and this board is 10 mm wider |
+| Faceplate 69.6 × 108 | 24 panel parts, 74HC4051 + 100 n, 5 lug resistors, 4 male headers (30 pins): 35 | Placed, 0 problems |
+| Main board 69.6 × 108 | breakout on sockets, 2 TL074, 39 resistors, 16 capacitors, 2N3904, 5 diodes, 4 socket strips: 68 | Placed, 0 problems; the right of the breakout is half empty |
 
 103 parts in all (Plaitsy: 109). Through-hole, hand-soldered, the Plaitsy
 way; the stack depth is Plaitsy's.
@@ -519,6 +625,10 @@ Mutable name or logo.
 ## Still open
 
 - **Rin** on both outputs: measure the Seed's full scale first (above).
-- **Mux channels and header pin order:** first guesses, sorted at
-  placement for the fewest crossing lines.
+- **Routing** in EasyEDA Pro (yours). After routing, the routed export becomes
+  the master, as on Marblesy: bring `circuit.py` to any pin, channel or part
+  you swap, since the firmware's tables follow it.
+- **The breakout's underside:** nothing is placed between its pad rows on
+  the main board. Check how tall the parts on the underside of Rob Heel's
+  board are before moving any part there.
 - **Button LEDs:** what the port shows on them, if anything.

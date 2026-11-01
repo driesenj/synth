@@ -19,7 +19,8 @@ applies as written.
 | Panel layout, drill template, artwork | Approved 2026-10-31 | `hardware/tools/panel.py`, `hardware/panel/` |
 | Netlist (two boards), circuit values, Seed pin map, BOM | Done, checks at 0 problems | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md) |
 | EasyEDA Pro schematic, three pages | Done 2026-11-01, checks at 0 problems | `hardware/tools/easyeda_export.py`, `hardware/easyeda/Ringsy.epro2` |
-| PCB placement, panel PCB | Next | |
+| Both PCBs placed (unrouted), the panel as a PCB | Done 2026-11-01, checks at 0 problems | `hardware/tools/pcb.py`, `hardware/tools/panel_pcb.py`, same project |
+| Routing in EasyEDA Pro | Next (routing notes in [docs/design.md](docs/design.md)) | |
 | Firmware | Not started | |
 
 ## Panel
@@ -54,11 +55,13 @@ docs/design.md                 what Rings needs, panel, circuit, Seed pin map, h
 hardware/
   tools/
     circuit.py                 netlist (both boards), headers, PLACEMENT; netlist, circuit-value and front checks
-    easyeda_export.py          EasyEDA Pro project: the schematic of both boards (builds on plaitsy/'s exporter)
+    easyeda_export.py          EasyEDA Pro project: schematic, both PCBs, the panel PCB (builds on plaitsy/'s exporter)
+    pcb.py                     both boards placed and net-assigned, clearance / header / housing checks
+    panel_pcb.py               the panel as the project's third PCB, from panel.py's lists
     panel.py                   hole list, drill template and the panel artwork from the placement
   easyeda/
     Ringsy.epro2               import into EasyEDA Pro
-    rings-easyeda-*.png        page previews
+    rings-easyeda-*.png        page previews; -pcb-* the boards (rear view) and the panel
   panel/
     rings-panel-holes.csv, rings-panel-drill.svg
     rings-panel.svg            panel artwork (groups: copper, tint, silk, holes, mockup)
