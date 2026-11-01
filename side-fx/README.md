@@ -19,7 +19,7 @@ Rob Heel's seed_power_opamps breakout.
 | EasyEDA Pro schematic | Done, 4 A3 pages (main board 1, faceplate 2, panel note), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/SideFXy.epro2`, previews `hardware/easyeda/side-fx-easyeda-*.png` |
 | PCB placement | Done, both boards placed and net-assigned, not routed; every clearance, header and keep-out check at 0 | `hardware/tools/pcb.py`, previews `hardware/easyeda/side-fx-easyeda-pcb-*.png` |
 | Panel PCB | Done: the panel as the project's third board, window milled out, gold band and block stack | `hardware/tools/panel_pcb.py` |
-| Routing | Done: the fourth export (2026-11-02) audits clean and is the layout master, ready to order. One harmless 0.01 mm² floating GND_F sliver is noted ([audit](docs/routing-audit-2026-11-01.md)) | `hardware/easyeda/SideFXy-routed.epro2`, `hardware/tools/copper_audit.py` |
+| Routing | Done: the fourth export (2026-11-02) audits clean and is the layout master, with silkscreen value labels added; ready to order. One harmless 0.01 mm² floating GND_F sliver is noted ([audit](docs/routing-audit-2026-11-01.md)) | `hardware/easyeda/SideFXy-routed.epro2`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py` |
 | Firmware | Not started | |
 
 ## Panel
@@ -63,13 +63,15 @@ hardware/
     easyeda_export.py     builds SideFXy.epro2 (reuses ../../../plaitsy/hardware/tools/easyeda_export.py)
     pcb.py                the two PCBs: placement (rear sides and main board read from the routed export), checks, the PCB documents
     copper_audit.py       audits a routed export: nets, copper graph, clearances, holes, cutout, headers, panel
+    value_labels.py       adds silkscreen value labels to a routed export
     panel.py              hole list, drill template and the panel artwork from the placement
     panel_pcb.py          the panel as a PCB document, from the same lists as the artwork
   easyeda/
     SideFXy.epro2         schematic, both PCBs placed (unrouted) and the panel PCB, generated
-    SideFXy-routed.epro2  your routed export, the layout master
+    SideFXy-routed.epro2  your routed export with the value labels, the layout master
     side-fx-easyeda-*.png page and PCB previews
     side-fx-routed-*.png  the routed boards with the audit's items marked
+    side-fx-labels-*.png  where the value labels landed
   panel/
     side-fx-panel-holes.csv, side-fx-panel-drill.svg
     side-fx-panel.svg     panel artwork (groups: copper, silk, holes, mockup), side-fx-panel-preview.png

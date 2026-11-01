@@ -29,7 +29,31 @@ may still call it a sliver, which can lift off. If you want it gone, draw a
 small no-copper area over it and rebuild.
 
 This export is now `SideFXy-routed.epro2`, and this is the state to order
-from. The checks still open from the design notes concern parts, not the
+from.
+
+**Value labels.** `hardware/tools/value_labels.py`, copied from Marblesy,
+added silkscreen values to this export. Each label goes on its part's own
+side, in the first free spot beside it: not over pads, housings,
+designators, vias, holes or the cutout.
+
+| Board | Labels |
+|---|---|
+| Faceplate | 5: 10k x8 on RN1 / RN2, 100n on C1 / C2, 10u on C4 |
+| Main board | 29 on parts: the CV stages' 27k / 1k / 1n, the bias 15k / 10k / 1u, the clock stage's 100k / 10k and 2N3904 / BAT85, the MIDI 220 / 1k / 1N4148, the LED 470s, the 100n decoupling |
+
+Six main-board parts sit too tightly round the TL074 for a label that
+reads as theirs. They get legend lines next to the cluster instead:
+
+- "100k: R10 R13 R16 R19" above the chip;
+- "100n: C16" below it;
+- "1k: R12" beside C10.
+
+The labels are 37 STRING records appended to the two PCB documents. Every
+other record is byte for byte the export's, and the audit, routed_check and
+the generator give the same results as before. The labelled project is the
+committed `SideFXy-routed.epro2`; import it and the labels come along.
+
+Previews of where they landed: `hardware/easyeda/side-fx-labels-*-top.png`. The checks still open from the design notes concern parts, not the
 routing:
 
 - measure the panel gap (about 7 mm assumed);

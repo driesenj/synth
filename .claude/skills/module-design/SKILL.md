@@ -60,6 +60,11 @@ look nothing like the original. Do it in this order:
    `side-fx/hardware/tools/copper_audit.py` is the newer copy: it adds
    JLCPCB's limits, cutout and display checks, the panel's slots and window,
    pad rotations, and a marked render; start from that one.
+   Once an export audits clean, `value_labels.py` (newest copy in
+   `side-fx/hardware/tools`) appends silkscreen values beside each part.
+   Parts packed too tightly get one legend line per value
+   ("100k: R10 R13 R16 R19"). The labelled file becomes the committed
+   routed master.
 7. **Docs and BOM** in `docs/design.md` and `README.md`, updated with every
    change; the BOM lists real purchasable parts (Thonk first).
 
