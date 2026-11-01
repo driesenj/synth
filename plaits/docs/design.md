@@ -306,9 +306,21 @@ checks the result (pads 0.25 mm apart or more, 0.5 mm from the edge, no
 bodies overlapping on one side, nothing under a standoff, header pins
 coinciding on both boards, panel parts exactly at `PLACEMENT`, no rear-side
 pad under a panel part's housing, oval pads checked as capsules, nothing
-within a standoff's or a screw head's 3 mm on either side). Nothing is
-routed. Previews:
+within a standoff's or a screw head's 3 mm on either side). Previews:
 `hardware/easyeda/plaits-easyeda-pcb-*.png`.
+
+**Routed, 2026-11-01.** Both boards were routed by hand in EasyEDA Pro;
+the export is `hardware/easyeda/Plaitsy-routed.epro2` and is the layout
+master: `pcb.py` reads the rear sides and the main board from it
+(`routed_boards()`), the panel parts stay on `circuit.PLACEMENT`, and
+`routed_check()` fails the exporter run if the generator and the routed
+boards disagree on any pad or net. `hardware/tools/copper_audit.py` audits
+the export's copper (connectivity through pours and spokes, shorts,
+clearances, keepouts, headers, panel holes); its findings are in
+`docs/routing-audit-2026-11-01.md`. The paragraphs below describe the
+placement the routing started from; what moved while routing is listed in
+the audit (C8, C9, R9–R13 on the faceplate; the bias dividers, D21 / D22
+and R60 / R61 on the main board, the last two lying flat).
 
 **Frame.** Each PCB is drawn as EasyEDA shows it, looking at the top layer,
 which on both boards is the rear of the stack: x to the right, y up, origin
@@ -371,11 +383,12 @@ clamps D21 / D22 in the strip along the breakout on ADC_VOCT's way to
 pin 31, R60 / R61 at the breakout's top end. The lower part of the board
 (y 3–36) is left free for the CV and ADC runs.
 
-**Mounting.** Four 3.2 mm holes, front-view (3.5, 104.5), (55.9, 104.5),
-(3.5, 30) and (29.9, 48.5), identical on both boards: the top corners above
-the big knobs, the left end of the strip between the top jack row and the
-TIMBRE attenuverter (whose pins now take the old spot at y 40), the centre
-of the strip between the attenuverters and the lowest LED. M3 standoffs
+**Mounting.** Three 3.2 mm holes, front-view (3.5, 104.5), (55.9, 104.5)
+and (3.5, 30), identical on both boards: the top corners above the big
+knobs and the left end of the strip between the top jack row and the
+TIMBRE attenuverter (whose pins now take the old spot at y 40). The fourth
+hole the placement had, in the centre of the strip between the
+attenuverters and the lowest LED, went while routing; C8 stands there. M3 standoffs
 between the boards, as long as the mated headers make the gap (a standard
 8.5 mm socket plus the male header's 2.5 mm spacer, about 11 mm; measure
 the mated pair). The breakout and Seed hang on the main board's rear. The

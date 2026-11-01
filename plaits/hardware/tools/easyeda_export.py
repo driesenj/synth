@@ -283,11 +283,15 @@ C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF"), "100p": ("FG28C0G1H101JNT00", "100p
 RESISTORS = {"R1k", "R10k"} | {"R" + v for v in R_NEW}
 
 
+# resistors the routed boards stand up on the 2.54 mm footprint (the main board's, except R60 / R61)
+STANDING = {"Main board": pcb.standing_resistors("Main board"), "Faceplate": pcb.standing_resistors("Faceplate")}
+
+
 class MPage(Page):
     page_count = "1"
 
     def place(self, ref, dev_key, *args, **kw):
-        if self.title.startswith("Main") and dev_key in RESISTORS:   # every main-board resistor stands up
+        if dev_key in RESISTORS and ref in STANDING.get(self.title.split(":")[0], ()):   # stood up on the routed board
             dev_key += "V"
         p = super().place(ref, dev_key, *args, **kw)
         # remember the schematic component id: the PCB's Channel ID attribute points at it
@@ -769,11 +773,12 @@ def main():
                     for num, (x, y) in c["pins"].items():
                         if abs(x - px) < 0.01 and abs(y - py) < 0.01:
                             print("       pin", c["ref"] or c["dev"], num, "on page", pg_.number)
-    # PCBs: placed and net-assigned, not routed; part info per board, as designators may repeat across boards
+    # PCBs: placed as the routed export has them, net-assigned, unrouted; part info per board
     board_fb = pcb.faceplate_board(pr, fb, part_info(pages[1:]), circuit)
     board_mb = pcb.main_board(pr, mb, part_info(pages[:1]), circuit)
     pcb_bad = (board_fb.check("top") + board_mb.check("bottom") + pcb.header_check(board_fb, board_mb, circuit)
-               + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb, circuit))
+               + pcb.placement_check(board_fb, circuit) + pcb.front_housing_check(board_fb, circuit)
+               + pcb.routed_check(board_fb, board_mb))
     for b in pcb_bad:
         print("PCB:", b)
     template = pcb.load_template(ee)
