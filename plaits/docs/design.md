@@ -479,37 +479,9 @@ is room (Marblesy has 118 on the main board and 166 on the faceplate).
 
 ## BOM
 
-| Qty | Part | Value / note | Refs |
-|---|---|---|---|
-| 1 | Daisy Seed | | U2 |
-| 1 | seed_power_opamps breakout (Rob Heel), built | power and audio-out stage | U2 |
-| 2 | TL074 + DIP-14 socket | | U3, U4 |
-| 1 | 74HC4051 + DIP-16 socket | CD4051B also works | U1 |
-| 2 | 74HC595 + DIP-16 socket | | U9, U10 |
-| 8 | 3 mm bicolour LED, red/green, common cathode, 3 lead | Tayda, Kingbright | D1–D8 |
-| 2 | BAT85 | | D21, D22 |
-| 18 | Resistor 470 Ω | | R60, R61, R80–R95 |
-| 8 | Resistor 1k | | R23, R26, R29, R32, R35, R38, R41, R44 |
-| 5 | Resistor 10k | | R9–R13 |
-| 1 | Resistor 12k | | R46 |
-| 8 | Resistor 13k | 1 % | R22, R25, R28, R31, R34, R37, R40, R47 |
-| 2 | Resistor 15k | | R45, R48 |
-| 1 | Resistor 33k | 1 % | R43 |
-| 8 | Resistor 100k | 1 % | R21, R24, R27, R30, R33, R36, R39, R42 |
-| 1 | Capacitor 100p | | C26 |
-| 7 | Capacitor 1n | | C21–C25, C27, C28 |
-| 7 | Capacitor 100n | 5.08 mm pitch | C8–C10, C31–C34 |
-| 2 | Capacitor 1µ | | C29, C30 |
-| 7 | Pot B10k, Alpha 9 mm vertical (Thonk) | | RV1–RV7 |
-| 7 | Knobs | 2 large, 2 medium, 3 small | |
-| 10 | Thonkiconn PJ398SM | | J1–J10 |
-| 2 | Thonk low-profile LED button | colour to taste; clip the three feet | SW1, SW2 |
-| 3 | Male pin header 1×8, 1×9, 1×9 | Thonk male + female header bag | HF1–HF3 |
-| 3 | Female socket 1×8, 1×9, 1×9 | | H1–H3 |
-| 4 | M3 standoffs + screws | length = the mated headers' gap | |
-| 2 | PCBs 59.4 × 108 mm, 2 layer | `Plaitsy Main PCB`, `Plaitsy Faceplate PCB` | |
-|  | Main-board resistors stand up on a 2.54 mm footprint | any 1/4 W or LR1F part | R21–R48, R60, R61 |
-| 1 | Panel PCB 60.6 × 128.5 mm | black mask, white silk, ENIG: `Plaitsy Panel PCB` | |
+Generated from `circuit.py` by `hardware/tools/bom.py`, with the Thonk parts in their own table:
+[bom.md](bom.md), and as CSV in `hardware/bom/`. The Thonk parts of Spore, Orchid, Moss and
+Mycelium are summed into one order in [bom/thonk-order.md](../../bom/thonk-order.md).
 
 ---
 

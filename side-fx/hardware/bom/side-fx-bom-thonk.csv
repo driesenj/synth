@@ -1,0 +1,9 @@
+Source,Group,Qty,Part,Refs,Board,Note
+Thonk,Panel parts,5,"Thonk low-profile LED button, red","SW1, SW2, SW3, SW4, SW5",Faceplate,
+Thonk,Panel parts,1,"Thonkiconn PJ366ST stereo jack, with nut",J5,Faceplate,
+Thonk,Panel parts,9,"Thonkiconn PJ398SM mono jack, with nut","J1, J2, J3, J4, J6, J7, J8, J9, J10",Faceplate,
+Thonk,Modules,1,Electrosmith Daisy Seed,U5,Main,
+Thonk,Chips,1,TL074 quad op-amp (DIP-14) + DIP-14 socket,U6,Main,
+Thonk,Connectors,1,Eurorack power cable for the breakout's power header,,—,check the header's pin count (10 or 16)
+Thonk,Connectors,4,"Female header, 2.54 mm, 8.5 mm tall: 1 × 1×11, 1 × 1×8, 1 × 1×6, 1 × 1×5","H1, H2, H3, H4",Main,main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips
+Thonk,Connectors,4,"Male pin header, 2.54 mm: 1 × 1×11, 1 × 1×8, 1 × 1×6, 1 × 1×5","HF1, HF2, HF3, HF4",Faceplate,faceplate side; Thonk's Male + Female Header Bag or cut from 40-pin strips

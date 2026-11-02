@@ -1,6 +1,13 @@
 # Parts: measured facts and gotchas
 
 Prefer Thonk (the user orders there); Tayda, Mouser, LCSC for the rest.
+
+BOM: `hardware/tools/bom.py` (in marbles/, plaits/, side-fx/, stereo-mixer/;
+copy it for a new module and rewrite its MODULE / BUTTONS / knobs() / EXTRA /
+NOTES block) writes `docs/bom.md` and `hardware/bom/*.csv` from circuit.py,
+with the Thonk lines in their own table and file. It fails if a netlist part
+is not in exactly one line or the refs differ from the routed master's.
+`bom/thonk_order.py` sums the modules' Thonk files into one order.
 Library parts come from the user's EasyEDA library (cached in
 `plaitsy/hardware/easyeda/morrissynth-parts.epru`, uuids in
 `plaitsy/hardware/tools/easyeda_export.py` DEV/SRC); draw only what is

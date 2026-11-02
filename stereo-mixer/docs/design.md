@@ -342,39 +342,6 @@ jack sleeve to the pour.
 
 ## BOM
 
-| Qty | Part | Value / note | Refs |
-|---|---|---|---|
-| 4 | TL074 + DIP-14 socket | | U1–U4 |
-| 2 | CD4093B + DIP-14 socket | quad Schmitt NAND | U5, U6 |
-| 4 | CD4013B + DIP-14 socket | dual D flip-flop | U7–U10 |
-| 10 | AQY212EH (Panasonic PhotoMOS, DIP-4) | Mouser / Farnell / LCSC | K1–K10 |
-| 2 | 1N5819 | | D901, D902 |
-| 1 | 1N4148 | | D903 |
-| 37 | Resistor 100k | 1 % | bus feeds, sends, pull-ups, summer and inverter resistors, R920 |
-| 34 | Resistor 10k | 1 % | mute series, pan feeds, send averages, debounce |
-| 8 | Resistor 200k | 1 % | stereo and return bus feeds, output feedback |
-| 2 | Resistor 300k | 1 % | R915, R916 |
-| 8 | Resistor 1k5 | | LED / PhotoMOS current: R109 … R810 |
-| 3 | Resistor 1k | | R906, R909, R912 |
-| 2 | Resistor 10 Ω | | R918, R919 |
-| 3 | Capacitor 22 pF C0G | | C901–C903 |
-| 22 | Capacitor 100 nF | 5.08 mm pitch | decoupling C911–C918, C921–C926; debounce C101 … C801 |
-| 1 | Capacitor 1 µF | 5.08 mm pitch | C906 |
-| 2 | Electrolytic 10 µF 35 V | 2.5 mm pitch, 5 mm | C904, C905 |
-| 1 | 2×8 box header, 2.54 mm + Eurorack ribbon | | J18 |
-| 17 | Thonkiconn PJ398SM | Thonk | J1–J17 |
-| 15 | Alpha 9 mm vertical pot A100K | Thonk | LEVEL 1–6, SEND 1–8, DRUMS |
-| 6 | Alpha 9 mm vertical pot B10K | Thonk | PAN 1–6 |
-| 4 | Alpha 9 mm vertical dual-gang pot A100K (RD902F) | check stock: dual-gang Alpha pots are mostly sold linear | LEVEL 7, LEVEL 8, RETURN, MASTER |
-| 8 | Thonk low-profile LED button | red reads as "muted"; clip the three feet | SW1–SW8 |
-| 25 | Knobs | ≤ 11 mm for the channels, ~12 mm for MASTER | |
-| 9 | Male pin headers 1×8 (8×), 1×12 | Thonk male + female header bag | HF1–HF9 |
-| 9 | Female sockets 1×8 (8×), 1×12 | | H1–H9 |
-| 4 | M3 standoffs + screws | length = the mated headers' gap | |
-| 2 | PCBs 140.4 × 108 mm, 2 layer | `Mixer Main PCB`, `Mixer Faceplate PCB` | |
-| 1 | Panel PCB 141.9 × 128.5 mm | black mask, white silk, ENIG: `Mixer Panel PCB` | |
-
-If no A-taper dual-gang pot can be had, B100K duals work with a 22k from
-each wiper to GND on the stereo LEVEL and RETURN pots, which bends a linear
-pot close to an audio taper; ask and I'll put the resistors in the
-netlist.
+Generated from `circuit.py` by `hardware/tools/bom.py`, with the Thonk parts in their own table:
+[bom.md](bom.md), and as CSV in `hardware/bom/`. The Thonk parts of Spore, Orchid, Moss and
+Mycelium are summed into one order in [bom/thonk-order.md](../../bom/thonk-order.md).

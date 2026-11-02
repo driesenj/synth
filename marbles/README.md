@@ -10,7 +10,8 @@ On the panel it is **Spore**, one of the voice case's Garden names
 
 The full design is in [docs/design.md](docs/design.md): what Marbles needs,
 the Seed pin map, every circuit, the board-to-board headers, the faceplate
-placement, the BOM and the firmware plan.
+placement and the firmware plan. The BOM, with the Thonk parts in their own
+table, is [docs/bom.md](docs/bom.md).
 
 ## Status
 

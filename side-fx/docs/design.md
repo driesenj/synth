@@ -380,37 +380,9 @@ the display its own 3.3 V regulator.
 
 ## BOM
 
-| Qty | Part | Notes | Refs |
-|---|---|---|---|
-| 1 | Daisy Seed (Thonk) | | U5 |
-| 1 | seed_power_opamps breakout (Rob Heel), built with its audio in and out | | U5 |
-| 1 | Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI) with its cable | glass taped to the panel's rear | DS1 |
-| 1 | 1×8 right-angle male header, 2.54 mm | the cable's Dupont plug lies flat on it | CN1 |
-| 9 | Thonkiconn PJ398SM (Thonk) | | J1–J4, J6–J10 |
-| 1 | Thonkiconn stereo PJ366ST (Thonk) | MIDI | J5 |
-| 5 | Thonk low-profile LED button, red | clip the three feet | SW1–SW5 |
-| 4 | EC11-type encoder with push switch, vertical, M7 bushing, D shaft (e.g. Bourns PEC11R-4215F-S0024; Tayda) + small D-shaft knobs | check the datasheet and the height before ordering | ENC1–ENC4 |
-| 1 | TL074 + DIP-14 socket | | U6 |
-| 2 | 74HC165 + DIP-16 sockets | | U1, U2 |
-| 1 | 74HC595 + DIP-16 socket | | U3 |
-| 1 | H11L1 + DIP-6 socket | | U7 |
-| 1 | 2N3904 | | Q1 |
-| 1 | BAT85 | | D1 |
-| 1 | 1N4148 | | D2 |
-| 2 | 10k × 8 bussed resistor network, SIP-9 (Bourns 4609X-101-103LF, Tayda A103J) | | RN1, RN2 |
-| 5 | 100k | | R10, R13, R16, R19, R24 |
-| 4 | 27k | | R11, R14, R17, R20 |
-| 5 | 1k | | R12, R15, R18, R21, R27 |
-| 1 | 15k | | R22 |
-| 2 | 10k | | R23, R25 |
-| 1 | 220R | | R26 |
-| 5 | 470R | | R1–R5 |
-| 4 | 1n film/C0G | | C10–C13 |
-| 6 | 100n | | C1–C3, C15–C17 |
-| 1 | 1 µ | | C14 |
-| 1 | 10 µ ceramic (X5R / X7R, 16 V or more), leads on 5.08 mm | an electrolytic is too tall for the gap | C4 |
-| — | Male + female 2.54 mm headers (Thonk header bag): 5, 8, 11, 6 pins per side; sockets for the breakout | | H1–H4, HF1–HF4 |
-| 4 | M3 standoffs for the 8.5 mm board gap, with screws | | holes |
+Generated from `circuit.py` by `hardware/tools/bom.py`, with the Thonk parts in their own table:
+[bom.md](bom.md), and as CSV in `hardware/bom/`. The Thonk parts of Spore, Orchid, Moss and
+Mycelium are summed into one order in [bom/thonk-order.md](../../bom/thonk-order.md).
 
 ---
 

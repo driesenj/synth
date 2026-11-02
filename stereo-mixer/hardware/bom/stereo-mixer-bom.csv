@@ -1,0 +1,32 @@
+Source,Group,Qty,Part,Refs,Board,Note
+Thonk,Panel parts,4,"Alpha 9 mm vertical dual-gang pot A100K (RD902F), T18 shaft","RV19, RV21, RV23, RV25",Faceplate,
+Thonk,Panel parts,15,"Alpha 9 mm vertical pot A100K, T18 shaft","RV1, RV3, RV4, RV6, RV7, RV9, RV10, RV12, RV13, RV15, RV16, RV18, RV20, RV22, RV24",Faceplate,
+Thonk,Panel parts,6,"Alpha 9 mm vertical pot B10K, T18 shaft","RV2, RV5, RV8, RV11, RV14, RV17",Faceplate,
+Thonk,Panel parts,8,"Thonk low-profile LED button, red","SW1, SW2, SW3, SW4, SW5, SW6, SW7, SW8",Faceplate,
+Thonk,Panel parts,17,"Thonkiconn PJ398SM mono jack, with nut","J1, J2, J3, J4, J5, J6, J7, J8, J9, J10, J11, J12, J13, J14, J15, J16, J17",Faceplate,
+Thonk,Chips,4,TL074 quad op-amp (DIP-14) + DIP-14 socket,"U1, U2, U3, U4",Main,
+Thonk,Connectors,1,"2×8 shrouded box header, 2.54 mm (Eurorack power)",J18,Main,
+Thonk,Connectors,1,"Eurorack power cable, 16-pin at the module end",,—,the other end to suit your bus board
+Thonk,Connectors,9,"Female header, 2.54 mm, 8.5 mm tall: 1 × 1×12, 8 × 1×8","H1, H2, H3, H4, H5, H6, H7, H8, H9",Main,main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips
+Thonk,Connectors,9,"Male pin header, 2.54 mm: 1 × 1×12, 8 × 1×8","HF1, HF2, HF3, HF4, HF5, HF6, HF7, HF8, HF9",Faceplate,faceplate side; Thonk's Male + Female Header Bag or cut from 40-pin strips
+Thonk,Mechanical,24,"Knob for a T18 shaft, about 10 mm across",,—,"channels, RETURN, DRUMS; model to taste"
+Thonk,Mechanical,1,"Knob for a T18 shaft, about 12 mm across",,—,MASTER; model to taste
+JLCPCB,PCBs,1,"Main board + faceplate board, 140.4 × 108.0 mm each, 2 layers, 1.6 mm",,—,from StereoMixer-routed.epro2
+JLCPCB,PCBs,1,"Panel 141.9 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG",,—,the panel board in StereoMixer-routed.epro2; ENIG makes the bands and the mushroom gold
+Mouser,Chips,10,Panasonic AQY212EH PhotoMOS relay (DIP-4),"K1, K2, K3, K4, K5, K6, K7, K8, K9, K10",Main,
+Tayda,Chips,4,CD4013BE dual D flip-flop (DIP-14) + DIP-14 socket,"U7, U8, U9, U10",Main,
+Tayda,Chips,2,CD4093BE quad Schmitt NAND (DIP-14) + DIP-14 socket,"U5, U6",Main,
+Tayda,Semiconductors,1,1N4148 diode (DO-35),D903,Main,
+Tayda,Semiconductors,2,1N5819 Schottky diode (DO-41),"D901, D902",Main,
+Tayda,Resistors,2,"Resistor 10 Ω, metal film 1 %, 1/4 W","R918, R919",Main,
+Tayda,Resistors,3,"Resistor 1k, metal film 1 %, 1/4 W","R906, R909, R912",Main,
+Tayda,Resistors,8,"Resistor 1.5k, metal film 1 %, 1/4 W","R109, R209, R309, R409, R509, R609, R710, R810",Main,
+Tayda,Resistors,34,"Resistor 10k, metal film 1 %, 1/4 W","R101, R102, R103, R108, R201, R202, R203, R208, R301, R302, R303, R308, R401, R402, R403, R408, R501, R502, R503, R508, R601, R602, R603, R608, R701, R702, R705, R706, R709, R801, R802, R805, R806, R809",Main,
+Tayda,Resistors,37,"Resistor 100k, metal film 1 %, 1/4 W","R104, R105, R106, R107, R204, R205, R206, R207, R304, R305, R306, R307, R404, R405, R406, R407, R504, R505, R506, R507, R604, R605, R606, R607, R707, R708, R807, R808, R901, R902, R903, R904, R907, R910, R911, R917, R920",Main,
+Tayda,Resistors,8,"Resistor 200k, metal film 1 %, 1/4 W","R703, R704, R803, R804, R905, R908, R913, R914",Main,
+Tayda,Resistors,2,"Resistor 300k, metal film 1 %, 1/4 W","R915, R916",Main,
+Tayda,Capacitors,3,"Capacitor 22 pF C0G ceramic, 5.08 mm leads","C901, C902, C903",Main,
+Tayda,Capacitors,22,"Capacitor 100 nF ceramic (X7R), 5.08 mm leads","C101, C201, C301, C401, C501, C601, C701, C801, C911, C912, C913, C914, C915, C916, C917, C918, C921, C922, C923, C924, C925, C926",Main,
+Tayda,Capacitors,1,"Capacitor 1 µF ceramic (X7R), 5.08 mm leads",C906,Main,
+Tayda,Capacitors,2,"Capacitor 10 µF electrolytic, 35 V, 5 mm across, 2.5 mm leads","C904, C905",Main,
+Tayda,Mechanical,4,"M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws",,—,one per mounting hole between the boards; measure the mated headers first

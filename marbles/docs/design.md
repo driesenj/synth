@@ -599,49 +599,9 @@ them before the Gerbers (open items).
 
 ## BOM
 
-| Qty | Part | Refs | Source |
-|---|---|---|---|
-| 1 | Daisy Seed | U2 | Thonk |
-| 1 | seed_power_opamps breakout, built | U2 | OSHWLab (Rob Heel) |
-| 16 | Thonkiconn PJ398SM + nut | J1–J16 | Thonk |
-| 8 | Alpha 9 mm vertical B10K (pick the shaft to match your knobs) | RV1–RV8 | Thonk |
-| 3 | Thonk low-profile LED button, green (switch + LED in one, 7.5 mm body, 5.5 mm cap); clip the feet | SW1, SW4, SW7 | Thonk |
-| 4 | Thonk low-profile LED button, bipolar red/green; clip the feet | SW2, SW3, SW5, SW6 | Thonk |
-| 7 | 3 mm green LED (output indicators) | D11–D17 | Thonk |
-| 8 | Knobs: 3 large (RATE, DEJA VU, SPREAD), 5 small | | Thonk |
-| 4 | TL074 + DIP-14 socket | U3–U6 | Thonk |
-| 2 | MCP4922 + DIP-14 socket | U7, U8 | Mouser / Farnell |
-| 1 | 74HC4051 + DIP-16 socket | U1 | Tayda / Mouser |
-| 2 | 74HC595 + DIP-16 socket | U9, U10 | Tayda / Mouser |
-| 1 | 74HC165 + DIP-16 socket | U11 | Tayda / Mouser |
-| 2 | 2N3904 | Q1, Q2 | Tayda |
-| 1 | LM4040-2.5 in TO-92 (TI LM4040xIZ-2.5; grade C or D is plenty) | D21 | Mouser |
-| 2 | BAT85 | D22, D23 | Tayda |
-| 7 | 100k 1 % | R21, R24, R27, R30, R33, R36, R39 | |
-| 7 | 27k 1 % | R22, R25, R28, R31, R34, R37, R40 | |
-| 4 | 23.2k 1 % (E96) | R70, R74, R78, R82 | |
-| 4 | 47k 1 % | R71, R75, R79, R83 | |
-| 4 | 100k 1 % | R72, R76, R80, R84 | |
-| 2 | 100k | R50, R52 | |
-| 4 | 15k | R45, R61, R64, R67 | |
-| 2 | 10k 1 % (the −2.5 V inverter: the outputs' range counts on it) | R42, R43 | |
-| 15 | 10k | R46, R51, R53, R60, R63, R66, R9, R10, R100–R106 | |
-| 14 | 1k | R23, R26, R29, R32, R35, R38, R41, R62, R65, R68, R73, R77, R81, R85 | |
-| 1 | 1.5k | R47 | |
-| 11 | 470 Ω | R80–R89, R1 (faceplate: one per LED button, four CV output LEDs) | |
-| 3 | 3.3k | R91–R93 (gate output LEDs) | |
-| 7 | 1 n C0G | C21–C27 | |
-| 1 | 1 µ | C29 | |
-| 15 | 100 n | C8–C11, C30–C40 | |
-| 7 + 7 | 2 × 1×8, 3 × 1×4, 2 × 1×3 male pins (faceplate) / female sockets (main board) | HF1–HF7, H1–H7 | Thonk header bag |
-| 1 | 18HP panel PCB (or aluminium), 4× M3 | | |
-
-R80–R85 exist on both boards: the main board's are the DAC output stage
-resistors above, the faceplate's are LED resistors. Everything is
-through-hole; 33 of the main board's resistors stand up on a 2.54 mm
-footprint (any 1/4 W or LR1F part fits). EasyEDA's BOM of the routed project
-lists H3, H6, HF3 and HF6 as an LCSC female 1×3 (排母): fit male pins on the
-faceplate side.
+Generated from `circuit.py` by `hardware/tools/bom.py`, with the Thonk parts in their own table:
+[bom.md](bom.md), and as CSV in `hardware/bom/`. The Thonk parts of Spore, Orchid, Moss and
+Mycelium are summed into one order in [bom/thonk-order.md](../../bom/thonk-order.md).
 
 ---
 
