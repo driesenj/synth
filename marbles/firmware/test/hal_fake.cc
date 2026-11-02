@@ -184,7 +184,7 @@ float OutputVoltsFor(int slot, uint16_t word) {
   // The -2.5 V the offset resistor sees: the reference through the
   // inverter (R42, R43).
   const float negative_reference = -vref * board::kInverterFeedback / \
-      board::kInverterInput;
+      board::kInverterInput * (1.0f + parts.inverter);
   return -rf / rref * negative_reference - rf / rin * dac;
 }
 

@@ -138,7 +138,7 @@ const uint32_t kDataSaved = 6000;
 fake::Parts RandomParts(int seed, float tolerance) {
   std::mt19937 g(seed);
   std::uniform_real_distribution<float> u(-tolerance, tolerance);
-  fake::Parts p;
+  fake::Parts p = {};
   for (int i = 0; i < marblesy::hal::CV_INPUT_LAST; ++i) {
     p.cv_rin[i] = u(g);
     p.cv_rf[i] = u(g);
@@ -152,6 +152,11 @@ fake::Parts RandomParts(int seed, float tolerance) {
     p.dac_gain[i] = u(g) * 0.5f;
     p.dac_offset[i] = u(g) * 0.3f;  // up to 3 mV at 1 %
   }
+  // Drawn last, so the parts above stay what they were before these.
+  for (int i = 0; i < 4; ++i) {
+    p.dac_rout[i] = u(g);
+  }
+  p.inverter = (1.0f + u(g)) / (1.0f + u(g)) - 1.0f;  // R43 over R42
   return p;
 }
 
@@ -331,9 +336,9 @@ void TestDac() {
              (board::kDacFeedbackResistor * board::kReference), 0.01, "%s", "");
   CHECK_NEAR(kDacOffset, 65536.0 * board::kDacInputResistor /
              board::kDacOffsetResistor, 0.01, "%s", "");
-  // Its reach: about +5.32 V and -5.10 V.
+  // Its reach: about +5.32 V and -5.45 V.
   CHECK(fake::OutputVoltsFor(0, Dac::Word(1, 0)) > 5.3f, "top");
-  CHECK(fake::OutputVoltsFor(0, Dac::Word(1, 0xffff)) < -5.09f, "bottom");
+  CHECK(fake::OutputVoltsFor(0, Dac::Word(1, 0xffff)) < -5.44f, "bottom");
   // The nominal calibration on the nominal stage.
   for (size_t channel = 0; channel < kNumDacChannels; ++channel) {
     for (float v = -5.0f; v <= 5.0f; v += 0.5f) {
@@ -341,8 +346,8 @@ void TestDac() {
     }
   }
   // The two codes the output calibration uses.
-  CHECK_NEAR(fake::OutputVoltsFor(0, Dac::Word(1, 0x1d90)), 4.115, 0.01, "%s", "");
-  CHECK_NEAR(fake::OutputVoltsFor(0, Dac::Word(1, 0xaf30)), -1.81, 0.01, "%s", "");
+  CHECK_NEAR(fake::OutputVoltsFor(0, Dac::Word(1, 0x1d90)), 4.075, 0.01, "%s", "");
+  CHECK_NEAR(fake::OutputVoltsFor(0, Dac::Word(1, 0xaf30)), -2.055, 0.01, "%s", "");
 }
 
 void TestOutputCalibration() {
@@ -353,7 +358,7 @@ void TestOutputCalibration() {
     CalibrateInputs();
     float worst_before = 0.0f;
     for (size_t channel = 0; channel < kNumDacChannels; ++channel) {
-      for (float v = -4.0f; v <= 5.0f; v += 1.0f) {
+      for (float v = -5.0f; v <= 5.0f; v += 1.0f) {
         worst_before = fmaxf(worst_before, fabsf(ModelOutput(channel, v) - v));
       }
     }
@@ -361,8 +366,9 @@ void TestOutputCalibration() {
           seed, worst_before);
     CalibrateOutputs();
     CHECK(!ui.calibrating_outputs(), "seed %d: done", seed);
+    // The full +-5 V, into a 100k load, with 1 % parts: what 23.2k is for.
     for (size_t channel = 0; channel < kNumDacChannels; ++channel) {
-      for (float v = -4.0f; v <= 5.0f; v += 0.5f) {
+      for (float v = -5.0f; v <= 5.0f; v += 0.5f) {
         CHECK_NEAR(LoadedOutput(channel, v), v, 0.0025,
                    "seed %d channel %zu", seed, channel);
       }
@@ -427,7 +433,7 @@ void TestOutputCalibration() {
   for (size_t channel = 1; channel < kNumDacChannels; ++channel) {
     CHECK_NEAR(fake::OutputVolts(Slot(channel)), 0.0, 0.002, "%zu", channel);
   }
-  CHECK_NEAR(fake::OutputVolts(Slot(0)), 4.115, 0.01, "Y at the high point");
+  CHECK_NEAR(fake::OutputVolts(Slot(0)), 4.075, 0.01, "Y at the high point");
 
   // While an output waits to be measured, all four sit at 0 V: the
   // README's first power-up check.

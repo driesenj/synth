@@ -42,7 +42,7 @@ this design reads it once. The firmware port handles that.
  panel ─┬─ faceplate board (FB)   16 Thonkiconn jacks, 8 Alpha pots, 7 LED buttons, 7 output LEDs,
         │   90 x 108 mm            74HC4051 pot mux, 2x 74HC595 (LEDs), 74HC165 (buttons),
         │                          probe resistors, pull-ups, LED resistors
-        │      33 pins in 7 headers (male on the FB, female on the MB)
+        │      34 pins in 7 headers, 33 used (male on the FB, female on the MB)
         └─ main board (MB)        Daisy Seed on the seed_power_opamps breakout,
             90 x 108 mm            7 TL074 CV input stages, 2 clock input stages,
                                    3 gate stages, 2x MCP4922 DAC + 4 output stages,
@@ -142,26 +142,37 @@ out: 0 V / 8.25 V from the 3.3 V GPIO. U6A–C; U6D is a grounded follower.
 ### CV outputs (4×)
 
 Two MCP4922 (12-bit dual SPI DAC, DIP-14) on 3V3A, reference 2.5 V from an
-LM4040-2.5 (D21, fed through R47 2.2k from 3V3A, C30 100 n). U4D inverts the
+LM4040-2.5 (D21, fed through R47 1.5k from 3V3A, C30 100 n). U4D inverts the
 reference to −2.5 V (R42/R43 10k). Each output stage is an inverting summer:
 
 ```
-V_out = −(100k/24k)·V_dac − (100k/47k)·(−2.5 V) = 5.32 V − 4.17·V_dac
+V_out = −(100k/23.2k)·V_dac − (100k/47k)·(−2.5 V) = 5.32 V − 4.31·V_dac
 ```
 
-code 0 → +5.3 V, code 4095 → −5.1 V, 1k series out. The polarity is the same
-as Marbles' own DAC stage (its calibration scale is negative), so the port
-keeps Marbles' calibration logic and only changes the resolution. The
-reference feeds both the DAC and the offset, so reference drift cancels.
+code 0 → +5.32 V, code 4095 → −5.45 V, 1k series out. The polarity is the
+same as Marbles' own DAC stage (its calibration scale is negative), so the
+port keeps Marbles' calibration logic and only changes the resolution. The
+reference feeds both the DAC and the offset, so the outputs scale with it:
+a reference 1 % high makes every voltage 1 % larger and leaves 0 V where it
+is, and the output calibration takes it out.
+
+The range has room for 1 % parts: ±1 % on the stage's resistors and on
+R42/R43 (±2 % on the −2.5 V) and 0.5 % on the reference move the negative
+end by up to 0.35 V with every tolerance at its worst (−5.11 V), and the
+1k into a 100k input takes 1 % more (−5.06 V). A Monte Carlo with uniform
+tolerances agrees: with 23.2k no module had an output short of ±5 V into
+100k, and the worst of the four still reaches −5.16 V in 99 % of modules;
+the first design's 24k (−5.10 V nominal) left about two modules in three
+with an output short of −5 V, 23.7k still one in fourteen.
 
 | Output | DAC | Section | Rdac | Rref | Rf | Rs |
 |---|---|---|---|---|---|---|
-| X1 | U7 A | U5A | R70 24k | R71 47k | R72 100k | R73 1k |
+| X1 | U7 A | U5A | R70 23.2k | R71 47k | R72 100k | R73 1k |
 | X2 | U7 B | U5B | R74 | R75 | R76 | R77 |
 | X3 | U8 A | U5C | R78 | R79 | R80 | R81 |
 | Y | U8 B | U5D | R82 | R83 | R84 | R85 |
 
-**12-bit vs 16-bit.** 12 bits over 10.4 V is 2.5 mV per step, 1/40 of a
+**12-bit vs 16-bit.** 12 bits over 10.8 V is 2.6 mV per step, 1/32 of a
 semitone, fine for the quantised outputs and for the Y output. If you want
 Marbles' 16-bit resolution, a DAC8564/DAC8565 (TSSOP-16, internal 2.5 V
 reference with REFOUT) drops into the same output stage; only U7/U8, the
@@ -204,8 +215,8 @@ SCK/SDI on the shared SPI bus, /LDAC shared. 100 n at each VDD (C39, C40).
   pitch CV. U10 QD is the spare line.
 - **Buttons**: U11 (74HC165, /PL from BTN_LOAD_F, CP from SCK_F, Q7 to
   MISO_F, DS and CE low). D0–D6 read the seven buttons, each with a 10k
-  pull-up to 3V3D_F (R100–R106); D7 is tied low. Buttons connect pads 2+3 to
-  pads 1+4 (GND_D_F).
+  pull-up to 3V3D_F (R100–R106); D7 is tied low. A pressed button joins
+  its pads 3+4 (the input) to pads 1+2 (GND_D_F).
 - C9–C11 100 n at U9–U11.
 
 The mux channels and the U10 outputs were reassigned during routing; the
@@ -497,13 +508,16 @@ on the panel-side silk; 470, 10k, 3k3 and 100n on the rear) and 76 on the
 main board, all on its top. `hardware/tools/value_labels.py` (copied from
 Plaitsy) put them in the first free spot beside each part where no other
 labelled part is nearer; the values come per board, since R80–R85 exist on
-both (100k / 1k / 24k / 47k on the main board, 470 on the faceplate). R33
+both (100k / 1k / 23k2 / 47k on the main board, 470 on the faceplate). R33
 and R39 have theirs under the Seed breakout (they are soldered before it
 goes on). R80 on the main board has no label: its only free spot sat
 against R78. R42 and R66 share a near-tie with R47 and R67, which have their
-own labels right beside them. 101 labels are at the designators' 45 mil,
-six at 38 and four at 32 mil (0.8 mm, readable but under the 1 mm many fabs
-recommend). Previews: `hardware/easyeda/marbles-labels-*.png`. The labels
+own labels right beside them. 98 labels are at the designators' 45 mil,
+seven at 38 and six at 32 mil (0.8 mm, readable but under the 1 mm many fabs
+recommend). When R70, R74, R78 and R82 went from 24k to 23k2 (2026-11-02)
+their longer labels moved to the next free spot by the same rules, three
+of them smaller; R47's 1k5 kept its place. Previews:
+`hardware/easyeda/marbles-labels-*.png`. The labels
 are in `Marblesy-routed.epro2`; run `value_labels.py` again only on an
 export that does not carry them yet.
 
@@ -549,6 +563,37 @@ and Alpha footprints for the TL074, MCP4922 and pot devices because the
 routed export carries them, and the rear side (R104 included) from the
 export as before.
 
+### Board fixes after the firmware review (2026-11-02)
+
+Made in `Marblesy-routed.epro2` by a script, every other record kept as
+EasyEDA wrote it, and in `circuit.py` / the exporter to match:
+
+- **D21, the LM4040, now fits TO-92 parts.** The footprint had pad 1 =
+  cathode (VREF), pad 2 = anode (GND), pad 3 open, the SOT-23 order. In
+  TO-92 the cathode is pin 2, the middle lead; TI's drawing puts the anode
+  on pin 3 and an older TI table on pin 1. Pads 1, 2, 3 are now GND, VREF,
+  GND, so the part works whichever is right and whichever way round it
+  goes in. VREF on the bottom layer now leaves its track from the left at
+  x 61.5 for pad 2, and pad 2 feeds C30 down the right of pad 1 (x 64.5);
+  the two segments into pad 1 are gone. The stale GND pours were cut
+  around the new track (the old channel stays cut) and the thermal spokes
+  moved from pad 2 to pads 1 and 3. The symbol's pins are renumbered
+  (K 2, A 3, NC 1) in all three copies in the project, and the schematic
+  ties pin 1 to GND. Boards made from the earlier export: put pin 2 in
+  pad 1 and pin 3 in pad 2, and cut pin 1 off (NC in TI's current
+  datasheet; check that your part has its anode on pin 3).
+- **R47 2.2k → 1.5k**: 0.53 mA into the reference, 0.28 mA left for the
+  LM4040 after the −2.5 V inverter's 0.25 mA (its minimum is 60–65 µA).
+- **R70, R74, R78, R82 24k → 23.2k** for the outputs' range (see CV
+  outputs above); `kDacInputResistor` in the firmware matches.
+
+Checked after the change: `easyeda_export.py` (0 schematic and 0 PCB
+problems against the routed project), `copper_audit.py` (every net in one
+piece, no shorts, no new clearance notes) and the routed schematic's own
+wiring against `circuit.py` (only the wires drawn in EasyEDA without a net
+name differ, as before). The pours are the script's, not EasyEDA's: rebuild
+them before the Gerbers (open items).
+
 ---
 
 ## BOM
@@ -569,18 +614,19 @@ export as before.
 | 2 | 74HC595 + DIP-16 socket | U9, U10 | Tayda / Mouser |
 | 1 | 74HC165 + DIP-16 socket | U11 | Tayda / Mouser |
 | 2 | 2N3904 | Q1, Q2 | Tayda |
-| 1 | LM4040-2.5 (TO-92) | D21 | Mouser |
+| 1 | LM4040-2.5 in TO-92 (TI LM4040xIZ-2.5; grade C or D is plenty) | D21 | Mouser |
 | 2 | BAT85 | D22, D23 | Tayda |
 | 7 | 100k 1 % | R21, R24, R27, R30, R33, R36, R39 | |
 | 7 | 27k 1 % | R22, R25, R28, R31, R34, R37, R40 | |
-| 4 | 24k 1 % | R70, R74, R78, R82 | |
+| 4 | 23.2k 1 % (E96) | R70, R74, R78, R82 | |
 | 4 | 47k 1 % | R71, R75, R79, R83 | |
 | 4 | 100k 1 % | R72, R76, R80, R84 | |
 | 2 | 100k | R50, R52 | |
 | 4 | 15k | R45, R61, R64, R67 | |
-| 15 | 10k | R42, R43, R46, R51, R53, R60, R63, R66, R9, R10, R100–R106 | |
+| 2 | 10k 1 % (the −2.5 V inverter: the outputs' range counts on it) | R42, R43 | |
+| 15 | 10k | R46, R51, R53, R60, R63, R66, R9, R10, R100–R106 | |
 | 14 | 1k | R23, R26, R29, R32, R35, R38, R41, R62, R65, R68, R73, R77, R81, R85 | |
-| 1 | 2.2k | R47 | |
+| 1 | 1.5k | R47 | |
 | 11 | 470 Ω | R80–R89, R1 (faceplate: one per LED button, four CV output LEDs) | |
 | 3 | 3.3k | R91–R93 (gate output LEDs) | |
 | 7 | 1 n C0G | C21–C27 | |
@@ -612,7 +658,8 @@ details. Where it ended up against the plan that stood here:
   input stage would give, so Marbles' calibration runs unchanged.
 - `Dac`: both MCP4922s every sample, then one LDAC pulse; Marbles' 16-bit
   codes rounded to 12 bits, the nominal calibration from the output stage
-  above. The DACs use their buffered VREF input (see the open items).
+  above. The DACs use their buffered VREF input (see the board fixes of
+  2026-11-02).
 - `Leds`/`Switches`: the 595 frame every 4 samples (yellow alternates
   red and green; the output LEDs get 16 brightness levels by PWM), the 165
   every millisecond. SPI1 runs at 6.25 MHz in mode 0 for all of it.
@@ -626,26 +673,8 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
 
 ## Open items
 
-- **LM4040 (D21) pinout: checked 2026-11-02, it does not fit TI's TO-92
-  parts.** The footprint has pad 1 = cathode (VREF), pad 2 (the middle) =
-  anode (GND), pad 3 open, which is the SOT-23 LM4040's order. TI's TO-92
-  LM4040-2.5 (AIZ/BIZ/CIZ/DIZ, datasheet SNOS633N, LP package) has pin 1
-  NC (or anode), pin 2 the cathode, pin 3 the anode, so as drawn the
-  cathode lands on GND whichever way it goes in: VREF then floats to about
-  2.6-2.7 V, or sits at a diode drop. Before ordering, move the nets so
-  that pad 2 is VREF and pad 3 is GND (pad 1 open); on boards already
-  made, bend the leads so pin 2 reaches pad 1 and pin 3 pad 2. Check the
-  datasheet of the exact part either way. Measure 2.50 V at C30 before
-  calibrating the outputs.
-- The reference's current: R47 (2.2k) feeds 0.36 mA, R42 takes 0.25 mA.
-  The firmware uses the DACs' buffered VREF inputs, which leaves the
-  LM4040 about 0.11 mA (its guaranteed minimum is 60-65 uA); unbuffered,
-  they would leave 53 uA. R47 = 1.5k (0.53 mA) gives margin if 3V3A runs
-  low.
-- Optional, for the CV outputs' negative end: the stage reaches
-  −5.10 V nominally, so with 1 % parts a few outputs may stop just short
-  of −5 V. 23.7k for R70, R74, R78, R82 gives −5.23 V (and set
-  `kDacInputResistor` in the firmware's `drivers/dac.h`).
+- Measure 2.50 V at C30 before calibrating the outputs (the LM4040; see
+  the board fixes of 2026-11-02).
 - Optional: nothing holds the SPI bus while the Seed is in its bootloader,
   so the LEDs (and the DACs) can change at random meanwhile. 100k pull-downs
   on SPI_SCK and LED_LATCH and pull-ups on DAC_CS1, DAC_CS2 and DAC_LDAC
@@ -659,6 +688,9 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
-- Import `Marblesy-routed.epro2` again (the corrected panel board and the
-  value labels are in it), run DRC on all three boards, and make the
-  Gerbers from that import.
+- Import `Marblesy-routed.epro2` again (the corrected panel board, the
+  value labels and the D21 / R47 / 23.2k fixes are in it), rebuild all
+  copper areas on the main board (its pours around D21 were cut by a
+  script), run DRC on all three boards, and make the Gerbers from that
+  import. Export it back over `Marblesy-routed.epro2` and rerun
+  `easyeda_export.py` and `copper_audit.py`.

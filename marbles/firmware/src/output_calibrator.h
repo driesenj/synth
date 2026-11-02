@@ -5,7 +5,7 @@
 // with the X SPREAD CV input, which Marbles' calibration has just set from
 // two exact voltages. For each output in turn, patched into X SPREAD, the
 // calibrator sets the code Marbles' factory test uses for each of its two
-// points (about +4.1 V and -1.8 V here), averages what X SPREAD reads at
+// points (about +4.1 V and -2.1 V here), averages what X SPREAD reads at
 // each, and fits that channel's dac_scale and dac_offset through the two.
 // A fit more than 10 % from the nominal output stage (the margin Marbles'
 // settings check allows) fails, which is also what an unpatched input

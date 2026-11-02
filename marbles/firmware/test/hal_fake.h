@@ -32,6 +32,7 @@ struct Parts {
   float dac_gain[4];   // MCP4922 gain error
   float dac_offset[4]; // MCP4922 offset, volts at its output
   float dac_rout[4];   // the 1k after each output stage
+  float inverter;      // R43 / R42's ratio, the -2.5 V all four outputs share
 };
 
 void Reset();  // everything back to power-up: no cables, knobs at noon

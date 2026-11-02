@@ -92,7 +92,7 @@ The outputs go one at a time, in panel order: Y, X1, X2, X3.
    output LED blinks: the output waiting to be measured.
 2. Patch that output into X SPREAD and press X range (or t range). The
    LEDs stop blinking while it is measured (under a second): the output
-   goes to about +4.1 V, then about −1.8 V.
+   goes to about +4.1 V, then about −2.1 V.
 3. The next output's LED blinks: move the cable and press again, until X3
    is done. The module then goes back to normal and saves.
 
@@ -107,14 +107,15 @@ The calibration is made for a usual 1V/oct input, 100 kΩ to ground: the
 measurement goes through the output's 1 kΩ resistor into X SPREAD's input,
 and the firmware takes that load into account. Into such an input the
 outputs are then right to within the MCP4922's linearity (typically a few
-mV, ±30 mV at worst) and its 2.5 mV steps; into a high-impedance input,
+mV, ±30 mV at worst) and its 2.6 mV steps; into a high-impedance input,
 such as a meter, they read about 1 % wide, as any output behind 1 kΩ.
 Uncalibrated, expect up to a few percent off, which is a semitone or more
 over five octaves on X when it drives pitch. The output stage reaches
-−5.10 V nominally, so with 1 % resistors a few outputs may not quite make
-−5 V (the X range's red setting, and Y); 23.7 kΩ for R70, R74, R78 and R82
-gives room to −5.23 V (then set `kDacInputResistor` in
-`src/marbles/drivers/dac.h` to match).
++5.32 V and −5.45 V nominally, with 23.2 kΩ for R70, R74, R78 and R82
+(`kDacInputResistor` in `src/marbles/drivers/dac.h` matches it), which
+leaves every output room for ±5 V into a 100k load with 1 % resistors.
+The first design's 24 kΩ stopped at −5.10 V, which 1 % parts and the load
+often pulled short of −5 V.
 
 ---
 
@@ -259,15 +260,15 @@ oversampling); the pots come through the 74HC4051 in the mux order of
 
 **CV outputs.** Two 12-bit MCP4922s instead of Marbles' 16-bit DAC8564.
 The firmware still computes Marbles' 16-bit codes, with Marbles'
-calibration format, and rounds them to 12 bits (2.5 mV steps, a
-thirty-third of a semitone). The defaults are Marblesy's nominal output stage
-(5.32 V − 4.17 · V_dac), not Marbles'. The four outputs are written every
+calibration format, and rounds them to 12 bits (2.6 mV steps, a
+thirty-second of a semitone). The defaults are Marblesy's nominal output stage
+(5.32 V − 4.31 · V_dac), not Marbles'. The four outputs are written every
 sample and updated together by LDAC; the gates follow 2 samples later, as
 on Marbles, so a CV is always out before its gate. The DACs use their
-buffered reference input: the LM4040 is fed 0.36 mA through R47 and the
-−2.5 V inverter takes 0.25 mA of it, so the unbuffered inputs' 60 µA would
-leave the reference below its minimum current. A smaller R47 (1.5 kΩ)
-would give more margin.
+buffered reference input, which takes nothing from the LM4040: R47 (1.5 kΩ)
+feeds it 0.53 mA, the −2.5 V inverter takes 0.25 mA of that, and the
+0.28 mA left is well above the reference's 60–65 µA minimum (the unbuffered
+inputs would take another 60 µA).
 
 **SPI bus.** The DACs, the 74HC595s and the 74HC165 share SPI1 at
 6.25 MHz, mode 0, 16-bit frames, driven from the I/O interrupt only: the
@@ -341,9 +342,11 @@ Things to check, in this order, before the module goes in the case:
 4. **Pots**: each knob turns the parameter printed above it, clockwise up.
    RATE at noon: t2 ticks at 2 Hz.
 5. **Calibrate** the inputs. Before calibrating the outputs, measure the
-   2.5 V reference at C30: it must read 2.50 V (see the LM4040 item in
-   `../docs/design.md`'s open items). Then calibrate the outputs and check
-   the octaves of X1 into a VCO with a tuner.
+   2.5 V reference at C30: it must read 2.50 V. A TO-92 LM4040 fits
+   either way round (pads 1 and 3 are both GND); anything else means a
+   part with another pinout or a bad joint (see `../docs/design.md`). Then
+   calibrate the outputs and check the octaves of X1 into a VCO with a
+   tuner.
 6. **Clock inputs**: patch a clock into t CLOCK: t2 follows it. Patch one
    into X CLOCK: X1..X3 change on its edges.
 
@@ -356,7 +359,7 @@ They need WSL (or Linux) with g++ and python3. From `marbles/firmware`:
 wsl.exe -e bash test/run_port_test.sh
 ```
 
-About half a minute, 3086 checks; a group name (`cv`, `dac`, `outcal`,
+About half a minute, 3118 checks; a group name (`cv`, `dac`, `outcal`,
 `leds`, `buttons`, `io`, `storage`, `settings`, `dsp`) runs one group. The
 firmware runs on a model of the board in `test/hal_fake.cc`, with jack
 voltages in and out and 1 % part tolerances. `test/gen_board_tables.py`
@@ -370,7 +373,7 @@ checks `hal.h`'s pot and CV orders and the pin constants in
 - **dac**: the MCP4922 words, the channel wiring, the nominal output stage.
 - **outcal**: the output calibration end to end with 1 % parts, through
   the output resistor into X SPREAD's input (within 2.5 mV into a 100k load
-  over −4..+5 V afterwards), a failed one, giving up, saving.
+  over −5..+5 V afterwards), a failed one, giving up, saving.
 - **leds**, **buttons**: the bit tables against `circuit.py`, yellow, the
   output LED levels, Marbles' button gestures, the null-pointer guard,
   buttons held at power-up, a 74HC165 that does not answer, the update

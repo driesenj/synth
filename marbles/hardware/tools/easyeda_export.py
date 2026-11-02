@@ -346,9 +346,9 @@ def lm4040_symbol():
     s.poly([(-6, 7), (-3, 9)])
     s.poly([(6, 0), (20, 0)])
     s.text(-14, -8, "2.5V", 6)
-    s.pin("1", "K", -20, 0, 0)     # cathode: the positive end
-    s.pin("2", "A", 20, 0, 180)
-    s.pin("3", "NC", 0, 17, 90)    # the TO-92's third lead, not connected
+    s.pin("2", "K", -20, 0, 0)     # cathode, the positive end: the TO-92's middle lead
+    s.pin("3", "A", 20, 0, 180)    # anode in TI's drawing (an older TI table says pin 1)
+    s.pin("1", "NC", 0, 17, 90)    # wired to GND like pin 3, so the part fits either way round
     return s
 
 
@@ -386,9 +386,9 @@ def button4_symbol():
 
 
 # ------------------------------------------------------------------ project
-R_NEW = {"470": ("LR1F470R", "470Ω"), "2k2": ("LR1F2K2", "2.2kΩ"), "3k3": ("LR1F3K3", "3.3kΩ"), "15k": ("LR1F15K", "15kΩ"),
-         "24k": ("LR1F24K", "24kΩ"), "27k": ("LR1F27K", "27kΩ"), "47k": ("LR1F47K", "47kΩ"),
-         "100k": ("LR1F100K", "100kΩ")}
+R_NEW = {"470": ("LR1F470R", "470Ω"), "1k5": ("LR1F1K5", "1.5kΩ"), "3k3": ("LR1F3K3", "3.3kΩ"),
+         "15k": ("LR1F15K", "15kΩ"), "23k2": ("LR1F23K2", "23.2kΩ"), "27k": ("LR1F27K", "27kΩ"),
+         "47k": ("LR1F47K", "47kΩ"), "100k": ("LR1F100K", "100kΩ")}
 C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF")}
 
 
@@ -508,7 +508,8 @@ class MProject(Project):
             ("MCP4922", mcp4922_symbol(), "MCP4922", "U?", dip14, "Dual 12-bit SPI DAC, external reference, DIP-14"),
             ("NPN", npn_symbol(), "2N3904", "Q?", fps["TO92"], "NPN transistor, TO-92 (E B C)"),
             ("LM4040", lm4040_symbol(), "LM4040-2.5", "D?", fps["TO92"],
-             "2.5 V shunt reference, TO-92: pad 1 = cathode (+), pad 2 = anode, pad 3 unused - check the datasheet of your package"),
+             "2.5 V shunt reference, TO-92: pin 2 is the cathode (+). TI's drawing puts the anode on pin 3, an "
+             "older TI table on pin 1, so pads 1 and 3 are both GND: it fits either way round"),
             ("LED_RG", ee.led_symbol(), "LED 3mm bicolour R/G CC", "D?", fps["LED3"],
              "3 mm bicolour LED, red/green, common cathode on the middle lead, 1.27 mm pitch"),
             ("LED_G", led_single_symbol(), "LED 3mm green", "D?", fps["LED2"], "3 mm LED, 2.54 mm pitch"),
@@ -724,18 +725,19 @@ def main_page_1(pr, parts):
     pg.stub_gnd(c["2"])
     # LM4040 reference
     x = 800
-    a = pg.place("R47", r_dev("2k2"), x, top + 20, 270, *V_TXT)
+    a = pg.place("R47", r_dev("1k5"), x, top + 20, 270, *V_TXT)
     d = pg.place("D21", "LM4040", x, top + 80, 270, *V_TXT)
     c = pg.place("C30", c_dev("100n"), x + 40, top + 80, 270, des=(8, -2, "LEFT_BOTTOM"), value_at=(8, 8, "LEFT_BOTTOM"))
     node = (x, top + 50)
     pg.wire([a["2"], node], "VREF")
-    pg.wire([node, d["1"]], "VREF")
+    pg.wire([node, d["2"]], "VREF")
     pg.wire([node, (x + 40, top + 50), c["1"]], "VREF")
     pg.wire([node, (x - 20, top + 50)], "VREF")
     pg.port(x - 20, top + 50, "VREF", "OUT", "left")
     pg.wire([a["1"], (x, top - 10), (x - 20, top - 10)], "3V3A")
     pg.port(x - 20, top - 10, "3V3A", "IN", "left")
-    pg.stub_gnd(d["2"])
+    pg.stub_gnd(d["3"])
+    pg.stub_gnd(d["1"], "left")
     pg.stub_gnd(c["2"])
 
     pg.text(40, Y(1090), "Net ports with the same name connect. The *_IN clock nets, CV_* nets, PROBE, MUX_*, SPI_*, "
@@ -766,7 +768,7 @@ def main_page_2(pr, parts):
         pg.port(x + 20, y + 65, "3V3A", "IN", "left")
         pg.stub_gnd(c["2"])
 
-    pg.text(560, Y(32), "Output stages: Vout = -(100k/24k) Vdac + (100k/47k) 2.5 V = +5.3 V (code 0) .. -5.1 V (code 4095), 1k out", 12)
+    pg.text(560, Y(32), "Output stages: Vout = -(100k/23.2k) Vdac + (100k/47k) 2.5 V = +5.3 V (code 0) .. -5.45 V (code 4095), 1k out", 12)
     for i, (name, dac, ch, u, sec) in enumerate(circuit.DAC_OUTS):
         ox, oy = 800, Y(155 + i * 170)
         ra, rb, rf, rs = (P[f"R{70 + 4 * i + k}"] for k in range(4))

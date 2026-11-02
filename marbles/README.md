@@ -17,8 +17,8 @@ placement, the BOM and the firmware plan.
 | EasyEDA Pro schematic | Done, four A3 pages (main board 2, faceplate 2), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Marbles.epro2` |
 | Panel layout (Marbles arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
 | PCB placement | Done, then reworked during routing; the generator now takes it from the routed project | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
-| PCB routing | Done by hand in EasyEDA Pro (2026-10-29, pots re-routed onto the drawn layout 2026-10-30), audited: every net complete, no shorts, 0.152 mm minimum clearance | `hardware/easyeda/Marblesy-routed.epro2` |
-| Firmware | Written 2026-11-02: Marbles' final firmware (January 2023) on libDaisy, plus an output calibration; builds for the Seed, 3086 host-test checks pass; not yet run on hardware | `firmware/`, see [firmware/README.md](firmware/README.md) |
+| PCB routing | Done by hand in EasyEDA Pro (2026-10-29, pots re-routed onto the drawn layout 2026-10-30), audited: every net complete, no shorts, 0.152 mm minimum clearance. 2026-11-02: D21's TO-92 pinout, R47 and the output stages' 23.2k fixed by script (see design notes); rebuild the copper areas before the Gerbers | `hardware/easyeda/Marblesy-routed.epro2` |
+| Firmware | Written 2026-11-02: Marbles' final firmware (January 2023) on libDaisy, plus an output calibration; builds for the Seed, 3118 host-test checks pass; not yet run on hardware | `firmware/`, see [firmware/README.md](firmware/README.md) |
 
 ## Layout
 

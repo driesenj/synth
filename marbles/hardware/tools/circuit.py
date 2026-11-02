@@ -5,7 +5,9 @@ Main board (MB): Daisy Seed on Rob Heel's seed_power_opamps breakout, seven
 TL074 CV input stages, two transistor clock inputs, three gate output
 stages, two MCP4922 DACs with their output stages, a 2.5 V reference.
 Faceplate board (FB): 16 Thonkiconn jacks, 8 Alpha pots into a 74HC4051,
-7 buttons read by a 74HC165, 7 LEDs (4 bicolour) driven by two 74HC595.
+7 buttons read by a 74HC165, 11 LEDs driven by two 74HC595 (the 7 inside
+the buttons, 4 of them bicolour, and the 4 output LEDs), 3 gate LEDs fed
+from the gate jacks.
 
 Net naming
   CV_*       jack tip of a CV input (FB: CV_*_F) -> MB input stage
@@ -106,8 +108,9 @@ def main_board_parts():
     parts.append(R("R46", "10k", "BIAS", "GND"))
     parts.append(C("C29", "1u", "BIAS", "GND"))
     # 2.5 V reference for the DACs and the output stages
-    parts.append(Part("D21", "LM4040", "LM4040-2.5", {"1": "VREF", "2": "GND"}))   # 1 = cathode (+), 2 = anode
-    parts.append(R("R47", "2k2", "3V3A", "VREF"))
+    # TO-92: 2 = cathode (+); the anode is 3 in TI's drawing, 1 in an older TI table: both GND, so it fits either way
+    parts.append(Part("D21", "LM4040", "LM4040-2.5", {"1": "GND", "2": "VREF", "3": "GND"}))
+    parts.append(R("R47", "1k5", "3V3A", "VREF"))     # 0.53 mA: 0.28 mA left for the LM4040 after R42
     parts.append(C("C30", "100n", "VREF", "GND"))
     # clock inputs: 100k into an NPN inverter, 10k pull-up, Schottky clamp for negative swings
     for k, name in enumerate(("T", "X")):
@@ -129,11 +132,11 @@ def main_board_parts():
         parts.append(Part(u, "MCP4922", "MCP4922", {
             "1": "3V3A", "3": cs, "4": "SPI_SCK", "5": "SPI_MOSI", "8": "DAC_LDAC", "9": "3V3A",
             "10": b, "11": "VREF", "12": "GND", "13": "VREF", "14": a}))
-    # DAC output stages: Vout = -(100k/24k) Vdac - (100k/47k)(-2.5 V) = 5.3 V ... -5.1 V
+    # DAC output stages: Vout = -(100k/23.2k) Vdac - (100k/47k)(-2.5 V) = 5.32 V ... -5.45 V (room for 1 % parts)
     for i, (name, dac, ch, u, s) in enumerate(DAC_OUTS):
         out, inm, inp = SECTION[s]
         tl[u].update({out: f"OA_{name}", inm: f"IN_{name}", inp: "GND"})
-        parts.append(R(f"R{70 + 4 * i}", "24k", f"DAC_{name}", f"IN_{name}"))
+        parts.append(R(f"R{70 + 4 * i}", "23k2", f"DAC_{name}", f"IN_{name}"))
         parts.append(R(f"R{71 + 4 * i}", "47k", "NEG_REF", f"IN_{name}"))
         parts.append(R(f"R{72 + 4 * i}", "100k", f"IN_{name}", f"OA_{name}"))
         parts.append(R(f"R{73 + 4 * i}", "1k", f"OA_{name}", name))
@@ -205,7 +208,8 @@ BUTTONS = [
     ("SW4", "X deja vu", "X_DEJAVU"), ("SW5", "X mode", "X_MODE"), ("SW6", "X range", "X_RANGE"),
     ("SW7", "X ext / scale", "X_EXT"),
 ]
-# ref, label, kind ("RG" bicolour common cathode, "G" single green), 74HC595 outputs (red, green)
+# ref, label, kind ("RG" red/green, "G" single green), 74HC595 outputs (red, green). The RG ones here all
+# sit in buttons: a two-lead LED between its two lines (bipolar, see above); LED_RG (3 leads) is unused
 LEDS = [
     ("D1", "t deja vu", "G", (None, "U9:15")), ("D2", "t mode", "RG", ("U9:1", "U9:2")),
     ("D3", "t range", "RG", ("U9:3", "U9:4")), ("D4", "X deja vu", "G", (None, "U9:5")),

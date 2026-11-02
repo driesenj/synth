@@ -55,18 +55,18 @@ const size_t kMaxDacBlockSize = 8;
 const size_t kNumDacChannels = 4;
 
 // Marblesy's output stage (circuit.py): an inverting summer, Rf 100k, from
-// the DAC through 24k and from -2.5 V (the inverted LM4040 reference)
+// the DAC through 23.2k and from -2.5 V (the inverted LM4040 reference)
 // through 47k; the MCP4922 runs from the same 2.5 V at gain 1. So
-// V = 2.5 V * (100k / 47k - 100k / 24k * code / 65536), and the nominal
+// V = 2.5 V * (100k / 47k - 100k / 23.2k * code / 65536), and the nominal
 // calibration, which the reference drops out of at 0 V, is:
 const float kDacReference = 2.5f;
-const float kDacInputResistor = 24.0e3f;
+const float kDacInputResistor = 23.2e3f;
 const float kDacOffsetResistor = 47.0e3f;
 const float kDacFeedbackResistor = 100.0e3f;
 const float kDacScale = -65536.0f * kDacInputResistor /
-    (kDacFeedbackResistor * kDacReference);  // codes per volt, -6291.5
+    (kDacFeedbackResistor * kDacReference);  // codes per volt, -6081.7
 const float kDacOffset =
-    65536.0f * kDacInputResistor / kDacOffsetResistor;  // 0 V, 33465.2
+    65536.0f * kDacInputResistor / kDacOffsetResistor;  // 0 V, 32349.7
 
 class Dac {
  public:
