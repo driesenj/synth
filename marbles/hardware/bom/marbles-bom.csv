@@ -14,7 +14,7 @@ Thonk,Mechanical,3,"Knob for a T18 shaft, about 15 mm across",,—,"RATE, DEJA V
 JLCPCB,PCBs,1,"Main board + faceplate board, 90.0 × 108.0 mm each, 2 layers, 1.6 mm",,—,from Marblesy-routed.epro2
 JLCPCB,PCBs,1,"Panel 91.3 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG",,—,the panel board in Marblesy-routed.epro2; ENIG makes the bands and the mushroom gold
 Mouser,Chips,2,MCP4922-E/P dual 12-bit DAC (DIP-14) + DIP-14 socket,"U7, U8",Main,
-Mouser,Semiconductors,1,"LM4040AIZ-2.5 2.5 V shunt reference (TO-92); grade B, C or D is plenty",D21,Main,
+Mouser,Semiconductors,1,"LM4040CIZ-2.5/NOPB 2.5 V shunt reference (TO-92); the BIZ grade works too, the AIZ is not needed (the output calibration takes out the error)",D21,Main,
 OSHWLab / JLCPCB,Modules,1,"Rob Heel's seed_power_opamps breakout, built: its own PCB and parts",U2,Main,"carries the Seed, the Eurorack power header and the audio stages"
 Tayda,Chips,1,74HC165 shift register (DIP-16) + DIP-16 socket,U11,Faceplate,
 Tayda,Chips,1,74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works,U1,Faceplate,

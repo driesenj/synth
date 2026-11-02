@@ -36,7 +36,7 @@ CSV: `hardware/bom/marbles-bom.csv` (everything) and `hardware/bom/marbles-bom-t
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
 | 2 | MCP4922-E/P dual 12-bit DAC (DIP-14) + DIP-14 socket | U7, U8 | Main |  |
-| 1 | LM4040AIZ-2.5 2.5 V shunt reference (TO-92); grade B, C or D is plenty | D21 | Main |  |
+| 1 | LM4040CIZ-2.5/NOPB 2.5 V shunt reference (TO-92); the BIZ grade works too, the AIZ is not needed (the output calibration takes out the error) | D21 | Main |  |
 
 ### OSHWLab / JLCPCB
 

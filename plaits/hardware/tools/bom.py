@@ -81,7 +81,7 @@ SEMIS = {"NPN": ("Tayda", "Semiconductors", "2N3904 NPN transistor (TO-92)"),
          "1N4148": ("Tayda", "Semiconductors", "1N4148 diode (DO-35)"),
          "D4148": ("Tayda", "Semiconductors", "1N4148 diode (DO-35)"),
          "D5819": ("Tayda", "Semiconductors", "1N5819 Schottky diode (DO-41)"),
-         "LM4040": ("Mouser", "Semiconductors", "LM4040AIZ-2.5 2.5 V shunt reference (TO-92); grade B, C or D is plenty"),
+         "LM4040": ("Mouser", "Semiconductors", "LM4040CIZ-2.5/NOPB 2.5 V shunt reference (TO-92); the BIZ grade works too, the AIZ is not needed (the output calibration takes out the error)"),
          "LED_G": ("Thonk", "Panel parts", "3 mm LED, green, 2 leads"),
          "LED_RG": ("Tayda", "Panel parts", "3 mm bicolour LED, red/green, common cathode, 3 leads (Thonk has no 3-lead ones)")}
 
