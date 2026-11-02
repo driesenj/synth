@@ -70,7 +70,7 @@ circuit values.
   jack rows of the case line up.
 - **Controls:** the encoders and buttons stand on the midpoints between
   jack columns 1–2 and 4–5 and on the centre column.
-- **Frame:** title, subtitle, band, rule and maker are at the house spots.
+- **Frame:** title, subtitle, band, rule and mushroom mark are at the house spots.
 - `python panel.py` reports no gap under 1 mm between knobs, nuts, rings,
   LEDs, the window and the edges.
 

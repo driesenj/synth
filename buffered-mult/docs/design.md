@@ -232,8 +232,9 @@ a problem.
 (x 7.5). The title keeps its spot (x 12, baseline 7.4, 5.2 serif), which
 leaves 7.5 mm before the edge: three letters, hence "Six". The subtitle
 ("buff mult") cannot sit right of it, so it moves under the dotted band.
-"Seedable Instruments" is 23 mm at 2.2, so the maker line says "Seedable",
-on its usual baseline, 0.5 mm above the bottom screw head.
+The mushroom mark at the foot (2026-11-02, it replaced the maker line
+"Seedable") cannot sit at the centre, where the bottom screw is: its left
+edge lines up with the title at x 12, right of the screw head.
 
 ---
 
@@ -322,6 +323,7 @@ Settled on 2026-10-31:
 
 3. **The panel as drawn:** the name "Six", "buff mult" under the band,
    the maker "Seedable", one LED per group (the user, approving the panel).
+   Renamed **Fir** with the mushroom mark on 2026-11-02 (the Garden names).
 4. **Board stack:** the jacks on their sides, four headers, no standoffs
    (see [Boards](#boards)).
 

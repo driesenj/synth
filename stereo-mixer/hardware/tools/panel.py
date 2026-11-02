@@ -21,6 +21,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("mixer_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("mixer_mushroom", os.path.join(HERE, "mushroom.py"))
+mushroom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mushroom)
 
 PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 28HP
 HP = circuit.HP
@@ -120,7 +123,7 @@ ART = {
     "knob": {"small": 5.0, "mid": 6.0},       # radii, mm: channel / RETURN / DRUMS knobs, MASTER
     "scale": {"small": 6.0, "mid": 7.5},
     "cap_led": 2.75, "nut": 4.0, "ring": 4.35,
-    "title": "Mixer", "subtitle": "Stereo voice mixer", "maker": "Seedable Instruments",
+    "title": "Mycelium", "subtitle": "Stereo mixer",
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
     "label": 1.9,                             # knob, button and jack labels
 }
@@ -198,12 +201,12 @@ def layout(pos):
     def text(x, y, s, size, anchor="middle"):
         out.append(("text", x, y, s, size, anchor))
 
-    # title band, maker line
+    # title band, rule and mushroom mark
     out.append(("serif", 12.0, 7.4, A["title"], 5.2, "start"))     # the same spots on every module's panel
     text(W - 12.0, 6.6, A["subtitle"], 2.1, "end")
     out.append(("dots", [(3, 9.6), (W - 3, 9.6)]))
     out.append(("dots", [(3, 10.6), (W - 3, 10.6)]))
-    text(W / 2, 122.4, A["maker"], 2.2)
+    out.append(("gold", mushroom.polygons(W)))     # the mushroom mark under the rule, bare gold
     out.append(("line", [(3, 118.6), (W - 3, 118.6)], 0.3))
     # channel numbers over the columns; the stereo pair gets a bracket and STEREO in its empty PAN row
     for k in range(1, 9):
@@ -311,6 +314,8 @@ def write_artwork(feats, path):
             _, x, y, t, size = item
             s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="middle" '
                      f'transform="rotate(-90 {x:.2f} {y:.2f})">{t}</text>')
+        elif kind == "gold":
+            s.append(f'<path d="{mushroom.svg_path(item[1])}" class="copper"/>')
         elif kind == "line":
             _, pts, w = item
             s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts)

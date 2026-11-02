@@ -1,5 +1,19 @@
 # Plaitsy routing audit, 2026-11-01
 
+## Panel name and mark, patched into the master on 2026-11-02
+
+The panel board in `Plaits-routed.epro2` now carries the Garden name:
+**Orchid** (was "Plaits"), and the function line reads "Macro oscillator".
+The maker line "Seedable Instruments" is gone; in its place is the gold
+mushroom mark, 7 polygons, each a FILL on top copper (layer 1) and the
+same FILL on the top mask (layer 5). Nothing else in the file changed: the
+two other boards and every other panel record are the same line for line.
+The panel's drawing now equals the generator's exactly, the copper audit's
+output is unchanged, and `easyeda_export.py` reports 0 problems.
+
+Import the file again before making Gerbers: the gold mark has no net, like
+the output bands, so DRC treats it the same way.
+
 ## Third export, `ProPrj_SI - Plaits_2026-11-01(3).epro2`: clean
 
 Pours rebuilt (four GND_F islands on the faceplate now, all reached) and

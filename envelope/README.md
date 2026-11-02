@@ -13,6 +13,9 @@ changes over the kit:
 Two stacked boards (faceplate + main board), built the Marblesy way, with
 Thonk panel parts.
 
+On the panel it is **Bloom**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/envy-panel-preview.png)
 
 ## Status

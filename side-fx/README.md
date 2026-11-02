@@ -8,6 +8,9 @@ presets on a microSD card; the clone keeps them in the Seed's own flash.
 The clone is 14HP Eurorack like the original and built the Marblesy way: two stacked PCBs, Thonk panel parts, and the Daisy Seed on
 Rob Heel's seed_power_opamps breakout.
 
+On the panel it is **Moss**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/side-fx-panel-preview.png)
 
 ## Status
@@ -28,7 +31,7 @@ The arrangement follows the original: four send buttons across the top,
 the screen on the left, and four soft knobs in a zigzag on the right, each
 named by the display row beside it. The red SHIFT button sits at the top of
 the knob stack, and ten jacks are in two rows. House style otherwise (title
-band, gold output band, maker line). RYK's white block stack behind the
+band, gold output band, mushroom mark). RYK's white block stack behind the
 knobs is bare gold copper here.
 
 | Control | Part | Notes |

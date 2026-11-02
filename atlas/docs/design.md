@@ -231,7 +231,7 @@ solder them by hand (SOIC, 1.27 mm).
 | Lesson | From | Here |
 |---|---|---|
 | Panel first, compared with the original, before any PCB | Marblesy's re-layout | Panel agreed before the netlist and the placement |
-| One panel frame on every module | Marblesy/mixer drift | Title, subtitle, band, rule and maker at the skill's numbers |
+| One panel frame on every module | Marblesy/mixer drift | Title, subtitle, band, rule and mark at the skill's numbers |
 | Rows of identical controls labelled once | Mixer panel (option D) | Column words once above row 1, numerals name the rows, only switch positions per switch |
 | Give a hole table, not just a picture | Marblesy panel-board confusion | `atlas-panel-holes.csv`: every hole in panel coordinates next to its footprint origin |
 | Alpha shaft 4.0 mm from the PTV09A-frame origin; Alpha footprint, not PTV09A | Pot shaft fix (2026-10-30) | `POT_SHAFT = 4.0`; FREQ and RES pins down, SCAN pins up (it sits 7 mm from the board edge) |

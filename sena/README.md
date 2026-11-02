@@ -11,6 +11,9 @@ Built like Marblesy and the stereo mixer: panel first, one netlist in
 Python, generated panel files and EasyEDA project. Two boards, SMD on
 the rear.
 
+On the panel it is **Nettle**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/senay-panel-preview.png)
 
 Circuit, values, lessons applied, calibration and BOM: [docs/design.md](docs/design.md).

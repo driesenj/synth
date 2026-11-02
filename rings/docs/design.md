@@ -118,7 +118,7 @@ FREQUENCY and STRUCTURE labels down to their attenuverters (the medium
 knobs' sit right under their labels) and from each attenuverter to its CV
 jack; STRUM, V/OCT and IN over their jacks; ODD and EVEN knocked out of the
 copper band with a dotted line between the jacks for the normal; the rule
-and the maker line.
+and the gold mushroom mark (the maker line until 2026-11-02).
 
 `hardware/panel/rings-panel-vs-original.png` puts the draft beside a
 render of `rings.ai` (cc-by-sa 3.0, Mutable Instruments), with the six rows
@@ -136,7 +136,7 @@ caps, LEDs, icons and the knob labels; gaps under 1 mm): nothing flagged.
   plain tactiles, 5.2 mm holes). There was no room left for Rings' short
   dashes between button and LED.
 - Black panel, white silk, gold output band, the house title band and
-  maker line; Rings' mandalas around the big knobs became two dotted rings,
+  mushroom mark; Rings' mandalas around the big knobs became two dotted rings,
   and the icons are redrawn.
 - Mounting slots instead of round holes.
 

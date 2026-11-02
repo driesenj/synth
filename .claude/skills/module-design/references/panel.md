@@ -21,8 +21,8 @@ letters beside them, small mode/range buttons close to their knobs with
 their three-state labels stacked beside them in LED colour order, CV jacks
 in a row with dotted guides down from each knob's label, the clock and bias
 jacks at the sides, outputs in a bottom row on a contrasting band with an
-LED left of each label, title top-left, function name top-right, maker
-bottom centre. Compare the draft with a photo of the original before
+LED left of each label, title top-left, function name top-right, the
+mushroom mark bottom centre. Compare the draft with a photo of the original before
 touching the PCB.
 
 The frame is the same on every module (the user asked for it; keep it in
@@ -34,9 +34,47 @@ both `panel.py` and `panel_pcb.py`), in panel mm from the top-left:
 | Subtitle (function) | 2.1, anchor end at x W − 12.0, baseline 6.6 |
 | Dotted band | two dotted lines, y 9.6 and 10.6, x 3 to W − 3 |
 | Bottom rule | 0.3 mm line, y 118.6, x 3 to W − 3 |
-| Maker | 2.2, centred at x W / 2, baseline 122.4 |
+| Mark | the gold mushroom from `mushroom.py`: 4.1 mm tall, 1.6 mm under the rule's lower edge (118.75), centred; on 4HP its left edge at x 12, right of the bottom screw |
 
 Panel content goes between the band and the rule (y 10.6–118.6).
+
+## Names and the mark (the user's pick, 2026-11-02)
+
+The panels carry the voice case's Garden names; the folders and project
+names (Marblesy, Plaitsy, Veilsy, ...) stay as they are. The function line
+says plainly what the module does.
+
+| Folder | Panel | Function line |
+|---|---|---|
+| plaits | Orchid | Macro oscillator |
+| marbles | Spore | Random sampler |
+| stereo-mixer | Mycelium | Stereo mixer |
+| side-fx | Moss | Quad effects |
+| vca | Stoma | Quad VCA |
+| envelope | Bloom | Quad envelope |
+| sena | Nettle | Quad VCO + noise |
+| atlas | Hedge | Quad filter |
+| clock | Cricket | Clock + LFO |
+| attenuverter | Prune | 3× atten |
+| buffered-mult | Fir | Buff mult |
+| sample-hold | Rain | S&H + noise |
+| rings | Reed | Resonator |
+| 8-step-sequencer | Furrow | Dual 8-step |
+
+A new module gets a plant, garden or nature name that hints at what it
+does; propose it to the user. Check the width: the title (Georgia italic
+5.2) must end 1.5 mm before the function line, and on 4HP only three
+narrow letters fit (Fir, Six).
+
+The mark replaced the maker line "Seedable Instruments". It is bare ENIG
+gold, copper under a solder-mask opening of the same shape, like the
+output bands; its threads are 0.24 mm wide, above the fab's copper
+minimum. `mushroom.py` sits in every module's tools folder (copy it, do
+not import across modules). `layout()` adds `("gold", mushroom.polygons(W))`;
+the artwork draws it as one path with class `copper`, and `panel_pcb.py`
+writes each polygon as a FILL on layer 1 and the same FILL on layer 5.
+The polygons overlap where the threads meet the stem, so each gets its
+own FILL.
 
 ## Rows of identical controls (the stereo mixer)
 

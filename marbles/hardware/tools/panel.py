@@ -24,6 +24,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("marbles_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("marbles_mushroom", os.path.join(HERE, "mushroom.py"))
+mushroom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mushroom)
 
 PANEL_W, PANEL_H = 91.3, 128.5          # Eurorack 3U, 18HP
 BOARD_X0 = (PANEL_W - circuit.BOARD_W) / 2
@@ -127,7 +130,7 @@ ART = {
     "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227",
     "knob_big": 7.5, "scale_big": 9.0, "knob_small": 5.0, "scale_small": 6.3,   # radii, mm
     "cap": 2.9, "cap_led": 2.75, "nut": 4.0, "led": 1.6,
-    "title": "Marbles", "subtitle": "Random sampler", "maker": "Seedable Instruments",
+    "title": "Spore", "subtitle": "Random sampler",
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
 }
 BIG_POTS = {"RV1", "RV4", "RV6"}
@@ -197,12 +200,12 @@ def write_artwork(feats, path):
 
     # -- silkscreen
     s.append('<g id="silk">')
-    # title, band, rule and maker: the same spots on every module's panel
+    # title, band, rule and mushroom mark: the same spots on every module's panel
     text(12.0, 7.4, A["title"], 5.2, anchor="start", cls="serif")            # between the screw and the centre
     text(W - 12.0, 6.6, A["subtitle"], 2.1, anchor="end")
     s.append(f'<line x1="3" y1="9.6" x2="{W - 3}" y2="9.6" class="silk dots"/>')   # band under the title
     s.append(f'<line x1="3" y1="10.6" x2="{W - 3}" y2="10.6" class="silk dots"/>')
-    text(W / 2, 122.4, A["maker"], 2.2)
+    s.append(f'<path d="{mushroom.svg_path(mushroom.polygons(W))}" class="copper"/>')   # the mushroom mark, bare gold
     s.append(f'<line x1="3" y1="118.6" x2="{W - 3}" y2="118.6" class="silk" stroke-width="0.3"/>')
     text(pos["SW1"][2] - A["cap_led"] - 4.6, pos["SW1"][3] + 2.2, "t", 7.0, cls="serif")
     text(pos["SW4"][2] + A["cap_led"] + 4.6, pos["SW4"][3] + 2.2, "X", 7.0, cls="serif")

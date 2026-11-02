@@ -211,9 +211,9 @@ join the faceplate's ground to the main board's.
   panel PCB the words are STRINGs at angle 90; check after import that
   they read bottom to top (if not, the angle is 270).
 - **Style:** the Marblesy / Plaitsy one: black mask, white silk, title
-  "Mixer" in serif italic, subtitle top right, dotted double rule, scale
+  "Mycelium" (was "Mixer") in serif italic, subtitle top right, dotted double rule, scale
   arcs on every knob, rings round the buttons, outputs on bare ENIG
-  copper, "Seedable Instruments" at the bottom.
+  copper, the gold mushroom mark at the bottom (was "Seedable Instruments").
 - **Holes:** 7.5 mm pots, 6.5 mm jacks and buttons, 5.5 × 3.2 mm mounting
   slots. Knobs: up to about 11 mm across in the channel strips (13.5 mm
   pitch), 12 mm for MASTER.

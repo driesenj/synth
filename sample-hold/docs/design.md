@@ -300,8 +300,8 @@ Measured: decoupling caps 2.5–4.7 mm from their supply pins. Ratsnest
 
 ## Panel
 
-10HP, 50.5 × 128.5 mm, the house frame (title, band, rule, maker at the
-same spots as on every module). One column per control: RATE over the
+10HP, 50.5 × 128.5 mm, the house frame (title, band, rule, mushroom mark
+at the same spots as on every module). One column per control: RATE over the
 clock LED and CLOCK, LEVEL over IN, SLEW over SLEW IN, joined by dotted
 guides. The six outputs share one gold block in the two lower rows, which
 sit at Marblesy's and Side FXy's jack heights so the rows line up in the

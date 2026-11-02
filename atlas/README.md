@@ -11,6 +11,9 @@ same chips and Sound Semiconductor's own filter app note (AN701). It is
 built the Marblesy way: generated panel, netlist and EasyEDA project, Thonk
 parts where Thonk has them.
 
+On the panel it is **Hedge**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/atlas-panel-preview.png)
 
 ## Status
@@ -30,8 +33,8 @@ the headers are through-hole.
 The original's arrangement (Vostok's manual, figure "Atlas_Ref"): per row the
 four jacks on the left with the mode switch under them, the channel numeral,
 then FREQ and RES with the FM2/RES switch between them; the scanner below a
-dotted divider. House style otherwise: the same title band, rule and maker
-line as every other module, outputs on gold.
+dotted divider. House style otherwise: the same title band, rule and mushroom
+mark as every other module, outputs on gold.
 
 | Control | Part | Notes |
 |---|---|---|

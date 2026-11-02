@@ -11,8 +11,8 @@ Panel-facing parts sit on the board's bottom layer.
 
 4HP leaves room for one mounting slot per rail and no room for the frame's
 subtitle beside the title: the title keeps its spot (x 12, baseline 7.4,
-5.2 serif), the subtitle moves under the dotted band, and the maker line
-is shortened to fit 20 mm.
+5.2 serif), the subtitle moves under the dotted band, and the mushroom
+mark's left edge lines up with the title, right of the bottom screw.
 Run from buffered-mult/hardware/tools:  python panel.py
 """
 import csv
@@ -24,6 +24,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("six_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("six_mushroom", os.path.join(HERE, "mushroom.py"))
+mushroom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mushroom)
 
 PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 4HP
 HOLE = {"jack": 6.5, "led": 3.2}
@@ -113,8 +116,7 @@ ART = {
     "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227",
     "green": "#57d163", "red": "#e04848",
     "nut": 4.0, "led": 1.75,
-    "title": "Six", "subtitle": "buff mult",  # the title starts at x 12 like everywhere: 3 letters fit in 4HP
-    "maker": "Seedable",                      # "Seedable Instruments" is 23 mm at 2.2
+    "title": "Fir", "subtitle": "Buff mult",  # the title starts at x 12 like everywhere: 3 letters fit in 4HP
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
     "label": 1.9,
 }
@@ -165,12 +167,12 @@ def layout(pos):
     def text(x, y, s, size, anchor="middle"):
         out.append(("text", x, y, s, size, anchor))
 
-    # title band, maker line: the same spots as on every module; the subtitle under the band
+    # title band, rule and mushroom mark: the same spots as on every module; the subtitle under the band
     out.append(("serif", 12.0, 7.4, A["title"], 5.2, "start"))
     out.append(("dots", [(3, 9.6), (W - 3, 9.6)]))
     out.append(("dots", [(3, 10.6), (W - 3, 10.6)]))
     text(W / 2, SUBTITLE_Y, A["subtitle"], 2.1)
-    text(W / 2, 122.4, A["maker"], 2.2)
+    out.append(("gold", mushroom.polygons(W)))     # the mushroom mark under the rule, bare gold
     out.append(("line", [(3, 118.6), (W - 3, 118.6)], 0.3))
     # the rows' words, once each in the left margin on a bracket as tall as the row
     for word, y, h in row_words(pos):
@@ -237,6 +239,8 @@ def write_artwork(feats, path):
             _, x, y, t, size = item
             s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="middle" '
                      f'transform="rotate(-90 {x:.2f} {y:.2f})">{t}</text>')
+        elif kind == "gold":
+            s.append(f'<path d="{mushroom.svg_path(item[1])}" class="copper"/>')
         elif kind == "line":
             _, pts, w = item
             s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts)

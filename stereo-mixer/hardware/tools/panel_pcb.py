@@ -44,6 +44,7 @@ class PanelBoard:
     def __init__(self):
         self.W, self.H = panel.PANEL_W, panel.PANEL_H
         self.silk_lines, self.strings, self.holes, self.slots, self.copper, self.arcs = [], [], [], [], [], []
+        self.gold = []        # the mushroom mark's polygons, PCB frame
         self.placed = []      # so the project writer can count parts (none)
         self.build()
 
@@ -119,6 +120,8 @@ class PanelBoard:
             elif kind == "vtext":
                 _, x, y, s, size = item
                 self.vtext(x, y, s, size)
+            elif kind == "gold":
+                self.gold += [[self.P(x, y) for x, y in poly] for poly in item[1]]
             elif kind == "line":
                 self.line(item[1], item[2])
             elif kind == "dots":
@@ -182,6 +185,12 @@ class PanelBoard:
         for x, y, w, h, rx, cuts in self.copper:  # (x, y) is the band's top-left in the PCB frame
             for layer in (1, 5):                  # top copper, top solder mask opening; mask stays on the clearances
                 fill(layer, rounded(x, y, w, h, rx), *(cutout(*c) for c in cuts))
+        for poly in self.gold:                    # the mushroom mark: top copper under a mask opening (ENIG)
+            path = [mil(poly[0][0]), mil(poly[0][1])]
+            for x, y in poly[1:]:
+                path += ["L", mil(x), mil(y)]
+            for layer in (1, 5):
+                fill(layer, path)
         d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 11, "width": 10,
                                 "path": ["R", 0, mil(self.H), mil(self.W), mil(self.H), 0, 0], "locked": False,
                                 "zIndex": d.zi(), "polyType": "BOARD_OUTLINE"})
@@ -218,6 +227,8 @@ class PanelBoard:
             for cx, cy, r in cuts:
                 X, Y = P(cx, cy)
                 dr.ellipse([X - r * scale, Y - r * scale, X + r * scale, Y + r * scale], fill="#141414")
+        for poly in self.gold:
+            dr.polygon([P(*p) for p in poly], fill="#c9a227")
         for pts, w in self.silk_lines:
             dr.line([P(*p) for p in pts], fill="#f0efe9", width=max(1, int(w * scale)), joint="curve")
         for p0, sweep, p1, w, (cx, cy, r, b0, b1) in self.arcs:   # panel frame, from 12 o'clock

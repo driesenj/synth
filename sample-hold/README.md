@@ -7,6 +7,9 @@ the MKI board leaves unused. 10HP Eurorack on one PCB, like the original;
 otherwise built the Marblesy way: Thonk panel parts, generated panel and
 EasyEDA project.
 
+On the panel it is **Rain**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/sample-hold-panel-preview.png)
 
 ## Status

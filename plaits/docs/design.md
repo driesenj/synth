@@ -251,7 +251,8 @@ tints the red column); scale arcs with ticks on all seven knobs, labels
 under the four main ones, − and + beside the attenuverters; dotted guides
 TIMBRE → attenuverter → jack, FM → jack, MORPH → attenuverter → jack;
 jack labels, TRIG ·· LEVEL; the copper band with OUT and AUX knocked out;
-a thin line and the maker name at the bottom.
+a thin line and the gold mushroom mark at the bottom (the maker name
+until 2026-11-02).
 
 Groups: `#tint` and `#mockup` are preview only (bank colour, knobs, nuts,
 caps, LEDs); `#silk`, `#copper` and `#holes` are the three layers the panel

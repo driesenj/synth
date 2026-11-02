@@ -17,6 +17,9 @@ differs from Veils:
 
 Built the Marblesy way, with Thonk panel parts.
 
+On the panel it is **Stoma**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/veilsy-panel-preview.png)
 
 ## Status

@@ -7,6 +7,9 @@ under load, and a shorted output leaves the others alone. A bicolour LED
 per group shows the signal. All analog, all through-hole (2 × TL074), on
 two stacked PCBs with Thonk panel parts.
 
+On the panel it is **Fir**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/six-panel-preview.png)
 
 ## Status

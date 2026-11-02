@@ -20,6 +20,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("veilsy_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("vca_mushroom", os.path.join(HERE, "mushroom.py"))
+mushroom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mushroom)
 
 PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 12HP
 HP = circuit.HP
@@ -115,7 +118,7 @@ ART = {
     "knob": 5.0, "scale": 5.8,                # radii, mm: LEVEL, Offset's knobs, the scale 0.2 in (13.3 mm columns)
     "knob_s": 4.0, "scale_s": 5.0,            # CV AMT and RESPONSE, small knobs
     "nut": 4.0, "led": 1.75,
-    "title": "Veilsy", "subtitle": "Quad VCA", "maker": "Seedable Instruments",
+    "title": "Stoma", "subtitle": "Quad VCA",
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
     "label": 1.9,                             # row words, channel numbers are 3.0
 }
@@ -194,12 +197,12 @@ def layout(pos):
     def text(x, y, s, size, anchor="middle"):
         out.append(("text", x, y, s, size, anchor))
 
-    # title band, maker line
+    # title band, rule and mushroom mark
     out.append(("serif", 12.0, 7.4, A["title"], 5.2, "start"))     # the same spots on every module's panel
     text(W - 12.0, 6.6, A["subtitle"], 2.1, "end")
     out.append(("dots", [(3, 9.6), (W - 3, 9.6)]))
     out.append(("dots", [(3, 10.6), (W - 3, 10.6)]))
-    text(W / 2, 122.4, A["maker"], 2.2)
+    out.append(("gold", mushroom.polygons(W)))     # the mushroom mark under the rule, bare gold
     out.append(("line", [(3, 118.6), (W - 3, 118.6)], 0.3))
     # channel numbers over the columns
     for k, x in enumerate(circuit.CH_X, start=1):
@@ -284,6 +287,8 @@ def write_artwork(feats, path):
             _, x, y, t, size = item
             s.append(f'<text x="{x:.2f}" y="{y:.2f}" font-size="{size}" text-anchor="middle" '
                      f'transform="rotate(-90 {x:.2f} {y:.2f})">{t}</text>')
+        elif kind == "gold":
+            s.append(f'<path d="{mushroom.svg_path(item[1])}" class="copper"/>')
         elif kind == "line":
             _, pts, w = item
             s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts)

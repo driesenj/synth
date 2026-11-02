@@ -6,7 +6,8 @@ triangle, saw, square, pump, S&H, smooth random). It works like ALM's
 Pamela's PRO Workout, but runs its own firmware. CLOCK and RESET in, RUN
 and RESET out, three CV inputs, tap tempo. It shares the screen, encoders
 and shift-register chain with Side FXy, and the DAC output stage with
-Marblesy. "Tempo" is a working title.
+Marblesy. On the panel it is **Cricket**, one of the voice case's Garden
+names (2026-11-02).
 
 ![panel](hardware/panel/tempo-panel-preview.png)
 

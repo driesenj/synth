@@ -442,7 +442,7 @@ and the knob caps 3.3 mm.
 | Lesson | From | Here |
 |---|---|---|
 | Panel first, picture before PCB | Marblesy's re-layout | Panel approved before the netlist |
-| One panel frame everywhere | Marblesy / mixer drift | Title, subtitle, band, rule and maker at the skill's numbers |
+| One panel frame everywhere | Marblesy / mixer drift | Title, subtitle, band, rule and mark at the skill's numbers |
 | Rows labelled once, on brackets | Mixer panel (option D) | Six row words, numerals over the columns |
 | Count the room before promising a layout | Plaitsy, Senay | `board_check()` for the panel parts' pads; the density estimate above |
 | Alpha shaft 4.0 mm from the PTV09A-frame origin | Pot shaft fix (2026-10-30) | `POT_SHAFT = 4.0`, pins down |

@@ -22,6 +22,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("rings_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("rings_mushroom", os.path.join(HERE, "mushroom.py"))
+mushroom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mushroom)
 
 PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 14HP
 HP = circuit.HP
@@ -122,7 +125,7 @@ ART = {
     "scale": {"big": 9.0, "mid": 7.5},
     "ring": (10.9, 12.3),                             # the two dotted rings round the big knobs
     "cap_led": 2.75, "nut": 4.0, "led": 1.6, "icon": 1.5,
-    "title": "Rings", "subtitle": "Resonator", "maker": "Seedable Instruments",
+    "title": "Reed", "subtitle": "Resonator",
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
 }
 SIZE = {ref: size for ref, _, size in circuit.POTS}
@@ -222,12 +225,12 @@ def layout(pos):
     def text(x, y, s, size, anchor="middle"):
         out.append(("text", x, y, s, size, anchor))
 
-    # title band, maker line: the same spots on every module's panel
+    # title band, rule and mushroom mark: the same spots on every module's panel
     out.append(("serif", 12.0, 7.4, A["title"], 5.2, "start"))
     text(W - 12.0, 6.6, A["subtitle"], 2.1, "end")
     out.append(("dots", [(3, 9.6), (W - 3, 9.6)]))
     out.append(("dots", [(3, 10.6), (W - 3, 10.6)]))
-    text(W / 2, 122.4, A["maker"], 2.2)
+    out.append(("gold", mushroom.polygons(W)))     # the mushroom mark under the rule, bare gold
     out.append(("line", [(3, 118.6), (W - 3, 118.6)], 0.3))
     # the polyphony and resonator icons beside the LEDs
     for x, y, g, c in icon_xy(pos):
@@ -352,6 +355,8 @@ def write_artwork(feats, path):
         elif kind == "serif":
             _, x, y, t, size, anchor = item
             text(x, y, t, size, anchor, cls="serif")
+        elif kind == "gold":
+            s.append(f'<path d="{mushroom.svg_path(item[1])}" class="copper"/>')
         elif kind == "line":
             _, pts, w = item
             polyline(pts, "silk", f' stroke-width="{w}"')

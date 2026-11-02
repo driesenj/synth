@@ -22,6 +22,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("atlas_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("atlas_mushroom", os.path.join(HERE, "mushroom.py"))
+mushroom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mushroom)
 
 PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 16HP
 HP = circuit.HP
@@ -129,7 +132,7 @@ def write_svg(feats, path):
 ART = {
     "panel": "#121212", "silk": "#f0efe9", "copper": "#c9a227",
     "knob": 5.0, "scale": 6.0, "nut": 4.0, "toggle_nut": 4.3,
-    "title": "Atlas", "subtitle": "Quad multimode filter", "maker": "Seedable Instruments",
+    "title": "Hedge", "subtitle": "Quad filter",
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
     "label": 1.9,                             # column headers and jack labels
     "mark": 1.55,                             # switch positions
@@ -200,12 +203,12 @@ def layout(pos):
     def text(x, y, s, size, anchor="middle"):
         out.append(("text", x, y, s, size, anchor))
 
-    # title band, maker line: the same spots on every module's panel
+    # title band, rule and mushroom mark: the same spots on every module's panel
     out.append(("serif", 12.0, 7.4, A["title"], 5.2, "start"))
     text(W - 12.0, 6.6, A["subtitle"], 2.1, "end")
     out.append(("dots", [(3, 9.6), (W - 3, 9.6)]))
     out.append(("dots", [(3, 10.6), (W - 3, 10.6)]))
-    text(W / 2, 122.4, A["maker"], 2.2)
+    out.append(("gold", mushroom.polygons(W)))     # the mushroom mark under the rule, bare gold
     out.append(("line", [(3, 118.6), (W - 3, 118.6)], 0.3))
     # the four rows are identical: each column says what it is once, above row 1 (the OUT word is
     # knocked out of the copper, see write_artwork); the numerals say which row is which
@@ -291,6 +294,8 @@ def write_artwork(feats, path):
         elif kind == "serif":
             _, x, y, t, size, anchor = item
             text(x, y, t, size, anchor, cls="serif")
+        elif kind == "gold":
+            s.append(f'<path d="{mushroom.svg_path(item[1])}" class="copper"/>')
         elif kind == "line":
             _, pts, w = item
             s.append('<polyline points="' + " ".join(f"{x:.2f},{y:.2f}" for x, y in pts)

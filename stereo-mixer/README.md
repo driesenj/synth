@@ -10,6 +10,9 @@ Analog audio path (4× TL074, DC-coupled, ±12 V), a CMOS latch for the
 mutes, PhotoMOS switches. Built like Marblesy and Plaitsy: two stacked
 PCBs behind a PCB panel, Thonk panel parts.
 
+On the panel it is **Mycelium**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/stereo-mixer-panel-preview.png)
 
 The circuit, values, placement, routing notes and BOM are in

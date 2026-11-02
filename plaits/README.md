@@ -10,6 +10,9 @@ models, so the official
 [Plaits manual](https://pichenettes.github.io/mutable-instruments-documentation/modules/plaits/manual/)
 applies as written.
 
+On the panel it is **Orchid**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 This supersedes the stripboard design in [`plaitsy/`](../plaitsy/README.md),
 which keeps its circuit (the CV stages, pot mux and probe are carried over)
 but not its boards.

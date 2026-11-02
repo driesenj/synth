@@ -18,7 +18,7 @@ Sena's arrangement, row by row. The differences are deliberate:
 | Labels | every control in every row | columns named once over channel 1 (FREQ, CV, OUT, the toggles' positions, FREQ knob); each row named by its wave on a bracket in the left margin; the modifier word under each modifier knob |
 | Outputs | white label boxes | bare-copper (ENIG) squares, and the noise row on a copper band |
 | FREQ daisy chain | ⌥ mark on FREQ 1 | dots from each FREQ jack down to the next |
-| Frame | title centred | the repo's frame: title, subtitle, band, rule and maker at the same spots as every other module |
+| Frame | title centred | the repo's frame: title, subtitle, band, rule and mushroom mark at the same spots as every other module |
 
 A word over a lower row's CV jack sat just under the toggles of the row
 above and read as theirs (the first draft), so the CV column is named once.

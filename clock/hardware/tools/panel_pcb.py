@@ -8,7 +8,7 @@ x to the right, y up, origin at the panel's bottom-left corner.
   holes          non-plated: jacks, buttons, encoders, LEDs; mounting slots
                  5.5 x 3.2; the display window as a milled cutout with
                  rounded corners
-  silkscreen     title, subtitle, dotted band, rule, maker; button rings and
+  silkscreen     title, subtitle, dotted band, rule (the mushroom mark is copper); button rings and
                  words, input labels, the dotted guides from the window to
                  the soft knobs
   copper         the output band under the two lower jack rows: a copper fill
@@ -143,6 +143,7 @@ class PanelBoard:
     def __init__(self):
         self.W, self.H = panel.PANEL_W, panel.PANEL_H
         self.silk_lines, self.strings, self.holes, self.slots, self.windows, self.arcs = [], [], [], [], [], []
+        self.gold = []        # the mushroom mark's polygons, PCB frame
         self.fills = []       # (outline points, cutout circles), PCB frame
         self.placed = []      # so the project writer can count parts (none)
         self.build()
@@ -194,6 +195,8 @@ class PanelBoard:
             if kind in ("text", "serif"):
                 _, x, y, s, size, anchor = item
                 self.text(x, y, s, size, anchor)
+            elif kind == "gold":
+                self.gold += [[self.P(x, y) for x, y in poly] for poly in item[1]]
             elif kind == "line":
                 self.line(item[1], item[2])
             elif kind == "dots":
@@ -260,6 +263,12 @@ class PanelBoard:
         for outline, inner in self.fills:       # top copper and its solder-mask opening: bare ENIG gold
             for layer in (1, 5):
                 fill(layer, polygon(outline), *(cutout(*c) for c in inner))
+        for poly in self.gold:                    # the mushroom mark: top copper under a mask opening (ENIG)
+            path = [mil(poly[0][0]), mil(poly[0][1])]
+            for x, y in poly[1:]:
+                path += ["L", mil(x), mil(y)]
+            for layer in (1, 5):
+                fill(layer, path)
         d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 11, "width": 10,
                                 "path": ["R", 0, mil(self.H), mil(self.W), mil(self.H), 0, 0], "locked": False,
                                 "zIndex": d.zi(), "polyType": "BOARD_OUTLINE"})
@@ -296,6 +305,8 @@ class PanelBoard:
             for x, y, r in inner:
                 X, Y = P(x, y)
                 dr.ellipse([X - r * scale, Y - r * scale, X + r * scale, Y + r * scale], fill="#141414")
+        for poly in self.gold:
+            dr.polygon([P(*p) for p in poly], fill="#c9a227")
         for pts, w in self.silk_lines:
             dr.line([P(*p) for p in pts], fill="#f0efe9", width=max(1, int(w * scale)), joint="curve")
         for p0, sweep, p1, w, (cx, cy, r, b0, b1) in self.arcs:   # panel frame, from 12 o'clock

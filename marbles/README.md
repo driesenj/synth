@@ -5,6 +5,9 @@ Thonk panel parts. The Daisy Seed sits on Rob Heel's
 [seed_power_opamps](https://oshwlab.com/scape_rob/seed_power_opamps)
 breakout for power.
 
+On the panel it is **Spore**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 The full design is in [docs/design.md](docs/design.md): what Marbles needs,
 the Seed pin map, every circuit, the board-to-board headers, the faceplate
 placement, the BOM and the firmware plan.

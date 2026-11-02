@@ -10,6 +10,9 @@ to libDaisy with the Daisy bootloader, so the official
 [Rings manual](https://pichenettes.github.io/mutable-instruments-documentation/modules/rings/manual/)
 applies as written.
 
+On the panel it is **Reed**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/rings-panel-preview.png)
 
 ## Status
@@ -31,7 +34,7 @@ LEDs and icons at the top, FREQUENCY and STRUCTURE large, BRIGHTNESS,
 DAMPING and POSITION below them, five attenuverters over five unlabelled
 CV jacks tied together by dotted guides, and STRUM, V/OCT, IN, ODD and EVEN
 at the bottom, ODD and EVEN on the gold band. House style otherwise: black
-mask, white silk, the shared title band and maker line.
+mask, white silk, the shared title band and mushroom mark.
 `hardware/panel/rings-panel-vs-original.png` shows the panel beside the
 original.
 

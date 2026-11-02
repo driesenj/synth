@@ -8,6 +8,9 @@ normals to +1 V), so one source feeds every channel at its own depth. An
 unpatched output adds into the next channel, so OUT 3 can be a mix. Thonk
 panel parts.
 
+On the panel it is **Prune**, one of the voice case's Garden names
+(2026-11-02), with the gold mushroom mark at the foot.
+
 ![panel](hardware/panel/offset-panel-preview.png)
 
 ## Status

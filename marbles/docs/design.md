@@ -344,8 +344,9 @@ needs (drill, top silkscreen, top solder-mask opening). Knobs are drawn at
 Ø15 (RATE, DEJA VU, SPREAD) and Ø10; the scale arcs assume those. The
 title (serif 5.2 at x 12, baseline 7.4), the subtitle (2.1, right end
 12 mm from the edge, baseline 6.6), the dotted band (y 9.6 and 10.6), the
-rule (y 118.6) and the maker (2.2, centred, baseline 122.4) sit at the same
-spots on every module's panel.
+rule (y 118.6) and the gold mushroom mark under it (4.1 mm tall, 1.6 mm
+below the rule, centred; it replaced the maker line on 2026-11-02) sit at
+the same spots on every module's panel.
 
 `panel_pcb.py` builds the same drawing as the project's third board,
 `Marblesy Panel PCB`: 91.3 × 128.5 outline, every hole and the four
@@ -689,7 +690,9 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
 - Import `Marblesy-routed.epro2` again (the corrected panel board, the
-  value labels and the D21 / R47 / 23.2k fixes are in it), rebuild all
+  value labels, the D21 / R47 / 23.2k fixes and, since 2026-11-02, the
+  panel name **Spore** with the gold mushroom mark in place of the maker
+  line are in it), rebuild all
   copper areas on the main board (its pours around D21 were cut by a
   script), run DRC on all three boards, and make the Gerbers from that
   import. Export it back over `Marblesy-routed.epro2` and rerun

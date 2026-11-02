@@ -23,6 +23,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location("plaits_circuit", os.path.join(HERE, "circuit.py"))
 circuit = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(circuit)
+_spec = importlib.util.spec_from_file_location("plaits_mushroom", os.path.join(HERE, "mushroom.py"))
+mushroom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(mushroom)
 
 PANEL_W, PANEL_H = circuit.PANEL_W, circuit.PANEL_H     # Eurorack 3U, 12HP
 HP = 12
@@ -128,7 +131,7 @@ ART = {
     "knob": {"big": 7.5, "mid": 6.0, "small": 5.0},      # radii, mm: FREQUENCY/HARMONICS, TIMBRE/MORPH, attenuverters
     "scale": {"big": 9.0, "mid": 7.5, "small": 6.3},
     "cap_led": 2.75, "nut": 4.0, "led": 1.6, "icon": 1.7,
-    "title": "Plaits", "subtitle": "Macro-oscillator", "maker": "Seedable Instruments",
+    "title": "Orchid", "subtitle": "Macro oscillator",
     "font": "Arial, Helvetica, sans-serif", "serif": "Georgia, Times New Roman, serif",
     "green": "#3fb95a", "red": "#d94040",                 # the two LED banks (preview tint of the icon discs)
 }
@@ -336,7 +339,7 @@ def write_artwork(feats, path):
     text(W - 12.0, 6.6, A["subtitle"], 2.1, anchor="end")
     s.append(f'<line x1="3" y1="9.6" x2="{W - 3}" y2="9.6" class="silk dots"/>')   # band under the title
     s.append(f'<line x1="3" y1="10.6" x2="{W - 3}" y2="10.6" class="silk dots"/>')
-    text(W / 2, 122.4, A["maker"], 2.2)
+    s.append(f'<path d="{mushroom.svg_path(mushroom.polygons(W))}" class="copper"/>')   # the mushroom mark, bare gold
     s.append(f'<line x1="3" y1="118.6" x2="{W - 3}" y2="118.6" class="silk" stroke-width="0.3"/>')
     # model buttons: wrench (hold the left one: LPG settings), the "levels" disc (hold the right one and
     # turn HARMONICS: octave range) with its dotted line, and a dotted line from each button to its bank
