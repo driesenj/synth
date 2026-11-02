@@ -1,0 +1,6 @@
+# The engine, presets and parameter helpers on the fake blocks.
+src/engine/algorithm.cc
+src/engine/engine.cc
+src/engine/preset.cc
+test/fake_registry.cc
+test/test_engine.cc

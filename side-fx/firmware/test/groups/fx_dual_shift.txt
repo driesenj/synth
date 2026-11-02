@@ -1,0 +1,3 @@
+# DUAL SHIFT on its own.
+src/fx/dual_shift.cc
+test/fx/test_dual_shift.cc

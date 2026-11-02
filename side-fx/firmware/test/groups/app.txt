@@ -1,0 +1,22 @@
+# The app layer (controls, tempo, sources, MIDI, settings, storage, bank,
+# App) on the fake blocks and the fake board.
+src/engine/algorithm.cc
+src/engine/engine.cc
+src/engine/preset.cc
+src/app/controls.cc
+src/app/tempo.cc
+src/app/mod_sources.cc
+src/app/midi.cc
+src/app/settings.cc
+src/app/storage.cc
+src/app/preset_bank.cc
+src/app/factory_presets.cc
+src/app/app.cc
+test/fake_registry.cc
+test/hal_fake.cc
+test/display_fake.cc
+test/test_app_controls.cc
+test/test_app_tempo.cc
+test/test_app_mods.cc
+test/test_app_storage.cc
+test/test_app_app.cc

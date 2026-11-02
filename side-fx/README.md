@@ -20,7 +20,7 @@ Rob Heel's seed_power_opamps breakout.
 | PCB placement | Done, both boards placed and net-assigned, not routed; every clearance, header and keep-out check at 0 | `hardware/tools/pcb.py`, previews `hardware/easyeda/side-fx-easyeda-pcb-*.png` |
 | Panel PCB | Done: the panel as the project's third board, window milled out, gold band and block stack | `hardware/tools/panel_pcb.py` |
 | Routing | Done: the fourth export (2026-11-02) audits clean and is the layout master, with silkscreen value labels added; ready to order. One harmless 0.01 mm² floating GND_F sliver is noted ([audit](docs/routing-audit-2026-11-01.md)) | `hardware/easyeda/SideFXy-routed.epro2`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py` |
-| Firmware | Not started | |
+| Firmware | Written (2026-11-02): 17 block types in four slots, seven algorithms, sends with trails, modulation, tempo/clock/MIDI, presets, the screen UI, and BEADSY, a port of Mutable Beads' granular engine as a fifth TEXTURE type. Builds and links for the Seed; host tests pass. Not yet run on hardware | `firmware/`, [firmware/README.md](firmware/README.md) |
 
 ## Panel
 
@@ -57,6 +57,7 @@ enough to leave room for the knob stack in 14HP.
 
 ```
 docs/design.md            pin map, circuits, headers, schematic notes, BOM, firmware notes
+firmware/                 the Daisy Seed firmware (its own README: controls, blocks, flashing, building, tests)
 hardware/
   tools/
     circuit.py            the netlist, headers and the panel placement

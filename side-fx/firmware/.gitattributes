@@ -1,0 +1,4 @@
+# The shell scripts and the Makefile also run under WSL's bash and make,
+# which cannot take Windows line ends: keep LF whatever core.autocrlf says.
+*.sh text eol=lf
+Makefile text eol=lf

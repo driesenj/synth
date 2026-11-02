@@ -11,7 +11,8 @@ problems). The EasyEDA Pro project (`hardware/easyeda/SideFXy.epro2`) has the
 schematic, checked against the netlist, plus both PCBs placed and
 net-assigned (not routed), with every clearance check at 0, and the panel as
 a third PCB. See [Schematic](#schematic) and [PCB placement](#pcb-placement).
-Not yet imported into EasyEDA; no firmware.
+Routed since (see [PCB placement](#pcb-placement)); the firmware is written but
+not yet run on hardware (see [Firmware notes](#firmware-notes)).
 
 ---
 
@@ -415,25 +416,25 @@ the display its own 3.3 V regulator.
 
 ## Firmware notes
 
-- libDaisy with the Daisy bootloader, like the other Seed modules. Sixteen
-  effect types plus a UI outgrow the H750's 128 KB of internal flash, so
-  build for QSPI or SRAM.
-- **Display:** libDaisy has no ST7789 driver, so write a small one: SPI1
-  transmit-only with DMA, 16-bit colour, a frame of 170 × 320 × 2 = 109 KB,
-  or a 4-bit frame expanded into line buffers. The 170-pixel panels sit at
-  a column offset (35 on most 1.9" modules; check yours). The SPI lines run
-  about 9 cm over the two boards plus the module's cable: start the SPI
-  clock modest and raise it on the bench.
-- **Controls:** a 2 kHz timer runs the shift chain; quadrature decoding with a
-  state table and debouncing happen in software. The send LEDs can dim with
-  software PWM in the same loop. SR_CLK and SR_LOAD are about 19 cm long
-  over both boards: leave those pins at libDaisy's default
-  `GPIO::Speed::LOW` so the edges stay slow.
-- **MIDI:** USART1, receive only (D13 is the display's reset, so no TX
-  pin).
-- **Presets:** libDaisy's QSPI driver (or `PersistentStorage` for the
-  settings), 4 KB sectors. Run the program from SRAM (BOOT_SRAM, as planned
-  for the other Seed modules): writing the QSPI stops any code executing
-  from it, so a preset save would glitch the audio under BOOT_QSPI.
-- **CV:** four ADC channels, calibrated for offset and scale per channel
-  like Marblesy's.
+The firmware is in `firmware/`; [firmware/README.md](../firmware/README.md)
+describes it. What it does with this hardware:
+
+- libDaisy v9.0.0 with the Daisy bootloader, the program in SRAM
+  (BOOT_SRAM), so writing presets to the QSPI flash never stalls the audio.
+- **Display:** its own ST7789 driver (`src/display_daisy.cc`): SPI1 transmit
+  only at 12.5 MHz with DMA, CS as a GPIO, a 170 × 320 RGB565 frame in
+  SDRAM sent as dirty rows, column offset 35, backlight PWM on TIM4 CH4. The
+  orientation and the init sequence are unverified until the first power-up.
+- **Controls:** a 4 kHz timer (TIM3) bit-bangs the chain with ~125 ns settle
+  waits per edge on the long SR_CLK / SR_LOAD lines (GPIO speed LOW);
+  debouncing, EC11 quadrature decoding and 16-level LED PWM in software.
+  `tools/check_pins.py` checks the pins and the chain's bit order against
+  `circuit.py`.
+- **MIDI:** USART1 receive only, set up on its registers (D13 stays the
+  display's reset), one interrupt per byte with its arrival time.
+- **Presets:** in the QSPI flash below the program (0x00000–0x3FFFF):
+  settings and the live state in wear-levelled rings, 64 presets of 512
+  bytes.
+- **CV:** four ADC channels, offset calibration from the setup page,
+  nominal scale.
+

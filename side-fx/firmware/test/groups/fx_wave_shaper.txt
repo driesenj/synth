@@ -1,0 +1,3 @@
+# WAVESHAPER on its own.
+src/fx/wave_shaper.cc
+test/fx/test_wave_shaper.cc

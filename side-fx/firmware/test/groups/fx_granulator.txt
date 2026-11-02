@@ -1,0 +1,3 @@
+# GRANULATOR on its own.
+src/fx/granulator.cc
+test/fx/test_granulator.cc

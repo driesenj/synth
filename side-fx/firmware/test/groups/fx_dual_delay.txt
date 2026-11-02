@@ -1,0 +1,3 @@
+# DUAL DELAY on its own.
+src/fx/dual_delay.cc
+test/fx/test_dual_delay.cc

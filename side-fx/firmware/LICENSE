@@ -1,0 +1,48 @@
+MIT License
+
+Copyright (c) 2026 the Side FXy authors
+Portions copyright (c) 2012-2021 Emilie Gillet (Mutable Instruments' Beads
+and stmlib)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+Third-party code
+
+- vendor/beads, vendor/stmlib and src/beads: Mutable Instruments' Beads
+  DSP (pichenettes/eurorack f4cfa76) and stmlib (e3bd7c9), (c) 2012-2021
+  Emilie Gillet, MIT licence. The notice is at the top of each file and in
+  vendor/stmlib/LICENSE. The files in src/beads are Beads' files with the
+  changes listed at their top and the changed lines marked "Side FXy".
+- src/gfx/fonts.cc: glyphs rendered from the DejaVu fonts
+  (https://dejavu-fonts.github.io/), a derivative of Bitstream Vera.
+  Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera
+  is a trademark of Bitstream, Inc. DejaVu changes are in the public domain.
+  The Bitstream Vera licence, a permissive one, is quoted in full at the top
+  of src/gfx/fonts.cc and tools/make_fonts.py.
+- libDaisy (fetched by `make setup`, not in this repository): (c) Electrosmith,
+  MIT licence. The built firmware also contains parts of what libDaisy
+  bundles: STMicroelectronics' STM32H7 HAL and LL drivers (BSD-3-Clause, see
+  libDaisy's Drivers/STM32H7xx_HAL_Driver/LICENSE.md) and of ST's USB device
+  and host libraries (SLA0044, see libDaisy's Middlewares/).
+
+"Mutable Instruments" is a registered trademark; it is not used for this
+module. "SIDE FX" is RYK Modular's product; Side FXy is an unofficial
+work-alike with its own firmware, not RYK's.

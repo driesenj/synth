@@ -1,0 +1,3 @@
+# MODAL: the resonant-body reverb.
+src/fx/modal_reverb.cc
+test/fx/test_modal_reverb.cc

@@ -1,0 +1,32 @@
+# The factory presets on the real blocks, run through the real engine with
+# the real modulation sources.
+src/engine/algorithm.cc
+src/engine/engine.cc
+src/engine/preset.cc
+src/engine/registry.cc
+src/app/mod_sources.cc
+src/app/factory_presets.cc
+src/fx/apf_chain.cc
+src/fx/band_delay.cc
+src/fx/dual_delay.cc
+src/fx/dual_shift.cc
+src/fx/fdn_reverb.cc
+src/fx/glitch.cc
+src/fx/granulator.cc
+src/fx/mod_combs.cc
+src/fx/modal_reverb.cc
+src/fx/phaser.cc
+src/fx/plate.cc
+src/fx/resonator.cc
+src/fx/tap_delay.cc
+src/fx/tape_delay.cc
+src/fx/tape_sim.cc
+src/fx/wave_shaper.cc
+src/fx/beadsy.cc
+src/beads/dsp/processor.cc
+vendor/beads/dsp/delay_clock.cc
+src/beads/dsp/delay_controller.cc
+vendor/beads/dsp/mu_law.cc
+vendor/beads/dsp/trigger_generator.cc
+vendor/beads/resources.cc
+test/test_factory_presets.cc

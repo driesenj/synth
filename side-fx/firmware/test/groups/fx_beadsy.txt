@@ -1,0 +1,9 @@
+# BEADSY: Beads' granular engine (vendor/beads, ported files in src/beads).
+src/fx/beadsy.cc
+src/beads/dsp/processor.cc
+vendor/beads/dsp/delay_clock.cc
+src/beads/dsp/delay_controller.cc
+vendor/beads/dsp/mu_law.cc
+vendor/beads/dsp/trigger_generator.cc
+vendor/beads/resources.cc
+test/fx/test_beadsy.cc

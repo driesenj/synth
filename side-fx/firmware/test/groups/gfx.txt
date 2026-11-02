@@ -1,0 +1,7 @@
+# The canvas and fonts, the fake display and the PNG writer; leaves a
+# specimen sheet of the fonts and shapes in test/build/gfx_specimen.png.
+src/gfx/canvas.cc
+src/gfx/fonts.cc
+test/display_fake.cc
+test/png_writer.cc
+test/test_gfx.cc

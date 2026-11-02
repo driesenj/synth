@@ -1,0 +1,3 @@
+# PLATE on its own.
+src/fx/plate.cc
+test/fx/test_plate.cc

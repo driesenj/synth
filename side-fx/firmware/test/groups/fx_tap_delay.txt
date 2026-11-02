@@ -1,0 +1,3 @@
+# TAP DELAY on its own.
+src/fx/tap_delay.cc
+test/fx/test_tap_delay.cc

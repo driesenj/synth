@@ -1,0 +1,3 @@
+# GLITCH on its own.
+src/fx/glitch.cc
+test/fx/test_glitch.cc

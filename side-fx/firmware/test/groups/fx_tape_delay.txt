@@ -1,0 +1,3 @@
+# TAPE DELAY on its own.
+src/fx/tape_delay.cc
+test/fx/test_tape_delay.cc

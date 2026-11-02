@@ -1,0 +1,22 @@
+# The UI on the whole App (fake blocks, fake board, fake display), with
+# screenshots of every page in test/build/ui_screens/.
+src/ui/ui.cc
+src/engine/algorithm.cc
+src/engine/engine.cc
+src/engine/preset.cc
+src/app/controls.cc
+src/app/tempo.cc
+src/app/mod_sources.cc
+src/app/midi.cc
+src/app/settings.cc
+src/app/storage.cc
+src/app/preset_bank.cc
+src/app/factory_presets.cc
+src/app/app.cc
+src/gfx/canvas.cc
+src/gfx/fonts.cc
+test/fake_registry.cc
+test/hal_fake.cc
+test/display_fake.cc
+test/png_writer.cc
+test/test_ui.cc

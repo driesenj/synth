@@ -1,0 +1,3 @@
+# FDN VERB on its own.
+src/fx/fdn_reverb.cc
+test/fx/test_fdn_reverb.cc

@@ -1,0 +1,3 @@
+# TAPE SIM on its own.
+src/fx/tape_sim.cc
+test/fx/test_tape_sim.cc

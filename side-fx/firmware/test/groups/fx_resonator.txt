@@ -1,0 +1,3 @@
+# The RESONATOR block.
+src/fx/resonator.cc
+test/fx/test_resonator.cc

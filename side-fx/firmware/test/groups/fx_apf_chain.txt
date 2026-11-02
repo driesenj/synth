@@ -1,0 +1,3 @@
+# APF CHAIN: series Schroeder allpasses with feedback.
+src/fx/apf_chain.cc
+test/fx/test_apf_chain.cc
