@@ -11,6 +11,8 @@ edge, centred on the panel. On a 4HP panel the bottom screw sits at the
 centre, so there the mark's left edge lines up with the title at x 12.
 The polygons overlap where the threads meet the stem; draw each one as its
 own fill (the SVG's nonzero rule unites them, as they share one winding).
+Each ring ends on its first point: every FILL path EasyEDA writes is closed
+that way, and with the first, open version the user saw no mark.
 """
 import math
 
@@ -78,14 +80,15 @@ def _units():
 
 
 def polygons(panel_w):
-    """The mark placed on a panel panel_w mm wide: [[(x, y), ...], ...] in panel mm, y down."""
+    """The mark placed on a panel panel_w mm wide: closed rings [[(x, y), ..., first], ...] in panel mm, y down."""
     polys = _units()
     xs = [x for p in polys for x, _ in p]
     ys = [y for p in polys for _, y in p]
     k = HEIGHT / (max(ys) - min(ys))
     x0 = TITLE_X - min(xs) * k if panel_w < 25 else panel_w / 2 - (min(xs) + max(xs)) / 2 * k
     y0 = RULE_LOW + GAP - min(ys) * k
-    return [[(round(x0 + x * k, 4), round(y0 + y * k, 4)) for x, y in p] for p in polys]
+    rings = [[(round(x0 + x * k, 4), round(y0 + y * k, 4)) for x, y in p] for p in polys]
+    return [r + r[:1] for r in rings]
 
 
 def svg_path(polys):

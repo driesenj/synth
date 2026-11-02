@@ -74,7 +74,9 @@ not import across modules). `layout()` adds `("gold", mushroom.polygons(W))`;
 the artwork draws it as one path with class `copper`, and `panel_pcb.py`
 writes each polygon as a FILL on layer 1 and the same FILL on layer 5.
 The polygons overlap where the threads meet the stem, so each gets its
-own FILL.
+own FILL. Every FILL path must end on its first point, as every FILL
+EasyEDA writes does: with the first, open version of the mark the user
+saw no mark.
 
 ## Rows of identical controls (the stereo mixer)
 
