@@ -1,5 +1,49 @@
 # Stereo mixer routing audit, 2026-11-02
 
+## Third export, `ProPrj_SI Mixer_2026-11-02(2).epro2`: clean, labelled; rebuild the faceplate pour
+
+**What changed.** Only DRW_F and SEND_F, both re-routed on the panel side
+round the barrels. The main board is identical to the second export.
+
+- SEND_F no longer comes within 3 mm of J11's barrel.
+- DRW_F's edge is now 1.60 mm from J14's barrel centre. That is outside
+  Thonk's 3 mm circle (1.5 mm radius), though inside the 0.25 mm margin
+  the audit adds, so the audit still lists it. It is fine as it is.
+
+Both boards still have every net complete, no shorts and nothing under
+0.152 mm. Headers, holes and the panel still match.
+
+**Rebuild the faceplate's copper areas before making Gerbers.** The
+faceplate's pour fills (POURED) are exactly the second export's: the same
+six islands, with the same areas. The re-routed tracks therefore sit inside
+the old GND_F fill on the panel side. These five segments are the ones
+inside it:
+
+- DRW_F (27.9, 47.1)–(25.0, 50.0) and (25.0, 50.0)–(18.9, 50.0);
+- SEND_F (22.4, 77.5)–(19.0, 77.5), (19.0, 77.5)–(14.4, 82.1) and
+  (14.4, 82.1)–(14.4, 91.3).
+
+The fill also still has the cutouts where the old tracks ran. Rebuilding
+all copper areas in EasyEDA clears both. The tracks themselves are clean;
+only the stored fill is out of date.
+
+**Value labels.** `hardware/tools/value_labels.py`, copied from Side FXy,
+added 148 silkscreen strings. Every other record is byte for byte the
+export's, and the audit gives the same result with or without them.
+
+| Board | Labels |
+|---|---|
+| Main board | 119 on parts: every resistor and capacitor, plus 1N5819 ×2 and 1N4148. 6 parts share 4 legend lines: "10k: R301 R401" by U1, "10k: R701 R702" by U2, "100k: R304" and "100n: C918" by U4. |
+| Faceplate | 25 pots on the panel side: 19 A100k and 6 B10k. The PAN pots are the B10k ones, so they cannot be swapped by accident. |
+
+On the main board the six tightest labels sit as near another resistor as
+their own: R204, R404, R608, R709, R901 and R916. Previews:
+`hardware/easyeda/stereo-mixer-labels-main-top.png` and
+`-faceplate-bottom.png`.
+
+The labelled file is the committed `StereoMixer-routed.epro2`. Import it,
+rebuild the copper areas, run DRC, then make the Gerbers.
+
 ## Second export, `ProPrj_SI Mixer_2026-11-02(1).epro2`: two tracks to move
 
 This export is the whole project, with both boards routed. It is now
