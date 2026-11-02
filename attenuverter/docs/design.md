@@ -12,7 +12,8 @@ Status (2026-10-31): panel approved; netlist for one board (84 parts, 0
 problems, DC check passing, see [Netlist](#netlist)); EasyEDA Pro
 schematic, the placed PCB and the panel PCB generated and checked (see
 [Schematic](#schematic) and [PCB](#pcb)), not yet imported. Routing is
-yours.
+yours. 2026-11-02: the LM4040s' TO-92 pinout fixed (see
+[References and power](#references-and-power)) and the project regenerated.
 
 ---
 
@@ -116,6 +117,14 @@ common-mode range on ±12 V, where its output can flip. All resistors are
   +12 V. That gives 7 mA; the three OFFSET pots take 3 mA, which leaves 4 mA
   for the reference (its range is 0.06–15 mA).
 - **−5 V:** a second LM4040-5.0, with its cathode on GND, fed by 1k to −12 V.
+- **TO-92 pinout:** the cathode is pin 2, the middle lead. TI's drawing
+  puts the anode on pin 3 and an older TI table puts it on pin 1, so pad 2
+  takes the cathode's net and pads 1 and 3 both take the anode's. D4's
+  pads 1, 2, 3 are GND, REF_P, GND; D5's are REF_N, GND, REF_N. The part
+  works whichever pinout is right and whichever way round it goes in. The
+  first drawing (copied from Marblesy's) had pad 1 = cathode, pad 2 =
+  anode, the SOT-23 order; fixed 2026-11-02, while the board was still
+  unrouted.
 - **Power entry:** 16-pin Eurorack header (2.54 mm, shrouded). There is a
   1N5819 in each rail: the +12 V anode on the header, and the −12 V
   *cathode* on the header (the reversed −12 V diode on the older PCBs is the
@@ -197,7 +206,8 @@ header. The rest is drawn here in the same style:
   TO-92, and a 2-lead 3 mm LED. The Dailywell 2MS1
   toggle has three pins at 2.54 mm and a 6 mm bushing, from Dailywell's
   2MS sheet.
-- **symbols:** the LM4040 (Marblesy's, labelled 5.0 V), the bicolour LED
+- **symbols:** the LM4040 (Marblesy's, labelled 5.0 V: K = pin 2, A =
+  pin 3, and pin 1 wired to the anode's net too), the bicolour LED
   as two LEDs back to back (green from pin 1 to pin 2), and the SPDT
   toggle.
 
@@ -214,9 +224,9 @@ All resistors are standing (the 2.54 mm footprint).
 - Result: 0 problems, 90 part units.
 
 **What EasyEDA's DRC will still report** (all intended):
-- floating pins: SW1–SW3 pin 1 (the open throw), D4 / D5 pin 3 (the TO-92's
-  NC lead), J6 pin 2 (OUT 3's switch lug: nothing after it), J7 pins 13–16
-  (+5 V and the CV / gate bus, unused).
+- floating pins: SW1–SW3 pin 1 (the open throw), J6 pin 2 (OUT 3's switch
+  lug: nothing after it), J7 pins 13–16 (+5 V and the CV / gate bus,
+  unused). All three LM4040 pins are wired.
 
 Import with File > Import > EasyEDA (Professional) > `Offset.epro2`, then
 Design > Check DRC.
@@ -283,7 +293,9 @@ stroke font differs from the SVG's, so nudge labels after the import.
   - the power buses: J7 → D6 / D7 → R905 / R906 → the four chips' supply
     pins, each beside its 100 n pair
   - REF_P and REF_N, as two trees from D4 / C901 and D5 / C902 to the
-    three OFFSET pots' outer pins
+    three OFFSET pots' outer pins. REF_P leaves D4 from its middle pad;
+    REF_N is on both of D5's outer pads, so join those two (D4's outer
+    pads and D5's middle pad are GND)
   - the summing nodes NA, NB, SUM, ND at each op-amp: one layer, short
 - **Then autoroute the rest:** both layers, vertical on top and horizontal
   on bottom. Skip GND and the POWER class.

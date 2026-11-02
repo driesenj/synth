@@ -32,7 +32,10 @@ the +1 V normal (39k / 10k from REF_P, 1.02 V).
 
 References: REF_P = +5 V (LM4040 cathode, 1k from +12 V), REF_N = -5 V
 (LM4040 anode, cathode on GND, 1k to -12 V); 7 mA each, 3 mA of it through
-the three OFFSET pots. Power: 16-pin Eurorack header, a 1N5819 in each rail
+the three OFFSET pots. TO-92 LM4040: the cathode is pin 2, the middle lead;
+the anode is pin 3 in TI's drawing, pin 1 in an older TI table, so pads 1
+and 3 both carry the anode's net and the part fits either way round.
+Power: 16-pin Eurorack header, a 1N5819 in each rail
 (+12 V: anode on the header; -12 V: cathode on the header), 10R + 10u per
 rail, a 100n pair at each op-amp.
 
@@ -160,8 +163,9 @@ def opamp_parts():
 
 def reference_parts():
     return [
-        Part("D4", "LM4040", "LM4040-5.0", {"1": "REF_P", "2": GND}, "+5 V reference"),     # 1 = cathode, 2 = anode
-        Part("D5", "LM4040", "LM4040-5.0", {"1": GND, "2": "REF_N"}, "-5 V reference"),
+        # TO-92: 2 = cathode; the anode is 3 in TI's drawing, 1 in an older TI table: both on the anode's net
+        Part("D4", "LM4040", "LM4040-5.0", {"1": GND, "2": "REF_P", "3": GND}, "+5 V reference"),
+        Part("D5", "LM4040", "LM4040-5.0", {"1": "REF_N", "2": GND, "3": "REF_N"}, "-5 V reference"),
         R("R901", "1k", VP, "REF_P", "+5 V reference feed, 7 mA"),
         R("R902", "1k", "REF_N", VN, "-5 V reference feed, 7 mA"),
         C("C901", "100n", "REF_P", GND, "+5 V reference"),

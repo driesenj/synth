@@ -239,8 +239,9 @@ def fp_toggle():
 
 # ------------------------------------------------------------------ symbols
 def lm4040_symbol():
-    """Marblesy's LM4040 drawing: a zener-style reference, 1 = cathode (the positive end), 2 = anode, and the
-    TO-92's third lead as an NC pin so every pad has a pin."""
+    """Marblesy's LM4040 drawing: a zener-style reference with the TO-92's pins. The cathode (the positive end)
+    is pin 2, the middle lead; TI's drawing puts the anode on pin 3, an older TI table on pin 1, so the
+    schematic wires pin 1 to the anode's net as well and the part fits either way round."""
     s = Symbol("LM4040-5.0", "LM4040_5V0.1", "D?", [NAME])
     s.poly([(-20, 0), (-6, 0)])
     s.poly([(6, -7), (-6, 0), (6, 7), (6, -7)], closed=True)
@@ -249,9 +250,9 @@ def lm4040_symbol():
     s.poly([(-6, 7), (-3, 9)])
     s.poly([(6, 0), (20, 0)])
     s.text(-14, -8, "5.0V", 6)
-    s.pin("1", "K", -20, 0, 0)
-    s.pin("2", "A", 20, 0, 180)
-    s.pin("3", "NC", 0, 17, 90)
+    s.pin("2", "K", -20, 0, 0)     # cathode, the positive end: the TO-92's middle lead
+    s.pin("3", "A", 20, 0, 180)    # anode in TI's drawing (an older TI table says pin 1)
+    s.pin("1", "NC", 0, 17, 90)    # wired to the anode's net like pin 3, so the part fits either way round
     return s
 
 
@@ -403,7 +404,9 @@ class MProject(Project):
                                                                     "(Thonk). Pin 3 = CW end, lugs 4 / 5"})
         new = [
             ("LM4040", lm4040_symbol(), "LM4040-5.0", "D?", fps["TO92"],
-             "Precision shunt reference 5.000 V, TO-92 (LM4040AIZ-5.0 / BIZ-5.0): 1 cathode, 2 anode, 3 NC"),
+             "Precision shunt reference 5.000 V, TO-92 (LM4040AIZ-5.0 / BIZ-5.0): pin 2 is the cathode. TI's "
+             "drawing puts the anode on pin 3, an older TI table on pin 1, so pads 1 and 3 are both wired to the "
+             "anode's net: it fits either way round"),
             ("LED_BI", led_bi_symbol(), "LED 3mm bicolour R/G 2-lead", "D?", fps["LED2"],
              "3 mm bicolour LED, red/green, two leads back to back: current from pad 1 to pad 2 lights green. "
              "Check which lead does that on the part bought and fit it to the square pad"),
@@ -671,7 +674,8 @@ def channel_page(pr, P, k):
 
 def reference_block(pg, P, x, top, plus):
     """+5 V: 1k from +12 V, LM4040 cathode on REF_P. -5 V: LM4040 cathode on GND, anode on REF_N, 1k to
-    -12 V. A 100n across each."""
+    -12 V. A 100n across each. Pin 1 goes to the anode's net like pin 3 (see lm4040_symbol): a ground flag
+    on D4, on D5 a wire into REF_N on its way to the port."""
     if plus:
         rf, d, c, node, rail = P["R901"], "D4", P["C901"], "REF_P", "+12V"
         a = vpart(pg, rf, x, top)
@@ -679,21 +683,27 @@ def reference_block(pg, P, x, top, plus):
         n = (x, top + 50)
         pg.wire([a["2"], n], node)
         ref = pg.place(d, "LM4040", x, top + 80, 270, des=(10, 4, "LEFT_BOTTOM"), value_at=(10, 14, "LEFT_BOTTOM"))
-        pg.wire([n, ref["1"]], node)
-        pg.stub_gnd(ref["2"], "down", 10)
+        pg.wire([n, ref["2"]], node)
+        pg.stub_gnd(ref["3"], "down", 10)
+        pg.stub_gnd(ref["1"], "left")
+        tap = n
     else:
         rf, d, c, node, rail = P["R902"], "D5", P["C902"], "REF_N", "-12V"
         ref = pg.place(d, "LM4040", x, top + 20, 270, des=(10, 4, "LEFT_BOTTOM"), value_at=(10, 14, "LEFT_BOTTOM"))
-        pg.stub_gnd(ref["1"], "up", 10)
+        pg.stub_gnd(ref["2"], "up", 10)
         n = (x, top + 50)
-        pg.wire([ref["2"], n], node)
+        pg.wire([ref["3"], n], node)
         a = vpart(pg, rf, x, top + 60)
         pg.wire([n, a["1"]], node)
         pg.stub_port(a["2"], rail, "IN", "left")
+        p1 = ref["1"]                                  # left of the symbol
+        tap = (p1[0] - 10, n[1])
+        pg.wire([p1, (tap[0], p1[1]), tap], node)
+        pg.wire([n, tap], node)
     cp = vpart(pg, c, x + 60, top + 50, top_pin="1" if plus else "2")
     pg.wire([n, cp["1" if plus else "2"]], node)
     pg.stub_gnd(cp["2" if plus else "1"], "down", 10)
-    pg.wire([n, (x - 40, n[1])], node)
+    pg.wire([tap, (x - 40, n[1])], node)
     pg.port(x - 40, n[1], node, "OUT", "left")
 
 
@@ -768,8 +778,10 @@ def decoupling_pair(pg, P, cp, cn, x, top):
 
 def power_page(pr, P):
     pg = MPage(pr, "References, +1 V normal, power", 4)
-    pg.text(40, Y(40), "OFFSET references: two LM4040-5.0 (1 = cathode). 1k feeds give 7 mA each; the three "
+    pg.text(40, Y(40), "OFFSET references: two LM4040-5.0. 1k feeds give 7 mA each; the three "
                        "OFFSET pots (B10k, REF_P to REF_N) take 3 mA of it", 12)
+    pg.text(40, Y(70), "TO-92: pin 2 (the middle lead) is the cathode. The anode is pin 3 in TI's drawing, pin 1 in "
+                       "an older TI table, so pins 1 and 3 both go to the anode's net: it fits either way round", 10)
     pg.text(80, Y(110), "+5 V", 11)
     reference_block(pg, P, 160, Y(140), True)
     pg.text(380, Y(110), "-5 V", 11)

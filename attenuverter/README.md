@@ -16,7 +16,7 @@ panel parts.
 |---|---|---|
 | Panel layout, drill template, artwork | Done (approved 2026-10-31) | `hardware/tools/panel.py`, `hardware/panel/` |
 | Netlist | Done: one board, 84 parts, 0 problems, DC check passes | `hardware/tools/circuit.py`, [docs/design.md](docs/design.md#netlist) |
-| EasyEDA Pro schematic | Done: 4 A3 pages, drawing checked against the netlist (0 problems); not yet imported | `hardware/easyeda/Offset.epro2`, previews `hardware/easyeda/offset-easyeda-*.png` |
+| EasyEDA Pro schematic | Done: 4 A3 pages, drawing checked against the netlist (0 problems); LM4040 TO-92 pinout fixed 2026-11-02 (pad 2 = cathode, pads 1 + 3 = anode's net); not yet imported | `hardware/easyeda/Offset.epro2`, previews `hardware/easyeda/offset-easyeda-*.png` |
 | PCB placement, panel PCB | Done: all 84 parts placed on one board, unrouted, checks pass; the panel as a second PCB; [routing notes](docs/design.md#routing-notes) | `hardware/tools/pcb.py`, `hardware/tools/panel_pcb.py`, previews `hardware/easyeda/offset-easyeda-pcb*.png` |
 
 ## Files
