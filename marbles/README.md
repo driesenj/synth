@@ -18,13 +18,14 @@ placement, the BOM and the firmware plan.
 | Panel layout (Marbles arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
 | PCB placement | Done, then reworked during routing; the generator now takes it from the routed project | `hardware/tools/pcb.py`, previews `hardware/easyeda/marbles-easyeda-pcb-*.png` |
 | PCB routing | Done by hand in EasyEDA Pro (2026-10-29, pots re-routed onto the drawn layout 2026-10-30), audited: every net complete, no shorts, 0.152 mm minimum clearance | `hardware/easyeda/Marblesy-routed.epro2` |
-| Firmware | Not started | |
+| Firmware | Written 2026-11-02: Marbles' final firmware (January 2023) on libDaisy, plus an output calibration; builds for the Seed, 3086 host-test checks pass; not yet run on hardware | `firmware/`, see [firmware/README.md](firmware/README.md) |
 
 ## Layout
 
 ```
 README.md
 docs/design.md
+firmware/               the Daisy Seed firmware (its own README)
 hardware/
   tools/
     circuit.py          the netlist and the faceplate placement

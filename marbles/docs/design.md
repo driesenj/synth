@@ -11,7 +11,8 @@ PCBs routed by hand in EasyEDA Pro (2026-10-29, the pots re-routed on
 2026-10-30) and audited (`hardware/easyeda/Marblesy-routed.epro2`,
 see [PCB placement](#pcb-placement) and [Routing](#routing)). `circuit.py`
 matches the routed boards pin for pin; the exporter checks that on every run.
-Firmware not started.
+Firmware written ([firmware/README.md](../firmware/README.md)), not yet run on
+hardware.
 
 ---
 
@@ -238,8 +239,9 @@ firmware must use these tables, not the panel order.
 
 The SPI bus is shared by the DACs and the shift registers. The 595s shift on
 every clock, including DAC transfers, but only latch on LED_LATCH, and the
-165 only loads on BTN_LOAD, so the three never interfere. Keep the bus at
-1 MHz or so over the header.
+165 only loads on BTN_LOAD, so the three never interfere. The firmware runs
+the bus at 6.25 MHz (four DAC words every 31 µs need it), within the
+74HC595's and 74HC165's limits at 3.3 V.
 
 ---
 
@@ -596,25 +598,27 @@ faceplate side.
 
 ---
 
-## Firmware (not started)
+## Firmware
 
-Port the Marbles sources to libDaisy, as planned for Plaitsy:
+`firmware/` ports Marbles' final firmware to libDaisy; its README has the
+details. Where it ended up against the plan that stood here:
 
-- `Adc`: 7 CV channels direct, 8 pots through `AdcChannelConfig::InitMux(A10, 8, D26, D27, D28)`,
-  in the channel order of the mux table (not the panel order).
-  Marbles' `CvReader` expects inverted, calibrated readings; keep its
-  calibration routine (C1/C3 for RATE and SPREAD, offsets for the rest).
-- `ClockInputs`: GPIO D0/D1, active low; probe on D15.
-- `GateOutputs`: D2–D4.
-- `Dac`: SPI1, two MCP4922 (16-bit frames: A/B select, BUF, GA, SHDN, 12
-  data bits), write four channels then pulse LDAC once per block. Marbles'
-  16-bit DAC codes map to 12-bit by dropping the low four bits; keep
-  `dac_offset`/`dac_scale` in 16-bit units so the calibration code stays.
-- `Leds`/`Switches`: shift 16 bits into the 595s and latch (bit order per
-  the 595 table: the U10 outputs are not in panel order); load the 165 and
-  read 8 bits, every millisecond.
-- Audio callback at 48 kHz, block size 8, as Marbles (`kBlockSize`).
-- Settings and scales in QSPI.
+- The I/O runs from a 32 kHz timer interrupt, as Marbles' DAC interrupt,
+  not from the audio callback: Marbles' code counts in 32 kHz samples and
+  5-sample blocks (not 8). The rendering runs in a low-priority interrupt,
+  so the QSPI writes in the main loop cannot stall it.
+- `Adc` as planned (7 CVs direct, the pots through the mux in the mux
+  table's order); each CV reading is converted to the value Marbles' own
+  input stage would give, so Marbles' calibration runs unchanged.
+- `Dac`: both MCP4922s every sample, then one LDAC pulse; Marbles' 16-bit
+  codes rounded to 12 bits, the nominal calibration from the output stage
+  above. The DACs use their buffered VREF input (see the open items).
+- `Leds`/`Switches`: the 595 frame every 4 samples (yellow alternates
+  red and green; the output LEDs get 16 brightness levels by PWM), the 165
+  every millisecond. SPI1 runs at 6.25 MHz in mode 0 for all of it.
+- Added: a calibration of the CV outputs through the X SPREAD input (hold
+  t range, press X range), since Marbles calibrates its DAC on the factory
+  rig only.
 
 The Marbles firmware is © Emilie Gillet, MIT licence.
 
@@ -622,8 +626,35 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
 
 ## Open items
 
-- Verify the LM4040 TO-92 pinout for the exact part you buy; the footprint
-  leaves pad 3 open.
+- **LM4040 (D21) pinout: checked 2026-11-02, it does not fit TI's TO-92
+  parts.** The footprint has pad 1 = cathode (VREF), pad 2 (the middle) =
+  anode (GND), pad 3 open, which is the SOT-23 LM4040's order. TI's TO-92
+  LM4040-2.5 (AIZ/BIZ/CIZ/DIZ, datasheet SNOS633N, LP package) has pin 1
+  NC (or anode), pin 2 the cathode, pin 3 the anode, so as drawn the
+  cathode lands on GND whichever way it goes in: VREF then floats to about
+  2.6-2.7 V, or sits at a diode drop. Before ordering, move the nets so
+  that pad 2 is VREF and pad 3 is GND (pad 1 open); on boards already
+  made, bend the leads so pin 2 reaches pad 1 and pin 3 pad 2. Check the
+  datasheet of the exact part either way. Measure 2.50 V at C30 before
+  calibrating the outputs.
+- The reference's current: R47 (2.2k) feeds 0.36 mA, R42 takes 0.25 mA.
+  The firmware uses the DACs' buffered VREF inputs, which leaves the
+  LM4040 about 0.11 mA (its guaranteed minimum is 60-65 uA); unbuffered,
+  they would leave 53 uA. R47 = 1.5k (0.53 mA) gives margin if 3V3A runs
+  low.
+- Optional, for the CV outputs' negative end: the stage reaches
+  −5.10 V nominally, so with 1 % parts a few outputs may stop just short
+  of −5 V. 23.7k for R70, R74, R78, R82 gives −5.23 V (and set
+  `kDacInputResistor` in the firmware's `drivers/dac.h`).
+- Optional: nothing holds the SPI bus while the Seed is in its bootloader,
+  so the LEDs (and the DACs) can change at random meanwhile. 100k pull-downs
+  on SPI_SCK and LED_LATCH and pull-ups on DAC_CS1, DAC_CS2 and DAC_LDAC
+  would hold them; cosmetic only.
+- Check the LED buttons' switch pairing before fitting all seven: the
+  netlist assumes pins 1+2 and 3+4 are joined inside (continuity 1-2 and
+  3-4 at rest, 1-3 only when pressed). Also see which way the bipolar ones
+  light red: the firmware assumes the red line high and the green line low
+  gives red (its table can be swapped).
 - Clip the three plastic feet off each LED button, so its body sits on the
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
