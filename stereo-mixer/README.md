@@ -50,7 +50,7 @@ The circuit, values, placement, routing notes and BOM are in
 | Netlist | Done: main board 155 parts, faceplate 59, no single-pin nets, every header net used on both boards | `hardware/tools/circuit.py` |
 | EasyEDA Pro project | Done: 6 schematic pages, 0 problems; both PCBs placed and net-assigned, 0 placement problems; the panel PCB. Not yet opened in EasyEDA | `hardware/easyeda/StereoMixer.epro2` |
 | Panel | Done: hole list, 1:1 drill template, artwork | `hardware/panel/`, `hardware/tools/panel.py` |
-| Routing | Main board routed (2026-11-02 export) and audited: clean except U7 pins 1–2 under the standoff at (122.9, 4.8). Faceplate not started | `docs/routing-audit-2026-11-02.md`, `hardware/tools/copper_audit.py` |
+| Routing | Both boards routed (second export 2026-11-02), audited: U7 fixed; DRW_F and SEND_F still cross the J14 / J11 plug-tip spots on the faceplate (move them to the top layer) | `hardware/easyeda/StereoMixer-routed.epro2`, `docs/routing-audit-2026-11-02.md`, `hardware/tools/copper_audit.py` |
 
 ## Files
 
@@ -68,6 +68,7 @@ hardware/
     copper_audit.py                     audits a routed export: nets, copper, clearances, standoffs, audio, headers
   easyeda/
     StereoMixer.epro2                   EasyEDA Pro 3.x project: Mixer Main, Mixer Faceplate, Mixer Panel
+    StereoMixer-routed.epro2            your routed export: the layout master from here on
     stereo-mixer-easyeda-*.png          previews of the six pages and the three PCBs
     stereo-mixer-parts.epru             library parts from your MorrisSynth export (10R, 10 uF, box header)
   panel/

@@ -41,6 +41,8 @@ CLEARANCE = 0.152       # the rule the user's boards carry for pads and vias (tr
 FAB_SPACING = 0.127     # JLCPCB's minimum spacing on a 2-layer board
 NPTH_TRACK = 0.254      # JLCPCB's minimum from a non-plated hole to a track
 HOLE_KEEPOUT = 3.0      # standoff / screw head around a mounting hole
+BARREL_KEEPOUT = 3.0    # the Thonkiconn's metal barrel, panel side
+THONK_TIP_R = 1.75      # Thonk's datasheet: a 3 mm hole (or no copper) under the barrel, where a plug tip reaches; +0.25
 COUPLE_GAP = 0.6        # edge-to-edge gap under which a same-layer run counts as side by side
 COUPLE_REPORT = 5.0     # mm of side-by-side run worth listing
 
@@ -509,8 +511,25 @@ class RoutedBoard:
         return sorted(out)
 
     # -- keepouts and edges
-    def keepouts(self):
+    def keepouts(self, barrels=()):
         out = []
+        for bx, by, ref in barrels:         # panel side (layer 2): non-ground copper under the metal barrel
+            own = {p.net for p in self.pads if p.ref == ref}     # the jack's own tip / switch: a plug tip there is harmless
+            for t in self.tracks:
+                if t["layer"] != 2 or t["net"].startswith("GND"):
+                    continue
+                d = d_point_seg((bx, by), t["a"], t["b"]) - t["w"] / 2
+                if d < BARREL_KEEPOUT:
+                    out.append(f"track {t['net']} on the panel side {d:.2f} mm from {ref}'s barrel"
+                               + (" (the jack's own net)" if t["net"] in own else
+                                  " (ANOTHER NET INSIDE THONK'S 3 MM PLUG-TIP AREA)" if d < THONK_TIP_R else ""))
+            for v in self.vias:
+                d = math.hypot(v["c"][0] - bx, v["c"][1] - by) - v["r"]
+                if d < BARREL_KEEPOUT and not v["net"].startswith("GND"):
+                    out.append(f"via {v['net']} {d:.2f} mm from {ref}'s barrel")
+            for p in self.pads:
+                if p.ref != ref and p.net and not p.net.startswith("GND") and p.d_point((bx, by)) < BARREL_KEEPOUT:
+                    out.append(f"pad {p.ref}.{p.num} ({p.net}) {p.d_point((bx, by)):.2f} mm from {ref}'s barrel")
         for hx, hy, hd in self.holes:
             for t in self.tracks:
                 d = d_point_seg((hx, hy), t["a"], t["b"]) - t["w"] / 2
@@ -827,8 +846,20 @@ def audit_board(b, gen, circuit, marks):
           f"{len(clear) - len(under)} between {CLEARANCE} and 0.25 mm")
     for d, where in clear[:25]:
         print(f"    {d:.3f}  {where}")
-    ko, edge = b.keepouts()
-    print(f"-- keepouts: {len(ko)} items within {HOLE_KEEPOUT} mm of a mounting hole; copper {edge:.2f} mm from the edge")
+    barrels = []
+    if "Faceplate" in b.title:
+        for ref, *_ in circuit.JACKS:
+            pl = b.parts[ref]
+            s, t = pl["pads"]["1"], pl["pads"]["3"]      # sleeve and tip: the barrel is 6.48 mm from the sleeve
+            d = math.hypot(t.x - s.x, t.y - s.y)
+            barrels.append((s.x + (t.x - s.x) / d * 6.48, s.y + (t.y - s.y) / d * 6.48, ref))
+        for bx, by, ref in barrels:                     # the pour under the plug tip
+            under = [isl for isl in b.islands if isl.layer == 2 and isl.contains((bx, by))]
+            if under:
+                print(f"    {ref}: the {under[0].net} pour covers the plug-tip spot on the panel side")
+    ko, edge = b.keepouts(barrels)
+    print(f"-- keepouts: {len(ko)} items within {HOLE_KEEPOUT} mm of a mounting hole"
+          + (f" or {BARREL_KEEPOUT} mm of a jack barrel" if barrels else "") + f"; copper {edge:.2f} mm from the edge")
     for k in ko[:30]:
         print("   ", k)
     dang = b.dangling()
@@ -923,6 +954,19 @@ def main(path, png=None):
                      for h, p in panel["recs"] if h["type"] == "FILL" and p["layerId"] == 12 and p["path"][0][0] == "CIRCLE")
         print(f"\n=== panel: {len(got)} round holes in the export, {len(want)} generated; "
               f"{'identical' if got == want else 'DIFFERENT'}")
+        for a, b in zip(got, want):
+            if a != b:
+                print("   ", a, "vs", b)
+        # the mounting slots: milled regions, compared by their bounding boxes
+        want = sorted((round(x - w / 2, 2), round(y - h / 2, 2), round(x + w / 2, 2), round(y + h / 2, 2))
+                      for x, y, w, h in pp.slots)
+        got = []
+        for h, p in panel["recs"]:
+            if h["type"] == "FILL" and p["layerId"] == 12 and p["path"][0][0] != "CIRCLE":
+                pts = flatten_path(p["path"][0] if isinstance(p["path"][0], list) else p["path"], MIL)
+                got.append(tuple(round(v, 2) for v in _bbox(pts)))
+        got.sort()
+        print(f"    {len(got)} slots in the export, {len(want)} generated; {'identical' if got == want else 'DIFFERENT'}")
         for a, b in zip(got, want):
             if a != b:
                 print("   ", a, "vs", b)

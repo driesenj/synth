@@ -1,5 +1,59 @@
 # Stereo mixer routing audit, 2026-11-02
 
+## Second export, `ProPrj_SI Mixer_2026-11-02(1).epro2`: two tracks to move
+
+This export is the whole project, with both boards routed. It is now
+`hardware/easyeda/StereoMixer-routed.epro2`, the layout master, and
+`copper_audit.py` audits it by default.
+
+**Main board: U7 is fixed.** U7 moved 2.5 mm up, to (129.0, 14.5). Its
+nearest pad is now 5.19 mm from the hole at (122.9, 4.8). Its tracks were
+re-routed:
+
+- CK1, CK2, QK1, QK2, QN1, QN2, POR and +12V;
+- three GND vias under the chip are gone.
+
+Nothing else moved. All 139 nets are still complete, with no shorts and
+nothing under 0.152 mm. C923 stayed put, so it is now 4.3 mm of track from
+U7's VDD pin; that is fine.
+
+**Faceplate: routed and clean, except two plug-tip spots.**
+
+| Check | Result |
+|---|---|
+| Netlist and placement | Identical to the generator: no part moved, no net changed. |
+| Connectivity | All 79 nets are complete, with no shorts. The board has no vias: GND_F is poured on both layers, one piece on the rear and six on the panel side, all joined through the pot lugs, jack sleeves and header pins. |
+| Clearance | Nothing is under the 0.152 mm rule; the nearest gaps are 0.154 mm. Copper is 2.65 mm from the edge. Nothing is within 3 mm of a mounting hole. |
+| Headers | All nine headers line up pin for pin with the main board's sockets, and the holes are the same. |
+| Crosstalk | The longest side-by-side run within 1 mm is MIX_L_F / MIX_R_F for 17 mm. Both are op-amp outputs, so it does nothing. |
+| Panel board | All 50 holes and 4 slots match `panel_pcb.py`. |
+
+**Move: DRW_F and SEND_F cross other jacks' plug-tip spots.** A fully
+inserted plug's tip reaches the panel-side copper under the jack. Thonk
+asks for a 3 mm hole there, or no copper.
+
+- DRW_F, the DRUMS level wiper on its way to HF9.5, runs 0.20 mm from the
+  centre of J14 (FX IN). A worn spot in the mask would put whatever is
+  patched into FX IN onto the drums line.
+- SEND_F, from J15 to HF9.1, passes 1.63 mm from J11 (RETURN L). Through a
+  worn mask, the send output would feed straight into the return, a loop
+  round the effect.
+
+The fix is a few clicks in EasyEDA:
+
+1. Select DRW_F's two segments and SEND_F's four, and put them on the top
+   layer. Each net runs pad to pad with no via, so nothing else changes.
+   On the top they keep at least 2.2 mm from every other track.
+2. Rebuild the copper areas and export again.
+
+The other tracks near a barrel are the jack's own tip or switch net: J12,
+J13 and J17. A plug touching those is harmless.
+
+The GND_F pour lies under the tip spot of the other 16 jacks. A worn spot
+there would only short that plug's signal to ground, which damages
+nothing. Leave it, or put a small no-copper circle at each spot if you
+want to follow Thonk to the letter.
+
 ## Main board, `ProDoc_Mixer Main PCB_2026-11-02.epro2`: one thing to fix
 
 The export holds the main board only; the faceplate is not routed yet.
