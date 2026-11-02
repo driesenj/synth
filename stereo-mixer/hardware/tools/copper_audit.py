@@ -821,7 +821,7 @@ def audit_board(b, gen, circuit, marks):
     for a, bnet, where in contacts:
         print(f"    SHORT {a} - {bnet}: {where}")
     clear = b.clearances(0.25)
-    under = [c for c in clear if c[0] < CLEARANCE]
+    under = [c for c in clear if c[0] < CLEARANCE - 0.0005]       # exactly on the rule passes
     fab = [c for c in clear if c[0] < FAB_SPACING]
     print(f"-- clearance: {len(under)} gaps under {CLEARANCE} mm ({len(fab)} under the fab's {FAB_SPACING}), "
           f"{len(clear) - len(under)} between {CLEARANCE} and 0.25 mm")
