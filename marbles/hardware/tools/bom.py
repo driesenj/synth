@@ -58,6 +58,9 @@ NOTES = [
     "faceplate the 470 Ω LED resistors. The Board column says which.",
     "33 of the main board's resistors stand up on a 2.54 mm footprint: any 1/4 W or LR1F part fits.",
     "D21, the LM4040-2.5 in TO-92: its cathode is the middle pin; the board ties pads 1 and 3 to the anode.",
+    "If the TO-92 LM4040 can't be had, the SOT-23 one (LM4040BIM3-2.5/NOPB, Conrad) fits D21 on two short "
+    "wire legs: its pin 1 (cathode) into the middle hole, pin 2 (anode) into either outer hole, pin 3 left "
+    "free. Pins 1 and 2 are the two leads on one side, pin 1 on the left with the marking upright.",
     "EasyEDA's own BOM of the routed project calls H3, H6, HF3 and HF6 an LCSC female 1×3: fit male pins on "
     "the faceplate side.",
     "Fit R33, R36 and R39 (flat, under the breakout) and the two centre mounting screws before plugging the "
