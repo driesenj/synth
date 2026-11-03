@@ -16,7 +16,7 @@ OSHWLab / JLCPCB,Modules,1,"Rob Heel's seed_power_opamps breakout, built: its ow
 Tayda,Panel parts,8,"3 mm bicolour LED, red/green, common cathode, 3 leads (Thonk has no 3-lead ones)","D1, D2, D3, D4, D5, D6, D7, D8",Faceplate,
 Tayda,Chips,1,74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works,U1,Faceplate,
 Tayda,Chips,2,74HC595 shift register (DIP-16) + DIP-16 socket,"U9, U10",Faceplate,
-Tayda,Semiconductors,2,BAT85 Schottky diode (DO-35),"D21, D22",Main,
+Tayda,Semiconductors,2,"BAT85 Schottky diode (DO-35); BAT43, BAT42, BAT46, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm","D21, D22",Main,
 Tayda,Resistors,18,"Resistor 470 Ω, metal film 1 %, 1/4 W","Faceplate: R80, R81, R82, R83, R84, R85, R86, R87, R88, R89, R90, R91, R92, R93, R94, R95; Main: R60, R61",Faceplate + Main,
 Tayda,Resistors,8,"Resistor 1k, metal film 1 %, 1/4 W","R23, R26, R29, R32, R35, R38, R41, R44",Main,
 Tayda,Resistors,5,"Resistor 10k, metal film 1 %, 1/4 W","R9, R10, R11, R12, R13",Faceplate,
