@@ -52,7 +52,7 @@ CSV: `hardware/bom/marbles-bom.csv` (everything) and `hardware/bom/marbles-bom-t
 | 1 | 74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works | U1 | Faceplate |  |
 | 2 | 74HC595 shift register (DIP-16) + DIP-16 socket | U9, U10 | Faceplate |  |
 | 2 | 2N3904 NPN transistor (TO-92) | Q1, Q2 | Main |  |
-| 2 | BAT85 Schottky diode (DO-35); BAT43, BAT42, BAT46, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D22, D23 | Main |  |
+| 2 | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D22, D23 | Main |  |
 | 11 | Resistor 470 Ω, metal film 1 %, 1/4 W | R1, R80, R81, R82, R83, R84, R85, R86, R87, R88, R89 | Faceplate |  |
 | 14 | Resistor 1k, metal film 1 %, 1/4 W | R23, R26, R29, R32, R35, R38, R41, R62, R65, R68, R73, R77, R81, R85 | Main |  |
 | 1 | Resistor 1.5k, metal film 1 %, 1/4 W | R47 | Main |  |

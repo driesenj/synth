@@ -43,7 +43,7 @@ CSV: `hardware/bom/side-fx-bom.csv` (everything) and `hardware/bom/side-fx-bom-t
 | 1 | H11L1 opto-isolator (DIP-6) + DIP-6 socket | U7 | Main |  |
 | 1 | 1N4148 diode (DO-35) | D2 | Main |  |
 | 1 | 2N3904 NPN transistor (TO-92) | Q1 | Main |  |
-| 1 | BAT85 Schottky diode (DO-35); BAT43, BAT42, BAT46, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D1 | Main |  |
+| 1 | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D1 | Main |  |
 | 2 | 10k × 8 bussed resistor network, SIP-9 (Bourns 4609X-101-103LF, Tayda A103J) | RN1, RN2 | Faceplate |  |
 | 1 | Resistor 220 Ω, metal film 1 %, 1/4 W | R26 | Main |  |
 | 5 | Resistor 470 Ω, metal film 1 %, 1/4 W | R1, R2, R3, R4, R5 | Main |  |
