@@ -50,8 +50,8 @@ def knobs():
 
 
 EXTRA = [        # (source, group, part, qty, note)
-    ("Waveshare", "Modules", "Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable", 1,
-     "DS1: the glass is taped to the panel's rear, the cable plugs into CN1"),
+    ("Eckstein", "Modules", "Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable", 1,
+     "DS1: eckstein-shop.de, €13.95 (2026-11-03); the glass is taped to the panel's rear, the cable plugs into CN1"),
 ]
 NOTES = [
     "RN1 and RN2 are SIP-9 resistor networks (the 74HC165s' pull-ups), not header strips.",

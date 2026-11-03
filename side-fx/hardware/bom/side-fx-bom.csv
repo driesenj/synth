@@ -7,6 +7,7 @@ Thonk,Chips,1,TL074 quad op-amp (DIP-14) + DIP-14 socket,U6,Main,
 Thonk,Connectors,1,Eurorack power cable for the breakout's power header,,—,check the header's pin count (10 or 16)
 Thonk,Connectors,4,"Female header, 2.54 mm, 8.5 mm tall: 1 × 1×11, 1 × 1×8, 1 × 1×6, 1 × 1×5","H1, H2, H3, H4",Main,main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips
 Thonk,Connectors,4,"Male pin header, 2.54 mm: 1 × 1×11, 1 × 1×8, 1 × 1×6, 1 × 1×5","HF1, HF2, HF3, HF4",Faceplate,faceplate side; Thonk's Male + Female Header Bag or cut from 40-pin strips
+Eckstein,Modules,1,"Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable",,—,"DS1: eckstein-shop.de, €13.95 (2026-11-03); the glass is taped to the panel's rear, the cable plugs into CN1"
 JLCPCB,PCBs,1,"Main board + faceplate board, 69.6 × 108.0 mm each, 2 layers, 1.6 mm",,—,from SideFXy-routed.epro2
 JLCPCB,PCBs,1,"Panel 70.8 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG",,—,the panel board in SideFXy-routed.epro2; ENIG makes the bands and the mushroom gold
 OSHWLab / JLCPCB,Modules,1,"Rob Heel's seed_power_opamps breakout, built: its own PCB and parts",U5,Main,"carries the Seed, the Eurorack power header and the audio stages"
@@ -33,4 +34,3 @@ Tayda,Connectors,1,"1×8 right-angle male header, 2.54 mm (the display cable's p
 Tayda,Connectors,4,"Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position)",U5,Main,cut from 1×40 strips; male pins under the breakout
 Tayda,Mechanical,4,"Knob for a 6 mm D-shaft encoder, about 11 mm across",,—,match the encoders' shaft length
 Tayda,Mechanical,4,"M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws",,—,one per mounting hole between the boards; measure the mated headers first
-Waveshare,Modules,1,"Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable",,—,"DS1: the glass is taped to the panel's rear, the cable plugs into CN1"

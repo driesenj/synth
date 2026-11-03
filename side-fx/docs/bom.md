@@ -20,6 +20,12 @@ CSV: `hardware/bom/side-fx-bom.csv` (everything) and `hardware/bom/side-fx-bom-t
 
 ## Everything else
 
+### Eckstein
+
+| Qty | Part | Refs | Board | Note |
+|---|---|---|---|---|
+| 1 | Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable |  | — | DS1: eckstein-shop.de, €13.95 (2026-11-03); the glass is taped to the panel's rear, the cable plugs into CN1 |
+
 ### JLCPCB
 
 | Qty | Part | Refs | Board | Note |
@@ -60,12 +66,6 @@ CSV: `hardware/bom/side-fx-bom.csv` (everything) and `hardware/bom/side-fx-bom-t
 | 4 | Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position) | U5 | Main | cut from 1×40 strips; male pins under the breakout |
 | 4 | Knob for a 6 mm D-shaft encoder, about 11 mm across |  | — | match the encoders' shaft length |
 | 4 | M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws |  | — | one per mounting hole between the boards; measure the mated headers first |
-
-### Waveshare
-
-| Qty | Part | Refs | Board | Note |
-|---|---|---|---|---|
-| 1 | Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable |  | — | DS1: the glass is taped to the panel's rear, the cable plugs into CN1 |
 
 ## Notes
 
