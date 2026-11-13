@@ -511,8 +511,10 @@ def faceplate_board(pr, parts, info, circuit):
         b.orient(ref, lambda r, u=circuit.pot_pins(ref): r["2"][0] * u[0] + r["2"][1] * u[1] > 3)
     for ref, *_ in circuit.BUTTONS:        # LED pins in a row along x, anode on the right
         b.orient(ref, lambda r: abs(r["5"][1] - r["6"][1]) < 0.01 and r["5"][0] > r["6"][0] and r["1"][1] > r["3"][1])
-    for ref, *_ in circuit.LEDS:           # three leads in a row along x, red anode (pad 1) on the left
-        b.orient(ref, lambda r: abs(r["1"][1] - r["3"][1]) < 0.01 and r["1"][0] < r["3"][0])
+    for ref, *_ in circuit.LEDS:           # three leads in a column, red anode (pad 1) at the bottom: on 2.54 mm
+        # pitch a row along x would put the outer pads on the buttons' LED pins, 6.3 mm away (D1's red anode
+        # then drops straight to H4 pin 5, LED_POLY_R, below it)
+        b.orient(ref, lambda r: abs(r["1"][0] - r["3"][0]) < 0.01 and r["1"][1] < r["3"][1])
     for ref, kind, pins in circuit.HEADERS:                  # male headers, top (rear) layer
         place_header(b, circuit.fb_ref(ref), len(pins), HEADERS_FRONT[ref], False)
     b.place_front("U1", *MUX_AT)

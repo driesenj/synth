@@ -563,7 +563,7 @@ def circuit_check():
 # A first look at the faceplate's front (panel side) before any PCB work: the panel parts' bodies must
 # not overlap, and every pad must clear the other parts' bodies (their leads are soldered on the
 # panel side, where the bodies lie flat) and the board edge. Board frame, mm; pads as circles.
-PAD_R = {"jack": 0.9, "pot": 0.9, "lug": 1.5, "button": 0.8, "led": 0.6}
+PAD_R = {"jack": 0.9, "pot": 0.9, "lug": 1.5, "button": 0.8, "led": 0.75}
 EDGE = 0.5
 
 
@@ -587,8 +587,8 @@ def front_shapes():
             pads = [(x + dx, y + dy, PAD_R["button"]) for dx in (-2.54, 2.54) for dy in (-2.54, 2.54)]
             pads += [(x - 2.7, y, PAD_R["button"]), (x + 2.7, y, PAD_R["button"])]
             out[ref] = ((x - 3.75, y - 3.75, x + 3.75, y + 3.75), pads)
-        elif ref.startswith("D"):       # 3 mm, 3 leads at 1.27 mm; flange 3.8 mm
-            out[ref] = ((x - 1.9, y - 1.9, x + 1.9, y + 1.9), [(x + d, y, PAD_R["led"]) for d in (-1.27, 0, 1.27)])
+        elif ref.startswith("D"):       # 3 mm, 3 leads at 2.54 mm in a column (pcb.py); flange 3.8 mm
+            out[ref] = ((x - 1.9, y - 1.9, x + 1.9, y + 1.9), [(x, y + d, PAD_R["led"]) for d in (-2.54, 0, 2.54)])
     return out
 
 

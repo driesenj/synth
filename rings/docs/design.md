@@ -13,7 +13,9 @@ In the rig it serves as a resonator for Plaitsy, noise and drums, and its
 ODD / EVEN outputs go to the stereo mixer as a real stereo pair.
 
 Status: **panel approved (2026-10-31); netlist, EasyEDA Pro schematic,
-both PCBs placed and the panel as a PCB done (2026-11-01).**
+both PCBs placed and the panel as a PCB done (2026-11-01); LED footprint
+moved to the measured 2.54 mm lead pitch (2026-11-14): re-import before
+routing.**
 `hardware/tools/circuit.py` holds the whole circuit as one netlist over the
 two boards, the panel placement, and three checks (netlist, circuit values,
 faceplate front). `easyeda_export.py` writes `hardware/easyeda/Ringsy.epro2`:
@@ -405,7 +407,9 @@ the 1N5819 symbol, the 1N4148's DO-35, the 74HC595N's DIP-16), new values
 on the same symbols and footprints. Drawn or generated here, as on Plaitsy:
 the Seed on seed_power_opamps, DIP-14 on 7.62 mm rows for the TL074, the
 Alpha 9 mm pot, the Thonk LED button (no foot holes), the 3 mm bicolour
-LED, 1×N headers, every main-board resistor standing up (Plaitsy's 2.54 mm
+LED (3 leads at 2.54 mm, measured on the bought ones; 0.9 mm holes, 1.5 mm
+pads, pad 1 square = red anode, body centred on the middle lead), 1×N
+headers, every main-board resistor standing up (Plaitsy's 2.54 mm
 footprint). New for Ringsy: the 2N3904 with its symbol pins and TO-92 pads
 both named E / B / C, so they cannot be swapped, and a 6.3 mm radial can on
 2.5 mm leads for the bipolar 10 µ.
@@ -442,7 +446,10 @@ Previews: `rings-easyeda-pcb-*.png`, rear view (EasyEDA's top layer).
   - Jacks: sleeve above the tip.
   - Pots: pins on the side `pot_pins` gives.
   - LED buttons: LED pins along x, anode right.
-  - LEDs: red anode left.
+  - LEDs: leads in a column, red anode at the bottom. On 2.54 mm pitch a
+    row along x would put the outer pads on the buttons' LED pins (6.3 mm
+    away); in a column the nearest pad is 2.05 mm off. D1's red anode sits
+    straight above H4 pin 5 (LED_POLY_R).
 - **Rear parts:** only in the strips the panel parts leave free.
   - The 74HC4051 lies at (33, 71), between the medium knobs and
     FREQUENCY / STRUCTURE, with C1 beside pin 16.
@@ -581,7 +588,7 @@ way; the stack depth is Plaitsy's.
 | 10 | Thonkiconn PJ398SM (Thonk) | | J1–J10 |
 | 10 | Alpha 9 mm vertical B10k (Thonk) + knobs Ø15 ×2, Ø12 ×3, Ø10 ×5 | | RV1–RV10 |
 | 2 | Thonk low-profile LED button, white; clip the feet | | SW1, SW2 |
-| 2 | 3 mm red/green bicolour LED, 3 leads, common cathode (Tayda, Kingbright) | | D1, D2 |
+| 2 | 3 mm red/green bicolour LED, 3 leads at 2.54 mm, common cathode in the middle | lead pitch measured on the bought ones | D1, D2 |
 | 1 | 74HC4051 | DIP-16, rear | U1 |
 | 1 | 100 n | rear | C1 |
 | 1 | 6k8 1 % | FM normal | R1 |

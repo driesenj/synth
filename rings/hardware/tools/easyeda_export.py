@@ -154,10 +154,11 @@ def fp_header(n):
 
 
 def fp_led3():
-    """3 mm bicolour LED, 1.27 mm pitch, body centred on the middle lead (common cathode)."""
+    """3 mm bicolour LED, 2.54 mm pitch (measured on the user's red/green LEDs), body centred on the middle
+    lead (common cathode); pad 1 square = red anode."""
     f = Footprint("LED-3MM-3P", "D?")
     for i in range(3):
-        f.pad(i + 1, (i - 1) * 1.27, 0, 0.8, 1.1, square=(i == 0), h=1.7)
+        f.pad(i + 1, (i - 1) * 2.54, 0, 0.9, 1.5, square=(i == 0))
     f.circle(0, 0, 1.6)
     return f
 
@@ -454,7 +455,7 @@ class MProject(Project):
             ("MUX", ee.mux_symbol(), "74HC4051", "U?", dip16, "8-channel analog multiplexer, DIP-16"),
             ("NPN", npn_symbol(), "2N3904", "Q?", fps["TO92"], "NPN transistor, TO-92, pads E B C"),
             ("LED_RG", ee.led_symbol(), "LED 3mm bicolour R/G CC", "D?", fps["LED3"],
-             "3 mm bicolour LED, red/green, common cathode on the middle lead, 1.27 mm pitch (Tayda, Kingbright)"),
+             "3 mm bicolour LED, red/green, common cathode on the middle lead, 2.54 mm pitch"),
             ("SWLED", led_button_symbol(), f"LED button {colour}, Thonk low profile", "SW?", fps["SWLED"],
              f"Thonk low-profile LED button, {colour}: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED "
              "anode 5, cathode 6. Clip the three plastic feet off: the board has no holes for them"),
