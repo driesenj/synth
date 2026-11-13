@@ -178,7 +178,9 @@ whole chain, which gives two separate levels at the output:
 - **WET** (HOME page, per preset, modulatable): everything processed.
 
 A soft limiter (linear to 0.75 of full scale, then a smooth knee that
-never passes it) protects the outputs.
+never passes it) keeps the digital output from wrapping. It does not
+shape the analog clip: the breakout's output stage clips at 0.46–0.59 of
+full scale (about 16 V p-p in the worst case), before the knee.
 
 ## Modulation
 
@@ -403,7 +405,9 @@ buffer.
 5. **CV.** With nothing patched, SETUP 3 TOOLS > CV ZERO. Then patch a
    known voltage and check the CV pages show it.
 6. **Audio.** Send a signal through with all sends off: OUT should equal
-   IN. Check the polarity against the dry signal (SETUP 1 OUT POLARITY).
+   IN within about 1 dB (a Seed Rev7 reads about 0.9 dB low: its input
+   loads the breakout's 1k). Check the polarity against the dry signal
+   (SETUP 1 OUT POLARITY).
 7. **CPU.** Load the heaviest presets (the BEADSY ones) and watch HOME's
    CPU figure. Over about 85 %: lower `kMaxGrains` for BEADSY, or report
    which blocks are heavy.

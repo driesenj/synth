@@ -78,8 +78,10 @@ class Controls {
   volatile uint16_t debounced_;
   int steps_per_detent_;
   bool reverse_;
-  // A switch must read the same for this many scans (1 ms) to change.
-  static const uint8_t kDebounceScans = 4;
+  // A switch must read the same for this many scans (6 ms at 4 kHz; at least
+  // 5.75 ms after the first agreeing scan) to change: the EC11's contacts
+  // bounce for up to 2 ms, tact switches up to about 5 ms.
+  static const uint8_t kDebounceScans = 24;
 
   bool Push(const Event& event);
   void Debounce(const hal::ControlScan& scan, uint32_t now_ms);

@@ -164,7 +164,7 @@ TEST(app_storage, settings_defaults_and_sanitize) {
   CHECK(s.clock_ppqn == 2 && kClockPpqnValues[s.clock_ppqn] == 4);
   CHECK(s.brightness == 8 && s.display_flip == 0 && s.encoder_steps == 4);
   CHECK(s.encoder_reverse == 0 && s.invert_output == 0 && s.last_preset == 0);
-  CHECK(s.calibration.offset[2] == 0.5079f && s.calibration.scale[3] == -12.22f);
+  CHECK(s.calibration.offset[2] == 0.5022f && s.calibration.scale[3] == -25.38f);
   CHECK(sizeof(Settings) + 16 <= 128);
 
   s.midi_channel = 40;
@@ -181,7 +181,7 @@ TEST(app_storage, settings_defaults_and_sanitize) {
   CHECK(s.midi_channel == 16 && s.clock_ppqn == 5 && s.brightness == 1);
   CHECK(s.encoder_steps == 4 && s.input_gain == 120 && s.output_gain == -120);
   CHECK(s.last_preset == 63);
-  CHECK(s.calibration.scale[1] == -12.22f && s.calibration.offset[2] == 0.5079f);
+  CHECK(s.calibration.scale[1] == -25.38f && s.calibration.offset[2] == 0.5022f);
   CHECK(s.calibration.offset[0] == 0.49f);  // a plausible calibration stays
 }
 

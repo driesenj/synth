@@ -80,9 +80,9 @@ DEV = {
     "FRAME": "93ae535dda0d4cce9b643bf06fbcd5ca",     # Drawing-Symbol_A4
 }
 ee.DEV = DEV          # Page._flag looks the ground flag up here
-R_NEW = {"100k": ("LR1F100K", "100kΩ"), "27k": ("LR1F27K", "27kΩ"), "15k": ("LR1F15K", "15kΩ"),
-         "220": ("LR1F220R", "220Ω"), "470": ("LR1F470R", "470Ω")}
-C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF")}
+R_NEW = {"100k": ("LR1F100K", "100kΩ"), "13k": ("LR1F13K", "13kΩ"), "15k": ("LR1F15K", "15kΩ"),
+         "12k": ("LR1F12K", "12kΩ"), "220": ("LR1F220R", "220Ω"), "470": ("LR1F470R", "470Ω")}
+C_NEW = {"2n2": ("FG28C0G1H222JNT00", "2.2nF")}
 
 # ---------------------------------------------------------------- footprints
 LAYERS = [(1, "TOP", "Top Layer", "#FF0000", "#7F0000"), (2, "BOTTOM", "Bottom Layer", "#0000FF", "#00007F"),
@@ -334,7 +334,7 @@ def hc595_symbol():
 
 
 def hc165_symbol():
-    left = [(0, "1", "/PL"), (1, "2", "CP"), (2, "10", "DS"), (3, "15", "CE"), (7, "16", "VCC"), (8, "8", "GND")]
+    left = [(0, "1", "/PL"), (1, "2", "CP"), (2, "10", "DS"), (3, "15", "/CE"), (7, "16", "VCC"), (8, "8", "GND")]
     right = [(0, "11", "D0"), (1, "12", "D1"), (2, "13", "D2"), (3, "14", "D3"), (4, "3", "D4"), (5, "4", "D5"),
              (6, "5", "D6"), (7, "6", "D7"), (8, "9", "Q7"), (9, "7", "/Q7")]
     return ic_symbol("74HC165", "74HC165.1", left, right)
@@ -514,8 +514,8 @@ class MProject(Project):
                    **{"Manufacturer Part": "10uF MLCC 5.08mm", "Value": "10uF", "Supplier Part": "", "Datasheet": "",
                       "Tolerance": "±10%", "Temperature Coefficient": "X5R / X7R",
                       "LCSC Part Name": "10uF 16V+ X5R/X7R, leaded, 5.08 mm",
-                      "Description": "10 uF ceramic, 16 V or more, leads on 5.08 mm: low enough for the 8.5 mm "
-                                     "gap between the boards, where an electrolytic is not"})
+                      "Description": "10 uF ceramic, 16 V or more, leads on 5.08 mm: low enough for the 11 mm "
+                                     "gap between the boards (less the solder tails), where an electrolytic is not"})
         fps = {"RV": self._footprint(fp_res_vertical()), "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
                "DIP6": self._footprint(fp_dip(6, "DIP-6-W7.62-P2.54")), "TO92": self._footprint(fp_to92()),
                "SEED": self._footprint(fp_seed_breakout()), "SWLED": self._footprint(fp_led_button()),
@@ -797,7 +797,7 @@ def main_page(pr, P):
     pg.text(40, Y(40), "Daisy Seed on the seed_power_opamps breakout (2.54 mm sockets on this board); audio in and "
                        "out through the breakout's op-amps (J5 / J4)", 12)
     seed_block(pg, 230, Y(260))
-    pg.text(560, Y(70), "CV inputs: TL074 inverting stages, gain -0.27 (+-5 V -> 0.33..3.03 V) around BIAS, "
+    pg.text(560, Y(70), "CV inputs: TL074 inverting stages, gain -0.13 (+-5 V -> 1.01..2.31 V) around BIAS, "
                         "1k into the ADC", 12)
     for i, (name, sec) in enumerate(circuit.CV_CHANNELS):
         cv_stage(pg, P, 700, Y(200 + i * 170), name, sec)
@@ -805,7 +805,7 @@ def main_page(pr, P):
     clock_block(pg, P, 1060, Y(250))
     pg.text(1000, Y(400), "MIDI in, TRS type A (ring = source, tip = sink); sleeve left open on the jack", 12)
     midi_block(pg, P, 1290, Y(470))
-    pg.text(1400, Y(100), "Bias 1.32 V; U6 decoupling", 12)
+    pg.text(1400, Y(100), "Bias 1.47 V; U6 decoupling", 12)
     bias_block(pg, P, 1440, Y(160))
     decoupling_pair(pg, P, "C15", "C16", 1580, Y(160))
     pg.text(1545, Y(300), "C15 / C16 at U6", 8)

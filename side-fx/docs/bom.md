@@ -13,8 +13,8 @@ CSV: `hardware/bom/side-fx-bom.csv` (everything) and `hardware/bom/side-fx-bom-t
 | 1 | Thonkiconn PJ366ST stereo jack, with nut | J5 | Faceplate |  |
 | 9 | Thonkiconn PJ398SM mono jack, with nut | J1, J2, J3, J4, J6, J7, J8, J9, J10 | Faceplate |  |
 | 1 | Electrosmith Daisy Seed | U5 | Main |  |
-| 1 | TL074 quad op-amp (DIP-14) + DIP-14 socket | U6 | Main |  |
-| 1 | Eurorack power cable for the breakout's power header |  | — | check the header's pin count (10 or 16) |
+| 1 | TL074 quad op-amp (DIP-14) | U6 | Main |  |
+| 1 | Eurorack power cable for the breakout, 10-pin to 16-pin (10 at the module, 16 at the bus) |  | — | the breakout's J2 is a 2×5 header: the red stripe to its RED STRIPE mark (−12 V) |
 | 4 | Female header, 2.54 mm, 8.5 mm tall: 1 × 1×11, 1 × 1×8, 1 × 1×6, 1 × 1×5 | H1, H2, H3, H4 | Main | main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips |
 | 4 | Male pin header, 2.54 mm: 1 × 1×11, 1 × 1×8, 1 × 1×6, 1 × 1×5 | HF1, HF2, HF3, HF4 | Faceplate | faceplate side; Thonk's Male + Female Header Bag or cut from 40-pin strips |
 
@@ -30,46 +30,65 @@ CSV: `hardware/bom/side-fx-bom.csv` (everything) and `hardware/bom/side-fx-bom-t
 
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
-| 1 | Main board + faceplate board, 69.6 × 108.0 mm each, 2 layers, 1.6 mm |  | — | from SideFXy-routed.epro2 |
+| 1 | Faceplate board, 69.6 × 108.0 mm, 2 layers, 1.6 mm |  | — | the Faceplate PCB in SideFXy-routed.epro2 |
+| 1 | Main board, 69.6 × 108.0 mm, 2 layers, 1.6 mm |  | — | the Main PCB in SideFXy-routed.epro2 |
 | 1 | Panel 70.8 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG |  | — | the panel board in SideFXy-routed.epro2; ENIG makes the bands and the mushroom gold |
+
+### Mouser
+
+| Qty | Part | Refs | Board | Note |
+|---|---|---|---|---|
+| 4 | Bourns PEC11R-4215F-S0024 encoder: 24 detents, push switch, 15 mm flatted (D) shaft, M7 bushing 5 mm long. Fitted without its nut and washer (see the notes) | ENC1, ENC2, ENC3, ENC4 | Faceplate |  |
+| 1 | Capacitor 10 µF ceramic, 5.08 mm leads: TDK FG28X5R1E106MRT06 (25 V X5R, 5 mm leads, 5.5 mm tall); an electrolytic is too tall for the gap | C4 | Faceplate |  |
+| 2 | Long-tail (stacking) female header, 2.54 mm, 1×20, about 10 mm tails (Samtec ESQ series or Arduino-style stacking headers) |  | — | the Seed's two rows on the breakout: the Seed plugs in on top, the tails pass through the breakout into the main board's sockets (the breakout README's breadboard method) |
 
 ### OSHWLab / JLCPCB
 
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
-| 1 | Rob Heel's seed_power_opamps breakout, built: its own PCB and parts | U5 | Main | carries the Seed, the Eurorack power header and the audio stages |
+| 1 | Rob Heel's seed_power_opamps breakout, built: its own PCB and parts | U5 | Main | carries the Seed, the Eurorack power header and the audio stages; its parts list: github.com/rob-scape/daisy-seed-breakout-boards, daisy-seed-dcdc-opamps BOM |
 
 ### Tayda
 
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
-| 4 | EC11 encoder with push switch, vertical, M7 bushing, D shaft (Bourns PEC11R-4215F-S0024 or Tayda's EC11) | ENC1, ENC2, ENC3, ENC4 | Faceplate |  |
-| 2 | 74HC165 shift register (DIP-16) + DIP-16 socket | U1, U2 | Faceplate |  |
-| 1 | 74HC595 shift register (DIP-16) + DIP-16 socket | U3 | Main |  |
-| 1 | H11L1 opto-isolator (DIP-6) + DIP-6 socket | U7 | Main |  |
+| 2 | 74HC165 shift register (DIP-16) | U1, U2 | Faceplate |  |
+| 1 | 74HC595 shift register (DIP-16) | U3 | Main |  |
+| 1 | H11L1 opto-isolator (DIP-6) | U7 | Main |  |
 | 1 | 1N4148 diode (DO-35) | D2 | Main |  |
-| 1 | 2N3904 NPN transistor (TO-92) | Q1 | Main |  |
-| 1 | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D1 | Main |  |
+| 1 | 2N3904 NPN transistor (TO-92), formed leads on 2.54 mm; or spread a bulk part's 1.27 mm leads to the pads | Q1 | Main |  |
+| 1 | BAT85 Schottky diode (DO-35), the clock input's clamp; BAT42, BAT43, 1N5711, SD101 or a 1N4148 fit too, DO-35 only: the holes are 0.8 mm. Low leakage matters here (it raises the clock threshold through R24): no SD103A or BAT86 | D1 | Main |  |
 | 2 | 10k × 8 bussed resistor network, SIP-9 (Bourns 4609X-101-103LF, Tayda A103J) | RN1, RN2 | Faceplate |  |
-| 1 | Resistor 220 Ω, metal film 1 %, 1/4 W | R26 | Main |  |
+| 1 | Resistor 220 Ω, metal film 1 %, 0.5 W or more in the 1/4 W body: a ±12 V output patched into MIDI puts up to 0.15 W into it | R26 | Main |  |
 | 5 | Resistor 470 Ω, metal film 1 %, 1/4 W | R1, R2, R3, R4, R5 | Main |  |
 | 5 | Resistor 1k, metal film 1 %, 1/4 W | R12, R15, R18, R21, R27 | Main |  |
-| 2 | Resistor 10k, metal film 1 %, 1/4 W | R23, R25 | Main |  |
+| 1 | Resistor 10k, metal film 1 %, 1/4 W | R25 | Main |  |
+| 1 | Resistor 12k, metal film 1 %, 1/4 W | R23 | Main |  |
+| 4 | Resistor 13k, metal film 1 %, 1/4 W | R11, R14, R17, R20 | Main |  |
 | 1 | Resistor 15k, metal film 1 %, 1/4 W | R22 | Main |  |
-| 4 | Resistor 27k, metal film 1 %, 1/4 W | R11, R14, R17, R20 | Main |  |
 | 5 | Resistor 100k, metal film 1 %, 1/4 W | R10, R13, R16, R19, R24 | Main |  |
-| 4 | Capacitor 1 nF C0G ceramic or film, 5.08 mm leads | C10, C11, C12, C13 | Main |  |
-| 6 | Capacitor 100 nF ceramic (X7R), 5.08 mm leads | Faceplate: C1, C2; Main: C3, C15, C16, C17 | Faceplate + Main |  |
-| 1 | Capacitor 1 µF ceramic (X7R), 5.08 mm leads | C14 | Main |  |
-| 1 | Capacitor 10 µF ceramic (X5R / X7R, 16 V or more), 5.08 mm leads; an electrolytic is too tall | C4 | Faceplate |  |
+| 4 | Capacitor 2.2 nF C0G ceramic or film, 50 V, 5.08 mm leads | C10, C11, C12, C13 | Main |  |
+| 6 | Capacitor 100 nF ceramic (X7R, 50 V), 5.08 mm leads | Faceplate: C1, C2; Main: C3, C15, C16, C17 | Faceplate + Main |  |
+| 1 | Capacitor 1 µF ceramic (X7R, 50 V), 5.08 mm leads | C14 | Main |  |
 | 1 | 1×8 right-angle male header, 2.54 mm (the display cable's plug lies flat on it) | CN1 | Faceplate |  |
 | 4 | Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position) | U5 | Main | cut from 1×40 strips; male pins under the breakout |
+| 1 | DIP-6 IC socket | U7 | Main |  |
+| 1 | DIP-14 IC socket | U6 | Main |  |
+| 1 | DIP-16 IC socket | U3 | Main |  |
 | 4 | Knob for a 6 mm D-shaft encoder, about 11 mm across |  | — | match the encoders' shaft length |
-| 4 | M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws |  | — | one per mounting hole between the boards; measure the mated headers first |
+| 4 | M3 nylon washer |  | — | front and back of the faceplate holes at (19.3, 49.0) and (39.6, 33.1) (routed frame): ENC4's A pad and SR_CHAIN run under the standoff and the screw head there |
+| 4 | M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's 2.5 mm plastic |  | — | one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be) |
+| 8 | M3 × 6 mm pan-head screw |  | — | two per standoff |
 
 ## Notes
 
 - RN1 and RN2 are SIP-9 resistor networks (the 74HC165s' pull-ups), not header strips.
 - J5 is the MIDI input, a stereo (TRS) Thonkiconn.
-- Check the EC11's datasheet and height against the panel gap before ordering.
+- The breakout goes on with its SMD side (op-amps, diodes) towards the main board and the Seed on top, USB at the J4 / J5 end. It fits either way round, and turned over it puts ±12 V into U6 reversed. Solder its J1 / J3 / J4 / J5 male headers in from the SMD side, pins towards the main board (against the breakout's own silk, which draws them on the Seed's side), and the Seed's rows on the long-tail headers. With the Seed out, check +12 V at C15 and −12 V at C16 before the first power-up.
+- Build the breakout with C1, C5, C10, C11, C16, C17 at 10 pF (its BOM says 47 pF) and C2, C6 at 100 pF (560 pF): 0603 C0G. With its own values the audio is 5.8 dB down at 20 kHz through the module.
+- Solder the faceplate's 74HC165s (U1, U2) straight to the board, without sockets: in sockets they reach the main board's solder tails in the 11 mm gap. Mind pin 1 before soldering.
 - C4 must be a ceramic: an electrolytic is too tall for the gap between the boards.
+- Before soldering the panel parts, fit one Thonkiconn and one LED button on the bare faceplate (button feet clipped) and lay the panel on them: the panel sits on the jacks, about 9 mm up, and the button must not stand taller.
+- Encoders (PEC11R-4215F): leave the nut and washer off. At the 9 mm panel gap the 5 mm bushing reaches only about 0.9 mm through the 1.6 mm panel, too little for the nut, so the encoder hangs on its soldered pins and tabs and the bushing only centres it in the panel hole; a push on the knob goes into the faceplate.
+- The PEC11R's mounting tabs measure 12.7 mm or less across their outer faces (2026-11-14), so they fit the footprint's MP slots (outer edges 12.7 mm apart; Bourns' own holes allow 13.2). The fit is close: squeeze the barbs if a tab binds, and solder both tabs.
+- Power: about 64 mA typical / 106 mA max from each of +12 V and −12 V, none from +5 V. The breakout's 1 W DC/DC runs near its rating: measure the bus current on the first build.

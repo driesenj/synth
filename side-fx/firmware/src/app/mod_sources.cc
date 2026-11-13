@@ -50,8 +50,8 @@ float Shape(int shape, float phase, float steps_value) {
 
 void InitCvCalibration(CvCalibration* calibration) {
   for (int i = 0; i < 4; ++i) {
-    calibration->offset[i] = 0.5079f;
-    calibration->scale[i] = -12.22f;
+    calibration->offset[i] = 0.5022f;
+    calibration->scale[i] = -25.38f;
   }
 }
 

@@ -815,11 +815,12 @@ void Ui::DoSave() {
 
 void Ui::DoCalibrate() {
   // Nothing plugged in: every input reads 0 V, so the raw readings are the
-  // offsets. The scales stay (they hold across modules within a percent).
+  // offsets. The scales stay nominal: 1 % resistors and the 3V3A reference
+  // (an LP2985, +-3.5 %) spread them by up to about 6 % between modules.
   int bad = -1;
   for (int ch = 0; ch < 4; ++ch) {
     const float raw = app_->mods.cv_raw(ch);
-    if (raw >= 0.3f && raw <= 0.7f) {
+    if (raw >= 0.42f && raw <= 0.58f) {   // 0 V +- about 2 V (nominal 0.502)
       app_->settings.calibration.offset[ch] = raw;
     } else if (bad < 0) {
       bad = ch;

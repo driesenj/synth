@@ -9,7 +9,7 @@ checked against the routed master's components; a mismatch stops the run.
 Writes docs/bom.md and hardware/bom/side-fx-bom.csv (every line, with its
 source) and hardware/bom/side-fx-bom-thonk.csv (the Thonk lines alone).
 The same file sits in marbles/, plaits/, stereo-mixer/: the code below the
-catalogue line is identical, MODULE, BUTTONS, knobs(), EXTRA and NOTES are
+catalogue line is identical, MODULE, BUTTONS, RATING, knobs(), EXTRA and NOTES are
 the module's own. Copy it, don't import it across modules.
 Run from side-fx/hardware/tools:  python bom.py
 """
@@ -40,6 +40,20 @@ pcb = _load("pcb")
 
 MODULE = {"project": "Side FXy", "file": "side-fx", "routed": "SideFXy-routed.epro2", "holes": len(circuit.HOLES_FRONT)}
 BUTTONS = {"SWLED": "red"}
+RATING = {"R26": ("Tayda", "0.5 W or more in the 1/4 W body: a ±12 V output patched into MIDI puts up to "
+                  "0.15 W into it")}      # ref -> (source, rating text) for resistors that need more than 1/4 W
+SOLDERED = {("Faceplate", "U1"), ("Faceplate", "U2")}   # chips without a socket: see NOTES
+REF_PART = {      # ref -> (source, group, part) for a part that needs its own line
+    "D1": ("Tayda", "Semiconductors", "BAT85 Schottky diode (DO-35), the clock input's clamp; BAT42, BAT43, "
+           "1N5711, SD101 or a 1N4148 fit too, DO-35 only: the holes are 0.8 mm. Low leakage matters here (it "
+           "raises the clock threshold through R24): no SD103A or BAT86"),
+    "Q1": ("Tayda", "Semiconductors", "2N3904 NPN transistor (TO-92), formed leads on 2.54 mm; or spread a bulk "
+           "part's 1.27 mm leads to the pads"),
+    "C4": ("Mouser", "Capacitors", "Capacitor 10 µF ceramic, 5.08 mm leads: TDK FG28X5R1E106MRT06 (25 V X5R, "
+           "5 mm leads, 5.5 mm tall); an electrolytic is too tall for the gap"),
+    **{f"ENC{k}": ("Mouser", "Panel parts", "Bourns PEC11R-4215F-S0024 encoder: 24 detents, push switch, 15 mm flatted (D) shaft, M7 bushing 5 mm "
+               "long. Fitted without its nut and washer (see the notes)") for k in range(1, 5)},
+}
 
 
 def knobs():
@@ -52,31 +66,59 @@ def knobs():
 EXTRA = [        # (source, group, part, qty, note)
     ("Eckstein", "Modules", "Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable", 1,
      "DS1: eckstein-shop.de, €13.95 (2026-11-03); the glass is taped to the panel's rear, the cable plugs into CN1"),
+    ("Mouser", "Connectors", "Long-tail (stacking) female header, 2.54 mm, 1×20, about 10 mm tails (Samtec ESQ "
+     "series or Arduino-style stacking headers)", 2,
+     "the Seed's two rows on the breakout: the Seed plugs in on top, the tails pass through the breakout into the "
+     "main board's sockets (the breakout README's breadboard method)"),
+    ("Tayda", "Mechanical", "M3 nylon washer", 4,
+     "front and back of the faceplate holes at (19.3, 49.0) and (39.6, 33.1) (routed frame): ENC4's A pad and "
+     "SR_CHAIN run under the standoff and the screw head there"),
 ]
 NOTES = [
     "RN1 and RN2 are SIP-9 resistor networks (the 74HC165s' pull-ups), not header strips.",
     "J5 is the MIDI input, a stereo (TRS) Thonkiconn.",
-    "Check the EC11's datasheet and height against the panel gap before ordering.",
+    "The breakout goes on with its SMD side (op-amps, diodes) towards the main board and the Seed on top, USB at "
+    "the J4 / J5 end. It fits either way round, and turned over it puts ±12 V into U6 reversed. Solder its J1 / J3 "
+    "/ J4 / J5 male headers in from the SMD side, pins towards the main board (against the breakout's own silk, "
+    "which draws them on the Seed's side), and the Seed's rows on the long-tail headers. With the Seed out, check "
+    "+12 V at C15 and −12 V at C16 before the first power-up.",
+    "Build the breakout with C1, C5, C10, C11, C16, C17 at 10 pF (its BOM says 47 pF) and C2, C6 at 100 pF (560 pF): "
+    "0603 C0G. With its own values the audio is 5.8 dB down at 20 kHz through the module.",
+    "Solder the faceplate's 74HC165s (U1, U2) straight to the board, without sockets: in sockets they reach the "
+    "main board's solder tails in the 11 mm gap. Mind pin 1 before soldering.",
     "C4 must be a ceramic: an electrolytic is too tall for the gap between the boards.",
+    "Before soldering the panel parts, fit one Thonkiconn and one LED button on the bare faceplate (button feet "
+    "clipped) and lay the panel on them: the panel sits on the jacks, about 9 mm up, and the button must not "
+    "stand taller.",
+    "Encoders (PEC11R-4215F): leave the nut and washer off. At the 9 mm panel gap the 5 mm bushing reaches only "
+    "about 0.9 mm through the 1.6 mm panel, too little for the nut, so the encoder hangs on its soldered pins and "
+    "tabs and the bushing only centres it in the panel hole; a push on the knob goes into the faceplate.",
+    "The PEC11R's mounting tabs measure 12.7 mm or less across their outer faces (2026-11-14), so they fit the "
+    "footprint's MP slots (outer edges 12.7 mm apart; Bourns' own holes allow 13.2). The fit is close: squeeze the "
+    "barbs if a tab binds, and solder both tabs.",
+    "Power: about 64 mA typical / 106 mA max from each of +12 V and −12 V, none from +5 V. The breakout's 1 W "
+    "DC/DC runs near its rating: measure the bus current on the first build.",
 ]
 
 # ---------------------------------------------------------------- catalogue (the same in every copy)
 # Sources: Thonk where the repo orders from it (the module-design skill's parts.md), Tayda / Mouser for the rest.
 GROUPS = ["Panel parts", "Modules", "Chips", "Semiconductors", "Resistors", "Capacitors", "Connectors",
           "Mechanical", "PCBs"]
-CAPS = {"100n": "100 nF ceramic (X7R), 5.08 mm leads", "1n": "1 nF C0G ceramic or film, 5.08 mm leads",
-        "100p": "100 pF C0G ceramic, 5.08 mm leads", "22p": "22 pF C0G ceramic, 5.08 mm leads",
-        "1u": "1 µF ceramic (X7R), 5.08 mm leads",
+CAPS = {"100n": "100 nF ceramic (X7R, 50 V), 5.08 mm leads", "1n": "1 nF C0G ceramic or film, 50 V, 5.08 mm leads",
+        "100p": "100 pF C0G ceramic, 50 V, 5.08 mm leads", "22p": "22 pF C0G ceramic, 50 V, 5.08 mm leads",
+        "1u": "1 µF ceramic (X7R, 50 V), 5.08 mm leads", "2n2": "2.2 nF C0G ceramic or film, 50 V, 5.08 mm leads",
         "10u": "10 µF ceramic (X5R / X7R, 16 V or more), 5.08 mm leads; an electrolytic is too tall"}
-CHIPS = {"TL074": ("Thonk", "TL074 quad op-amp (DIP-14) + DIP-14 socket"),
-         "MCP4922": ("Mouser", "MCP4922-E/P dual 12-bit DAC (DIP-14) + DIP-14 socket"),
-         "MUX": ("Tayda", "74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works"),
-         "HC595": ("Tayda", "74HC595 shift register (DIP-16) + DIP-16 socket"),
-         "HC165": ("Tayda", "74HC165 shift register (DIP-16) + DIP-16 socket"),
-         "H11L1": ("Tayda", "H11L1 opto-isolator (DIP-6) + DIP-6 socket"),
-         "CD4013": ("Tayda", "CD4013BE dual D flip-flop (DIP-14) + DIP-14 socket"),
-         "CD4093": ("Tayda", "CD4093BE quad Schmitt NAND (DIP-14) + DIP-14 socket"),
+CHIPS = {"TL074": ("Thonk", "TL074 quad op-amp (DIP-14)"),
+         "MCP4922": ("Mouser", "MCP4922-E/P dual 12-bit DAC (DIP-14)"),
+         "MUX": ("Tayda", "74HC4051 8-channel mux (DIP-16); CD4051B also works"),
+         "HC595": ("Tayda", "74HC595 shift register (DIP-16)"),
+         "HC165": ("Tayda", "74HC165 shift register (DIP-16)"),
+         "H11L1": ("Tayda", "H11L1 opto-isolator (DIP-6)"),
+         "CD4013": ("Tayda", "CD4013BE dual D flip-flop (DIP-14)"),
+         "CD4093": ("Tayda", "CD4093BE quad Schmitt NAND (DIP-14)"),
          "PHOTOMOS": ("Mouser", "Panasonic AQY212EH PhotoMOS relay (DIP-4)")}
+SOCKETS = {"TL074": 14, "MCP4922": 14, "MUX": 16, "HC595": 16, "HC165": 16, "H11L1": 6, "CD4013": 14,
+           "CD4093": 14}           # pins of the socket each chip sits in; the PhotoMOS are soldered
 SEMIS = {"NPN": ("Tayda", "Semiconductors", "2N3904 NPN transistor (TO-92)"),
          "BAT85": ("Tayda", "Semiconductors", "BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm"),
          "1N4148": ("Tayda", "Semiconductors", "1N4148 diode (DO-35)"),
@@ -100,6 +142,8 @@ def ohms(v):
 def describe(p):
     """(source, group, part) for one netlist part; None for parts build() handles (headers, the Seed)."""
     k, v = p.kind, p.value
+    if p.ref in REF_PART:
+        return REF_PART[p.ref]
     if k == "JACK":
         return "Thonk", "Panel parts", "Thonkiconn PJ398SM mono jack, with nut"
     if k == "JACK_TRS":
@@ -118,13 +162,16 @@ def describe(p):
     if k in SEMIS:
         return SEMIS[k]
     if k == "R":
-        return "Tayda", "Resistors", f"Resistor {ohms(v)}, metal film 1 %, 1/4 W"
+        source, rating = RATING.get(p.ref, ("Tayda", "1/4 W"))
+        return source, "Resistors", f"Resistor {ohms(v)}, metal film 1 %, {rating}"
     if k == "RN9":
         return "Tayda", "Resistors", "10k × 8 bussed resistor network, SIP-9 (Bourns 4609X-101-103LF, Tayda A103J)"
     if k == "C":
         return "Tayda", "Capacitors", "Capacitor " + CAPS[v]
     if k == "CP":
-        return "Tayda", "Capacitors", f"Capacitor {v.replace('u', ' µF')} electrolytic, 35 V, 5 mm across, 2.5 mm leads"
+        return "Tayda", "Capacitors", (f"Capacitor {v.replace('u', ' µF')} 35 V, polarised: a dipped tantalum (2.54 mm "
+                                       "leads), or a 5 mm electrolytic with its 2 mm leads spread to the pads; + to "
+                                       "the + pad")
     if k == "HDR16":
         return "Thonk", "Connectors", "2×8 shrouded box header, 2.54 mm (Eurorack power)"
     if k == "HDR8RA":
@@ -167,6 +214,9 @@ def build():
             d = describe(p)
             if d:
                 add(*d, refs=[(board, p.ref)], size=magnitude(p.value) if p.kind in ("R", "C", "CP") else 0.0)
+                if p.kind in SOCKETS and (board, p.ref) not in SOLDERED:
+                    add("Tayda", "Connectors", f"DIP-{SOCKETS[p.kind]} IC socket", refs=[(board, p.ref)], owns=False,
+                        size=SOCKETS[p.kind])
             elif p.kind.startswith("HDR"):
                 gender = "male" if board == "Faceplate" else "female"
                 headers[(gender, int(p.kind[3:]))] += 1
@@ -175,12 +225,14 @@ def build():
             elif p.kind == "SEED":
                 add("Thonk", "Modules", "Electrosmith Daisy Seed", refs=[(board, p.ref)])
                 add("OSHWLab / JLCPCB", "Modules", "Rob Heel's seed_power_opamps breakout, built: its own PCB and parts",
-                    refs=[(board, p.ref)], owns=False, note="carries the Seed, the Eurorack power header and the audio stages")
+                    refs=[(board, p.ref)], owns=False, note="carries the Seed, the Eurorack power header and the audio stages; "
+                    "its parts list: github.com/rob-scape/daisy-seed-breakout-boards, daisy-seed-dcdc-opamps BOM")
                 add("Tayda", "Connectors", "Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main "
                     "board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position)",
                     qty=4, refs=[(board, p.ref)], owns=False, note="cut from 1×40 strips; male pins under the breakout")
-                add("Thonk", "Connectors", "Eurorack power cable for the breakout's power header",
-                    note="check the header's pin count (10 or 16)")
+                add("Thonk", "Connectors", "Eurorack power cable for the breakout, 10-pin to 16-pin (10 at the "
+                    "module, 16 at the bus)", note="the breakout's J2 is a 2×5 header: the red stripe to its RED "
+                    "STRIPE mark (−12 V)")
     for gender in ("male", "female"):
         sizes = sorted(((pins, n) for (g, pins), n in headers.items() if g == gender), reverse=True)
         if sizes:
@@ -194,11 +246,15 @@ def build():
             add(source, "Mechanical", part, qty=n, note=note)
     for source, group, part, qty, note in EXTRA:
         add(source, group, part, qty=qty, note=note)
-    add("Tayda", "Mechanical", "M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws",
-        qty=MODULE["holes"], note="one per mounting hole between the boards; measure the mated headers first")
-    (w, h), _ = routed()["Main"]
-    add("JLCPCB", "PCBs", f"Main board + faceplate board, {w:.1f} × {h:.1f} mm each, 2 layers, 1.6 mm", qty=1,
-        note=f"from {MODULE['routed']}")
+    add("Tayda", "Mechanical", "M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's "
+        "2.5 mm plastic", qty=MODULE["holes"],
+        note="one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be)")
+    add("Tayda", "Mechanical", "M3 × 6 mm pan-head screw", qty=2 * MODULE["holes"], note="two per standoff")
+    boards = routed()
+    for board in ("Main", "Faceplate"):
+        (w, h), _ = boards[board]
+        add("JLCPCB", "PCBs", f"{board} board, {w:.1f} × {h:.1f} mm, 2 layers, 1.6 mm", qty=1,
+            note=f"the {board} PCB in {MODULE['routed']}")
     add("JLCPCB", "PCBs", f"Panel {panel.PANEL_W:.1f} × {panel.PANEL_H} mm, 1.6 mm FR4: black mask, white silk, ENIG",
         qty=1, note=f"the panel board in {MODULE['routed']}; ENIG makes the bands and the mushroom gold")
     return lines, owned

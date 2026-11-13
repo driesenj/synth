@@ -14,6 +14,12 @@ a third PCB. See [Schematic](#schematic) and [PCB placement](#pcb-placement).
 Routed since (see [PCB placement](#pcb-placement)); the firmware is written but
 not yet run on hardware (see [Firmware notes](#firmware-notes)).
 
+Tested 2026-11-13: `hardware/tests/` checks the circuit, the boards, the
+firmware's pins, the parts and the panel against each other and the
+datasheets ([test report](test-report-2026-11-13.md)). Since then the CV
+stages run at a lower gain, so that ±12 V stays inside the ADC pins' range
+(below), and the [build notes](#build-notes) list what the boards can't show.
+
 ---
 
 ## What SIDE FX has
@@ -81,18 +87,25 @@ breakout's audio input op-amps, so J5's contacts stay in.
 
 ### CV inputs (4×)
 
-Marblesy's stage, unchanged:
+Marblesy's stage, at half its gain since 2026-11-13:
 
 ```
 jack tip ── 100k ──┬── (−) TL074 ──┬── 1k ── Seed ADC
-                   ├── 27k ────────┤
-                   └── 1n ─────────┘
-BIAS 1.32 V ──────── (+)
+                   ├── 13k ────────┤
+                   └── 2n2 ────────┘
+BIAS 1.47 V ──────── (+)
 ```
 
-V_adc = 1.676 V − 0.27·V_in: ±5 V lands on 0.33–3.03 V. BIAS = 3V3A ×
-10k/25k (R22 15k, R23 10k, C14 1 µ). An unplugged jack grounds its tip
-through the switch lug, so it reads 0 V.
+V_adc = 1.657 V − 0.13·V_in: ±5 V lands on 1.01–2.31 V, ±10 V on
+0.36–2.96 V and ±12 V on 0.10–3.22 V (−0.02–3.35 V at the worst corner of
+1 % parts, the 3V3A tolerance and the TL074's offset). BIAS = 3V3A ×
+12k/27k (R22 15k, R23 12k, C14 1 µ). Cf keeps the corner at 5.6 kHz.
+
+Why the low gain: nothing clamps the TL074's output, and A2 / A3 (PB1,
+PA7) are the STM32's 3.3 V-tolerant TT pins, 4.0 V absolute maximum. With
+Marblesy's 27k a −10 V CV put 4.4 V on them, and above +6 V every input went
+below 0 V. An unplugged jack grounds its tip through the switch lug, so it
+reads 0 V.
 
 | Input | Section | Rin | Rf | Cf | Rs | ADC |
 |---|---|---|---|---|---|---|
@@ -112,7 +125,10 @@ jack tip ── 100k (R24) ── base 2N3904 (Q1), emitter to GND
 ```
 
 High input = D0 low; threshold about 0.7 V. The jack's switch lug grounds
-the tip when nothing is plugged in.
+the tip when nothing is plugged in. D1's reverse leakage flows through R24
+and raises the threshold, so D1 must leak little: an SD103A or BAT86 would
+take the worst case to about 3.4 V when warm. The BOM gives D1 a line of its
+own.
 
 ### MIDI in (TRS type A)
 
@@ -126,6 +142,32 @@ H11L1 pin 4 ── 1k (R27) to 3V3D ── D14 (USART1 RX); pin 6 3V3D, pin 5 GN
 The H11L1 runs from 3 V and its output idles high, as a UART wants. The
 sleeve is left open (a MIDI input leaves the shield unconnected). Type B
 gear (tip and ring swapped) needs a type B adapter cable.
+
+### Audio path (on the breakout)
+
+Side FXy adds no audio parts. IN 1 / IN 2 go through H1 to the breakout's
+J5 and two inverting TL074 stages per channel into the Seed's codec, and
+back out through two more to J4 and the OUT jacks. This is the Daisy Patch
+Rev 8 circuit, traced from the breakout's Gerbers:
+
+- In: 100k / 100k ∥ 47p, then 100k / 10k ∥ 560p, then 1k (gain +0.1).
+- Out: 10k / 100k ∥ 47p, then 100k / 100k ∥ 47p, then 1k (gain +10).
+
+The path is non-inverting end to end. What that means here:
+
+- **Treble:** the feedback caps put poles at 28–34 kHz: 5.8 dB down at
+  20 kHz through the module, 1.6 dB at 10 kHz. Build the breakout with
+  10 pF for its six 47 pF and 100 pF for its two 560 pF (0603 C0G). It is
+  then 0.3 dB down, with at least 58° of phase margin.
+- **Input level:** about 16 V p-p in the worst case (20 V typical) before
+  the first stage clips. 10 V p-p Eurorack audio has room.
+- **Output clip:** the output stage clips at about 16 V p-p in the worst
+  case, which is 0.46–0.59 of the codec's full scale. The firmware's soft
+  limiter (knee at 0.75 of full scale) never acts before that analog clip.
+- **Gain:** OUT is about 0.9 dB below IN on a Seed Rev7 (PCM3060), where
+  the Seed's 13.6k input loads the breakout's 1k, and 0.4 dB on a Rev5.
+- **Load:** each input is 100k; with IN 2 normalled to IN 1, a source on
+  IN 1 sees 49.5k.
 
 ### Button LEDs
 
@@ -158,7 +200,7 @@ C18, up to 100 mA on 3V3D, and seven Seed pins.
 | J2 OUT 1, J7 OUT 2 | OUT1_F, OUT2_F | open |
 | J3 CLOCK | CLK_IN_F | GND_F |
 | J4, J8, J9, J10 CV 1–4 | CV1_F..CV4_F | GND_F |
-| J5 MIDI (stereo Thonkiconn PJ366ST) | MIDI_TIP_F, ring MIDI_RING_F | sleeve and lugs open |
+| J5 MIDI (stereo Thonkiconn PJ366ST) | MIDI_TIP_F, ring MIDI_RING_F | sleeve open (no switch contacts) |
 
 ### Encoders, buttons and LEDs on one chain
 
@@ -167,7 +209,7 @@ board) drives the five button LEDs. They share SR_CLK, and SR_LOAD goes to
 both the 165s' /PL and the 595's RCLK. A scan: SR_LOAD low (the 165s load), SR_LOAD high (the 595
 latches the LED byte shifted in by the previous scan), then 16 clocks that
 read SR_DIN and shift the next LED byte out on SR_DOUT. Bit-banged from a
-2 kHz timer, that's a few µs per scan, and fast enough to decode the
+4 kHz timer, that's a few µs per scan, and fast enough to decode the
 encoders' quadrature in software.
 
 | Chip | D0..D7 |
@@ -186,7 +228,7 @@ main board through H3. Decoupling C1 and C2 100n.
 
 The Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, 3.3 V, 40 mA max)
 comes with an MX1.25 cable that ends in 2.54 mm Dupont sockets. They plug
-onto CN1, a right-angle header so the plug lies flat in the 8.5 mm gap
+onto CN1, a right-angle header so the plug lies flat in the 11 mm gap
 between the boards, in Waveshare's order: VCC, GND, DIN, CLK, CS, DC, RST,
 BL. Alternatively, cut the Dupont ends off and solder the wires into CN1. C4
 is a 10 µ ceramic on 5.08 mm, beside CN1; an electrolytic stands too tall
@@ -257,8 +299,8 @@ flags and the frame. Everything else is drawn in the same style:
 - **Symbols:** Seed, 74HC165, 74HC595, H11L1, 2N3904, LED button, EC11,
   bussed network, stereo jack, headers.
 - **Resistors:** they stand up on the main board, like the mixer's and the
-  re-routed Marblesy's. On the faceplate they lie flat, because the 8.5 mm
-  header gap has no room for standing ones.
+  re-routed Marblesy's. The faceplate has none: its pull-ups are the two
+  SIP-9 networks.
 
 **What EasyEDA's DRC will still say** (all intentional, floating-pin warnings):
 
@@ -273,7 +315,6 @@ flags and the frame. Everything else is drawn in the same style:
 
 **Check before ordering boards:**
 
-- The EC11 you order against `fp_ec11()`.
 - A PJ366ST's leads against the slots.
 
 ---
@@ -343,8 +384,10 @@ view's right is on the left):
 ### Routing notes
 
 - **Rules:** clearance 0.25 mm, tracks 0.3 mm, a POWER class of 0.6 mm
-  (±12 V, 3V3A, 3V3D and their _F twins), vias 0.8 / 0.4 mm, copper 0.5 mm
-  from the edge.
+  (±12 V, 3V3A, 3V3D and their _F twins), vias 0.61 / 0.305 mm, copper 0.35 mm
+  from the edge, as routed. The placement asked for 0.8 / 0.4 mm vias and
+  0.5 mm from the edge; both as routed are inside JLCPCB's limits (via
+  0.3 mm drill, 0.2 mm to the edge).
 - **Main board ground:** one GND, poured on both layers.
 - **Main board, CV:**
   - The CV stages' summing nodes are short by placement. Keep them and the
@@ -372,9 +415,70 @@ view's right is on the left):
 
 ±12 V from the breakout's J1/J3 feed only the TL074. Everything else runs
 on the Seed's 3V3D: the display (40 mA max), the LEDs (about 15 mA), the
-MIDI pull-up and the logic, about 60 mA on top of the Seed itself. Measure
-the 3V3D current on the first build. If the Seed's regulator runs hot, give
-the display its own 3.3 V regulator.
+MIDI pull-up and the logic, about 60 mA on top of the Seed itself.
+
+From the bus the module draws about 64 mA typical (106 mA max) from +12 V,
+the same from −12 V, and nothing from +5 V. The breakout's B2405S-1WR2
+(24 V in, 5 V 1 W out) carries the Seed and the 3V3D loads:
+
+- 5 V load: 177 mA typical, 239 mA at worst case, against its 200 mA.
+- Input: at a bus 5 % low and full load, after the breakout's two B5819W, it
+  sees about 21.5 V, at the bottom of its 21.6–26.4 V range (the diodes' drop
+  at this current isn't specified; it is unregulated, with no cut-off).
+
+On the first build, measure the bus current with the backlight and LEDs at
+full. If it is high, cap their brightness in the firmware, or fit a 2 W
+converter in the breakout's U3 place (check its footprint, and that L1 / L2
+carry about 115 mA). A separate regulator for the display only helps if it
+runs from +12 V. The converter can't be hot-plugged (Mornsun).
+
+---
+
+## Build notes
+
+From the 2026-11-13 [test report](test-report-2026-11-13.md); the BOM's notes
+say the same.
+
+- **The breakout's orientation.** It goes on with its SMD side (op-amps,
+  diodes) towards the main board and the Seed on top, USB at the J4 / J5
+  end.
+  - It fits either way round, and turned over it puts ±12 V into U6
+    reversed.
+  - Solder its J1 / J3 / J4 / J5 male headers in from the SMD side, pins
+    towards the main board. This is against the breakout's own silk, which
+    draws them on the Seed's side.
+  - Put the Seed's rows on long-tail stacking headers, whose tails go
+    through into the main board's sockets.
+  - With the Seed out, check +12 V at C15 and −12 V at C16 before the first
+    power-up.
+- **The breakout's audio caps:** 10 pF and 100 pF instead of its 47 pF and
+  560 pF (see [Audio path](#audio-path-on-the-breakout)).
+- **U1 and U2** go straight on the faceplate, without sockets: socketed,
+  they reach the main board's solder tails in the 11 mm gap.
+- **The panel gap.** The panel sits on the jack bodies, 9.0 mm above the
+  faceplate on Thonk's drawing; the earlier notes assumed 7 mm.
+  - Before soldering the panel parts, fit one Thonkiconn and one LED button
+    (feet clipped) on the bare faceplate and lay the panel on them. Read off
+    Thonk's drawing, the button's square base stands 9.85–10.2 mm tall, so
+    it may hold the panel up.
+- **The encoders** are Bourns PEC11R-4215F-S0024.
+  - **No nut:** the 5 mm bushing ends 11.5 mm above the faceplate, only
+    about 0.9 mm in front of the panel (0.45 mm at worst), too little for
+    the nut. Leave the nut and washer off: the encoder hangs on its soldered
+    pins and tabs, the bushing centres it in the panel hole, and a push on
+    the knob goes into the faceplate. The 15 mm shaft still stands about
+    11 mm in front of the panel for the knob.
+  - **Tabs:** Bourns' layout asks for 1.8 × 2.6 mm tab holes 4.8–6.6 mm from
+    the shaft; the footprint's MP1 / MP2 slots (KiCad's Alps EC11E) are
+    1.5 mm along the tab line, 4.85–6.35 mm. The encoders' tabs measure
+    12.7 mm or less across their outer faces (2026-11-14), so they fit the
+    slots as routed. The fit is close: squeeze the barbs if a tab binds, and
+    solder both tabs.
+- **Nylon washers** at the faceplate holes (19.3, 49.0) and (39.6, 33.1)
+  (routed frame): ENC4's A pad and SR_CHAIN run under the standoff and the
+  screw head there.
+- **Q1** sits on 2.54 mm: a formed-lead 2N3904, or spread a bulk part's
+  1.27 mm leads.
 
 ---
 
@@ -407,6 +511,10 @@ describes it. What it does with this hardware:
 - **Presets:** in the QSPI flash below the program (0x00000–0x3FFFF):
   settings and the live state in wear-levelled rings, 64 presets of 512
   bytes.
-- **CV:** four ADC channels, offset calibration from the setup page,
-  nominal scale.
+- **CV:** four ADC channels, offset calibration from the setup page
+  (CV ZERO accepts 0.42–0.58 of full scale, about ±2 V), nominal scale
+  −25.38 V per unit. 1 % parts and the 3V3A reference spread the real scale
+  by up to about 6 % between modules.
+- **Debounce:** a switch must hold for 24 scans (6 ms): the EC11's contacts
+  bounce for up to 2 ms, tact switches up to about 5 ms.
 

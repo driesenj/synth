@@ -95,8 +95,15 @@ routed; [design.md](docs/design.md#routing-notes) has the routing notes.
 
 ## Open questions
 
-- The panel gap: the placement assumes about 7 mm between panel and
-  faceplate (the module is about 4 mm plus 2 mm of parts on its back; its
-  connector gets a cutout). Measure a Thonkiconn on a board before ordering.
-- Encoder height: an EC11's body is lower than a Thonkiconn, so the bushing
-  may need a washer. Check against the part that gets ordered.
+- The panel gap: the placement assumes about 9 mm between panel and
+  faceplate, the Thonkiconn's body on Thonk's drawing (the module is about
+  4 mm plus 2 mm of parts on its back; its connector gets a cutout). Measure
+  a Thonkiconn and an LED button on a board before ordering: the button may
+  stand taller than the jack.
+- The encoders are Bourns PEC11R-4215F-S0024. At that gap their 5 mm
+  bushing leaves under 1 mm of thread in front of the panel, so they go in
+  without the nut. Their tabs (12.7 mm or less across) fit the footprint's
+  slots (see the [test report](docs/test-report-2026-11-13.md), M4).
+- Power: about 64 mA typical (106 mA max) from +12 V, the same from −12 V,
+  none from +5 V. The breakout's 1 W DC/DC runs near its rating: measure the
+  bus current on the first build.

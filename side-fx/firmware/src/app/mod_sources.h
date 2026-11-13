@@ -28,8 +28,8 @@
 namespace sidefx {
 
 // volts = (raw - offset) * scale. Nominal for the input stage
-// (V_adc = 1.676 V - 0.27 * V_in, ADC full scale 3.3 V): offset 0.5079,
-// scale -12.22 V per unit.
+// (V_adc = 1.657 V - 0.13 * V_in, ADC full scale 3.3 V): offset 0.5022,
+// scale -25.38 V per unit. +-12 V stays inside 0..3.3 V at the ADC pins.
 struct CvCalibration {
   float offset[4];
   float scale[4];

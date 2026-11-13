@@ -15,7 +15,7 @@
 //   D12 PB9   LCD_BL     TIM4_CH4 PWM
 //   D13 PB6   LCD_RST
 //   D14 PB7   MIDI_RX    USART1 RX, 31250 baud
-//   A0..A3    PC0 PA3 PB1 PA7   CV 1..4 (inverting stage: 0 V reads ~0.508)
+//   A0..A3    PC0 PA3 PB1 PA7   CV 1..4 (inverting stage: 0 V reads ~0.502)
 //   D20 PC1   BTN_SHIFT  to ground, internal pull-up
 //   D26 PD11  SR_CLK     74HC165 CP and 74HC595 SRCLK
 //   D27 PG9   SR_LOAD    165 /PL and 595 RCLK
@@ -85,7 +85,8 @@ bool ShiftPressedNow();
 
 const int kNumCvInputs = 4;
 // The raw ADC reading of CV n, 0..1 of 3V3A, inverted by the input stage
-// (+5 V at the jack reads about 0.10, 0 V about 0.508, -5 V about 0.916).
+// (+5 V at the jack reads about 0.305, 0 V about 0.502, -5 V about 0.699;
+// +-12 V stays within 0..1).
 // Callable from the audio interrupt.
 float ReadCv(int channel);
 

@@ -85,7 +85,8 @@ SEED = {
 # ---------------------------------------------------------- CV input stages
 # TL074 section pins: (out, in-, in+)
 SECTION = {1: ("1", "2", "3"), 2: ("7", "6", "5"), 3: ("8", "9", "10"), 4: ("14", "13", "12")}
-# Marblesy's stage: gain -0.27 (100k/27k) around BIAS puts +-5 V on 0.33..3.03 V. name, section
+# Gain -0.13 (100k/13k) around BIAS: V_adc = 1.657 V - 0.13 * V_in, so +-12 V stays inside 0..3.3 V at
+# the ADC pins (A2/A3 are 3.3 V-tolerant TT pins, 4.0 V absolute maximum). name, section
 CV_CHANNELS = [("CV1", 1), ("CV2", 2), ("CV3", 3), ("CV4", 4)]
 
 
@@ -98,15 +99,15 @@ def main_board_parts():
         out, inm, inp = SECTION[s]
         tl.update({out: f"OA_{name}", inm: f"IN_{name}", inp: "BIAS"})
         parts.append(R(f"R{10 + 3 * i}", "100k", name, f"IN_{name}"))
-        parts.append(R(f"R{11 + 3 * i}", "27k", f"IN_{name}", f"OA_{name}"))
+        parts.append(R(f"R{11 + 3 * i}", "13k", f"IN_{name}", f"OA_{name}"))
         parts.append(R(f"R{12 + 3 * i}", "1k", f"OA_{name}", f"ADC_{name}"))
-        parts.append(C(f"C{10 + i}", "1n", f"IN_{name}", f"OA_{name}"))
+        parts.append(C(f"C{10 + i}", "2n2", f"IN_{name}", f"OA_{name}"))    # 13k || 2n2: 5.6 kHz
     parts.append(Part("U6", "TL074", "TL074", tl))
     parts.append(C("C15", "100n", "+12V", "GND"))
     parts.append(C("C16", "100n", "GND", "-12V"))
-    # bias for the input stages: 3.3 V * 10 / 25 = 1.32 V -> ADC mid-scale 1.68 V
+    # bias for the input stages: 3.3 V * 12 / 27 = 1.47 V -> 0 V at the jack reads 1.657 V (0.502 of full scale)
     parts.append(R("R22", "15k", "3V3A", "BIAS"))
-    parts.append(R("R23", "10k", "BIAS", "GND"))
+    parts.append(R("R23", "12k", "BIAS", "GND"))
     parts.append(C("C14", "1u", "BIAS", "GND"))
     # clock input: 100k into an NPN inverter, 10k pull-up, Schottky clamp for negative swings
     parts.append(R("R24", "100k", "CLK_IN", "B_CLK"))
@@ -233,12 +234,12 @@ def faceplate_parts():
             rn[str(i + 2)] = net
         parts.append(Part(u, "HC165", "74HC165", pins))
         parts.append(Part(PULLUPS[u], "RN9", "10k x8 bussed", rn))
-    # CN1: a right-angle header, so the cable's Dupont plug lies flat in the 8.5 mm gap between the boards
+    # CN1: a right-angle header, so the cable's Dupont plug lies flat in the 11 mm gap between the boards
     parts.append(Part("CN1", "HDR8RA", "LCD", {str(i + 1): n for i, n in enumerate(LCD_PINS)}, "display cable"))
     parts.append(C("C1", "100n", "3V3D_F", "GND_D_F"))    # U1
     parts.append(C("C2", "100n", "3V3D_F", "GND_D_F"))    # U2
     parts.append(C("C4", "10u", "3V3D_F", "GND_D_F"))     # the display module, beside CN1: an MLCC on 5.08 mm,
-    #                                                       an electrolytic stands too tall for the 8.5 mm gap
+    #                                                       an electrolytic stands too tall for the 11 mm gap
     # board-to-board headers (male pins on this board)
     for ref, kind, nets in HEADERS:
         parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets) if fb}))

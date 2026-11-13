@@ -60,7 +60,7 @@ struct Rig {
       Scan();
     }
     SetSwitch(sw, true);
-    Scans(8);
+    Scans(30);   // past the 24-scan (6 ms) debounce
   }
 
   void Release(int sw, int bounces = 3) {
@@ -69,7 +69,7 @@ struct Rig {
       Scan();
     }
     SetSwitch(sw, false);
-    Scans(8);
+    Scans(30);
   }
 
   // One detent of encoder `e` (+1 clockwise) through the four quadrature
@@ -141,16 +141,16 @@ TEST(app_controls, debounce_one_event_per_press) {
 
 TEST(app_controls, debounce_ignores_short_glitches) {
   Rig rig;
-  // Under 1 ms: three scans down, then up.
+  // Under 6 ms: a 5.75 ms bounce gap (23 scans) down, then up.
   rig.SetSwitch(hal::SWITCH_K1, true);
-  rig.Scans(3);
+  rig.Scans(23);
   rig.SetSwitch(hal::SWITCH_K1, false);
-  rig.Scans(10);
+  rig.Scans(30);
   Event e;
   CHECK(!rig.controls.PopEvent(&e));
-  // Exactly four stable scans (1 ms) make a press.
+  // Exactly 24 stable scans (6 ms) make a press.
   rig.SetSwitch(hal::SWITCH_K1, true);
-  rig.Scans(3);
+  rig.Scans(23);
   CHECK(!rig.controls.pressed(hal::SWITCH_K1));
   rig.Scan();
   CHECK(rig.controls.pressed(hal::SWITCH_K1));

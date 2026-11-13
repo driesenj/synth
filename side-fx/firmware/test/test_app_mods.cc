@@ -78,23 +78,23 @@ TEST(app_mods, cv_volts_and_calibration) {
   rig.cv[0] = test::CvRawForVolts(2.0f);
   rig.cv[1] = test::CvRawForVolts(-5.0f);
   rig.cv[2] = test::CvRawForVolts(1.0f / 12.0f);
-  rig.cv[3] = 0.1f;  // +5 V or so
+  rig.cv[3] = 0.305f;  // +5 V or so
   const ModValues& v = rig.Block();
   CHECK_NEAR(rig.mods.cv_volts(0), 2.0f, 1e-4);
   CHECK_NEAR(v.value[MOD_CV1], 0.5f, 1e-4);
   CHECK_NEAR(v.value[MOD_CV2], -1.25f, 1e-4);  // not clamped
   CHECK_NEAR(v.value[MOD_CV3] * 48.0f, 1.0f, 1e-3);  // a semitone on +-24 st
-  CHECK_NEAR(rig.mods.cv_volts(3), 4.98f, 0.05f);
-  CHECK(rig.mods.cv_raw(3) == 0.1f);
+  CHECK_NEAR(rig.mods.cv_volts(3), 5.0f, 0.05f);
+  CHECK(rig.mods.cv_raw(3) == 0.305f);
   CHECK(v.value[MOD_OFF] == 0.0f);
 
-  // A measured calibration: this jack reads 0.512 at 0 V and 12.0 V/unit.
+  // A measured calibration: this jack reads 0.512 at 0 V and 25.0 V/unit.
   CvCalibration c;
   InitCvCalibration(&c);
   c.offset[0] = 0.512f;
-  c.scale[0] = -12.0f;
+  c.scale[0] = -25.0f;
   rig.mods.set_calibration(c);
-  rig.cv[0] = 0.512f - 3.0f / 12.0f;
+  rig.cv[0] = 0.512f - 3.0f / 25.0f;
   rig.Block();
   CHECK_NEAR(rig.mods.cv_volts(0), 3.0f, 1e-4);
 }
@@ -389,7 +389,7 @@ struct MidiRig {
     tempo_state = test::Tempo120();
     tempo_state.downbeat = false;
     for (int i = 0; i < 4; ++i) {
-      cv[i] = 0.5079f;
+      cv[i] = 0.5022f;
     }
   }
 

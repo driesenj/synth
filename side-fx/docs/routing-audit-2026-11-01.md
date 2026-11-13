@@ -70,7 +70,8 @@ committed `SideFXy-routed.epro2`; import it and the labels come along.
 Previews of where they landed: `hardware/easyeda/side-fx-labels-*-top.png`. The checks still open from the design notes concern parts, not the
 routing:
 
-- measure the panel gap (about 7 mm assumed);
+- measure the panel gap (about 7 mm assumed here; Thonk's drawing gives
+  9 mm, see the 2026-11-13 test report);
 - check an EC11 and a PJ366ST against their footprints;
 - order 1.6 mm FR4.
 

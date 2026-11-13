@@ -133,8 +133,9 @@ const uint8_t kSwitchBit[NUM_SWITCHES] = {
 const uint8_t kLedOutput[NUM_LEDS] = { 0, 1, 2, 3, 4 };
 const int kChainBits = 16;
 
-// 125 ns at 480 MHz per half clock: the 165 and 595 need ~20 ns at 3.3 V,
-// the rest is for the edges on the long lines to settle.
+// 125 ns at 480 MHz per half clock: the 165 and 595 need ~60 ns at 3.3 V
+// (TI's 100 ns at 2 V and 20 ns at 4.5 V, interpolated), the rest is for
+// the edges on the long lines to settle. About 90 covers TI's 2 V figures.
 const uint32_t kSettleCycles = 60;
 
 // --- MIDI ---------------------------------------------------------------------
@@ -505,7 +506,7 @@ bool ShiftPressedNow() {
 
 float ReadCv(int channel) {
   if (!adc_ready || channel < 0 || channel >= kNumCvInputs) {
-    return 0.508f;  // what 0 V reads
+    return 0.502f;  // what 0 V reads
   }
   return adc.GetFloat(uint8_t(channel));
 }

@@ -21,10 +21,10 @@ const uint32_t kSaveDelayMs = 5000;
 
 // Nominal calibration within these bounds is kept; anything else (a
 // corrupt record, a calibration run with nothing patched) falls back.
-const float kMinOffset = 0.3f;
-const float kMaxOffset = 0.7f;
-const float kMinScale = -20.0f;
-const float kMaxScale = -6.0f;
+const float kMinOffset = 0.42f;   // nominal 0.502; +-0.08 is about +-2 V
+const float kMaxOffset = 0.58f;
+const float kMinScale = -40.0f;   // nominal -25.38
+const float kMaxScale = -12.0f;
 
 template<typename T>
 T Clamp(T x, T lo, T hi) {

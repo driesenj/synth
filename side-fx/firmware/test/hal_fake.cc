@@ -53,7 +53,7 @@ void AdvanceMs(uint32_t ms) { hal_state.time_us += uint64_t(ms) * 1000u; }
 uint64_t NowUs() { return hal_state.time_us; }
 
 float CvRawForVolts(float volts) {
-  return 0.5079f + volts * (1.0f / -12.22f);
+  return 0.5022f + volts * (1.0f / -25.38f);
 }
 
 void SetCvVolts(int channel, float volts) {
@@ -100,7 +100,7 @@ void StartControls(ControlHook hook) { hal_state.control_hook = hook; }
 bool ShiftPressedNow() { return hal_state.shift_now; }
 
 float ReadCv(int channel) {
-  return channel >= 0 && channel < kNumCvInputs ? hal_state.cv[channel] : 0.5079f;
+  return channel >= 0 && channel < kNumCvInputs ? hal_state.cv[channel] : 0.502f;
 }
 
 bool ReadMidiByte(uint8_t* byte, uint32_t* time_us) {
