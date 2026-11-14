@@ -3,8 +3,9 @@
 Prefer Thonk (the user orders there); Tayda, Mouser, LCSC for the rest.
 
 BOM: `hardware/tools/bom.py` (in marbles/, plaits/, side-fx/, stereo-mixer/;
-copy it for a new module and rewrite its MODULE / BUTTONS / knobs() / EXTRA /
-NOTES block) writes `docs/bom.md` and `hardware/bom/*.csv` from circuit.py,
+copy it for a new module and rewrite its MODULE / BUTTONS / RATING / knobs() /
+EXTRA / NOTES block; RATING maps a ref to (source, rating text) for a resistor
+that needs more than 1/4 W, empty it for a new module) writes `docs/bom.md` and `hardware/bom/*.csv` from circuit.py,
 with the Thonk lines in their own table and file. It fails if a netlist part
 is not in exactly one line or the refs differ from the routed master's.
 `bom/thonk_order.py` sums the modules' Thonk files into one order.
@@ -95,7 +96,11 @@ missing, in the same style, with real pin numbers.
 - 7.5 mm square body, 5.5 mm round cap, momentary; colours red, green,
   blue, yellow, orange, white and bipolar red/green (two leads, red one
   way, green the other). Used by Shakmat; sits at Thonkiconn height if the
-  three plastic feet get holes.
+  three plastic feet get holes. Not confirmed: read off Thonk's drawing, the
+  square base tops out 9.85–10.2 mm above the board, above the Thonkiconn's
+  9.0 mm body, and the panel would rest on the buttons. Fit one beside a jack
+  and lay the panel on them before soldering a module (Side FXy test report
+  2026-11-13, M6).
 - Pins (top view, EasyEDA y up): switch 1 (2.54, 2.54), 2 (−2.54, 2.54),
   3 (2.54, −2.54), 4 (−2.54, −2.54); contacts are 1+2 and 3+4. LED anode
   L1 = pin 5 (2.7, 0), cathode L2 = pin 6 (−2.7, 0). Feet: (−1.25, 1.75),
@@ -116,8 +121,8 @@ missing, in the same style, with real pin numbers.
 
 Pins on a 4.5 × 6.5 mm rectangle; the two pins 6.5 mm apart are one
 contact. Number pads so the pairs are 1+4 and 2+3 if the netlist expects
-that. Pick a height that puts the cap just proud of the panel (about 9.5 mm
-for a 7 mm panel gap). The Thonk KS01-B "Highly Tactile" is 12 mm round and
+that. Pick a height that puts the cap just proud of the panel (its front is
+about 10.6 mm above the board: the 9 mm Thonkiconn body plus a 1.6 mm panel). The Thonk KS01-B "Highly Tactile" is 12 mm round and
 too big for a dense panel.
 
 ## LEDs
@@ -172,15 +177,29 @@ too big for a dense panel.
 - TL074: pins 4 / 11 supply; one 100 n pair per chip placed beside it (not
   in a capacitor column 35 mm away).
 - MCP4922 DIP-14: pins 2, 6, 7 unused; give the symbol NC pins or DRC
-  complains about pads without pins. External 2.5 V reference (LM4040
-  TO-92: 1 = +, 2 = −, 3 = NC) on VREFA/VREFB, shared LDAC.
+  complains about pads without pins. External 2.5 V reference (LM4040)
+  on VREFA/VREFB, shared LDAC.
+- LM4040 in TO-92: the middle lead (pin 2) is the cathode (+). TI's tables
+  disagree on whether the anode is pin 1 or pin 3 (the other NC), so wire
+  pins 1 and 3 both to the anode net; then either table, and either way
+  round, works. SOT-23 is different: 1 cathode, 2 anode, 3 NC or anode.
+  Two modules got the SOT-23 order on a TO-92 and had to be fixed.
 - 74HC595 at 3.3 V: 2.5–3 mA per output into 470 Ω is fine; 74HC4051 for
   pots with channel 7 grounded if unused; 74HC165 for buttons with 10 kΩ
   pull-ups.
 - Headers: 1×N 2.54 mm; one gender per side (male on the faceplate, female
   sockets on the main board); Thonk's "Male + Female Header Bag". Standard
-  sockets give an 8.5 mm board gap: enough for DIPs and axial parts on the
-  faceplate's rear, not for anything tall.
+  8.5 mm sockets on the male headers' 2.5 mm plastic give an 11 mm board
+  gap (order 11 mm standoffs), less the main board's solder tails: enough
+  for DIPs and axial parts on the faceplate's rear, not for anything tall.
+- Eurorack power header (Doepfer A-100, 2.54 mm IDC, pin 1 = red stripe,
+  odd pins one row, even the other): 1–2 −12 V, 3–8 GND, **9–10 +12 V**,
+  11–12 +5 V, 13–14 CV, 15–16 Gate. A 10-pin cable carries pins 1–10 only,
+  which works on a 16-pin header because +12 V is on 9–10. On a 16-pin
+  header leave 11–16 open unless the module uses +5 V, CV or Gate, and say
+  so on the schematic. Until 2026-11-14 six generators had GND on 3–10 and
+  +12 V on 11–12, which shorts the bus's +12 V to ground; copy this table,
+  not an older `power_main()`.
 - H11L1 (MIDI in at 3.3 V; works from 3 V): DIP-6, 1 anode, 2 cathode, 3 NC,
   4 open-collector output (idles high), 5 GND, 6 VCC. Give the symbol pin 3.
 
@@ -192,8 +211,16 @@ down, origin on pad A): A (0, 0), C (0, 2.5), B (0, 5), S2 (14.5, 0), S1
 2.8 × 1.5 oval slots; shaft at (7.5, 2.5); body 12 × 11.6. The phase pins
 sit 7.5 mm from the shaft, the switch pins 7.0 mm on the other side.
 `side-fx/hardware/tools/easyeda_export.py` `fp_ec11()` moves the origin onto the shaft and names
-the tabs MP1 / MP2 (EasyEDA wants unique pad numbers). Bourns PEC11R uses
-the same pattern. Thonk doesn't sell EC11s; Tayda and Mouser do.
+the tabs MP1 / MP2 (EasyEDA wants unique pad numbers). Thonk doesn't sell
+EC11s; Tayda and Mouser do. Bourns PEC11R: the same pins, but not the same
+tabs. Its layout asks for 1.8 × 2.6 mm tab holes 4.8–6.6 mm from the shaft
+(centres 11.4 apart; the drawing's 13.2 is across the outer edges), past
+KiCad's 1.5 mm slots at 4.85–6.35 (Alps EC11E: 1.5 × 2.6 at 4.75–6.25).
+Slots 2.0 mm along the tab line, centred 5.65 mm from the shaft, take both.
+Height: the EC11E and the PEC11R-4215F (5 mm bushing) reach 11.5 mm above
+the board, under 1 mm of thread in front of a 1.6 mm panel at the 9 mm
+Thonkiconn gap, too short for the nut; a 7 mm bushing (PEC11R-4220F, read
+off Bourns' drawing) leaves about 2.9 mm (Side FXy test report 2026-11-13).
 
 ## Stereo Thonkiconn (QingPu PJ366ST)
 

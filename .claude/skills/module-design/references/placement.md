@@ -5,7 +5,7 @@
 ```
  panel (91.3 x 128.5 for 18HP)  front
    faceplate board (FB)         bottom layer = panel parts; top layer = logic, male headers
-   8.5 mm gap, M3 standoffs
+   11 mm gap (8.5 mm sockets + 2.5 mm male plastic), M3 standoffs
    main board (MB)              bottom layer = female sockets only; top layer = everything else
    Seed breakout on the MB's rear, on sockets
 ```
@@ -128,7 +128,7 @@ its rows is fine.
   Model it as a front-side keep-out (`Board.keepout_front`, checked by
   `front_housing_check`), mill a cutout under its rear connector
   (`cutout_front`, a layer-12 region) and land the cable on a right-angle
-  header so the Dupont plug lies flat in the 8.5 mm board gap. The keep-out
+  header so the Dupont plug lies flat in the 11 mm board gap. The keep-out
   ate so much faceplate that the 74HC595 moved to the main board. A Waveshare
   module's M2 holes sit under the glass: tape it, don't screw it.
 - The breakout stands on its sockets: screw heads may sit under it (Side

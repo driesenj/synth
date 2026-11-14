@@ -9,9 +9,10 @@
   nothing covers the front. Most boards stay ≤ 108 mm tall for the rails.
 - Kosmo (the user's other format): 200 mm panels, Eurorack power headers
   (see RIG.md). Ask which format before laying out.
-- Panel-to-PCB gap with Thonkiconn and Alpha 9 mm pots is about 7 mm; parts
-  on the panel side must be lower than that; Thonk's LED button is made for
-  it.
+- Panel-to-PCB gap with Thonkiconn and Alpha 9 mm pots is about 9 mm: the
+  panel rests on the jack bodies, 9.0 mm tall on Thonk's PJ398SM drawing (a
+  builder measured 10). Parts on the panel side must be lower than that.
+  Thonk's LED button is made for it, but measure one beside a jack (parts.md).
 
 ## Layout, Marbles style (what the user liked)
 
@@ -118,15 +119,35 @@ project's own BOARD with a note page and a PCB.
 
 - Outline rectangle; holes as layer-12 FILL circles; slots as rounded
   rectangles.
-- Silk: STRING (default stroke font, estimated centring), POLY lines, arcs
-  as ≤ 90° ARC pieces, dotted guides as 0.12 mm dashes, colour dots as
-  rings. Vertical words: STRING `angle` 90 with the LEFT_BOTTOM origin at
-  the bottom end of the baseline (`panel_pcb.vtext`), assuming text turns
-  CCW like component angles; not yet confirmed in an EasyEDA import.
+- Silk: STRING (default stroke font), POLY lines, arcs as ≤ 90° ARC
+  pieces, dotted guides as 0.12 mm dashes, colour dots as rings. Vertical
+  words: STRING `angle` 90 (`panel_pcb.vtext`), assuming text turns CCW
+  like component angles; not yet confirmed in an EasyEDA import.
+- EasyEDA Pro's default font, measured on its own Gerbers (2026-11-14,
+  against the strings and designators in the user's March boards). For
+  fontSize F (0.9 × the artwork size) and stroke w, the letters of a
+  LEFT_BOTTOM string sit 0.2 F to 0.885 F above the origin: the origin is
+  *below* the baseline, and capitals are 0.685 F tall. The advance is
+  0.64 F (`1` 0.40, `.` 0.23); the last glyph is 0.38 F wide, plus the
+  stroke. Lower case was not measured, so 0.64 F is an upper bound for it.
+  `ink_width()` / `ink_box()` / `INK_*` in every `panel_pcb.py` hold this,
+  and `text()` / `vtext()` use it, so the letters land where the artwork
+  puts them. Before 2026-11-14 the origin was taken as the baseline, which
+  put all panel text 0.2 F high (0.4–0.9 mm).
+- Text limits (JLCPCB): letters 1.0 mm tall, which is font size 1.62 or
+  more; stroke 0.153 mm or more (`MIN_STROKE` 0.16). Stroke to *letter*
+  height should be 1:6 or bolder: size / 9 is already about 1:5.5.
 - Copper band: FILL on layer 1 plus the same FILL on layer 5 (mask
-  opening) = ENIG gold. Labels on it as silk; if the fab refuses silk on
-  bare copper, put the labels on the mask layer instead (gold letters on
-  black). Non-plated holes through the band may draw a DFM remark; add
+  opening) = ENIG gold. Fabs clip silk inside mask openings, so labels on
+  a gold area are knocked out of the mask, not printed as silk. The layer-5
+  FILL gets a counter-clockwise rectangle round the letters
+  (`knock_paths`, `KNOCK_MARGIN` 0.35 mm). The label is a STRING on layer
+  5 with `reverse` true and `expansion` up to 0.8 mm (`knock_expansion`,
+  shrunk where the box might leave the gold). That is an opening with the
+  letters left masked, and it fills the hole but for the letters, so they
+  read dark on the gold, as the artwork draws them. Copper stays whole
+  under the letters. Look at it in EasyEDA's 3D view after the first
+  import. Non-plated holes through the band may draw a DFM remark; add
   clearance rings if so.
 - Copper whose holes sit on its edge (Side FXy's block stack, knobs on the
   blocks' corners): a cutout circle crossing the outline adds copper, so
@@ -136,5 +157,5 @@ project's own BOARD with a note page and a PCB.
 - A display window is a layer-12 rounded-rectangle region like a slot
   (corner radius ≥ 0.5 mm for the mill).
 - Order: 1.6 mm FR4, black mask, white silk, ENIG.
-- Serif italics and exact fonts do not exist in EasyEDA's stroke font;
-  tell the user to expect to nudge labels after import.
+- Serif italics and exact fonts do not exist in EasyEDA's stroke font, so
+  the title's width differs from the artwork's. Check it after import.
