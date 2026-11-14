@@ -1025,7 +1025,7 @@ def scanner_block(pg, P, x0, t0):
 
 
 def power_block(pg, P, x0, t0):
-    pg.text(x0, t0 + 20, "Power: 16-pin Eurorack header (pin 1 = -12 V, the red stripe), B5819W the right way round "
+    pg.text(x0, t0 + 20, "Power: 16-pin Eurorack header (pin 1 = -12 V, the red stripe; 3-8 GND, 9-10 +12 V), B5819W the right way round "
                          "(+12 V anode, -12 V cathode at the header), 10R + 10 uF per rail; 100R + 10 uF for the "
                          "knobs and the scan ladder", 10)
     hx, hy = x0 + 120, t0 + 140
@@ -1045,7 +1045,7 @@ def power_block(pg, P, x0, t0):
             if net and net != "GND":
                 pg.wire([(px, py), (px + 50 * side, py)], net)
                 pg.port(px + 50 * side, py, net, "IN", "left" if side < 0 else "right")
-    pg.text(hx - 30, hy + 60, "13-16 (+5 V, CV, gate) open", 8)
+    pg.text(hx - 30, hy + 60, "11-16 (+5 V, CV, gate) open", 8)
     for i, ref in enumerate(("D901", "R901", "R903")):
         two_pin_ports(pg, P[ref], x0 + 400 + i * 260, t0 + 100)
     for i, ref in enumerate(("D902", "R902", "R904")):

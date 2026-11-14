@@ -245,8 +245,11 @@ NO_CONNECT = {"SSI2164": {"1"}}      # MODE open: class AB (datasheet)
 
 
 def power_parts():
-    hdr = {"1": "N12_IN", "2": "N12_IN", "11": "P12_IN", "12": "P12_IN"}
-    hdr.update({str(n): GND for n in range(3, 11)})                  # 13-16 (+5 V, CV, gate) open
+    # Doepfer A-100 16-pin bus (doepfer.de/a100_man/a100t_e.htm), pin 1 = red stripe: 1-2 -12 V, 3-8 GND,
+    # 9-10 +12 V, 11-12 +5 V, 13-14 CV, 15-16 Gate; +5 V, CV and Gate stay open. (Until 2026-11-14 this had GND
+    # on 3-10 and +12 V on 11-12, which shorts the bus +12 V to GND; found by the 2026-11-13 test suites.)
+    hdr = {"1": "N12_IN", "2": "N12_IN", "9": "P12_IN", "10": "P12_IN"}
+    hdr.update({str(n): GND for n in range(3, 9)})                  # 11-16 (+5 V, CV, gate) open
     parts = [
         Part("J19", "HDR16", "16-pin Eurorack", hdr, "POWER"),
         D("D901", "P12_IN", "P12_D", "+12 V reverse protection", "D5819"),    # anode at the header
@@ -353,7 +356,7 @@ def main_board_parts():
 
 PINS = {"TL074": 14, "SSI2164": 16, "AS3360": 14, "HDR16": 16, "JACK": 3, "POT": 5, "TOGGLE_DPDT": 6,
         "TOGGLE_SPDT": 3, "R": 2, "C": 2, "CP": 2, "D4148": 2, "D5819": 2, "NPN": 3, "PNP": 3, "HDR8": 8}
-OPEN_OK = {"JACK": {"2"}, "HDR16": {"13", "14", "15", "16"}}   # an output jack's lug; +5 V, CV, gate
+OPEN_OK = {"JACK": {"2"}, "HDR16": {"11", "12", "13", "14", "15", "16"}}   # an output jack's lug; +5 V, CV, gate
 
 
 def nets_of(parts):
