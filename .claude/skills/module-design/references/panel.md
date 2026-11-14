@@ -4,7 +4,7 @@
 
 - Height 128.5 mm; width = HP × 5.08 − 0.3 (18HP = 91.3). Mounting slots
   5.5 × 3.2 mm, centres 3 mm from the top and bottom edge, 7.5 mm from the
-  left edge and (HP − 3) × 5.08 further right (18HP: 7.5 and 83.8). Round
+  left edge and (HP − 3) × 5.08 further right (18HP: 7.5 and 83.70). Round
   3.2 mm holes also work but give no play. Rails sit behind the panel;
   nothing covers the front. Most boards stay ≤ 108 mm tall for the rails.
 - Kosmo (the user's other format): 200 mm panels, Eurorack power headers
