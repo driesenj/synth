@@ -82,12 +82,12 @@ They now read the source.
   - **M5, accepted:** its 5 mm bushing reaches about 0.9 mm through the panel (0.45 mm at worst), so it goes in without the nut. It hangs on its soldered pins and tabs and centres in the panel hole. D.enc_thread_through_panel, D.enc_body_gap and D.knob_hides_nut keep failing on that.
   - **M4, settled by measurement:** the user's encoders measure 12.7 mm or less across the outer faces of their tabs (2026-11-14), so they fit the present slots (outer edges 12.7 mm apart) and no copper changes. A.ec11_tabs_pec11r and D.pec11r_tabs now check that measurement, and print Bourns' recommended holes (0.25 mm wider on the outside) as information. A.ec11_tabs_pitch checks Alps' holes only while the BOM offers an Alps part.
 - **M6, the button height:** measure one.
-- **M9, OUT 1 / OUT 2:** a panel mask change, house-wide.
+- **M9, OUT 1 / OUT 2: done 2026-11-14.** They are knocked out of the band's mask, house-wide (see "Panel text" below).
 - **M3, the DC/DC:** measure.
 - **Not applied:**
   - the SPI pin speed (firmware code; low);
   - a per-board limiter ceiling (documented instead);
-  - the panel text weight (house-wide);
+  - the panel text weight: not needed. Against the measured letter height (0.685 × fontSize), size / 9 is about 1:5.5, already bolder than 1:6. E.text_ratio now uses that height.
   - the TL074 library symbol's pin 11 name.
 - **Copper, left as is:**
   - H4's missing ground;
@@ -99,6 +99,11 @@ They now read the source.
 - **Low, as reported:** the hot-input and 20 Hz figures, the Rev7 gain, the one-rail fault.
 
 ---
+
+
+## Panel text, 2026-11-14 (house-wide, no copper changed)
+
+EasyEDA Pro's default font was measured on its own Gerbers (the user's March boards against their project). A LEFT_BOTTOM string's letters stand 0.2 × fontSize above the origin and are 0.685 × fontSize tall; the advance is 0.64 × fontSize. Every `panel_pcb.py` now places text with these numbers (`INK_*`, `ink_width`), so panel text sits where the artwork has it. Before, it sat 0.2 × fontSize high, 0.4–0.9 mm. Labels on gold are knocked out of the mask: a hole in the mask opening round the letters, filled by a reverse string on the mask layer, so they read dark on the gold. The stroke has a 0.16 mm floor. The routed master's panel board was replaced by the regenerated one after checking that it equalled the old generated one, and the panel tests now use the measured font.
 
 ## High
 

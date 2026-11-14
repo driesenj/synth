@@ -703,14 +703,18 @@ def svg_words():
 
 
 def pcb_words(doc):
-    """STRINGs of a panel PCB: (text, centre x, baseline y, size (panel_pcb's), stroke, height, angle)."""
+    """STRINGs of a panel PCB: (text, centre x, baseline y, size (panel_pcb's), stroke, letter height, angle, layer,
+    width, reverse). EasyEDA's measured font (panel_pcb.INK_*, 2026-11-14): the letters stand INK_BOTTOM x fontSize
+    above the origin, (INK_TOP - INK_BOTTOM) x fontSize tall and ink_width() wide (until then the origin was taken
+    as the baseline, fontSize as the height and 0.62 x size per character as the width)."""
     out = []
     for h, p in doc["recs"]:
         if h["type"] == "STRING":
-            size = p["fontSize"] * MIL / 0.9
-            width = 0.62 * size * len(p["text"])
-            out.append((p["text"], p["x"] * MIL + width / 2, H - p["y"] * MIL, size, p["strokeWidth"] * MIL,
-                        p["fontSize"] * MIL, p["angle"], p["layerId"]))
+            size, F = p["fontSize"] * MIL / 0.9, p["fontSize"] * MIL
+            width = panel_pcb.ink_width(p["text"], size, p["strokeWidth"] * MIL)
+            out.append((p["text"], p["x"] * MIL + width / 2, H - p["y"] * MIL - panel_pcb.INK_BOTTOM * F, size,
+                        p["strokeWidth"] * MIL, (panel_pcb.INK_TOP - panel_pcb.INK_BOTTOM) * F, p["angle"], p["layerId"],
+                        width, p.get("reverse", False)))
     return out
 
 
@@ -796,13 +800,21 @@ ck.check("E.words_clear_washer: no artwork word under an encoder's washer (r 6.1
 cu_words = [w[0] for w in AW if "cu-text" in w[5]]
 band = [f for f in panel.copper({ref: (kind, "", *panel.panel_xy(hx, hy)) for kind, ref, _, ox, oy, hx, hy in feats})]
 on_band = []
-for s, x, y, size, *_ in [(w[0], w[1], w[2], w[3]) for w in PW]:
+for s, x, y, size, *_ in [(w[0], w[1], w[2], w[3]) for w in PW if w[7] == 3]:      # silk only
     for (bx, by, bw_, bh_, _), cuts in band:
         if bx <= x <= bx + bw_ and by <= y - 0.4 * size <= by + bh_:
             on_band.append(s)
 ck.check("E.output_words_as_drawn: the PCB's OUT 1 / OUT 2 look like the artwork's (dark letters knocked out of "
          "the gold), not silkscreen inside a mask opening", not on_band,
          f"artwork knocks out {cu_words}; the panel PCB has {on_band} as layer-3 silk on the bare-gold band")
+# since 2026-11-14 they are knocked out of the band's mask: reverse STRINGs on the mask layer, each over a hole in
+# the band's mask opening (panel_pcb.knock_paths), so the letters stay masked: dark on the gold, as drawn
+knock = sorted(w[0] for w in PW if w[7] == 5 and w[9])
+mask_band = [p for h, p in PANEL_DOC["recs"] if h["type"] == "FILL" and p["layerId"] == 5 and len(p["path"]) > 1]
+cu_band = [p for h, p in PANEL_DOC["recs"] if h["type"] == "FILL" and p["layerId"] == 1 and len(p["path"]) > 1]
+extra = sum(len(m["path"]) for m in mask_band) - sum(len(c["path"]) for c in cu_band)
+ck.check("E.output_words_knocked_out: OUT 1 / OUT 2 reverse on the mask layer, one mask hole each",
+         knock == sorted(cu_words) and extra == len(knock), f"knocked {knock}, artwork {sorted(cu_words)}, {extra} holes")
 # IN 2 normalled to IN 1: J6's switch lug carries J1's tip, and the panel draws the dotted link
 ck.check("E.normal_net: J6 (IN 2) switch lug on IN 1's tip net, J1's lug on GND_F",
          fnet.get("J6", {}).get("2") == fnet.get("J1", {}).get("3") == "IN1_F" and fnet.get("J1", {}).get("2") == "GND_F",
@@ -883,12 +895,13 @@ ck.check("F.same_frame_as_others: the other modules' artwork has the same title 
 # the routed panel PCB's frame
 P = {w[0]: w for w in PW}
 pt = next((p for h, p in PANEL_DOC["recs"] if h["type"] == "STRING" and p["text"] == panel.ART["title"]), None)
+pt_base = pt and H - pt["y"] * MIL - panel_pcb.INK_BOTTOM * pt["fontSize"] * MIL      # the letters' bottom
 ck.check("F.pcb_title: title STRING starts at x 12.0, baseline 7.4, size 5.2", pt is not None
-         and abs(pt["x"] * MIL - TITLE[0]) < 0.02 and abs(H - pt["y"] * MIL - TITLE[1]) < 0.02
-         and abs(pt["fontSize"] * MIL / 0.9 - TITLE[2]) < 0.02, f"{(pt['x'] * MIL, H - pt['y'] * MIL) if pt else None}")
+         and abs(pt["x"] * MIL - TITLE[0]) < 0.02 and abs(pt_base - TITLE[1]) < 0.02
+         and abs(pt["fontSize"] * MIL / 0.9 - TITLE[2]) < 0.02, f"{(pt['x'] * MIL, pt_base) if pt else None}")
 ps = P.get(panel.ART["subtitle"])
 ck.check("F.pcb_subtitle: ends at x W-12 (estimated width), baseline 6.6, size 2.1", ps is not None
-         and abs(ps[1] + 0.62 * ps[3] * len(ps[0]) / 2 - (W - SUB[0])) < 0.05 and abs(ps[2] - SUB[1]) < 0.02
+         and abs(ps[1] + ps[8] / 2 - (W - SUB[0])) < 0.05 and abs(ps[2] - SUB[1]) < 0.02
          and abs(ps[3] - SUB[2]) < 0.02, str(ps and ps[:4]))
 ca = harness.load("copper_audit")
 silk_polys = []
