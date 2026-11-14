@@ -9,64 +9,80 @@ per-board detail are in each module's BOM: [Spore](../marbles/docs/bom.md),
 
 | Qty | Kind | Part | Spore | Orchid | Moss | Mycelium | Note |
 |---|---|---|---|---|---|---|---|
-| 8 | Panel parts | 3 mm bicolour LED, red/green, common cathode, 3 leads (Thonk has no 3-lead ones) |  | 8 |  |  |  |
-| 4 | Panel parts | EC11 encoder with push switch, vertical, M7 bushing, D shaft (Bourns PEC11R-4215F-S0024 or Tayda's EC11) |  |  | 4 |  |  |
-| 3 | Chips | 74HC165 shift register (DIP-16) + DIP-16 socket | 1 |  | 2 |  |  |
-| 2 | Chips | 74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works | 1 | 1 |  |  |  |
-| 5 | Chips | 74HC595 shift register (DIP-16) + DIP-16 socket | 2 | 2 | 1 |  |  |
-| 4 | Chips | CD4013BE dual D flip-flop (DIP-14) + DIP-14 socket |  |  |  | 4 |  |
-| 2 | Chips | CD4093BE quad Schmitt NAND (DIP-14) + DIP-14 socket |  |  |  | 2 |  |
-| 1 | Chips | H11L1 opto-isolator (DIP-6) + DIP-6 socket |  |  | 1 |  |  |
-| 2 | Chips | MCP4922-E/P dual 12-bit DAC (DIP-14) + DIP-14 socket | 2 |  |  |  |  |
+| 4 | Panel parts | Bourns PEC11R-4215F-S0024 encoder: 24 detents, push switch, 15 mm flatted (D) shaft, M7 bushing 5 mm long. Fitted without its nut and washer (see the notes) |  |  | 4 |  |  |
+| 8 | Panel parts | Kingbright L-3WEGW 3 mm bicolour LED, red (GaAsP/GaP) / green (GaP), common cathode, 3 leads: lead 1 red anode, middle lead cathode, lead 3 green anode, 2.54 mm pitch |  | 8 |  |  |  |
+| 3 | Chips | 74HC165 shift register (DIP-16) | 1 |  | 2 |  |  |
+| 1 | Chips | 74HC4051 8-channel mux (DIP-16), 74HC or CD74HC only |  | 1 |  |  |  |
+| 1 | Chips | 74HC4051 8-channel mux (DIP-16); CD4051B also works | 1 |  |  |  |  |
+| 5 | Chips | 74HC595 shift register (DIP-16) | 2 | 2 | 1 |  |  |
+| 4 | Chips | CD4013BE dual D flip-flop (DIP-14) |  |  |  | 4 |  |
+| 2 | Chips | CD4093BE quad Schmitt NAND (DIP-14) |  |  |  | 2 |  |
+| 1 | Chips | H11L1 opto-isolator (DIP-6) |  |  | 1 |  |  |
+| 2 | Chips | MCP4922-E/P dual 12-bit DAC (DIP-14) | 2 |  |  |  |  |
 | 10 | Chips | Panasonic AQY212EH PhotoMOS relay (DIP-4) |  |  |  | 10 |  |
 | 2 | Semiconductors | 1N4148 diode (DO-35) |  |  | 1 | 1 |  |
 | 2 | Semiconductors | 1N5819 Schottky diode (DO-41) |  |  |  | 2 |  |
-| 3 | Semiconductors | 2N3904 NPN transistor (TO-92) | 2 |  | 1 |  |  |
-| 5 | Semiconductors | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | 2 | 2 | 1 |  |  |
+| 2 | Semiconductors | 2N3904 NPN transistor (TO-92) | 2 |  |  |  |  |
+| 1 | Semiconductors | 2N3904 NPN transistor (TO-92), formed leads on 2.54 mm; or spread a bulk part's 1.27 mm leads to the pads |  |  | 1 |  |  |
+| 1 | Semiconductors | BAT85 Schottky diode (DO-35), the clock input's clamp; BAT42, BAT43, 1N5711, SD101 or a 1N4148 fit too, DO-35 only: the holes are 0.8 mm. Low leakage matters here (it raises the clock threshold through R24): no SD103A or BAT86 |  |  | 1 |  |  |
+| 2 | Semiconductors | BAT85 Schottky diode (DO-35); BAT43 leaks least (steadier V/OCT when warm); BAT86, BAT42, BAT46 or SD103A fit too, DO-35 only: the holes are 0.8 mm |  | 2 |  |  |  |
+| 2 | Semiconductors | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | 2 |  |  |  |  |
 | 1 | Semiconductors | LM4040CIZ-2.5/NOPB 2.5 V shunt reference (TO-92); the BIZ grade works too, the AIZ is not needed (the output calibration takes out the error) | 1 |  |  |  |  |
 | 2 | Resistors | 10k × 8 bussed resistor network, SIP-9 (Bourns 4609X-101-103LF, Tayda A103J) |  |  | 2 |  |  |
-| 2 | Resistors | Resistor 10 Ω, metal film 1 %, 1/4 W |  |  |  | 2 |  |
-| 1 | Resistors | Resistor 220 Ω, metal film 1 %, 1/4 W |  |  | 1 |  |  |
+| 2 | Resistors | Resistor 10 Ω, metal film 1 %, 0.6 W in the 1/4 W (0207) body: TE LR1F10R or Vishay MBB0207 |  |  |  | 2 |  |
+| 1 | Resistors | Resistor 220 Ω, metal film 1 %, 0.5 W or more in the 1/4 W body: a ±12 V output patched into MIDI puts up to 0.15 W into it |  |  | 1 |  |  |
 | 34 | Resistors | Resistor 470 Ω, metal film 1 %, 1/4 W | 11 | 18 | 5 |  |  |
-| 30 | Resistors | Resistor 1k, metal film 1 %, 1/4 W | 14 | 8 | 5 | 3 |  |
-| 9 | Resistors | Resistor 1.5k, metal film 1 %, 1/4 W | 1 |  |  | 8 |  |
+| 2 | Resistors | Resistor 820 Ω, metal film 1 %, 1/4 W |  |  |  | 2 |  |
+| 36 | Resistors | Resistor 1k, metal film 1 %, 1/4 W | 14 | 8 | 5 | 9 |  |
+| 1 | Resistors | Resistor 1.5k, metal film 1 %, 1/4 W | 1 |  |  |  |  |
 | 3 | Resistors | Resistor 3.3k, metal film 1 %, 1/4 W | 3 |  |  |  |  |
-| 58 | Resistors | Resistor 10k, metal film 1 %, 1/4 W | 17 | 5 | 2 | 34 |  |
-| 1 | Resistors | Resistor 12k, metal film 1 %, 1/4 W |  | 1 |  |  |  |
-| 8 | Resistors | Resistor 13k, metal film 1 %, 1/4 W |  | 8 |  |  |  |
-| 7 | Resistors | Resistor 15k, metal film 1 %, 1/4 W | 4 | 2 | 1 |  |  |
+| 57 | Resistors | Resistor 10k, metal film 1 %, 1/4 W | 17 | 5 | 1 | 34 |  |
+| 1 | Resistors | Resistor 11k, metal film 1 %, 1/4 W | 1 |  |  |  |  |
+| 2 | Resistors | Resistor 12k, metal film 1 %, 1/4 W |  | 1 | 1 |  |  |
+| 19 | Resistors | Resistor 13k, metal film 1 %, 1/4 W | 7 | 8 | 4 |  |  |
+| 6 | Resistors | Resistor 15k, metal film 1 %, 1/4 W | 3 | 2 | 1 |  |  |
 | 4 | Resistors | Resistor 23.2k, metal film 1 %, 1/4 W | 4 |  |  |  |  |
-| 11 | Resistors | Resistor 27k, metal film 1 %, 1/4 W | 7 |  | 4 |  |  |
-| 1 | Resistors | Resistor 33k, metal film 1 %, 1/4 W |  | 1 |  |  |  |
+| 1 | Resistors | Resistor 30k, metal film 1 %, 1/4 W |  | 1 |  |  |  |
 | 4 | Resistors | Resistor 47k, metal film 1 %, 1/4 W | 4 |  |  |  |  |
-| 63 | Resistors | Resistor 100k, metal film 1 %, 1/4 W | 13 | 8 | 5 | 37 |  |
+| 65 | Resistors | Resistor 100k, metal film 1 %, 1/4 W | 13 | 10 | 5 | 37 |  |
 | 8 | Resistors | Resistor 200k, metal film 1 %, 1/4 W |  |  |  | 8 |  |
 | 2 | Resistors | Resistor 300k, metal film 1 %, 1/4 W |  |  |  | 2 |  |
-| 3 | Capacitors | Capacitor 22 pF C0G ceramic, 5.08 mm leads |  |  |  | 3 |  |
-| 1 | Capacitors | Capacitor 100 pF C0G ceramic, 5.08 mm leads |  | 1 |  |  |  |
-| 18 | Capacitors | Capacitor 1 nF C0G ceramic or film, 5.08 mm leads | 7 | 7 | 4 |  |  |
-| 50 | Capacitors | Capacitor 100 nF ceramic (X7R), 5.08 mm leads | 15 | 7 | 6 | 22 |  |
-| 5 | Capacitors | Capacitor 1 µF ceramic (X7R), 5.08 mm leads | 1 | 2 | 1 | 1 |  |
-| 1 | Capacitors | Capacitor 10 µF ceramic (X5R / X7R, 16 V or more), 5.08 mm leads; an electrolytic is too tall |  |  | 1 |  |  |
-| 2 | Capacitors | Capacitor 10 µF electrolytic, 35 V, 5 mm across, 2.5 mm leads |  |  |  | 2 |  |
+| 3 | Capacitors | Capacitor 22 pF C0G ceramic, 50 V, 5.08 mm leads |  |  |  | 3 |  |
+| 1 | Capacitors | Capacitor 100 pF C0G ceramic, 50 V, 5.08 mm leads |  | 1 |  |  |  |
+| 14 | Capacitors | Capacitor 1 nF C0G ceramic or film, 50 V, 5.08 mm leads | 7 | 7 |  |  |  |
+| 4 | Capacitors | Capacitor 2.2 nF C0G ceramic or film, 50 V, 5.08 mm leads |  |  | 4 |  |  |
+| 50 | Capacitors | Capacitor 100 nF ceramic (X7R, 50 V), 5.08 mm leads | 15 | 7 | 6 | 22 |  |
+| 5 | Capacitors | Capacitor 1 µF ceramic (X7R, 50 V), 5.08 mm leads | 1 | 2 | 1 | 1 |  |
+| 2 | Capacitors | Capacitor 10 µF 35 V, polarised: a dipped tantalum (2.54 mm leads), or a 5 mm electrolytic with its 2 mm leads spread to the pads; + to the + pad |  |  |  | 2 |  |
+| 1 | Capacitors | Capacitor 10 µF ceramic, 5.08 mm leads: TDK FG28X5R1E106MRT06 (25 V X5R, 5 mm leads, 5.5 mm tall); an electrolytic is too tall for the gap |  |  | 1 |  |  |
 | 1 | Connectors | 1×8 right-angle male header, 2.54 mm (the display cable's plug lies flat on it) |  |  | 1 |  |  |
+| 19 | Connectors | DIP-14 IC socket | 6 | 2 | 1 | 10 |  |
+| 1 | Connectors | DIP-16 IC socket |  |  | 1 |  |  |
+| 1 | Connectors | DIP-6 IC socket |  |  | 1 |  |  |
 | 12 | Connectors | Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position) | 4 | 4 | 4 |  | cut from 1×40 strips; male pins under the breakout |
+| 2 | Connectors | Long-tail (stacking) female header, 2.54 mm, 1×20, about 10 mm tails (Samtec ESQ series or Arduino-style stacking headers) |  |  | 2 |  | the Seed's two rows on the breakout: the Seed plugs in on top, the tails pass through the breakout into the main board's sockets (the breakout README's breadboard method) |
 | 4 | Mechanical | Knob for a 6 mm D-shaft encoder, about 11 mm across |  |  | 4 |  | match the encoders' shaft length |
-| 15 | Mechanical | M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws | 4 | 3 | 4 | 4 | one per mounting hole between the boards; measure the mated headers first |
+| 4 | Mechanical | M3 nylon washer |  |  | 4 |  | front and back of the faceplate holes at (19.3, 49.0) and (39.6, 33.1) (routed frame): ENC4's A pad and SR_CHAIN run under the standoff and the screw head there |
+| 15 | Mechanical | M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's 2.5 mm plastic | 4 | 3 | 4 | 4 | one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be) |
+| 30 | Mechanical | M3 × 6 mm pan-head screw | 8 | 6 | 8 | 8 | two per standoff |
 
-44 lines, 414 parts.
+56 lines, 473 parts.
 
 ## Made or built elsewhere
 
 | Qty | Source | Part | Spore | Orchid | Moss | Mycelium | Note |
 |---|---|---|---|---|---|---|---|
 | 1 | Eckstein | Waveshare 1.9inch LCD Module (ST7789V2, 170 × 320, SPI), with its cable |  |  | 1 |  | DS1: eckstein-shop.de, €13.95 (2026-11-03); the glass is taped to the panel's rear, the cable plugs into CN1 |
-| 1 | JLCPCB | Main board + faceplate board, 140.4 × 108.0 mm each, 2 layers, 1.6 mm |  |  |  | 1 |  |
-| 1 | JLCPCB | Main board + faceplate board, 59.4 × 108.0 mm each, 2 layers, 1.6 mm |  | 1 |  |  |  |
-| 1 | JLCPCB | Main board + faceplate board, 69.6 × 108.0 mm each, 2 layers, 1.6 mm |  |  | 1 |  |  |
-| 1 | JLCPCB | Main board + faceplate board, 90.0 × 108.0 mm each, 2 layers, 1.6 mm | 1 |  |  |  |  |
+| 1 | JLCPCB | Faceplate board, 140.4 × 108.0 mm, 2 layers, 1.6 mm |  |  |  | 1 | the Faceplate PCB in StereoMixer-routed.epro2 |
+| 1 | JLCPCB | Faceplate board, 59.4 × 108.0 mm, 2 layers, 1.6 mm |  | 1 |  |  | the Faceplate PCB in Plaits-routed.epro2 |
+| 1 | JLCPCB | Faceplate board, 69.6 × 108.0 mm, 2 layers, 1.6 mm |  |  | 1 |  | the Faceplate PCB in SideFXy-routed.epro2 |
+| 1 | JLCPCB | Faceplate board, 90.0 × 108.0 mm, 2 layers, 1.6 mm | 1 |  |  |  | the Faceplate PCB in Marblesy-routed.epro2 |
+| 1 | JLCPCB | Main board, 140.4 × 108.0 mm, 2 layers, 1.6 mm |  |  |  | 1 | the Main PCB in StereoMixer-routed.epro2 |
+| 1 | JLCPCB | Main board, 59.4 × 108.0 mm, 2 layers, 1.6 mm |  | 1 |  |  | the Main PCB in Plaits-routed.epro2 |
+| 1 | JLCPCB | Main board, 69.6 × 108.0 mm, 2 layers, 1.6 mm |  |  | 1 |  | the Main PCB in SideFXy-routed.epro2 |
+| 1 | JLCPCB | Main board, 90.0 × 108.0 mm, 2 layers, 1.6 mm | 1 |  |  |  | the Main PCB in Marblesy-routed.epro2 |
 | 1 | JLCPCB | Panel 141.9 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG |  |  |  | 1 | ENIG makes the bands and the mushroom gold |
 | 1 | JLCPCB | Panel 60.6 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG |  | 1 |  |  | ENIG makes the bands and the mushroom gold |
 | 1 | JLCPCB | Panel 70.8 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG |  |  | 1 |  | ENIG makes the bands and the mushroom gold |
 | 1 | JLCPCB | Panel 91.3 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG | 1 |  |  |  | ENIG makes the bands and the mushroom gold |
-| 3 | OSHWLab / JLCPCB | Rob Heel's seed_power_opamps breakout, built: its own PCB and parts | 1 | 1 | 1 |  | carries the Seed, the Eurorack power header and the audio stages |
+| 3 | OSHWLab / JLCPCB | Rob Heel's seed_power_opamps breakout, built: its own PCB and parts | 1 | 1 | 1 |  | carries the Seed, the Eurorack power header and the audio stages; its parts list: github.com/rob-scape/daisy-seed-breakout-boards, daisy-seed-dcdc-opamps BOM |
