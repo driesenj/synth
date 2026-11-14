@@ -301,5 +301,5 @@ Main board (SMD unless noted):
 Faceplate: 16 Thonkiconn, 7 Alpha 9 mm B10k, 1 Alpha B100k (PWM), 12
 sub-mini SPDT on-on toggles (Dailywell 2MS1T1B1M2QES or equal, PCB pins),
 4 × 3 mm LEDs, 1 × 35 and 1 × 36 male headers, 8 knobs; U5 with eight 0603
-resistors and two 100 n on its rear. M3 standoffs (8.5 mm with standard
-sockets) and screws for the four holes.
+resistors and two 100 n on its rear. M3 standoffs (11 mm with standard
+sockets: 8.5 mm plus the male header's 2.5 mm plastic) and screws for the four holes.
