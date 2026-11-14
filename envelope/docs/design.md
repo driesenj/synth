@@ -450,5 +450,5 @@ From the netlist.
 | 66 | resistors | 100k ×34, 10k ×12, 1k ×8, 1k5 ×4, 100 Ω ×4, 27k, 68k, 10 Ω ×2 |
 | 1 | 2 × 5 shrouded header, 2.54 mm | |
 | 4 + 4 | 1 × 13 male header / 1 × 13 female socket, 2.54 mm | board to board (Thonk's male + female header bag) |
-| 4 | M3 standoffs for the 8.5 mm board gap, with screws | as on Side FXy |
+| 4 | M3 standoffs for the 11 mm board gap (8.5 mm sockets + 2.5 mm male plastic), with screws | as on Side FXy |
 | 3 | PCBs: faceplate, main board, panel | 1.6 mm FR4; the panel black mask, white silk, ENIG |
