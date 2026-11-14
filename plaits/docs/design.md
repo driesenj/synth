@@ -79,7 +79,9 @@ and feeds VIN from its own DC/DC converter.
 ### CV inputs (8×)
 
 Inverting TL074 stage biased from 3V3A, so no negative reference is needed
-and the full ±12 V stays inside the ADC range without clamps:
+and ±12 V lands inside the ADC range without clamps (nominal parts; at the
+worst corner, 1 % resistors and the Seed's 3V3A at ±3.5 %, about ±11.7 V
+does, and every Plaits input range always fits):
 
 ```
 jack tip ── 100k ──┬── (−) TL074 ──┬── 1k ── Seed ADC
@@ -97,20 +99,27 @@ BIAS ─────────────── (+)
 | HARMONICS | U4A | R33 | R34 13k | C25 1n | R35 | A | A4 |
 | TRIG | U4B | R36 | R37 13k | C26 100p | R38 | A | A5 |
 | LEVEL | U4C | R39 | R40 13k | C27 1n | R41 | A | A6 |
-| V/OCT | U4D | R42 | R43 33k | C28 1n | R44 | V | A9 |
+| V/OCT | U4D | R42 | R43 30k | C28 1n | R44 | V | A9 |
 
 - **Bias A** = 3V3A × 12k / (15k + 12k) = 1.467 V (R45, R46, C29 1 µ).
   **Bias V** = 3V3A × 15k / (13k + 15k) = 1.768 V (R47, R48, C30 1 µ).
 - **Wide channels** (gain −0.13): V_adc = 1.658 V − 0.13 · V_in; ±12 V
   lands on 3.22 … 0.10 V.
-- **V/OCT** (gain −0.33): V_adc = 2.351 V − 0.33 · V_in; usable −2.9 …
-  +7.1 V, which is 0.2 Plaits units per volt, Plaits' own pitch scaling.
-  D21 and D22 (BAT85) clamp the ADC pin to 3V3A and GND beyond that.
-- Corner frequency 12 kHz (13k ‖ 1n); TRIG uses 100p so edges stay sharp.
+- **V/OCT** (gain −0.30): V_adc = 2.298 V − 0.30 · V_in; usable −3.3 …
+  +7.7 V nominal, −3.0 … +7.2 V at the worst corner, so Plaits' own
+  −2.86 … +7.14 V always fits (the firmware clips to it, as Plaits' op-amps
+  do). R43 was 33k until 2026-11-14 (gain −0.33, Plaits' exact scaling):
+  the same 10 V span as Plaits with no margin, so a +7 V CV could clip at
+  the worst corner (test report 2026-11-13, L1). D21 and D22 (BAT85) clamp
+  the ADC pin to 3V3A and GND beyond the range. With a datasheet-maximum
+  BAT85 the pin goes 0.34 V below GND at +12 V in, a little past the
+  STM32's −0.3 V; harmless (well under a µA in its own diode).
+- Corner frequency 12 kHz (13k ‖ 1n), V/OCT 5.3 kHz (30k ‖ 1n); TRIG uses
+  100p so edges stay sharp.
 - C31–C34 (100 n) decouple ±12 V at each TL074.
 
 **Firmware mapping:** V_in = (V0 − V_adc) / g with V0 / g = 1.658 / 0.13
-for the wide channels and 2.351 / 0.33 for V/OCT; that voltage is then
+for the wide channels and 2.298 / 0.30 for V/OCT; that voltage is then
 turned into the number Plaits' own ADC would have read, and Plaits' code
 and calibration apply unchanged.
 
@@ -135,18 +144,29 @@ both while the 2022 navigation (all 24 models) is on.
 - **LEDs D1–D8**: 3 mm red/green bicolour, common cathode (middle lead) to
   GND_D_F. U9 and U10 (74HC595, chained: U9 QH' → U10 SER; SER from
   MOSI_F, SRCLK from SCK_F, RCLK from LED_LATCH_F, /OE low, /SRCLR high)
-  drive the 16 anodes through 470 Ω each: about 3 mA per colour, yellow is
-  both on, brightness by PWM at the LED update rate. Split by colour: every
+  drive the 16 anodes through 470 Ω each: about 2.3 mA per colour (red 2.5,
+  green 2.1 mA typical with a GaP green such as the Kingbright L-3WEGW the
+  BOM names), yellow is both on, brightness by PWM at the LED update rate.
+  Not Tayda's A-8599: its green is 2.8–3.0 V and gets under 1 mA at 3.3 V,
+  so the green bank looks dim and yellow comes out red-orange. Split by colour: every
   LED has its red anode on the left (front view) and its green one on the
   right, so U9 on the left drives the eight reds (R80–R87) and U10 on the
   right the eight greens (R88–R95), and no line has to cross the LED
-  column. C9, C10 100 n.
+  column. C9, C10 100 n, each between its 595's VCC pin 16 and OE pin 13
+  (on GND_D_F), a few mm from both (since 2026-11-14). R14 / R15 (100k)
+  pull SRCLK / RCLK to GND_D_F, so the 595s keep their frame while the
+  Seed's pins float in reset and in the bootloader. U1, U9 and U10 sit on a
+  DIP-16 footprint with a square pin 1 and are soldered without sockets.
 - **Buttons SW1, SW2**: Thonk low-profile LED buttons; contacts 1+2 to
   GND_D_F, 3+4 to BTN_A_F / BTN_B_F (Seed internal pull-ups); LED anode
   (pin 5) from the main board's 470 Ω, cathode (pin 6) to GND_D_F. Clip
   their three plastic feet off: holes for them would overlap the pads of
-  pins 1 and 2 (that gave EasyEDA DRC errors on Marblesy), and without the
-  feet the body sits on the board at Thonkiconn height anyway.
+  pins 1 and 2 (that gave EasyEDA DRC errors on Marblesy). Without the feet
+  the cap's square base stands 9.85 mm above the board (Thonk's drawing),
+  0.85 mm above a Thonkiconn's 9.0 mm body and close under the panel: fit
+  the panel before soldering them (see [Building](#building)). Their LED
+  wants a GaAsP / GaP colour (red, orange, yellow or green): from 3.3 V
+  through 470 Ω a blue or white one is almost dark.
 
 The mux channels and the 595 outputs are not in panel order: they are
 picked so the wiper lines and the LED lines do not cross (on Marblesy the
@@ -169,8 +189,10 @@ the pots and sets the LED bits by these tables.
 | U9 (red) | D1 | D8 | D7 | D6 | D2 | D5 | D3 | D4 |
 | U10 (green) | D4 | D3 | D2 | D5 | D1 | D6 | D7 | D8 |
 
-libDaisy: `AdcChannelConfig::InitMux(A10, 7, D26, D27, D28)` for the pots
-(Y7 is grounded and not scanned); SPI1 at 1.56 MHz (PLL2P 25 MHz / 16) for
+libDaisy: `AdcChannelConfig::InitMux(A10, 7, D26, D27, D28,
+SPEED_16CYCLES_5)` for the pots (Y7 is grounded and not scanned; 16.5 ADC
+cycles instead of the default 8.5, so the wiper and the 4051's
+on-resistance settle with no series resistor); SPI1 at 1.56 MHz (PLL2P 25 MHz / 16) for
 the shift registers, 16 bits per update with U10's byte first, latch on
 D13.
 
@@ -189,7 +211,8 @@ what they connect to on both boards, with each supply beside its ground and
 OUT and AUX kept apart by GND and 3V3A. Male pins on the faceplate
 (HF1–HF3), female sockets on the main board, each pair at the same x/y on
 both boards. GND_F (jacks, pots, mux) and GND_D_F (LEDs, buttons, shift
-registers) are separate on the faceplate and meet on the main board's GND.
+registers and their clock pull-downs) are separate on the faceplate and
+meet on the main board's GND.
 
 ---
 
@@ -227,7 +250,7 @@ fixed, the pots and the rear side of the faceplate did.
 |---|---|---|
 | Pots (×7) | 7.5 | Alpha 9 mm vertical B10k (Thonk), M7 bushing |
 | Jacks (×10) | 6.5 | Thonkiconn PJ398SM |
-| Buttons (×2) | 6.5 | Thonk low-profile LED button, 5.5 mm cap; feet clipped, the body on the board at Thonkiconn height |
+| Buttons (×2) | 6.5 | Thonk low-profile LED button, 5.5 mm cap; feet clipped, the body on the board, its cap base 9.85 mm up |
 | LEDs (×8) | 3.2 | 3 mm red/green bicolour, 3-lead common cathode |
 
 Knobs as drawn: Ø15 for FREQUENCY and HARMONICS, Ø12 for TIMBRE and MORPH,
@@ -276,20 +299,25 @@ their glyph flattened to short lines — a thick ring for the green bank, a
 thin one for the red bank, since silk cannot knock a glyph out of a solid
 disc) and the OUT / AUX band as a copper fill on the top layer under a
 solder-mask opening of the same shape, so it comes out as bare ENIG gold;
-OUT and AUX are silkscreen on top of it. Copper and mask opening both leave
+OUT and AUX are knocked out of the band's solder mask: a hole in the mask
+opening round each word, filled by a reverse string on the mask layer, so
+the letters stay masked and read dark on the gold, as the artwork draws
+them (silk would be clipped: fabs drop silkscreen over bare copper). Copper and mask opening both leave
 a 0.4 mm ring of masked board around the two jack holes through the band
 (EasyEDA's DRC wants copper 0.3 mm from a slot region; on Marblesy it
 flagged every hole in the band): each ring is a counter-clockwise circle in
 the fill's path list, which EasyEDA fills with the nonzero rule. Text uses
-the default stroke font and estimated centring, so expect to nudge a few
-labels. Order it as a 1.6 mm board, black mask, white silk, ENIG. The fab
-may ask about silkscreen over bare copper (the band labels; if they drop
-it, put the labels on the solder-mask layer instead and they come out gold
-on black).
+the default stroke font, placed with its metrics as measured on EasyEDA's own
+Gerbers (2026-11-14), so it lands where the artwork has it. Order it as a
+1.6 mm board, black mask, white silk, ENIG. Check the knocked-out OUT / AUX
+in EasyEDA's 3D view after import.
 
 ### Differences from Plaits
 
-- Same controls in the same places; the knobs are 9 mm Alpha pots with
+- Same controls in about the same places: measured off a photo, they sit
+  within 1.8 mm of Mutable's panel drawing (`plaits_v50.ai`; TIMBRE and
+  MORPH are the furthest off, the top jack row and the LEDs within 0.5 mm,
+  Plaits' LED pitch is 5.40 mm); the knobs are 9 mm Alpha pots with
   whatever knobs you fit, not Mutable's.
 - Black panel with white silk (the Marblesy look) instead of Plaits'
   aluminium. The model icons are redrawn, not Mutable's artwork.
@@ -474,6 +502,104 @@ is room (Marblesy has 118 on the main board and 166 on the faceplate).
    cathodes and the buttons to GND_D_F.
 5. 3V3A_F from H2 to the pots' CW ends and U1 (0.6 mm); 3V3D_F from H3 to
    U9, U10 and C9 / C10.
+
+**Faceplate rework, 2026-11-14** (the hardware test report's M6, L10,
+L17; no other copper touched). `Plaits-routed.epro2` was patched by script:
+- **C9 / C10 moved:** C10 to (10.75, 82.0) and C9 to (41.0, 80.75), angle 0, each with pad 1 (3V3D_F) beside its 595's pin 16 and pad 2 (GND_D_F) beside pin 13 (OE, on GND_D_F). Before, C10 was 81 mm of track from U10's pin 16.
+- **Junction via:** a GND_D_F via at C10's old pad 2, (17.74, 69.0), where the ground from HF3 met U10's pin 8 through it.
+- **R14 / R15 added:** R14 (SCK_F) at (31.25, 69.5) and R15 (LED_LATCH_F) at (1.5, 60.5), 100k to GND_D_F.
+- **Square pin 1:** the DIP-16 footprint's pad 1 is now square.
+- **Ripped:** L_D4_G, L_D2_R and U9's 3V3D_F tie along y 80.5. The pours are stale.
+
+Route these (PCB frame, mm; picture: `hardware/easyeda/plaits-faceplate-rework-2026-11-14.png`):
+1. C10.1 (8.21, 82.0) → U10.16 (7.51, 78.81), and C10.2 (13.29, 82.0) →
+   U10.13 (15.13, 78.81): 0.6 mm, a few mm each.
+2. C9.1 (38.46, 80.75) → U9.16 (35.11, 78.81), and C9.2 (43.54, 80.75) →
+   U9.13 (42.73, 78.81): 0.6 mm.
+3. U9.10 (50.35, 78.81), SRCLR tied high → 3V3D_F, to C9.1 or U9.16 around
+   C9's pad 2 (the old bottom-layer run along y 80.5 now meets it): 0.6 mm.
+4. R14.1 (36.4, 69.5) → the SCK_F bottom-layer track at y 73.5 straight
+   above it, between U9's pins 1 and 2: 0.3 mm. R14.2 already sits on
+   GND_D_F.
+5. R15.2 (1.5, 55.35) → HF3.2 (4.4, 57.38), GND_D_F: 0.6 mm. R15.1 already
+   sits on LED_LATCH_F.
+6. L_D4_G: U10.15 (10.05, 78.81) → R91.1 (19.4, 82.85), between C10's pads;
+   L_D2_R: U9.4 (42.73, 71.19) → R82.1 (36.8, 82.85), around C9: 0.3 mm.
+
+Then rebuild all copper areas, run DRC and the netlist check, and export.
+The export replaces `Plaits-routed.epro2` after `copper_audit.py`, the
+labels and the test suite have run on it.
+
+---
+
+## Building
+
+What the hardware test suite ([test report](test-report-2026-11-13.md))
+found that the build has to get right. None of it changes the boards.
+
+- **The stack.** The breakout goes SMD side down, towards the main board,
+  with the Seed, its DC/DC, the two 100 µF caps and the power header on
+  top (Rob Heel's own build is that way up). The Seed's 40 pins reach the
+  main board's 8.5 mm sockets through long-tail female headers on the
+  breakout (tails about 6 mm); its 1×4 male headers point down, plastic
+  under the board. Mounted the other way up, every pin lands on its mirror
+  image and ±12 V reaches the op-amps reversed. Its header holes are
+  0.889 mm, tight for square pins: push them in straight. The gap between
+  the boards is 11 mm (8.5 mm socket + the male headers' 2.54 mm plastic).
+- **The faceplate's chips.** Solder U1, U9 and U10 straight to the board,
+  without sockets: in a 5 mm socket they reach the main board's socket
+  tails and clipped leads in the gap. Clip the main board's leads short
+  over them anyway, and keep the breakout's solder fillets under H2 / H3
+  flat (the sockets' plastic covers the outer 0.1 mm of their pad rings).
+  On the main board pick small capacitor bodies (TDK FG28 size, about
+  4.0 × 2.5 mm): they stand between the standing resistors.
+- **The panel first.** Fit the panel with every jack and pot nut tight
+  before soldering the jacks, pots and buttons. The Thonkiconn body is
+  9.0 mm (Thonk's drawing), the Alpha pot 10 ± 0.5 mm to its bushing
+  shoulder: the panel rests on the pots and the jacks hang 1 mm below it
+  until their nuts pull them up. The buttons' cap base stands 9.85 mm up,
+  0.15 mm under the panel typically: check both click and spring back with
+  the panel on before soldering them.
+- **The LEDs.** Their leads are on 2.54 mm, the LED footprint on 1.27 mm
+  (test report M2; kept as it is by the user's choice, 2026-11-14, so the
+  routed boards stay unchanged). Jog the two outer leads 1.27 mm in towards
+  the middle one, a few mm below the flange, so all three enter their
+  holes straight; the LED stands high enough for a gentle bend. Lead 1,
+  the square pad, is the red anode. Solder them pushed into their holes
+  with the panel fitted: the flange then stands 6.6–9 mm above the board.
+  The pads are only 0.17 mm apart: use little solder, then check with a
+  meter that no two of each LED's three pads are joined (a bridge is
+  harmless, the 470 Ω limits it, but that colour stays dark or both light).
+- **Power.** The breakout's 10-pin header is not shrouded: plug a 10-to-16
+  cable with its red stripe at the RED STRIPE mark (−12 V) and check it
+  sits on all ten pins before switching on. The module draws about +62 /
+  −62 mA typical on ±12 V, up to +129 / −122 mA at worst (the Seed comes
+  through the breakout's 24 V → 5 V DC/DC, from both rails).
+- **Depth.** About 52.5 mm behind the panel (the panel to the faceplate
+  board, three boards, two 11 mm gaps, the Seed's parts). Check the case;
+  soldering the Seed straight onto the breakout saves 11 mm.
+
+**At bring-up, measure:**
+
+1. The breakout's 5 V current with the firmware running and all LEDs lit
+   (the octave display lights all eight yellow). Its DC/DC is a 1 W part,
+   200 mA: about 148 mA is expected, up to 261 mA at the datasheet maxima
+   of the STM32 and the LEDs. Above about 180 mA, cap the LED duty in the
+   firmware or fit a 2 W converter.
+2. 3V3A with −12 V into V/OCT: D21 then pushes up to 2.3 mA into 3V3A,
+   which comes from the Seed's LP2985, an LDO that cannot sink. On a rev 5
+   Seed the WM8731 codec on 3V3A takes it; if 3V3A rises on yours, add
+   3.3k from 3V3A to GND. The same path back-feeds 3V3A for a few ms at
+   power-up when a negative V/OCT CV is present before the Seed starts.
+
+**Faults to know.** With −12 V missing (a half-seated cable) the TL074s run
+on +11.7 / 0 V with their inputs below the common-mode range: an old-die
+TL074 that phase-reverses drives about +10 V through 1k into the seven
+unclamped ADC pins of a Seed that is then unpowered (their limit is
+4.0 V); the new-die TL074H does not phase-reverse. With either rail
+missing the DC/DC gets 12 V instead of 24 V and the Seed browns out with
+its VDDA above VDD. (M7 in the test report: accepted, by the user's choice
+on 2026-11-14, rather than clamping the seven ADC lines.)
 
 ---
 

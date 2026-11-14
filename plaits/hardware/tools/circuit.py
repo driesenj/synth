@@ -73,13 +73,15 @@ SEED = {
 SECTION = {1: ("1", "2", "3"), 2: ("7", "6", "5"), 3: ("8", "9", "10"), 4: ("14", "13", "12")}
 # name, label, op-amp, section, Rf, Cf, bias. Inverting stages biased from
 # 3V3A: the wide channels (gain -0.13) put +-12 V on 0.10..3.22 V; V/OCT
-# (gain -0.33, 2.351 V offset) reads -2.9..+7.1 V at 0.2 Plaits units per
-# volt, the same pitch scaling as Plaits, with Schottky clamps beyond that.
+# (gain -0.30, 2.298 V offset) reads -3.3..+7.7 V nominal, -3.06..+7.21 V at
+# the worst corner, so Plaits' own -2.86..+7.14 V always fits (R43 was 33k
+# until 2026-11-14: the same 10 V span as Plaits, no margin at either end;
+# test report 2026-11-13, L1), with Schottky clamps beyond that.
 CV_CHANNELS = [
     ("MODEL", "MODEL", "U3", 1, "13k", "1n", "BIAS_A"), ("TIMBRE", "TIMBRE", "U3", 2, "13k", "1n", "BIAS_A"),
     ("FM", "FM", "U3", 3, "13k", "1n", "BIAS_A"), ("MORPH", "MORPH", "U3", 4, "13k", "1n", "BIAS_A"),
     ("HARMO", "HARMONICS", "U4", 1, "13k", "1n", "BIAS_A"), ("TRIG", "TRIG", "U4", 2, "13k", "100p", "BIAS_A"),
-    ("LEVEL", "LEVEL", "U4", 3, "13k", "1n", "BIAS_A"), ("VOCT", "V/OCT", "U4", 4, "33k", "1n", "BIAS_V"),
+    ("LEVEL", "LEVEL", "U4", 3, "13k", "1n", "BIAS_A"), ("VOCT", "V/OCT", "U4", 4, "30k", "1n", "BIAS_V"),
 ]
 
 
@@ -104,7 +106,7 @@ def main_board_parts():
     parts.append(R("R47", "13k", "3V3A", "BIAS_V"))
     parts.append(R("R48", "15k", "BIAS_V", "GND"))
     parts.append(C("C30", "1u", "BIAS_V", "GND"))
-    # V/OCT clamps: the ADC pin held between GND and 3V3A for pitch CV outside -2.9..+7.1 V (pin 1 = cathode)
+    # V/OCT clamps: the ADC pin held between GND and 3V3A for pitch CV outside -3.3..+7.7 V (pin 1 = cathode)
     parts.append(Part("D21", "BAT85", "BAT85", {"1": "3V3A", "2": "ADC_VOCT"}))
     parts.append(Part("D22", "BAT85", "BAT85", {"1": "ADC_VOCT", "2": "GND"}))
     # supply decoupling, one pair per TL074
@@ -215,8 +217,12 @@ def faceplate_parts():
         parts.append(Part(ref, "LED_RG", "", led_nets[ref], label))
     for u in ("U9", "U10"):
         parts.append(Part(u, "HC595", "74HC595", sr[u]))
-    parts.append(C("C9", "100n", "3V3D_F", "GND_D_F"))    # U9
-    parts.append(C("C10", "100n", "3V3D_F", "GND_D_F"))   # U10
+    parts.append(C("C9", "100n", "3V3D_F", "GND_D_F"))    # U9, between its pins 16 and 13 since 2026-11-14
+    parts.append(C("C10", "100n", "3V3D_F", "GND_D_F"))   # U10, the same
+    # the 595s' clocks held low while the Seed's pins float (in reset, in the bootloader), so the LED column
+    # keeps the last frame; 100k costs the SPI pins 33 uA (test report 2026-11-13, L10)
+    parts.append(R("R14", "100k", "SCK_F", "GND_D_F"))
+    parts.append(R("R15", "100k", "LED_LATCH_F", "GND_D_F"))
     # buttons: contacts 1+2 to GND_D_F, 3+4 to the Seed (internal pull-up); the LED on pins 5 / 6
     for (ref, label, sw), led in zip(BUTTONS, ("BTN_LED_A_F", "BTN_LED_B_F")):
         net = f"BTN_{sw}_F"

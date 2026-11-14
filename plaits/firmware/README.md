@@ -94,7 +94,9 @@ models costs one flash write.
 ## Calibration
 
 Do it once after building the module, and again if you swap the Seed or
-the op-amps. It is Plaits' procedure:
+the op-amps. Do it with the module warm, after about ten minutes in the
+running case: the V/OCT clamp diodes' leakage moves the tuning by a few
+cents between a cold and a warm module. It is Plaits' procedure:
 
 1. Patch a well-calibrated V/OCT source into V/OCT and **nothing else**:
    step 3 measures the zero of every other input, so a cable in TIMBRE,
@@ -112,9 +114,16 @@ calibration is saved, but the zeros measured at step 3 stay in use until
 power-off: switch the module off and on after a failed attempt.
 
 Until the first calibration the firmware assumes nominal parts. With 1 %
-resistors the pitch can be most of a semitone off and the octaves ten
-cents or more out, and an unpatched MODEL input can select the model next
-to the one the buttons picked.
+resistors the pitch can be up to about 1.3 semitones off and the octaves
+up to about 25 cents out; with the Seed's 3V3A and the op-amp's offset at
+their tolerances too, up to about 1.9 semitones and 60 cents per octave.
+An unpatched MODEL input can select the model next to the one the buttons
+picked.
+
+The calibration measures the zeros of the five probed inputs (TIMBRE, FM,
+MORPH, TRIG, LEVEL) with the probe held low and takes out the 0.13 V that
+leaves on them. That figure is nominal: with 1 % parts up to about 8 mV
+stays in a zero, a few cents of FM at full attenuverter.
 
 ## Loading DX7 patches, a wave terrain or wavetables
 
@@ -177,6 +186,9 @@ Seed on the back of the module.
 The bootloader's grace period is why the module starts about two seconds
 after power-on, and why the LED column may show a random pattern until
 then (the 74HC595s have no reset; the firmware clears them first thing).
+While the Seed is in reset or in the bootloader its pins float; the
+faceplate's R14 / R15 hold the 595s' clocks low then, so the pattern does
+not change while the bootloader waits.
 `make program-boot` installs the 2 s version. libDaisy also ships a
 version that starts the module at once; with the Seed in DFU mode:
 
@@ -253,7 +265,7 @@ restarts the module if the audio stops for 2 s.
 
 **CV inputs.** Plaits reads its CVs through MCP6004 stages of its own
 (gains 0.2 to 0.56, offsets from a −10 V reference) with a 16-bit SDADC.
-Plaitsy's TL074 stages have other gains (0.13; 0.33 on V/OCT). The CV
+Plaitsy's TL074 stages have other gains (0.13; 0.30 on V/OCT). The CV
 driver turns each Seed reading back into the jack voltage and then into the
 number Plaits' SDADC would have read for that voltage, clipped where
 Plaits' stages clip. Plaits' calibration, cable-detection thresholds and
@@ -266,7 +278,8 @@ circuit (0 V reads 0), since its own would put MODEL one model off here.
 **Cable detection.** As on Plaits: D14 sends a pseudo-random bit pattern
 through 10k into the switch lugs of TIMBRE, FM, MORPH, TRIG and LEVEL, and
 an input that does not follow it has a cable in it. The ADC scans all nine
-channels about every 0.2 ms (8× oversampling), so the reading compared with
+channels about every 0.21 ms (8× oversampling; the pot mux is sampled
+longer than the CVs, so its 74HC4051 path settles), so the reading compared with
 each bit is taken well after the bit changed. During calibration Plaits
 turns the probe pin into an input so the unpatched inputs read 0 V;
 Plaitsy's stages would float at their bias that way, so the pin is held low
@@ -300,7 +313,7 @@ custom-data block sits at 64 kB, with a copy in RAM that the engines read.
 
 **Custom-data transfers** are decoded from the TIMBRE readings, one per
 4 kHz poll. Plaits samples at a fixed point; the Seed's ADC runs freely,
-so the age of each reading varies by up to one scan (0.2 ms). The host
+so the age of each reading varies by up to one scan (0.21 ms). The host
 tests decode a full 4 kB block across the timings libDaisy should give,
 but this is the one feature whose margin depends on timing nobody has
 measured on a real Seed yet: if transfers fail, report it.

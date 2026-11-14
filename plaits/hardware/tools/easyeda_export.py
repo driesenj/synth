@@ -278,7 +278,7 @@ def header_symbol(n):
 
 # ------------------------------------------------------------------ project
 R_NEW = {"470": ("LR1F470R", "470Ω"), "12k": ("LR1F12K", "12kΩ"), "13k": ("LR1F13K", "13kΩ"),
-         "15k": ("LR1F15K", "15kΩ"), "33k": ("LR1F33K", "33kΩ"), "100k": ("LR1F100K", "100kΩ")}
+         "15k": ("LR1F15K", "15kΩ"), "30k": ("LR1F30K", "30kΩ"), "100k": ("LR1F100K", "100kΩ")}
 C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF"), "100p": ("FG28C0G1H101JNT00", "100pF")}
 RESISTORS = {"R1k", "R10k"} | {"R" + v for v in R_NEW}
 
@@ -346,6 +346,17 @@ class MProject(Project):
                 self._fpgeo[u] = pcb.footprint_geometry(d)
         return self._fpgeo[uid]
 
+    def _square_pin1(self, uid):
+        """Pad 1 of a library footprint as a square pad of the same size (the DIP-16: its chips are soldered
+        without sockets since 2026-11-14, so pin 1 wants a mark in the copper too; test report L17)."""
+        doc = self.lib[uid]
+        for i, (h, p) in enumerate(doc["recs"]):
+            if h["type"] == "PAD" and str(p.get("num")) == "1" and p["defaultPad"]["padType"] != "RECT":
+                p["defaultPad"] = {"padType": "RECT", "width": p["defaultPad"]["width"],
+                                   "height": p["defaultPad"]["height"], "radius": 0}
+                k = next(j for j, line in enumerate(doc["lines"]) if line.startswith(ee.json.dumps(h, separators=(",", ":"))))
+                doc["lines"][k] = ee.enc(h, p)
+
     def _new_devices(self):
         r1k = meta(self.lib[DEV["R1k"]])["attributes"]
         for val, (mpn, value) in R_NEW.items():
@@ -369,13 +380,19 @@ class MProject(Project):
                   "Description": "Schottky diode 30 V 200 mA, DO-35"})
         self._device("BAT85", "BAT85", a, ["Diodes", "Schottky Diodes"])
         dip16 = meta(self.lib[SRC["74HC595N"]])["attributes"]["Footprint"]
+        self._square_pin1(dip16)
         # your TL074 and pot devices on standard footprints: DIP-14 on 7.62 mm rows, the Alpha RD901F
         a = dict(self.device_attrs("TL074"))
         a.update(Footprint=self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
                  Description="Quad JFET op-amp, DIP-14 on the 7.62 mm row pitch")
         self._device("TL074", "TL074ACN", a, ["Amplifiers"])
         a = dict(self.device_attrs("POT"))
-        a.update(Footprint=self._footprint(fp_alpha_pot()), Description="Alpha 9 mm vertical pot (Thonk)")
+        # the library device is Bourns' PTV09A, whose lugs miss this footprint: name the Alpha part instead, so an
+        # EasyEDA / LCSC BOM of the project does not order the wrong pot (test report 2026-11-13, L20)
+        a.update(Footprint=self._footprint(fp_alpha_pot()), Description="Alpha 9 mm vertical pot (Thonk)",
+                 Manufacturer="Alpha (Taiwan)", **{"Manufacturer Part": "Alpha RD901F 9 mm vertical B10K, T18 shaft",
+                                                   "Supplier": "Thonk", "Supplier Part": "", "Datasheet": "",
+                                                   "LCSC Part Name": "Alpha 9 mm vertical pot B10K"})
         self._device("POT", "Alpha 9mm B10k", a, ["Potentiometers"])
         fps = {"SEED": self._footprint(fp_seed_breakout()), "LED3": self._footprint(fp_led3()),
                "SWLED": self._footprint(fp_led_button()), "RV": self._footprint(fp_res_vertical())}
@@ -538,7 +555,7 @@ def main_page(pr, parts):
     seed_block(pg, P, 260, Y(260))
 
     pg.text(560, Y(32), "CV inputs: TL074 inverting stages biased from 3V3A, gain -0.13 (+-12 V -> 0.10..3.22 V); "
-                        "V/OCT gain -0.33 (-2.9..+7.1 V, 0.2 units/V), 1k into the ADC", 12)
+                        "V/OCT gain -0.30 (-3.3..+7.7 V), 1k into the ADC", 12)
     for i, (name, label, u, sec, rf, cf, bias) in enumerate(circuit.CV_CHANNELS):
         col, row = divmod(i, 4)
         ox, oy = 730 + col * 490, Y(155 + row * 170)
@@ -693,7 +710,15 @@ def faceplate_page(pr, parts):
         pg.wire([c["1"], (cx, Y(530)), (cx - 20, Y(530))], "3V3D_F")
         pg.port(cx - 20, Y(530), "3V3D_F", "IN", "left")
         pg.stub_flag(c["2"], "GND_D_F")
-    pg.text(1270, Y(640), "C9, C10 at U9 / U10 pin 16", 8)
+    pg.text(1270, Y(640), "C9, C10 at U9 / U10 pins 16 and 13", 8)
+    # the clock pull-downs: the 595s' SRCLK / RCLK low while the Seed's pins float
+    for k, rref in enumerate(("R14", "R15")):
+        rx, rp_ = 1470 + k * 80, P[rref]
+        r = pg.place(rref, r_dev(rp_.value), rx, Y(560), 270, *V_TXT)
+        pg.wire([r["1"], (rx, Y(530)), (rx - 20, Y(530))], rp_.nets["1"])
+        pg.port(rx - 20, Y(530), rp_.nets["1"], "IN", "left")
+        pg.stub_flag(r["2"], "GND_D_F")
+    pg.text(1440, Y(640), "R14, R15: the 595 clocks low while the Seed resets", 8)
 
     # the eight LEDs
     pg.text(70, Y(822), "Model LEDs: 3 mm bicolour, common cathode to GND_D_F", 12)

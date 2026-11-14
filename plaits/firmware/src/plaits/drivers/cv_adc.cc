@@ -51,7 +51,10 @@ const float kVdd = 3.3f;
 const float kBiasWide = kVdd * 12.0f / (15.0f + 12.0f);  // R46 / (R45 + R46)
 const float kBiasVOct = kVdd * 15.0f / (13.0f + 15.0f);  // R48 / (R47 + R48)
 const Stage kPlaitsyWide = { 13.0f / 100.0f, kBiasWide * (1.0f + 13.0f / 100.0f) };
-const Stage kPlaitsyVOct = { 33.0f / 100.0f, kBiasVOct * (1.0f + 33.0f / 100.0f) };
+// V/OCT: R43 30k (33k until 2026-11-14), so the stage reads -3.3 .. +7.7 V
+// and Plaits' own -2.86 .. +7.14 V fits at every tolerance corner; the
+// conversion below clips to Plaits' range, as Plaits' op-amps do.
+const Stage kPlaitsyVOct = { 30.0f / 100.0f, kBiasVOct * (1.0f + 30.0f / 100.0f) };
 
 // Plaits (plaits_v50 schematic, sheet 3 "CV inputs"): MCP6004 on 0 .. 3.3 V,
 // Rin 100k, (+) at ground, an offset from the -10 V reference through Rref,

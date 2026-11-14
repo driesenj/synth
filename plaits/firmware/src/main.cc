@@ -136,7 +136,8 @@ int main(void) {
   System::Delay(1);
   if (plaitsy::hal::ButtonPressed(plaitsy::hal::BUTTON_A)) {
     // Alternate red and green on the column (the Seed's own LED is behind
-    // the panel); the 74HC595s hold it while the bootloader waits.
+    // the panel); the 74HC595s hold it while the bootloader waits: the
+    // faceplate's R14 / R15 hold their clocks low while the Seed's pins float.
     static Leds leds;
     leds.Init();
     for (int i = 0; i < kNumLEDs; ++i) {

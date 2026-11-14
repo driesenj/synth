@@ -1,20 +1,27 @@
-"""Add silkscreen value labels to a routed Plaitsy export: every pot, resistor
-and capacitor gets its value (B10k, 100k, 1n, ...) as a STRING on the silk
-layer of its own side, in the first free spot beside it.
+"""Add silkscreen value labels to a routed Plaitsy export (copied from stereo-mixer/ on 2026-11-14,
+for the test report's L15: the first copy let labels sit nearer a part of another value): every
+resistor and capacitor gets its value (100k, 1n, 470, ...) and every pot its taper and value (B10k)
+as a STRING on the silk layer of its own side, in the first free spot beside it. Value labels already
+in the export (an earlier run's) are taken out first, so a labelled master can be labelled again.
 
 Free means: not over any pad, not over another part's housing on that side,
 not over a designator, title or earlier label, not over a mounting hole,
-inside the board by 0.5 mm. Spots are tried right, left, above, below, then
-the corners, first at the designator's size (45 mil) and then smaller.
+inside the board by 0.5 mm. Spots are tried right, left, above, below, then the
+corners, first at the designator's size (45 mil) and then at JLCPCB's
+smallest text (40 mil). A spot must read as its own part's: every labelled
+part of a different value at least MARGIN further from it than its own part
+(a part of the same value may be nearer: it takes the same value). Parts
+without such a spot share a legend line ("100k: R10 R13") near them.
 The patched project keeps every existing record byte for byte; the labels
 are appended to each PCB document.
 
 Run from plaits/hardware/tools:
   python value_labels.py <export.epro2> <patched.epro2>
-Also writes plaits-labels-<board>.png previews next to the patched file.
+Also writes plaits-labels-<board>-<side>.png previews next to the patched file.
 """
 import importlib.util
 import json
+import math
 import os
 import re
 import sys
@@ -23,10 +30,15 @@ import zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 MIL = 0.0254
 CHAR_W = 0.62        # advance per character as a fraction of the font size, default stroke font
-SIZES = (45, 38, 32)     # mil; the designators are 45, 32 mil (0.81 mm) is the fab's smallest readable silk
+SIZES = (45, 40)         # mil; the designators are 45, 40 mil (1.02 mm) is JLCPCB's minimum text height (1.0 mm)
 GAP = 0.35               # mm between a label and whatever it sits beside
 STEPS = (0, 1.3, 2.6)    # further out from the part when the first ring is taken
 EDGE = 0.5
+MARGIN = 0.3             # mm: a part of a different value must be this much further from a label than its own part
+REACH = 12.0             # mm: how far a legend line may sit from each of its parts
+CLUSTER = 10.0           # mm: parts of one value closer than this share a legend line
+STROKE = 8               # mil: JLCPCB prefers a line of at least 1/6 of the text height (45 / 8, 40 / 8)
+OLD_SIZES = (45, 40, 38, 32)     # mil: what earlier runs used, for taking their labels out
 
 
 def _load(name):
@@ -40,15 +52,14 @@ ca = _load("copper_audit")
 circuit = _load("circuit")
 
 
+LABELLED = ("R", "C", "POT")
+POWER_HEADER = None           # the power header is on the seed_power_opamps breakout, not on these boards
+
+
 def values():
-    """ref -> label text for the pots, resistors and capacitors of both boards."""
-    out = {}
-    for p in circuit.all_parts():
-        if p.kind in ("R", "C"):
-            out[p.ref] = p.value
-        elif p.kind == "POT":
-            out[p.ref] = p.value
-    return out
+    """PCB title word -> {ref: label text} for the resistors, capacitors, diodes and pots, per board."""
+    return {board: {p.ref: p.value for p in parts if p.kind in LABELLED}
+            for board, parts in (("Main", circuit.main_board_parts()), ("Faceplate", circuit.faceplate_parts()))}
 
 
 def text_box(x, y, s, size_mil, mirror):
@@ -67,9 +78,23 @@ def circle_hits(rect, c, r):
     return (cx - c[0]) ** 2 + (cy - c[1]) ** 2 < r * r
 
 
+def extent(pl):
+    """A part's housing box grown to cover its own pads."""
+    x1, y1, x2, y2 = pl["body"]
+    for pad in pl["pads"].values():
+        x1, y1 = min(x1, pad.x - pad.r), min(y1, pad.y - pad.r)
+        x2, y2 = max(x2, pad.x + pad.r), max(y2, pad.y + pad.r)
+    return x1, y1, x2, y2
+
+
+def rect_dist(a, b):
+    return math.hypot(max(b[0] - a[2], a[0] - b[2], 0), max(b[1] - a[3], a[1] - b[3], 0))
+
+
 class Labeller:
-    def __init__(self, board, doc):
+    def __init__(self, board, doc, labelled):
         self.b = board
+        self.labelled = dict(labelled)         # ref -> label text: a label must not sit near a part of another value
         self.texts = {True: [], False: []}      # existing text boxes per side (bottom: True)
         for h, p in doc["recs"]:
             if h["type"] == "ATTR" and p.get("key") == "Designator" and p.get("valueVisible") and p.get("x") is not None:
@@ -104,42 +129,96 @@ class Labeller:
                 return False
         return True
 
-    def place(self, ref, text):
+    def reads_as_own(self, rect, ref):
+        """True when every labelled part of a different value on this side is at least MARGIN further from
+        the label than its own part, so the label cannot be read as theirs."""
         pl = self.b.parts[ref]
-        bx1, by1, bx2, by2 = pl["body"]
-        for pad in pl["pads"].values():        # the part's own pads count as its extent
-            bx1, by1 = min(bx1, pad.x - pad.r), min(by1, pad.y - pad.r)
-            bx2, by2 = max(bx2, pad.x + pad.r), max(by2, pad.y + pad.r)
+        own = rect_dist(rect, extent(pl))
+        text = self.labelled[ref]
+        return all(rect_dist(rect, extent(o)) >= own + MARGIN for r, o in self.b.parts.items()
+                   if r in self.labelled and self.labelled[r] != text and o["bottom"] == pl["bottom"])
+
+    def candidates(self, ref, text):
+        pl = self.b.parts[ref]
+        bx1, by1, bx2, by2 = extent(pl)       # the part's own pads count as its extent
         cx, cy = (bx1 + bx2) / 2, (by1 + by2) / 2
-        standing = pl["fp"].startswith("RES-TH-VERTICAL")
+        standing = "VERTICAL" in pl["fp"]
         pot = pl["fp"].startswith("POT")
+
+        def spots(w, h, g, step):
+            out = [("right", (bx2 + g, cy - h / 2)), ("left", (bx1 - g - w, cy - h / 2)),
+                   ("above", (cx - w / 2, by2 + g)), ("below", (cx - w / 2, by1 - g - h))]
+            if pot:                               # pots: under or over the body, where the lugs are not
+                out = [out[3], out[2], out[0], out[1]]
+            elif not standing:                    # flat parts: along the body first
+                tall = (by2 - by1) > (bx2 - bx1)
+                out = out if tall else out[2:] + out[:2]
+            if step == 0:
+                out += [("above right", (bx2 + g, by2 + g)), ("above left", (bx1 - g - w, by2 + g)),
+                        ("below right", (bx2 + g, by1 - g - h)), ("below left", (bx1 - g - w, by1 - g - h))]
+            return out
+
+        # each spot at the larger size, then at the smaller, before the next spot: a near spot in small text
+        # reads better than a far one in large text (and leaves the far spot to the part that owns it)
+        for step in STEPS:
+            g = GAP + step
+            per_size = {s: spots(CHAR_W * s * MIL * len(text), s * MIL, g, step) for s in SIZES}
+            for i in range(len(per_size[SIZES[0]])):
+                for size in SIZES:
+                    name, (x, y) = per_size[size][i]
+                    yield name, (x, y, x + CHAR_W * size * MIL * len(text), y + size * MIL), size
+
+    def place(self, ref, text):
+        """The first free spot that reads as this part's; failing that, no label (the caller gives the
+        part a legend line)."""
+        bottom = self.b.parts[ref]["bottom"]
+        for name, rect, size in self.candidates(ref, text):
+            if self.free(rect, bottom, ref) and self.reads_as_own(rect, ref):
+                self.labels.append((ref, text, rect, bottom, size))
+                return name
+        return None
+
+    def mark(self, ref, pin, text):
+        """`text` at the free spot nearest pad `pin` of `ref`, clear of the part's own housing too (a word
+        that marks the -12 V end of the power header must not hide under the shroud); returns it or None."""
+        pl = self.b.parts[ref]
+        pad = pl["pads"][pin]
+        spots = [(rect, size) for _, rect, size in self.candidates(ref, text)
+                 if self.free(rect, pl["bottom"], None)]
+        if not spots:
+            return None
+        rect, size = min(spots, key=lambda s: (-s[1], math.hypot((s[0][0] + s[0][2]) / 2 - pad.x,
+                                                                  (s[0][1] + s[0][3]) / 2 - pad.y)))
+        self.labels.append((ref, text, rect, pl["bottom"], size))
+        return text
+
+    def legend(self, refs, text):
+        """One line for parts that found no spot of their own ("100k: R10 R13 R16 R19"), at the free
+        spot nearest their middle and within REACH of every one of them; returns the line or None."""
+        bottom = self.b.parts[refs[0]]["bottom"]
+        boxes = [extent(self.b.parts[r]) for r in refs]
+        cx = sum((b[0] + b[2]) / 2 for b in boxes) / len(boxes)
+        cy = sum((b[1] + b[3]) / 2 for b in boxes) / len(boxes)
+        line = f"{text}: {' '.join(refs)}"
+        n = int(REACH / 0.5)
+        offsets = sorted(((i * 0.5, j * 0.5) for i in range(-n, n + 1) for j in range(-n, n + 1)),
+                         key=lambda o: math.hypot(*o))
         for size in SIZES:
-            w, h = CHAR_W * size * MIL * len(text), size * MIL
-            for step in STEPS:
-                g = GAP + step
-                spots = [("right", (bx2 + g, cy - h / 2)), ("left", (bx1 - g - w, cy - h / 2)),
-                         ("above", (cx - w / 2, by2 + g)), ("below", (cx - w / 2, by1 - g - h))]
-                if pot:                               # pots: under or over the body, where the lugs are not
-                    spots = [spots[3], spots[2], spots[0], spots[1]]
-                elif not standing:                    # flat parts: along the body first
-                    tall = (by2 - by1) > (bx2 - bx1)
-                    spots = spots if tall else spots[2:] + spots[:2]
-                if step == 0:
-                    spots += [("above right", (bx2 + g, by2 + g)), ("above left", (bx1 - g - w, by2 + g)),
-                              ("below right", (bx2 + g, by1 - g - h)), ("below left", (bx1 - g - w, by1 - g - h))]
-                for name, (x, y) in spots:
-                    rect = (x, y, x + w, y + h)
-                    if self.free(rect, pl["bottom"], ref):
-                        self.labels.append((ref, text, rect, pl["bottom"], size))
-                        return name
-        return None                                   # nothing free: no label, the caller reports it
+            w, h = CHAR_W * size * MIL * len(line), size * MIL
+            for dx, dy in offsets:
+                x, y = cx + dx - w / 2, cy + dy - h / 2
+                rect = (x, y, x + w, y + h)
+                if all(rect_dist(rect, b) <= REACH for b in boxes) and self.free(rect, bottom, None):
+                    self.labels.append(("+".join(refs), line, rect, bottom, size))
+                    return line
+        return None
 
 
 def string_record(template, rid, ticket, z, text, rect, bottom, size):
     p = dict(template)
     p.update({"layerId": 4 if bottom else 3, "x": round((rect[2] if bottom else rect[0]) / MIL, 4),
               "y": round(rect[1] / MIL, 4), "text": text, "fontFamily": "default", "fontSize": size,
-              "strokeWidth": 6, "bold": False, "italic": False, "origin": "LEFT_BOTTOM", "angle": 0,
+              "strokeWidth": STROKE, "bold": False, "italic": False, "origin": "LEFT_BOTTOM", "angle": 0,
               "reverse": False, "expansion": 0, "mirror": bool(bottom), "locked": False, "zIndex": z})
     head = {"type": "STRING", "ticket": ticket, "id": rid}
     return (json.dumps(head, separators=(",", ":")) + "||" + json.dumps(p, separators=(",", ":"), ensure_ascii=False) + "|")
@@ -183,11 +262,68 @@ def render(board, lab, path, scale=8):
         img.save(path.format("bottom" if bottom else "top"))
 
 
-def main(src, dst):
+def strip_labels(src, dst):
+    """Copy src to dst without the value labels an earlier run added: silk STRINGs on the two circuit boards
+    whose text is one of that board's values or a legend line ("100k: R21 R24"), at a label size. Returns
+    {board word: count}."""
     with zipfile.ZipFile(src) as z:
         name = next(n for n in z.namelist() if n.endswith(".epru"))
         raw = z.read(name).decode("utf-8")
-        others = {n: z.read(n) for n in z.namelist() if n != name}
+        entries = [(info, z.read(info.filename)) for info in z.infolist()]
+    vals = values()
+    recs = []
+    for line in raw.split("\n"):
+        h = json.loads(line.partition("||")[0]) if line else None
+        body = line.partition("||")[2].rstrip("|") if line else ""
+        recs.append((line, h, json.loads(body) if body else None))
+    # a document's META record comes after its content: name each PCB document first
+    cur, board_of = None, {}
+    for line, h, p in recs:
+        if h and h["type"] == "DOCHEAD":
+            cur = (p["uuid"], p["docType"])
+        elif h and h["type"] == "META" and cur and cur[1] == "PCB":
+            words = (p.get("title") or "").split()
+            if len(words) > 2 and words[1] in vals:
+                board_of[cur[0]] = words[1]
+    cur, keep, gone = None, [], {}
+    for line, h, p in recs:
+        if h:
+            if h["type"] == "DOCHEAD":
+                cur = p["uuid"]
+            board = board_of.get(cur)
+            if h["type"] == "STRING" and board and p and p.get("layerId") in (3, 4) \
+                    and p.get("fontSize") in OLD_SIZES:
+                # a value (100k, 1k5, 470, 100n, B10k) or a legend line; not only today's values, so a label
+                # of a part whose value has changed since goes too
+                t = p.get("text", "")
+                value = r"[AB]?\d+[kMRpnu]?\d*"
+                if re.fullmatch(value, t) or re.fullmatch(value + r": ((?:R|C|RV)\d+ ?)+", t):
+                    gone[board] = gone.get(board, 0) + 1
+                    continue
+        keep.append(line)
+    with zipfile.ZipFile(dst, "w") as z:
+        for info, data in entries:
+            z.writestr(info, "\n".join(keep).encode("utf-8") if info.filename == name else data,
+                       compress_type=info.compress_type)
+    return gone
+
+
+def main(src, dst):
+    tmp = dst + ".unlabelled.epro2"
+    gone = strip_labels(src, tmp)
+    if gone:
+        print("taken out: " + ", ".join(f"{n} value labels on the {b} board" for b, n in sorted(gone.items())))
+    try:
+        label(tmp, dst)
+    finally:
+        os.remove(tmp)
+
+
+def label(src, dst):
+    with zipfile.ZipFile(src) as z:
+        name = next(n for n in z.namelist() if n.endswith(".epru"))
+        raw = z.read(name).decode("utf-8")
+        entries = [(info, z.read(info.filename)) for info in z.infolist()]     # kept as EasyEDA wrote them
     lines = raw.split("\n")
     docs = ca.read_export(src)
     pcbmod = _load("pcb")
@@ -232,32 +368,59 @@ def main(src, dst):
         if "Panel" in title:
             continue
         board = ca.RoutedBoard(title, d, fps)
-        lab = Labeller(board, d)
+        mine = vals[title.split()[1]]
+        lab = Labeller(board, d, mine)
         parked = []
         for ref in sorted(board.parts, key=lambda r: (re.sub(r"\d", "", r), int(re.sub(r"\D", "", r) or 0))):
-            if ref in vals:
-                where = lab.place(ref, vals[ref])
-                if where is None:
+            if ref in mine and lab.place(ref, mine[ref]) is None:
+                parked.append(ref)
+        # the parts left over: one legend line per value and cluster ("100k: R10 R13 R16 R19") near them;
+        # parts of one value further apart than CLUSTER get a line each, so a line stays beside its parts
+        groups = []
+        for ref in parked:
+            key = (mine[ref], board.parts[ref]["bottom"])
+            near = [g for g in groups if g[0] == key and all(          # every member within CLUSTER: no chains
+                rect_dist(extent(board.parts[ref]), extent(board.parts[r])) <= CLUSTER for r in g[1])]
+            if near:
+                near[0][1].append(ref)
+            else:
+                groups.append((key, [ref]))
+        legends, parked = [], []
+        for (text, _), refs in groups:
+            line = lab.legend(refs, text)
+            if line:
+                legends.append(line)
+                continue
+            for ref in refs if len(refs) > 1 else ():      # no room for the whole line: a short line per part
+                line = lab.legend([ref], text)
+                if line:
+                    legends.append(line)
+                else:
                     parked.append(ref)
+            if len(refs) == 1:
+                parked += refs
+        if POWER_HEADER in board.parts and not lab.mark(POWER_HEADER, "1", "-12V"):    # pins 1-2 carry -12 V
+            parked.append(POWER_HEADER)
         s = spans[u]
         new = []
         for k, (ref, text, rect, bottom, size) in enumerate(lab.labels):
             new.append(string_record(s["string"], f"e{s['maxe'] + 1 + k}", s["maxticket"] + 1 + k, s["maxz"] + 1 + k,
                                      text, rect, bottom, size))
         inserts[s["meta"]] = new
-        report.append((title, len(lab.labels), parked))
+        report.append((title, len(lab.labels), parked, legends))
         render(board, lab, os.path.join(os.path.dirname(dst), "plaits-labels-" + title.split()[1].lower() + "-{}.png"))
     out = []
     for i, line in enumerate(lines):
         if i in inserts:
             out += inserts[i]
         out.append(line)
-    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
-        for n, data in others.items():
-            z.writestr(n, data)
-        z.writestr(name, "\n".join(out))
-    for title, n, parked in report:
-        print(f"{title}: {n} labels" + (f", no free spot for {parked}" if parked else ""))
+    with zipfile.ZipFile(dst, "w") as z:
+        for info, data in entries:
+            z.writestr(info, "\n".join(out).encode("utf-8") if info.filename == name else data,
+                       compress_type=info.compress_type)
+    for title, n, parked, legends in report:
+        print(f"{title}: {n} labels" + (f", legend lines {legends}" if legends else "")
+              + (f", no spot at all for {parked}" if parked else ""))
     print("written", os.path.normpath(dst))
 
 

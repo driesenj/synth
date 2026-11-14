@@ -1,10 +1,10 @@
 Source,Group,Qty,Part,Refs,Board,Note
 Thonk,Panel parts,7,"Alpha 9 mm vertical pot B10K, T18 shaft","RV1, RV2, RV3, RV4, RV5, RV6, RV7",Faceplate,
-Thonk,Panel parts,2,"Thonk low-profile LED button, colour of your choice (its LED is driven)","SW1, SW2",Faceplate,
+Thonk,Panel parts,2,"Thonk low-profile LED button, red, orange, yellow or green (a GaAsP / GaP LED; blue or white would be almost dark at 3.3 V through 470 Ω)","SW1, SW2",Faceplate,
 Thonk,Panel parts,10,"Thonkiconn PJ398SM mono jack, with nut","J1, J2, J3, J4, J5, J6, J7, J8, J9, J10",Faceplate,
 Thonk,Modules,1,Electrosmith Daisy Seed,U2,Main,
-Thonk,Chips,2,TL074 quad op-amp (DIP-14) + DIP-14 socket,"U3, U4",Main,
-Thonk,Connectors,1,Eurorack power cable for the breakout's power header,,—,check the header's pin count (10 or 16)
+Thonk,Chips,2,TL074 quad op-amp (DIP-14),"U3, U4",Main,
+Thonk,Connectors,1,"Eurorack power cable for the breakout, 10-pin to 16-pin (10 at the module, 16 at the bus)",,—,the breakout's J2 is a 2×5 header: the red stripe to its RED STRIPE mark (−12 V)
 Thonk,Connectors,3,"Female header, 2.54 mm, 8.5 mm tall: 2 × 1×9, 1 × 1×8","H1, H2, H3",Main,main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips
 Thonk,Connectors,3,"Male pin header, 2.54 mm: 2 × 1×9, 1 × 1×8","HF1, HF2, HF3",Faceplate,faceplate side; Thonk's Male + Female Header Bag or cut from 40-pin strips
 Thonk,Mechanical,3,"Knob for a T18 shaft, about 10 mm across",,—,the attenuverters; model to taste

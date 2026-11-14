@@ -32,7 +32,7 @@ constexpr Pin kSpiMosi = seed::D10;  // SPI1 MOSI -> U9 SER
 constexpr Pin kLedLatch = seed::D13; // -> 74HC595 RCLK
 constexpr Pin kProbe = seed::D14;
 
-// 8x oversampling keeps a full scan of the nine channels near 0.2 ms, so the
+// 8x oversampling keeps a full scan of the nine channels near 0.21 ms, so the
 // reading the normalization detector compares with the probe is always taken
 // well after the probe last changed (it changes once per millisecond).
 constexpr AdcHandle::OverSampling kOversampling = AdcHandle::OVS_8;
@@ -91,9 +91,15 @@ void InitAdc() {
     config[i].InitSingle(kAdcPins[i]);
   }
   // Last in the sequence: libDaisy moves the mux address when a scan ends,
-  // so the pot being read has a whole scan to settle.
+  // so the pot being read has a whole scan to settle. Sampled for 16.5 ADC
+  // cycles, not the default 8.5: the wiper (up to 2.5k), the 74HC4051's
+  // on-resistance at 3.3 V and its common capacitance (no series resistor)
+  // need about 1.5 us; 8.5 cycles is 1.4 us. The scan grows from about 0.20
+  // to 0.21 ms. Not 32.5 cycles: that would make the scan about 0.23 ms,
+  // close to the 0.245 ms where the host tests lose a TIMBRE data transfer.
   config[ADC_INPUT_LAST].InitMux(
-      kMuxOut, kNumMuxChannels, kMuxS0, kMuxS1, kMuxS2);
+      kMuxOut, kNumMuxChannels, kMuxS0, kMuxS1, kMuxS2,
+      AdcChannelConfig::SPEED_16CYCLES_5);
   adc.Init(config, ADC_INPUT_LAST + 1, kOversampling);
   adc.Start();
   adc_started = true;

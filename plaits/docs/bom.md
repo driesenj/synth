@@ -10,11 +10,11 @@ CSV: `hardware/bom/plaits-bom.csv` (everything) and `hardware/bom/plaits-bom-tho
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
 | 7 | Alpha 9 mm vertical pot B10K, T18 shaft | RV1, RV2, RV3, RV4, RV5, RV6, RV7 | Faceplate |  |
-| 2 | Thonk low-profile LED button, colour of your choice (its LED is driven) | SW1, SW2 | Faceplate |  |
+| 2 | Thonk low-profile LED button, red, orange, yellow or green (a GaAsP / GaP LED; blue or white would be almost dark at 3.3 V through 470 Ω) | SW1, SW2 | Faceplate |  |
 | 10 | Thonkiconn PJ398SM mono jack, with nut | J1, J2, J3, J4, J5, J6, J7, J8, J9, J10 | Faceplate |  |
 | 1 | Electrosmith Daisy Seed | U2 | Main |  |
-| 2 | TL074 quad op-amp (DIP-14) + DIP-14 socket | U3, U4 | Main |  |
-| 1 | Eurorack power cable for the breakout's power header |  | — | check the header's pin count (10 or 16) |
+| 2 | TL074 quad op-amp (DIP-14) | U3, U4 | Main |  |
+| 1 | Eurorack power cable for the breakout, 10-pin to 16-pin (10 at the module, 16 at the bus) |  | — | the breakout's J2 is a 2×5 header: the red stripe to its RED STRIPE mark (−12 V) |
 | 3 | Female header, 2.54 mm, 8.5 mm tall: 2 × 1×9, 1 × 1×8 | H1, H2, H3 | Main | main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips |
 | 3 | Male pin header, 2.54 mm: 2 × 1×9, 1 × 1×8 | HF1, HF2, HF3 | Faceplate | faceplate side; Thonk's Male + Female Header Bag or cut from 40-pin strips |
 | 3 | Knob for a T18 shaft, about 10 mm across |  | — | the attenuverters; model to taste |
@@ -27,40 +27,51 @@ CSV: `hardware/bom/plaits-bom.csv` (everything) and `hardware/bom/plaits-bom-tho
 
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
-| 1 | Main board + faceplate board, 59.4 × 108.0 mm each, 2 layers, 1.6 mm |  | — | from Plaits-routed.epro2 |
+| 1 | Faceplate board, 59.4 × 108.0 mm, 2 layers, 1.6 mm |  | — | the Faceplate PCB in Plaits-routed.epro2 |
+| 1 | Main board, 59.4 × 108.0 mm, 2 layers, 1.6 mm |  | — | the Main PCB in Plaits-routed.epro2 |
 | 1 | Panel 60.6 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG |  | — | the panel board in Plaits-routed.epro2; ENIG makes the bands and the mushroom gold |
+
+### Mouser
+
+| Qty | Part | Refs | Board | Note |
+|---|---|---|---|---|
+| 8 | Kingbright L-3WEGW 3 mm bicolour LED, red (GaAsP/GaP) / green (GaP), common cathode, 3 leads: lead 1 red anode, middle lead cathode, lead 3 green anode, 2.54 mm pitch | D1, D2, D3, D4, D5, D6, D7, D8 | Faceplate |  |
 
 ### OSHWLab / JLCPCB
 
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
-| 1 | Rob Heel's seed_power_opamps breakout, built: its own PCB and parts | U2 | Main | carries the Seed, the Eurorack power header and the audio stages |
+| 1 | Rob Heel's seed_power_opamps breakout, built: its own PCB and parts | U2 | Main | carries the Seed, the Eurorack power header and the audio stages; its parts list: github.com/rob-scape/daisy-seed-breakout-boards, daisy-seed-dcdc-opamps BOM |
 
 ### Tayda
 
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
-| 8 | 3 mm bicolour LED, red/green, common cathode, 3 leads (Thonk has no 3-lead ones) | D1, D2, D3, D4, D5, D6, D7, D8 | Faceplate |  |
-| 1 | 74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works | U1 | Faceplate |  |
-| 2 | 74HC595 shift register (DIP-16) + DIP-16 socket | U9, U10 | Faceplate |  |
-| 2 | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D21, D22 | Main |  |
+| 1 | 74HC4051 8-channel mux (DIP-16), 74HC or CD74HC only | U1 | Faceplate |  |
+| 2 | 74HC595 shift register (DIP-16) | U9, U10 | Faceplate |  |
+| 2 | BAT85 Schottky diode (DO-35); BAT43 leaks least (steadier V/OCT when warm); BAT86, BAT42, BAT46 or SD103A fit too, DO-35 only: the holes are 0.8 mm | D21, D22 | Main |  |
 | 18 | Resistor 470 Ω, metal film 1 %, 1/4 W | Faceplate: R80, R81, R82, R83, R84, R85, R86, R87, R88, R89, R90, R91, R92, R93, R94, R95; Main: R60, R61 | Faceplate + Main |  |
 | 8 | Resistor 1k, metal film 1 %, 1/4 W | R23, R26, R29, R32, R35, R38, R41, R44 | Main |  |
 | 5 | Resistor 10k, metal film 1 %, 1/4 W | R9, R10, R11, R12, R13 | Faceplate |  |
 | 1 | Resistor 12k, metal film 1 %, 1/4 W | R46 | Main |  |
 | 8 | Resistor 13k, metal film 1 %, 1/4 W | R22, R25, R28, R31, R34, R37, R40, R47 | Main |  |
 | 2 | Resistor 15k, metal film 1 %, 1/4 W | R45, R48 | Main |  |
-| 1 | Resistor 33k, metal film 1 %, 1/4 W | R43 | Main |  |
-| 8 | Resistor 100k, metal film 1 %, 1/4 W | R21, R24, R27, R30, R33, R36, R39, R42 | Main |  |
-| 1 | Capacitor 100 pF C0G ceramic, 5.08 mm leads | C26 | Main |  |
-| 7 | Capacitor 1 nF C0G ceramic or film, 5.08 mm leads | C21, C22, C23, C24, C25, C27, C28 | Main |  |
-| 7 | Capacitor 100 nF ceramic (X7R), 5.08 mm leads | Faceplate: C8, C9, C10; Main: C31, C32, C33, C34 | Faceplate + Main |  |
-| 2 | Capacitor 1 µF ceramic (X7R), 5.08 mm leads | C29, C30 | Main |  |
+| 1 | Resistor 30k, metal film 1 %, 1/4 W | R43 | Main |  |
+| 10 | Resistor 100k, metal film 1 %, 1/4 W | Faceplate: R14, R15; Main: R21, R24, R27, R30, R33, R36, R39, R42 | Faceplate + Main |  |
+| 1 | Capacitor 100 pF C0G ceramic, 50 V, 5.08 mm leads | C26 | Main |  |
+| 7 | Capacitor 1 nF C0G ceramic or film, 50 V, 5.08 mm leads | C21, C22, C23, C24, C25, C27, C28 | Main |  |
+| 7 | Capacitor 100 nF ceramic (X7R, 50 V), 5.08 mm leads | Faceplate: C8, C9, C10; Main: C31, C32, C33, C34 | Faceplate + Main |  |
+| 2 | Capacitor 1 µF ceramic (X7R, 50 V), 5.08 mm leads | C29, C30 | Main |  |
 | 4 | Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position) | U2 | Main | cut from 1×40 strips; male pins under the breakout |
-| 3 | M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws |  | — | one per mounting hole between the boards; measure the mated headers first |
+| 2 | DIP-14 IC socket | U3, U4 | Main |  |
+| 3 | M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's 2.5 mm plastic |  | — | one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be) |
+| 6 | M3 × 6 mm pan-head screw |  | — | two per standoff |
 
 ## Notes
 
-- The main board's resistors (R21–R48, R60, R61) stand up on a 2.54 mm footprint: any 1/4 W or LR1F part fits.
-- D1–D8 are 3-lead bicolour LEDs with the cathode in the middle; Thonk only has 2-lead ones.
+- The main board's resistors (R21–R48) stand up on a 2.54 mm footprint: any 1/4 W or LR1F part fits. R60 and R61 lie flat on the 10.3 mm footprint.
+- D1–D8 are 3-lead bicolour LEDs with the cathode in the middle; Thonk only has 2-lead ones. Their leads are on 2.54 mm, the board's LED footprint on 1.27 mm: jog the two outer leads 1.27 mm in towards the middle one, a few mm below the flange (test report 2026-11-13, M2). Solder them with the panel fitted and each LED pushed into its hole: the flange stands 6.6–9 mm above the board. The pads are 0.17 mm apart: little solder, then check for bridges with a meter.
+- Solder the faceplate's three DIP-16 chips (U1, U9, U10) straight to the board, without sockets: in a socket they reach the main board's socket tails and clipped leads in the 11 mm header gap. Mind pin 1 before soldering.
+- The capacitors on the main board stand between standing resistors: pick small bodies (about 4.0 × 2.5 mm, like TDK's FG28 series; a 1 nF film no thicker than 2.5 mm).
+- The breakout goes SMD side down, towards this main board, with the Seed, the DC/DC, its 100 µF caps and the power header on top. The Seed's two rows reach the main board's sockets through long-tail female headers on the breakout (tails about 6 mm); its 1×4 male headers point down. The other way up, ±12 V reaches the op-amps reversed.
 - Three mounting holes: the centre one went while routing (C8 sits there).

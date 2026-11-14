@@ -17,6 +17,11 @@ This supersedes the stripboard design in [`plaitsy/`](../plaitsy/README.md),
 which keeps its circuit (the CV stages, pot mux and probe are carried over)
 but not its boards.
 
+Power: a 10-pin Eurorack cable on the breakout; about +62 / −62 mA
+typical on ±12 V, up to +129 / −122 mA at worst. Before building, read the
+[Building](docs/design.md#building) notes and the
+[hardware test report](docs/test-report-2026-11-13.md).
+
 The full design is in [docs/design.md](docs/design.md): what Plaits needs,
 the Seed pin map, every circuit, the board-to-board headers, the panel, the
 PCB placement, routing notes and the firmware plan. The BOM, with the Thonk
@@ -30,7 +35,8 @@ parts in their own table, is [docs/bom.md](docs/bom.md).
 | EasyEDA Pro schematic | Done, two A3 pages (main board, faceplate), every footprint assigned, drawing checked against the netlist | `hardware/easyeda/Plaits.epro2` |
 | Panel layout (Plaits arrangement), drill template, artwork, panel PCB | Done; the panel is the third board in the project | `hardware/panel/`, `hardware/tools/panel_pcb.py` |
 | PCB placement | Done: both boards placed, outline, holes, headers aligned, every pad on its net; clearance-checked. Reworked with what routing Marblesy taught: standing resistors clustered on the op-amps (summing nodes 8.7 mm), 100 n at every supply pin, header pins, mux channels and 595 outputs ordered for the fewest crossings, no LED-button foot holes, a DRC-clean copper band | `hardware/tools/pcb.py`, previews `hardware/easyeda/plaits-easyeda-pcb-*.png` |
-| PCB routing | Done by hand in EasyEDA Pro (2026-11-01, third export: pours rebuilt, stitching vias); the export is the layout master and `routed_check()` keeps the generator on it. Audited clean: every net complete, no shorts between nets, nothing under the clearance rule, headers aligned. Value labels added to the silkscreen by `value_labels.py`. Ready to order | `hardware/easyeda/Plaits-routed.epro2`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py`, `docs/routing-audit-2026-11-01.md` |
+| PCB routing | Done by hand in EasyEDA Pro (2026-11-01, third export: pours rebuilt, stitching vias); the export is the layout master and `routed_check()` keeps the generator on it. Audited clean: every net complete, no shorts between nets, nothing under the clearance rule, headers aligned. Value labels added to the silkscreen by `value_labels.py`, redone 2026-11-14 by its stricter copy (with R43 30k and the Alpha pot device patched in; copper unchanged). 2026-11-14: the faceplate rework (C9 / C10 at their chips, R14 / R15 clock pull-downs, square DIP-16 pin 1) is patched in by script and waits for routing in EasyEDA (design.md, "Faceplate rework, 2026-11-14"); M7 accepted. The LED footprint stays at 1.27 mm; the LEDs' 2.54 mm leads are jogged at assembly (design.md, Building) | `hardware/easyeda/Plaits-routed.epro2`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py`, `docs/routing-audit-2026-11-01.md` |
+| Hardware tests | 8 groups, 1889 checks (2026-11-13); after the no-copper fixes of 2026-11-14, 59 failing, all open items of the report | `hardware/tests/`, [docs/test-report-2026-11-13.md](docs/test-report-2026-11-13.md) |
 | Firmware | Written (2026-11-01): Plaits 1.2 with all 24 models and its two-button switch to the 2022 bank, on libDaisy 9.0.0 and the Daisy bootloader. Builds (253 kB of the bootloader's 480 kB), passes the host tests; not yet run on hardware | `firmware/`, see [firmware/README.md](firmware/README.md) |
 
 ## Layout

@@ -1,33 +1,36 @@
 Source,Group,Qty,Part,Refs,Board,Note
 Thonk,Panel parts,7,"Alpha 9 mm vertical pot B10K, T18 shaft","RV1, RV2, RV3, RV4, RV5, RV6, RV7",Faceplate,
-Thonk,Panel parts,2,"Thonk low-profile LED button, colour of your choice (its LED is driven)","SW1, SW2",Faceplate,
+Thonk,Panel parts,2,"Thonk low-profile LED button, red, orange, yellow or green (a GaAsP / GaP LED; blue or white would be almost dark at 3.3 V through 470 Ω)","SW1, SW2",Faceplate,
 Thonk,Panel parts,10,"Thonkiconn PJ398SM mono jack, with nut","J1, J2, J3, J4, J5, J6, J7, J8, J9, J10",Faceplate,
 Thonk,Modules,1,Electrosmith Daisy Seed,U2,Main,
-Thonk,Chips,2,TL074 quad op-amp (DIP-14) + DIP-14 socket,"U3, U4",Main,
-Thonk,Connectors,1,Eurorack power cable for the breakout's power header,,—,check the header's pin count (10 or 16)
+Thonk,Chips,2,TL074 quad op-amp (DIP-14),"U3, U4",Main,
+Thonk,Connectors,1,"Eurorack power cable for the breakout, 10-pin to 16-pin (10 at the module, 16 at the bus)",,—,the breakout's J2 is a 2×5 header: the red stripe to its RED STRIPE mark (−12 V)
 Thonk,Connectors,3,"Female header, 2.54 mm, 8.5 mm tall: 2 × 1×9, 1 × 1×8","H1, H2, H3",Main,main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips
 Thonk,Connectors,3,"Male pin header, 2.54 mm: 2 × 1×9, 1 × 1×8","HF1, HF2, HF3",Faceplate,faceplate side; Thonk's Male + Female Header Bag or cut from 40-pin strips
 Thonk,Mechanical,3,"Knob for a T18 shaft, about 10 mm across",,—,the attenuverters; model to taste
 Thonk,Mechanical,2,"Knob for a T18 shaft, about 12 mm across",,—,"TIMBRE, MORPH; model to taste"
 Thonk,Mechanical,2,"Knob for a T18 shaft, about 15 mm across",,—,"FREQUENCY, HARMONICS; model to taste"
-JLCPCB,PCBs,1,"Main board + faceplate board, 59.4 × 108.0 mm each, 2 layers, 1.6 mm",,—,from Plaits-routed.epro2
+JLCPCB,PCBs,1,"Faceplate board, 59.4 × 108.0 mm, 2 layers, 1.6 mm",,—,the Faceplate PCB in Plaits-routed.epro2
+JLCPCB,PCBs,1,"Main board, 59.4 × 108.0 mm, 2 layers, 1.6 mm",,—,the Main PCB in Plaits-routed.epro2
 JLCPCB,PCBs,1,"Panel 60.6 × 128.5 mm, 1.6 mm FR4: black mask, white silk, ENIG",,—,the panel board in Plaits-routed.epro2; ENIG makes the bands and the mushroom gold
-OSHWLab / JLCPCB,Modules,1,"Rob Heel's seed_power_opamps breakout, built: its own PCB and parts",U2,Main,"carries the Seed, the Eurorack power header and the audio stages"
-Tayda,Panel parts,8,"3 mm bicolour LED, red/green, common cathode, 3 leads (Thonk has no 3-lead ones)","D1, D2, D3, D4, D5, D6, D7, D8",Faceplate,
-Tayda,Chips,1,74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works,U1,Faceplate,
-Tayda,Chips,2,74HC595 shift register (DIP-16) + DIP-16 socket,"U9, U10",Faceplate,
-Tayda,Semiconductors,2,"BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm","D21, D22",Main,
+Mouser,Panel parts,8,"Kingbright L-3WEGW 3 mm bicolour LED, red (GaAsP/GaP) / green (GaP), common cathode, 3 leads: lead 1 red anode, middle lead cathode, lead 3 green anode, 2.54 mm pitch","D1, D2, D3, D4, D5, D6, D7, D8",Faceplate,
+OSHWLab / JLCPCB,Modules,1,"Rob Heel's seed_power_opamps breakout, built: its own PCB and parts",U2,Main,"carries the Seed, the Eurorack power header and the audio stages; its parts list: github.com/rob-scape/daisy-seed-breakout-boards, daisy-seed-dcdc-opamps BOM"
+Tayda,Chips,1,"74HC4051 8-channel mux (DIP-16), 74HC or CD74HC only",U1,Faceplate,
+Tayda,Chips,2,74HC595 shift register (DIP-16),"U9, U10",Faceplate,
+Tayda,Semiconductors,2,"BAT85 Schottky diode (DO-35); BAT43 leaks least (steadier V/OCT when warm); BAT86, BAT42, BAT46 or SD103A fit too, DO-35 only: the holes are 0.8 mm","D21, D22",Main,
 Tayda,Resistors,18,"Resistor 470 Ω, metal film 1 %, 1/4 W","Faceplate: R80, R81, R82, R83, R84, R85, R86, R87, R88, R89, R90, R91, R92, R93, R94, R95; Main: R60, R61",Faceplate + Main,
 Tayda,Resistors,8,"Resistor 1k, metal film 1 %, 1/4 W","R23, R26, R29, R32, R35, R38, R41, R44",Main,
 Tayda,Resistors,5,"Resistor 10k, metal film 1 %, 1/4 W","R9, R10, R11, R12, R13",Faceplate,
 Tayda,Resistors,1,"Resistor 12k, metal film 1 %, 1/4 W",R46,Main,
 Tayda,Resistors,8,"Resistor 13k, metal film 1 %, 1/4 W","R22, R25, R28, R31, R34, R37, R40, R47",Main,
 Tayda,Resistors,2,"Resistor 15k, metal film 1 %, 1/4 W","R45, R48",Main,
-Tayda,Resistors,1,"Resistor 33k, metal film 1 %, 1/4 W",R43,Main,
-Tayda,Resistors,8,"Resistor 100k, metal film 1 %, 1/4 W","R21, R24, R27, R30, R33, R36, R39, R42",Main,
-Tayda,Capacitors,1,"Capacitor 100 pF C0G ceramic, 5.08 mm leads",C26,Main,
-Tayda,Capacitors,7,"Capacitor 1 nF C0G ceramic or film, 5.08 mm leads","C21, C22, C23, C24, C25, C27, C28",Main,
-Tayda,Capacitors,7,"Capacitor 100 nF ceramic (X7R), 5.08 mm leads","Faceplate: C8, C9, C10; Main: C31, C32, C33, C34",Faceplate + Main,
-Tayda,Capacitors,2,"Capacitor 1 µF ceramic (X7R), 5.08 mm leads","C29, C30",Main,
+Tayda,Resistors,1,"Resistor 30k, metal film 1 %, 1/4 W",R43,Main,
+Tayda,Resistors,10,"Resistor 100k, metal film 1 %, 1/4 W","Faceplate: R14, R15; Main: R21, R24, R27, R30, R33, R36, R39, R42",Faceplate + Main,
+Tayda,Capacitors,1,"Capacitor 100 pF C0G ceramic, 50 V, 5.08 mm leads",C26,Main,
+Tayda,Capacitors,7,"Capacitor 1 nF C0G ceramic or film, 50 V, 5.08 mm leads","C21, C22, C23, C24, C25, C27, C28",Main,
+Tayda,Capacitors,7,"Capacitor 100 nF ceramic (X7R, 50 V), 5.08 mm leads","Faceplate: C8, C9, C10; Main: C31, C32, C33, C34",Faceplate + Main,
+Tayda,Capacitors,2,"Capacitor 1 µF ceramic (X7R, 50 V), 5.08 mm leads","C29, C30",Main,
 Tayda,Connectors,4,"Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position)",U2,Main,cut from 1×40 strips; male pins under the breakout
-Tayda,Mechanical,3,"M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws",,—,one per mounting hole between the boards; measure the mated headers first
+Tayda,Connectors,2,DIP-14 IC socket,"U3, U4",Main,
+Tayda,Mechanical,3,"M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's 2.5 mm plastic",,—,"one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be)"
+Tayda,Mechanical,6,M3 × 6 mm pan-head screw,,—,two per standoff

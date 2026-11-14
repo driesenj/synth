@@ -149,7 +149,7 @@ BAND_CLEAR = 0.4      # bare board (under black mask) between the copper band an
 GLYPHS = {
     "va": [("path", "M -1.1 0 C -0.8 -1.4 -0.3 -1.4 0 0 C 0.3 1.4 0.8 1.4 1.1 0")],
     "fold": [("path", "M -1.1 0.7 L -0.55 -0.7 L 0 0.7 L 0.55 -0.7 L 1.1 0.7")],
-    "fm": [("text", "FM", 1.2, 0.42)],
+    "fm": [("text", "FM", 1.65, 0.51)],      # 1.65: letters 1.0 mm tall on the PCB, JLCPCB's minimum (was 1.2)
     "formant": [("path", "M -1.1 0.6 Q -0.65 -1.1 -0.2 0.6 Q 0.2 -0.5 0.5 0.6 Q 0.75 0.05 1.1 0.6")],
     "harmonic": [("path", "M -0.8 0.8 V -0.9 M 0 0.8 V -0.3 M 0.8 0.8 V 0.2")],
     "wavetable": [("path", "M -0.9 -0.35 H 0.9 M -0.9 0.35 H 0.9 M -0.35 -0.9 V 0.9 M 0.35 -0.9 V 0.9")],
@@ -355,7 +355,7 @@ def write_artwork(feats, path):
     dots([(dx + 2.1, by), (hx, by), (hx, hy - scale_r("RV2") - 1.4)])
     icon_top = pos["D1"][3] - A["icon"]
     for bx in (bx1, bx2):
-        dots([(bx, by + A["cap_led"] + 0.7), (bx, icon_top - 0.5)])
+        dots([(bx, by + HOLE["ledbutton"] / 2 + 0.5), (bx, icon_top - 0.5)])    # clear of the hole (test report L23)
     # model icons
     for k in range(8):
         y = pos[f"D{k + 1}"][3]

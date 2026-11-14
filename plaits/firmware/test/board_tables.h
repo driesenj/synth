@@ -19,7 +19,7 @@ const int kNumAdcInputs = 8;
 const char* const kAdcInputName[kNumAdcInputs] = { "MODEL", "TIMBRE", "FM", "MORPH", "HARMONICS", "TRIGGER", "LEVEL", "V_OCT" };
 const char* const kAdcJackLabel[kNumAdcInputs] = { "MODEL", "TIMBRE", "FM", "MORPH", "HARMO", "TRIG", "LEVEL", "V/OCT" };
 const double kStageRin[kNumAdcInputs] = { 100000.0, 100000.0, 100000.0, 100000.0, 100000.0, 100000.0, 100000.0, 100000.0 };
-const double kStageRf[kNumAdcInputs] = { 13000.0, 13000.0, 13000.0, 13000.0, 13000.0, 13000.0, 13000.0, 33000.0 };
+const double kStageRf[kNumAdcInputs] = { 13000.0, 13000.0, 13000.0, 13000.0, 13000.0, 13000.0, 13000.0, 30000.0 };
 const double kStageCf[kNumAdcInputs] = { 1.000e-09, 1.000e-09, 1.000e-09, 1.000e-09, 1.000e-09, 1.000e-10, 1.000e-09, 1.000e-09 };
 const double kStageRs[kNumAdcInputs] = { 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0 };
 // Bias divider from 3V3A: top resistor to 3V3A, bottom to GND.
