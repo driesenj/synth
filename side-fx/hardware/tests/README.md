@@ -19,7 +19,7 @@ findings of the first run are in the dated `docs/test-report-*.md`.
 | File | Checks |
 |---|---|
 | `harness.py` | shared: paths, `load()` for the tools, `ohms()`, `farads()`, `text()`, `read_export()`, `routed()`, `Checks` |
-| `test_netlist.py` | pinouts and polarity, routed pad nets, connectivity, stacked header pins, schematic, design.md's tables |
+| `test_netlist.py` | pinouts and polarity, routed pad nets, routed library parts against the generator's, connectivity, stacked header pins, schematic, design.md's tables |
 | `test_pins.py` | check_pins.py, the firmware's pin tables against circuit.py and the routed U5, the STM32's alternate functions, bit order |
 | `test_logic.py` | the 74HC165/595 chain at 3.3 V against the firmware's bit-bang timing, logic levels, LED drive, encoders, the display's SPI |
 | `test_audio.py` | the breakout's audio stages: levels, headroom, impedances, offset, response, phase margin, polarity, normalling |

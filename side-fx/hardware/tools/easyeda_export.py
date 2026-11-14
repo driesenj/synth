@@ -268,16 +268,18 @@ def fp_seed_breakout():
 def fp_ec11():
     """Alps EC11E with switch, vertical (KiCad RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm), moved so the
     origin is the shaft: A / C / B 2.5 mm apart in a row 7.5 mm from the shaft, the switch pins 5 mm apart
-    7.0 mm on the other side, the two mounting tabs on the shaft line 5.6 mm out (oval 2.8 x 1.5 slots).
-    Bourns PEC11R parts use the same pattern; check the one you order."""
+    7.0 mm on the other side, the two mounting tabs on the shaft line 5.6 mm out: oval 2.7 x 1.5 slots in
+    3.2 x 2.0 pads, a 0.25 mm ring (JLCPCB's recommendation; KiCad's 2.8 slot left 0.2). Bourns asks for 2.6
+    across the tab; the 1.5 along the tab line takes the PEC11R-4215F's tabs, measured 12.7 mm or less across
+    their outer faces (2026-11-14)."""
     f = Footprint("ENC-EC11E-SW-VERTICAL", "ENC?")
     f.pad("A", -7.5, 2.5, 1.0, 2.0, square=True)
     f.pad("C", -7.5, 0.0, 1.0, 2.0)
     f.pad("B", -7.5, -2.5, 1.0, 2.0)
     f.pad("S2", 7.0, 2.5, 1.0, 2.0)
     f.pad("S1", 7.0, -2.5, 1.0, 2.0)
-    f.pad("MP1", 0.0, 5.6, size=3.2, h=2.0, slot=(2.8, 1.5))
-    f.pad("MP2", 0.0, -5.6, size=3.2, h=2.0, slot=(2.8, 1.5))
+    f.pad("MP1", 0.0, 5.6, size=3.2, h=2.0, slot=(2.7, 1.5))
+    f.pad("MP2", 0.0, -5.6, size=3.2, h=2.0, slot=(2.7, 1.5))
     f.rect(-6.0, -5.8, 6.0, 5.8)        # body, 12 x 11.6 mm
     f.circle(0, 0, 3.0)
     return f
@@ -290,7 +292,7 @@ def fp_pj366st():
     f = Footprint("JACK-PJ366ST-STEREO", "J?")
     f.pad(1, 0, -5.7, size=2.41, h=1.19, slot=(1.9, 0.68))
     f.pad(2, 0, -2.6, size=2.61, h=1.19, slot=(2.1, 0.68))
-    f.pad(3, 0, 5.7, size=2.49, h=1.06, slot=(2.0, 0.57))
+    f.pad(3, 0, 5.7, size=2.5, h=1.07, slot=(2.0, 0.57))      # 0.25 mm ring (the MR's 2.49 x 1.06 left 0.245)
     f.rect(-5.0, -3.67, 5.0, 6.78)
     f.circle(0, 0.78, 1.8)
     return f

@@ -77,7 +77,7 @@ Several checks were test bugs exposed by the fixes, now corrected:
 
 They now read the source.
 
-**Still open** (the 33 failing checks):
+**Still open** (the 26 failing checks of 1762 after the copper fixes):
 - **M4 / M5, the encoder:** the part is the Bourns PEC11R-4215F-S0024, the user's encoders (2026-11-14). The BOM and design.md name it.
   - **M5, accepted:** its 5 mm bushing reaches about 0.9 mm through the panel (0.45 mm at worst), so it goes in without the nut. It hangs on its soldered pins and tabs and centres in the panel hole. D.enc_thread_through_panel, D.enc_body_gap and D.knob_hides_nut keep failing on that.
   - **M4, settled by measurement:** the user's encoders measure 12.7 mm or less across the outer faces of their tabs (2026-11-14), so they fit the present slots (outer edges 12.7 mm apart) and no copper changes. A.ec11_tabs_pec11r and D.pec11r_tabs now check that measurement, and print Bourns' recommended holes (0.25 mm wider on the outside) as information. A.ec11_tabs_pitch checks Alps' holes only while the BOM offers an Alps part.
@@ -89,13 +89,25 @@ They now read the source.
   - a per-board limiter ceiling (documented instead);
   - the panel text weight: not needed. Against the measured letter height (0.685 × fontSize), size / 9 is about 1:5.5, already bolder than 1:6. E.text_ratio now uses that height.
   - the TL074 library symbol's pin 11 name.
-- **Copper, left as is:**
-  - H4's missing ground;
-  - the GND_F sliver;
-  - the rings under 0.25 mm;
-  - ground in the plug-tip circles;
-  - C2's distance;
-  - the pad and track under the two standoffs (nylon washers now on the BOM).
+- **Copper, 2026-11-14:** the user said "Do all recommended fixes and optional fixes". Patched into the master
+  (the routing audit's first section):
+  - **The GND_F sliver: done.** Removed, with a 0.2 mm no-copper circle over its spot.
+  - **The rings: done.** The EC11 tab slots are 2.7 × 1.5 mm in the same pads, so no clearance changed. The PJ366ST tip pad is 2.50 × 1.07 mm.
+  - **Ground in the plug-tip circles: done.** The circles are centred on the barrels at r 1.75. The seven stitching vias inside them are gone, and the bottom pour is cut to r 1.80.
+  - **C2: not moved.** The best clear spot shortens the loop from 33.6 to 31.3 mm only. A real gain needs a shorter GND_D_F path from U2's pin 8: a GND_D_F pour round U1 / U2, or a re-route. power H.decoupling.C2 and H.loop keep failing on it.
+  - **Still left as they are:** H4's missing ground, and the pad and track under the two standoffs (nylon washers on the BOM).
+  - **The suite:** 31 → 26 failing checks of 1756.
+- **The user's export, 2026-11-15:** the copper and the rebuilt pours check out, but EasyEDA had put back its own older copies of five library parts:
+  - the EC11 slots and the PJ366ST pad;
+  - R11/R14/R17/R20 as LR1F27K and C10–C13 as 1 nF;
+  - the 74HC165's "CE".
+
+  On that export, 29 of 1756 checks failed, 32 of 1762 with the new library checks. The master is now the export with those parts put back under fresh IDs (the routing audit's first section).
+  - **New checks:** netlist D.library_devices, D.library_footprints and D.library_symbols, six in all.
+  - **The suite now:** 26 failing of 1762, the same 26 as before.
+- **The user's second export, 2026-11-15:** every restored part came through, and only the pours were rebuilt. It is now the master, with the same 26 of 1762 failing. The 26 are the items already listed above:
+  - **Copper, left as it is:** H4's ground, C2's loop, and the copper under the standoffs.
+  - **The rest:** values, firmware, docs, the accepted no-nut encoders, and the two open measurements (M6, the button height; M3, the DC/DC).
 - **Low, as reported:** the hot-input and 20 Hz figures, the Rev7 gain, the one-rail fault.
 
 ---

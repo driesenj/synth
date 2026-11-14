@@ -17,8 +17,10 @@ What it checks
      TO-92 flat, DIP notch / dot and square pad, the SIP pin-1 bar).
   D  The routed master (SideFXy-routed.epro2) against circuit.py: every pad's net on both PCBs, designators
      complete, every PAD_NET record names a real pad of its footprint (by number and pad id), the pads
-     left open are exactly design.md's "What EasyEDA's DRC will still say" list, and the generator's two
-     boards (copper_audit.generated_boards(), in memory) pad for pad against the routed ones.
+     left open are exactly design.md's "What EasyEDA's DRC will still say" list, the generator's two
+     boards (copper_audit.generated_boards(), in memory) pad for pad against the routed ones, and each placed
+     part's footprint pads, device (part number, value) and symbol pin names against the generated
+     project's (EasyEDA keeps its own copy of a library part whose uuid it already holds on import).
   E  Connectivity on the routed copper (copper_audit.RoutedBoard.connectivity()): every net one piece, no
      other-net contacts, GND_F and GND_D_F never touch on the faceplate and meet only on the main board's
      GND through their own header pins.
@@ -1348,5 +1350,70 @@ for b, gen in (("main", mb_gen), ("face", fb_gen)):
     diffs = ca.compare(BOARDS[b], gen)
     ck.check(f"D.generator_matches_routed.{b}", not diffs,
              f"easyeda_export's {b} board against the routed one, pad for pad and net for net: {diffs[:10]}")
+
+# ----------------------------------------------------------------------------------------------------------
+# D (cont.)  the routed master's library parts against the generated project's, part by part, following each
+# placed part's own references (its Footprint and Device ATTRs, the device's Symbol). EasyEDA keeps its own
+# copy of a footprint, device or symbol whose uuid it already holds when the user imports a project, so an edit
+# made in place under an old uuid comes back undone in the user's next export (2026-11-14: the EC11 slots, the
+# PJ366ST pad, R11/R14/R17/R20 as 27k, C10-C13 as 1 nF, the 74HC165's /CE). Copper checks miss it: the tracks
+# are right, the pads and EasyEDA's BOM are not.
+GEN = harness.routed(harness.GENERATED)
+DEV_KEYS = ("Manufacturer Part", "Value")          # which part, not the wording of its description
+TOL = 0.02                                          # mil
+
+
+def pad_rows(X, fp_uuid):
+    rows = {}
+    for h, p in X.fp_by_uuid[fp_uuid]["recs"]:
+        if h["type"] == "PAD" and p:
+            hole = p.get("hole") or {}
+            rows[str(p["num"])] = (p["centerX"], p["centerY"], p["defaultPad"]["padType"], p["defaultPad"]["width"],
+                                   p["defaultPad"]["height"], hole.get("holeType"), hole.get("width") or 0,
+                                   hole.get("height") or 0, p.get("plated"), p["layerId"])
+    return rows
+
+
+def same_pad(a, b):
+    """Two pad rows alike, numbers within TOL (mm values written to 4 places round either way in mil)."""
+    if a is None or b is None:
+        return a is b
+    return all(abs(x - y) <= TOL if isinstance(x, float) or isinstance(y, float) else x == y for x, y in zip(a, b))
+
+
+def show(row):
+    return row and tuple(round(v, 2) if isinstance(v, float) else v for v in row)
+
+
+for b in ("main", "face"):
+    dev_bad, fp_bad, sym_bad = [], {}, {}
+    for ref in sorted(GEN.board(b).parts):
+        if ref not in BOARDS[b].parts:
+            continue                                    # D.parts_* reports a missing part
+        gd, rd = GEN.device(b, ref), R.device(b, ref)
+        diff = {k: (rd.get(k), gd.get(k)) for k in DEV_KEYS if rd.get(k) != gd.get(k)}
+        if diff:
+            dev_bad.append((ref, diff))
+        title = BOARDS[b].parts[ref]["fp"]
+        gp = pad_rows(GEN, GEN.attrs(b, ref)["Footprint"])
+        rp = pad_rows(R, R.attrs(b, ref)["Footprint"])
+        pad_diff = {n: (show(rp.get(n)), show(gp.get(n))) for n in sorted(set(gp) | set(rp))
+                    if not same_pad(rp.get(n), gp.get(n))}
+        if pad_diff and title not in fp_bad:
+            fp_bad[title] = pad_diff
+        gs = {n: v[0] for n, v in GEN.symbol_pins(gd["Symbol"]).items()} if gd.get("Symbol") in GEN.docs else {}
+        rs = {n: v[0] for n, v in R.symbol_pins(rd["Symbol"]).items()} if rd.get("Symbol") in R.docs else {}
+        if gs != rs and gd.get("Manufacturer Part") not in sym_bad:
+            sym_bad[gd.get("Manufacturer Part")] = {n: (rs.get(n), gs.get(n)) for n in sorted(set(gs) | set(rs))
+                                                     if gs.get(n) != rs.get(n)}
+    ck.check(f"D.library_devices.{b}", not dev_bad,
+             f"each placed part's device ({', '.join(DEV_KEYS)}) in the routed master as in the generated project "
+             f"(routed, generated): {dev_bad[:8]}")
+    ck.check(f"D.library_footprints.{b}", not fp_bad,
+             "each placed part's footprint pads (centre, shape, size, hole, plating; mil, within 0.02) in the routed "
+             f"master as in the generated project (routed, generated): {dict(list(fp_bad.items())[:4])}")
+    ck.check(f"D.library_symbols.{b}", not sym_bad,
+             f"each placed part's symbol pin names in the routed master as in the generated project "
+             f"(routed, generated): {dict(list(sym_bad.items())[:4])}")
 
 ck.done()

@@ -1,5 +1,82 @@
 # Side FXy routing audit, 2026-11-01
 
+## The user's export of the copper fixes, 2026-11-15
+
+The user imported the patched master, rebuilt the pours and exported it
+(`ProPrj_SI FX_2026-11-14.epro2`).
+
+- **Boards:** every record on the three boards matches the patched master.
+  The copper audit's output is the same line for line.
+- **Pours:** EasyEDA's rebuilt pours stay 1.84 mm from each barrel centre,
+  and the sliver did not come back.
+- **Library parts:** five came back as they were before the patches, because
+  EasyEDA keeps its own copy of a library document whose ID it already holds:
+  - **ENC-EC11E-SW-VERTICAL:** the tab slots were 2.8 mm again;
+  - **JACK-PJ366ST-STEREO:** pad 3 was 2.49 × 1.06 mm again;
+  - **R11 / R14 / R17 / R20:** the part was LR1F27K again;
+  - **C10–C13:** the part was 1 nF again;
+  - **74HC165:** pin 15 was "CE" again.
+
+  R23's 12k part was new, with a new ID, and came through. The silk value
+  labels are board text, and they came through too.
+
+**The master is now that export, with the five parts put back.** The
+patched master's contents are under fresh IDs. The three devices that point
+at them (the EC11, the PJ366ST, the 74HC165) also have fresh IDs, and every
+reference follows. Against the patched master, the only differences are
+EasyEDA's own:
+- the two rebuilt faceplate pours;
+- an empty net record on the panel board;
+- two default track rules gone from the panel schematic.
+
+netlist D.library_devices / D.library_footprints / D.library_symbols now
+compare each placed part's footprint pads, device and symbol pins with the
+generated project. They pass on the master, and fail on the user's export
+on every part listed above.
+
+**Confirmed on 2026-11-15.** The user's next export
+(`ProPrj_SI FX_2026-11-15.epro2`) kept every restored part. It matches the
+master record for record, except that the two faceplate pours were rebuilt
+once more. The copper audit is the same line for line. The rebuilt pours
+stay 1.84 mm from each barrel centre, with no sliver. The suite gives the
+same 26 failures of 1762, and the six library checks pass. That export is
+now the master.
+
+## Copper fixes, patched into the master on 2026-11-14
+
+From the test report (`test-report-2026-11-13.md`), on the user's "Do all
+recommended fixes and optional fixes". Only the faceplate and two footprints
+changed; the main board and the panel board are the same line for line.
+
+- **Plug-tip circles.** The ten PROHIBIT circles on the panel side (bottom
+  layer), drawn in EasyEDA, are now centred on the barrels: J3's was 0.2 mm
+  off, the bottom row 0.05 mm low. They grew from r 1.5 (Thonk's 3 mm) to
+  r 1.75, the house margin. The seven GND_F stitching vias within 1.75 mm
+  of a barrel centre are gone; they were direct-connected, so no spokes or
+  rings were left behind. The bottom pour is cut to r 1.80 round each
+  barrel. OUT1_F passes 0.13 mm outside J6's circle, and ENC4_A_F 0.53 mm
+  outside J2's and J3's.
+- **The GND_F sliver** at (64.1, 40.3) is out of the bottom pour. A 0.2 mm
+  PROHIBIT circle over the spot keeps a rebuild from bringing it back; its
+  nearest copper is the LCD_RST_F via, 0.34 mm from its centre.
+- **Two degenerate regions** are removed: r 0.03 mm on the top layer at
+  (22.30, 6.92), which had punched a pin-hole in the top pour, and r 0 at
+  (9.80, 21.56).
+- **Rings.** The EC11 tab slots go from 2.8 × 1.5 to 2.7 × 1.5 mm in the same
+  3.2 × 2.0 pads: a 0.25 mm ring, JLCPCB's recommendation. Growing the pads
+  instead would have put ENC3's MP1 0.11 mm from LED_REVERB_F. The PJ366ST
+  tip pad goes from 2.49 × 1.06 to 2.50 × 1.07 mm.
+- **C2 stays where it is.** U2's supply pins sit at opposite corners of the
+  chip, 19 mm apart, and the board round them is full. The best clear spot
+  (every pad of any net 0.25 mm away, U2's footprint fenced off) gives a
+  31.3 mm decoupling loop against 33.6 mm now. A real gain needs a shorter
+  GND_D_F path from U2's pin 8: a GND_D_F pour round U1 / U2 on the rear,
+  or a re-route.
+
+The copper audit afterwards: GND_F in one piece, 162 vias (169), 6 pour
+islands (7), every clearance as before. The exporter reports 0 problems.
+The user rebuilt the pours in EasyEDA on 2026-11-14 (above).
+
 ## Panel name and mark, patched into the master on 2026-11-02
 
 The panel board in `SideFXy-routed.epro2` now carries the Garden name:

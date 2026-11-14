@@ -329,7 +329,16 @@ generator and the routed boards disagree.
 
 The audit is in [routing-audit-2026-11-01.md](routing-audit-2026-11-01.md).
 The fourth export (2026-11-02) audits clean, and the exporter reports 0
-problems. It is the state to order from.
+problems. It is the state to order from, with the copper fixes of
+2026-11-14 patched into it (the audit's first section): no-copper circles at
+the barrels, the GND_F sliver gone, 0.25 mm rings on the EC11 tab slots and
+the PJ366ST tip. Since 2026-11-15 the master is the user's own export of
+that state, with EasyEDA's rebuilt pours, and with five library parts put
+back under fresh IDs (the audit's first section). The user's next export
+(2026-11-15) kept them, and it is now the master: **this is the state to
+make Gerbers from.** EasyEDA keeps its own copy of a library part whose ID
+it already holds, so a later edit to a footprint, device or symbol needs a
+fresh ID to survive an import.
 
 The tables below describe the placement that routing started from. The
 audit's last section lists what moved while routing.
@@ -470,7 +479,8 @@ say the same.
     11 mm in front of the panel for the knob.
   - **Tabs:** Bourns' layout asks for 1.8 × 2.6 mm tab holes 4.8–6.6 mm from
     the shaft; the footprint's MP1 / MP2 slots (KiCad's Alps EC11E) are
-    1.5 mm along the tab line, 4.85–6.35 mm. The encoders' tabs measure
+    1.5 mm along the tab line, 4.85–6.35 mm, and 2.7 mm across (Bourns:
+    2.6), in 3.2 × 2.0 mm pads for a 0.25 mm ring. The encoders' tabs measure
     12.7 mm or less across their outer faces (2026-11-14), so they fit the
     slots as routed. The fit is close: squeeze the barbs if a tab binds, and
     solder both tabs.
