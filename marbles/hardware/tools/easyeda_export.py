@@ -452,6 +452,18 @@ class MProject(Project):
                 self._fpgeo[u] = pcb.footprint_geometry(d)
         return self._fpgeo[uid]
 
+    def _square_pin1(self, uid):
+        """Pad 1 of a library footprint as a square pad of the same size (the DIP-16: its chips are soldered
+        without sockets since 2026-11-13, so pin 1 wants a mark in the copper too; test report L17). As in
+        Plaitsy's exporter."""
+        doc = self.lib[uid]
+        for h, p in doc["recs"]:
+            if h["type"] == "PAD" and str(p.get("num")) == "1" and p["defaultPad"]["padType"] != "RECT":
+                p["defaultPad"] = {"padType": "RECT", "width": p["defaultPad"]["width"],
+                                   "height": p["defaultPad"]["height"], "radius": 0}
+                k = next(j for j, line in enumerate(doc["lines"]) if line.startswith(ee.json.dumps(h, separators=(",", ":"))))
+                doc["lines"][k] = ee.enc(h, p)
+
     def _new_devices(self):
         r1k = meta(self.lib[DEV["R1k"]])["attributes"]
         for val, (mpn, value) in R_NEW.items():
@@ -475,6 +487,7 @@ class MProject(Project):
                   "Description": "Schottky diode 30 V 200 mA, DO-35"})
         self._device("BAT85", "BAT85", a, ["Diodes", "Schottky Diodes"])
         dip16 = meta(self.lib[SRC["74HC595N"]])["attributes"]["Footprint"]
+        self._square_pin1(dip16)
         dip14 = meta(self.lib[DEV["TL074"]])["attributes"]["Footprint"]
         # the routed export decides the DIP-14 and the pot footprint: the library ones until the boards carry
         # the re-route's (DIP14_TITLE, POT_TITLE), then the same drawn here, so routed_check() keeps matching
@@ -780,7 +793,7 @@ def main_page_2(pr, parts):
         pg.stub_port(r_b["1"], "NEG_REF", "IN", "left")
         pg.text(ox - 110, oy - 75, name, 9)
 
-    pg.text(1130, Y(32), "Gate outputs: x2.5 from the GPIO = 0 / 8.25 V, 1k out", 12)
+    pg.text(1130, Y(32), "Gate outputs: x2.5 from the GPIO = 0 / 8.25 V, 1k out; 100k pull-downs: 0 V while the Seed boots", 12)
     for i, (name, u, sec) in enumerate(circuit.GATES):
         ox, oy = 1280, Y(155 + i * 170)
         rg, rf, rs = (P[f"R{60 + 3 * i + k}"] for k in range(3))
@@ -799,7 +812,17 @@ def main_page_2(pr, parts):
         pg.wire([(kx, oy), a_rs["1"]], f"OA_{name}")
         pg.wire([(kx, oy), (kx, oy - 60)], f"OA_{name}")
         pg.wire([(kx, oy - 60), a_rf["2"]], f"OA_{name}")
-        pg.stub_port(amp[inp], f"GATE_{name}", "IN", "left", length=30)
+        # the GPIO's 100k pull-down (test report L3), standing below the input stub
+        rp = P[f"R{57 + i}"]
+        gx, gy = amp[inp]
+        a_rp = pg.place(rp.ref, r_dev(rp.value), gx - 20, gy + 30, 270, *V_TXT)
+        near, far = sorted((a_rp["1"], a_rp["2"]), key=lambda q: abs(q[1] - gy))
+        jn = (near[0], gy)                      # a T on the input stub, straight down to the resistor
+        pg.wire([amp[inp], jn], f"GATE_{name}")
+        pg.wire([jn, (gx - 40, gy)], f"GATE_{name}")
+        pg.wire([jn, near], f"GATE_{name}")
+        pg.port(gx - 40, gy, f"GATE_{name}", "IN", "left")
+        pg.stub_gnd(far, "down", 10)
         pg.stub_port(a_rs["2"], name, "OUT", "right")
         pg.text(ox - 110, oy - 75, name, 9)
         if sec == 1:

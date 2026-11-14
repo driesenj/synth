@@ -145,7 +145,10 @@ works unchanged with that.
 ### Gate outputs (3×)
 
 Non-inverting TL074 stage, gain 2.5 (R 10k to GND, 15k feedback), 1k series
-out: 0 V / 8.25 V from the 3.3 V GPIO. U6A–C; U6D is a grounded follower.
+out: 0 V / 8.25 V from the 3.3 V GPIO. U6A–C; U6D is a grounded follower. A
+100k pull-down on each GPIO (R57–R59, since 2026-11-14) holds the stage at
+0 V while the Seed is unpowered, in reset or in its bootloader, when its pins
+float; it draws 33 µA from the pin when high.
 
 ### CV outputs (4×)
 
@@ -330,7 +333,7 @@ sit at Thonkiconn height, but two of those holes overlap the 1.6 mm pads of
 pins 1 and 2 (DRC errors), so the board has none: clip the feet off before
 fitting the buttons, and the body sits on the board at the same height. Panel hole sizes: pots
 7.5, jacks 6.5, buttons 6.5; mounting slots 5.5 × 3.2 mm with their centres
-3 mm from the top and bottom edge and 7.5 / 83.8 mm from the left (Eurorack). Pads of neighbouring parts clear
+3 mm from the top and bottom edge and 7.5 / 83.70 mm from the left (Eurorack: 7.5 + (HP − 3) × 5.08, on the rail's HP grid; 83.8 until 2026-11-14). Pads of neighbouring parts clear
 each other by 0.25 mm or more on the board (checked by the exporter).
 
 The stack depth is the same as Plaitsy's: about 45–50 mm from the panel.
@@ -430,7 +433,7 @@ U6 (gate stages) top left, U7 and U8 (DACs) left of centre, U5 (DAC output
 stages) bottom left, U3 (T CV stages) top right, U4 (X CV stages and the
 −2.5 V inverter) bottom right, the clock stages (Q1/Q2, D22/D23, R50–R53)
 along the top right, the reference D21 with C30 at (63, 30), the bias
-divider R45/R46/C29 bottom right. 33 of the resistors stand up on a 2.54 mm
+divider R45/R46/C29 bottom right. 35 of the resistors stand up on a 2.54 mm
 footprint (`1/4W-RESISTOR-VERTICAL`; the exporter gives them a vertical
 device of the same value). Every TL074 supply pin has its 100 n within
 3.2–4.3 mm, both DACs theirs within 3.8 mm.
@@ -518,7 +521,7 @@ the same pads.
 **Value labels.** Every resistor, capacitor and pot carries its value on the
 silkscreen beside it, and the three diodes their part name (BAT85 at D22
 and D23, LM4040-2.5 at D21): 35 labels on the faceplate (B10k on the pots,
-on the panel-side silk; 470, 10k, 3k3 and 100n on the rear) and 76 on the
+on the panel-side silk; 470, 10k, 3k3 and 100n on the rear) and 79 on the
 main board, all on its top. `hardware/tools/value_labels.py` (copied from
 Plaitsy) put them in the first free spot beside each part where no other
 labelled part is nearer; the values come per board, since R80–R85 exist on
@@ -526,11 +529,15 @@ both (100k / 1k / 23k2 / 47k on the main board, 470 on the faceplate). R33
 and R39 have theirs under the Seed breakout (they are soldered before it
 goes on). R80 on the main board has no label: its only free spot sat
 against R78. R42 and R66 share a near-tie with R47 and R67, which have their
-own labels right beside them. 98 labels are at the designators' 45 mil,
-seven at 38 and six at 32 mil (0.8 mm, readable but under the 1 mm many fabs
+own labels right beside them. 101 labels are at the designators' 45 mil,
+six at 38 and seven at 32 mil (0.8 mm, readable but under the 1 mm many fabs
 recommend). When R70, R74, R78 and R82 went from 24k to 23k2 (2026-11-02)
 their longer labels moved to the next free spot by the same rules, three
-of them smaller; R47's 1k5 kept its place. Previews:
+of them smaller; R47's 1k5 kept its place. The gate pull-downs R57–R59
+(2026-11-14) got theirs by the same rules; R57 lies flat between R60, R61
+and C37, so those three labels moved too (R60's and R57's by a finer scan
+of the free spots, and R57's designator with them), and none of them sits
+nearer another part. Previews:
 `hardware/easyeda/marbles-labels-*.png`. The labels
 are in `Marblesy-routed.epro2`; run `value_labels.py` again only on an
 export that does not carry them yet.
@@ -608,6 +615,80 @@ wiring against `circuit.py` (only the wires drawn in EasyEDA without a net
 name differ, as before). The pours are the script's, not EasyEDA's: rebuild
 them before the Gerbers (open items).
 
+**Copper rework, 2026-11-14** (the hardware test report's L3, L8, L14 and
+L17; L7 is left to route). `Marblesy-routed.epro2` was patched by script:
+- **Gate pull-downs R57–R59**, 100k from GATE_T1–T3 to GND on the main board:
+  - R57 lies flat (the LR1F footprint) at (16.90, 83.35): pad 1 (16.90, 88.50) with a 0.3 mm top-layer track to U6 pin 3 (16.96, 91.19), pad 2 (16.90, 78.20) in the GND pour.
+  - R58 stands at (28.52, 82.99): pad 1 (29.00, 82.99) on GATE_T2's bottom track, pad 2 (26.46, 82.99).
+  - R59 stands at (31.28, 97.98): pad 1 (31.28, 97.50) on GATE_T3's bottom track, pad 2 (31.28, 100.04).
+  - Every new pad clears other copper by 0.46 mm or more (R57's by 0.89 mm, its track by 1.04 mm). No spot by U6 took a standing GATE_T1 resistor: pad 2 always landed on other copper.
+  - Schematic page 2 got the three from the regenerated project, with a T on each GATE port's stub.
+- **3V3A_F** on the faceplate: the two 0.3 mm pieces at (61.5, 51.5–52.0) are 0.6 mm now.
+- **Square pin 1** on the DIP-16 footprint (U1, U9, U10, U11), now that those chips are soldered without sockets. U10 pin 1's corner comes 0.19 mm from L_D17_G's track (over the 0.152 mm minimum).
+- **Panel board** regenerated with the right mounting slots at 83.70.
+
+Route this (PCB frame, mm):
+1. GND_D_F on the faceplate, 0.6 mm, from C9's ground side to U9 pin 8. C9.2 is at (34.04, 70.5), or take its bottom track to U9.13, (34.04, 76.46)–(29.77, 80.73). U9.8 is at (36.31, 90.89), with a top-layer track up to (36.31, 103.31). Today that path is 126 mm round (20.5 mm straight). The channel between U9's pin rows is busy on both layers, so it needs a hand route.
+
+Then rebuild all copper areas on both boards, run DRC and export:
+- R57–R59's GATE pads and R57's track sit in the old GND pours, and their GND pads have no thermals yet.
+- The square pin-1 pads come within 0.02 mm of the faceplate's old GND_F cutouts.
+
+**Re-import, 2026-11-14.** The reworked master went into the existing
+EasyEDA project "SI - Marbles", was re-routed there and exported back.
+EasyEDA kept the project's own older copy of every library item that a
+script had changed under the same id, and that undid three fixes:
+- **DIP-16 pin 1** was round again (U1, U9, U10, U11).
+- **D21:** the LM4040 symbols had their old pin numbers, so D21's pads came
+  back as VREF / GND / GND, the SOT-23 order fixed on 2026-11-02. VREF had
+  been re-routed into pad 1 to match.
+- **Resistor devices:** R47, R70/R74/R78/R82 and the seven CV inputs' 13k
+  resistors carried the old devices LR1F2K2, LR1F24K and LR1F27K. The values
+  on the schematic and the silkscreen stayed right; only a BOM taken from
+  EasyEDA would have been wrong.
+
+`Marblesy-routed.epro2` is now that export with those fixes put back by
+script:
+- The 25 library items involved carry new ids and new sources, so no older
+  copy can stand in for them again. They are the DIP-16 footprint, the
+  three LM4040 symbols and devices, the nine resistor devices, and the nine
+  74HC devices that use the DIP-16 footprint.
+- D21 is GND / VREF / GND again, with VREF back into pad 2 on its old
+  track.
+- The export's own changes are kept: GATE_T1 and 3V3D re-routed beside R58,
+  and the main board's pours rebuilt, which took in R57–R59.
+
+After the next import, before routing, check three things: U9's pin 1 is
+square, D21's middle pad is VREF, and R47's device is LR1F1K5. If any of
+them is not, the old copies got in again; import into a new project
+instead. Then the steps above still stand:
+- L7 is still open. It is a new track, and EasyEDA shows no ratline for it,
+  since GND_D_F is already connected the long way round.
+- Rebuild all copper areas on both boards. The main board's pour around D21
+  was made for the swapped nets: VREF's track runs through it and pad 1 has
+  no thermals. The faceplate's pours are still the old ones.
+
+**Second re-import, 2026-11-15.** `Marblesy-routed.epro2` is now the export
+of that import, unchanged:
+- **Library fixes:** the new ids held. U1/U9/U10/U11 use the square-pin-1
+  footprint, D21's symbol and pads are GND / VREF / GND, and R47, R70–R82
+  and the 13k Rf use the LR1F1K5 / LR1F23K2 / LR1F13K devices. EasyEDA gave
+  them ids of its own again. The project's old copies also came along,
+  unused by any part; they can be deleted from the project library.
+- **L7 routed:** from C9's bottom track at (34.04, 76.46) through a via at
+  (32.0, 78.5), 0.6 mm on the top layer down to a via at (32.0, 88.5), then
+  on the bottom into U9 pin 8. C9 to U9.8 is now 24.1 mm of copper (126 mm
+  before). U9.8's old top-layer track and its via at (39.75, 106.75) are
+  gone. 3V3D_F, L_D1_G, L_D4_G, L_D5_R and BTN_X_DEJAVU_F moved to make room.
+- **Pours rebuilt** on both boards. Every net is in one piece, with no
+  other-net copper in a pour and nothing under 0.152 mm; L_D4_G passes
+  L_D5_R's via at (34.0, 94.5) at exactly 0.152 mm.
+- **One GND fleck** on the bottom layer, between D21's pad 1 and VREF's
+  track at (62.3–63.7, 31.1–31.4): 0.3 mm², 0.22–0.29 mm thick, held by
+  pad 1's spoke. That is well over JLCPCB's 0.1 mm minimum and not a loose
+  sliver, so it stays. A small no-copper area there would remove it on the
+  next rebuild.
+
 ---
 
 ## BOM
@@ -662,11 +743,8 @@ The Marbles firmware is © Emilie Gillet, MIT licence.
   board at Thonkiconn height.
 - Check that the underside of the breakout's power end clears R33, R36 and
   R39 (2.3 mm) before soldering them flat under it.
-- Import `Marblesy-routed.epro2` again (the corrected panel board, the
-  value labels, the D21 / R47 / 23.2k fixes and, since 2026-11-02, the
-  panel name **Spore** with the gold mushroom mark in place of the maker
-  line are in it), rebuild all
-  copper areas on the main board (its pours around D21 were cut by a
-  script), run DRC on all three boards, and make the Gerbers from that
-  import. Export it back over `Marblesy-routed.epro2` and rerun
-  `easyeda_export.py` and `copper_audit.py`.
+- Make the Gerbers from the EasyEDA project as exported on 2026-11-15
+  (the second re-import above; `Marblesy-routed.epro2` is that export),
+  after DRC on all three boards. If anything is changed there first,
+  export it back over `Marblesy-routed.epro2` and rerun
+  `easyeda_export.py`, `copper_audit.py` and the hardware tests.

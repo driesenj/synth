@@ -199,8 +199,8 @@ HOLES_FRONT = [(45, 82), (45, 33), (79, 69), (11, 69)]     # design.md "Mounting
 BREAKOUT_BOX = (35.6, 3.7, 54.4, 100.5)                     # design.md "Main board": the breakout's board
 UNDER_BREAKOUT = {"R33", "R36", "R39"}                      # design.md: under it sit R33, R36 and R39
 STACK_GAP = 11.0                    # design.md / bom.md: 8.5 mm sockets on the male headers' 2.5 mm plastic
-LABELS_PER_BOARD = {"Faceplate": 35, "Main": 76}            # design.md "Value labels"
-SMALL_LABELS = {38: 7, 32: 6}       # design.md: seven at 38 mil, six at 32 mil
+LABELS_PER_BOARD = {"Faceplate": 35, "Main": 79}            # design.md "Value labels" (76 + R57-R59 since 2026-11-14)
+SMALL_LABELS = {38: 6, 32: 7}       # design.md: six at 38 mil, seven at 32 mil (since the relabel of 2026-11-14)
 UNLABELLED_OK = {"Main": {"R80"}}   # design.md: R80 on the main board has no label
 
 # ====================================================================== the routed master

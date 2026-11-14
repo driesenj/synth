@@ -52,7 +52,7 @@ PCB_MAX_H, RAIL_CLEAR_MIN, RAIL_ZONE = 108.0, 112.2, 10.0
 # design.md: panel 91.3 x 128.5, board 90 x 108 centred; holes pots 7.5, jacks 6.5, buttons 6.5; slots 5.5 x 3.2,
 # centres 3 mm from the top / bottom, 7.5 / 83.8 mm from the left
 DES_HOLE = {"pot": 7.5, "jack": 6.5, "ledbutton": 6.5}
-DES_SLOT, DES_SLOT_X = (5.5, 3.2), (7.5, 83.8)
+DES_SLOT, DES_SLOT_X = (5.5, 3.2), (7.5, 83.70)    # design.md; 83.8 until L14 (2026-11-14)
 LED_HOLE = 3.2                       # panel.py's LED hole (design.md gives none): a 3 mm LED's light through it
 # parts
 JACK_S_BARREL = 6.48                 # KiCad Jack_3.5mm_QingPu_WQP-PJ398SM_Vertical: barrel circle (0, 6.48) from S

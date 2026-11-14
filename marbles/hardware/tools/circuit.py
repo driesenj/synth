@@ -119,10 +119,12 @@ def main_board_parts():
         parts.append(R(f"R{51 + 2 * k}", "10k", "3V3D", f"{name}_CLK"))
         parts.append(Part(f"Q{k + 1}", "NPN", "2N3904", {"1": "GND", "2": f"B_{name}_CLK", "3": f"{name}_CLK"}))  # E B C
         parts.append(Part(f"D{22 + k}", "BAT85", "BAT85", {"1": f"B_{name}_CLK", "2": "GND"}))  # 1 = cathode
-    # gate outputs: non-inverting x2.5 (0 / 8.25 V), 1k out
+    # gate outputs: non-inverting x2.5 (0 / 8.25 V), 1k out; a 100k pull-down on each GPIO holds the stage at 0 V
+    # while the Seed is unpowered, in reset or in its bootloader, when the pin floats (test report L3, 2026-11-14)
     for i, (name, u, s) in enumerate(GATES):
         out, inm, inp = SECTION[s]
         tl[u].update({out: f"OA_{name}", inm: f"IN_{name}", inp: f"GATE_{name}"})
+        parts.append(R(f"R{57 + i}", "100k", f"GATE_{name}", "GND"))
         parts.append(R(f"R{60 + 3 * i}", "10k", "GND", f"IN_{name}"))
         parts.append(R(f"R{61 + 3 * i}", "15k", f"IN_{name}", f"OA_{name}"))
         parts.append(R(f"R{62 + 3 * i}", "1k", f"OA_{name}", name))
@@ -148,8 +150,8 @@ def main_board_parts():
     for u in ("U3", "U4", "U5", "U6"):
         parts.append(C(f"C{nc}", "100n", "+12V", "GND")); nc += 1
         parts.append(C(f"C{nc}", "100n", "GND", "-12V")); nc += 1
-    parts.append(C("C39", "100n", "3V3A", "GND"))   # U7
-    parts.append(C("C40", "100n", "3V3A", "GND"))   # U8
+    parts.append(C("C39", "100n", "3V3A", "GND"))   # U8 (beside its pin 1 on the routed board)
+    parts.append(C("C40", "100n", "3V3A", "GND"))   # U7
     # board-to-board headers (female sockets on this board)
     for ref, kind, nets in HEADERS:
         parts.append(Part(ref, kind, "", {str(i + 1): mb for i, (mb, fb) in enumerate(nets) if mb}))
@@ -294,8 +296,8 @@ def faceplate_parts():
     hc165[HC165_INPUTS[7]] = "GND_D_F"
     parts.append(Part("U11", "HC165", "74HC165", hc165))
     parts.append(C("C9", "100n", "3V3D_F", "GND_D_F"))    # U9
-    parts.append(C("C10", "100n", "3V3D_F", "GND_D_F"))   # U10
-    parts.append(C("C11", "100n", "3V3D_F", "GND_D_F"))   # U11
+    parts.append(C("C10", "100n", "3V3D_F", "GND_D_F"))   # U11 (beside its pin 16 on the routed board)
+    parts.append(C("C11", "100n", "3V3D_F", "GND_D_F"))   # U10
     # board-to-board headers (male pins on this board)
     for ref, kind, nets in HEADERS:
         parts.append(Part(fb_ref(ref), kind, "", {str(i + 1): fb for i, (mb, fb) in enumerate(nets) if fb}))

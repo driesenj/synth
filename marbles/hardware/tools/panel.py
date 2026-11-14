@@ -65,8 +65,10 @@ def panel_xy(bx, by):
 
 
 # Eurorack mounting: centres 3 mm from the top and bottom edge, 7.5 mm from the left edge and
-# (HP - 3) * 5.08 further right; slots 5.5 x 3.2 mm (horizontal) give side-to-side play
-MOUNTS = [(x, y) for x in (7.5, PANEL_W - 7.5) for y in (3.0, PANEL_H - 3.0)]
+# (HP - 3) * 5.08 further right, on the rail's HP grid (83.70 here; PANEL_W - 7.5 gave 83.8, test report
+# L14); slots 5.5 x 3.2 mm (horizontal) give side-to-side play
+HP = 18
+MOUNTS = [(x, y) for x in (7.5, round(7.5 + (HP - 3) * 5.08, 2)) for y in (3.0, PANEL_H - 3.0)]
 SLOT_W, SLOT_H = 5.5, 3.2
 
 

@@ -17,7 +17,10 @@ Python with numpy (no scipy, no SPICE). About a minute for all of it
 boards, the firmware or the docs, not a broken test: the findings are in
 [docs/test-report-2026-11-13.md](../../docs/test-report-2026-11-13.md)
 (1289 checks, 90 failing after an independent verification pass; 1293 / 52
-since M1 and M2 were applied the same day).
+since M1 and M2 were applied the same day; 1297 / 41 after the copper rework of
+2026-11-14, three of them only until the pours are rebuilt; 1297 / 40 on the
+re-routed export of the same day, four of them pours to rebuild; 1297 / 36 on
+the second re-import of 2026-11-15, L7 routed and the pours rebuilt).
 
 Whether a chip has a socket comes from bom.py (its "DIP-xx IC socket" lines,
 `SOLDERED`), not from its footprint.

@@ -210,8 +210,8 @@
 <circle cx="77.45" cy="105.25" r="1.60" class="hole"/>
 <rect x="4.75" y="1.40" width="5.5" height="3.2" rx="1.6" class="hole"/>
 <rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" class="hole"/>
-<rect x="81.05" y="1.40" width="5.5" height="3.2" rx="1.6" class="hole"/>
-<rect x="81.05" y="123.90" width="5.5" height="3.2" rx="1.6" class="hole"/>
+<rect x="80.95" y="1.40" width="5.5" height="3.2" rx="1.6" class="hole"/>
+<rect x="80.95" y="123.90" width="5.5" height="3.2" rx="1.6" class="hole"/>
 </g>
 <g id="mockup">
 <circle cx="9.65" cy="111.78" r="4.0" fill="#b9bbb6" stroke="#555" stroke-width="0.2"/>
@@ -286,7 +286,7 @@
 <circle cx="77.45" cy="105.25" r="1.6" fill="#4bd36a" opacity="0.9"/>
 <circle cx="7.50" cy="3.00" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
 <circle cx="7.50" cy="125.50" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
-<circle cx="83.80" cy="3.00" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
-<circle cx="83.80" cy="125.50" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
+<circle cx="83.70" cy="3.00" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
+<circle cx="83.70" cy="125.50" r="2.6" fill="#cfd0cc" stroke="#777" stroke-width="0.2"/>
 </g>
 </svg>

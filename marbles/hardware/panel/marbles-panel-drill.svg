@@ -7,10 +7,10 @@
 <text class="dim" x="10.75" y="1.10">5.5x3.2</text>
 <rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
 <text class="dim" x="10.75" y="123.60">5.5x3.2</text>
-<rect x="81.05" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
-<text class="dim" x="87.05" y="1.10">5.5x3.2</text>
-<rect x="81.05" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
-<text class="dim" x="87.05" y="123.60">5.5x3.2</text>
+<rect x="80.95" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="86.95" y="1.10">5.5x3.2</text>
+<rect x="80.95" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="86.95" y="123.60">5.5x3.2</text>
 <circle cx="9.65" cy="111.78" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="8.15" y1="111.78" x2="11.15" y2="111.78" stroke="#000" stroke-width="0.12"/>
 <line x1="9.65" y1="110.28" x2="9.65" y2="113.28" stroke="#000" stroke-width="0.12"/>

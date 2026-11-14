@@ -803,13 +803,17 @@ ck.check("H.design_injection_claim", m is None,
          f"limit'; DS12556 Table 20 allows -5 / +0 mA on FT and TT pins (positive injection not possible), the "
          f"TT pins' 4.0 V maximum is passed at {bias * (1 + gain) + gain * 12:.2f} V, and every CV pin, as an active ADC "
          f"input, is limited to 3V3A + 0.3 V (AN4899)" if m else "design.md no longer makes that claim (M1, 2026-11-13)")
-# (3) gate stages: the Seed pin drives a TL074 IN+ only (no current into the Seed)
+# (3) gate stages: the Seed pin drives a TL074 IN+ and, since 2026-11-14 (L3), a 100k pull-down to GND: nothing that
+# can drive current into the Seed, and 33 uA out of it when high
 for name, u, s in circuit.GATES:
     net = f"GATE_{name}"
     users = [f"{p.ref}.{k}" for p in MB.values() for k, v in p.nets.items() if v == net]
-    ck.check(f"H.gate_input_only_opamp.{name}", sorted(users) == sorted([f"U2.{next(p for p, (_, n) in circuit.SEED.items() if n == net)}",
-                                                                         f"{u}.{circuit.SECTION[s][2]}"]),
-             f"{net} on {users}: TL074 IN+ (pA bias) and the Seed pin, nothing that can drive current into the Seed")
+    downs = [p for p in MB.values() if p.kind == "R" and net in p.nets.values() and set(p.nets.values()) == {net, "GND"}]
+    expect = [f"U2.{next(p for p, (_, n) in circuit.SEED.items() if n == net)}", f"{u}.{circuit.SECTION[s][2]}"] +         [f"{p.ref}.{k}" for p in downs for k, v in p.nets.items() if v == net]
+    i_load = sum(V33 / ohm(p.ref) for p in downs)
+    ck.check(f"H.gate_input_only_opamp.{name}", sorted(users) == sorted(expect) and i_load < 1e-3,
+             f"{net} on {users}: TL074 IN+ (pA bias), the Seed pin and {[p.ref for p in downs]} to GND "
+             f"({i_load * 1e6:.0f} uA from the pin when high): nothing that can drive current into the Seed")
     pulled = [p.ref for p in MB.values() if p.kind == "R" and net in p.nets.values()]
     ck.check(f"H.gate_defined_while_Seed_boots.{name}", bool(pulled),
              f"no pull-down on {net}: while the Seed is unpowered, in reset or in its bootloader the STM32 pin floats "

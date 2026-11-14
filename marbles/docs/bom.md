@@ -64,7 +64,7 @@ CSV: `hardware/bom/marbles-bom.csv` (everything) and `hardware/bom/marbles-bom-t
 | 3 | Resistor 15k, metal film 1 %, 1/4 W | R61, R64, R67 | Main |  |
 | 4 | Resistor 23.2k, metal film 1 %, 1/4 W | R70, R74, R78, R82 | Main |  |
 | 4 | Resistor 47k, metal film 1 %, 1/4 W | R71, R75, R79, R83 | Main |  |
-| 13 | Resistor 100k, metal film 1 %, 1/4 W | R21, R24, R27, R30, R33, R36, R39, R50, R52, R72, R76, R80, R84 | Main |  |
+| 16 | Resistor 100k, metal film 1 %, 1/4 W | R21, R24, R27, R30, R33, R36, R39, R50, R52, R57, R58, R59, R72, R76, R80, R84 | Main |  |
 | 7 | Capacitor 1 nF C0G ceramic or film, 50 V, 5.08 mm leads | C21, C22, C23, C24, C25, C26, C27 | Main |  |
 | 15 | Capacitor 100 nF ceramic (X7R, 50 V), 5.08 mm leads | Faceplate: C8, C9, C10, C11; Main: C30, C31, C32, C33, C34, C35, C36, C37, C38, C39, C40 | Faceplate + Main |  |
 | 1 | Capacitor 1 µF ceramic (X7R, 50 V), 5.08 mm leads | C29 | Main |  |
