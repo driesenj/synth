@@ -1,0 +1,317 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="171.78mm" height="158.5mm" viewBox="-20 -15 171.78 158.5">
+<title>Eight 26HP panel - drill template (print at 100%)</title>
+<style>text{font-family:Arial,Helvetica,sans-serif} .dim{font-size:1.6px;fill:#444} .lbl{font-size:1.8px;fill:#06c}</style>
+<rect x="-20" y="-15" width="171.78" height="158.5" fill="#ffffff"/>
+<rect x="0" y="0" width="131.78" height="128.5" fill="none" stroke="#000" stroke-width="0.25"/>
+<rect x="0.60" y="10.25" width="130.58" height="108.0" fill="none" stroke="#999" stroke-width="0.15" stroke-dasharray="1,1"/>
+<rect x="0.60" y="66.29" width="54.61" height="38.1" fill="none" stroke="#0a0" stroke-width="0.15" stroke-dasharray="0.6,0.6"/>
+<circle cx="2.50" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="2.50" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="5.04" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="5.04" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="7.58" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="7.58" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="10.12" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="10.12" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="12.66" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="12.66" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="15.20" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="15.20" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="17.74" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="17.74" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="20.28" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="20.28" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="22.82" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="22.82" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="25.36" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="25.36" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="27.90" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="27.90" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="30.44" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="30.44" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="32.98" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="32.98" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="35.52" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="35.52" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="38.06" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="38.06" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="40.60" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="40.60" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="43.14" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="43.14" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="45.68" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="45.68" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="48.22" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="48.22" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="50.76" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="50.76" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="53.30" cy="70.10" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="53.30" cy="67.56" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="15.20" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="15.20" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="17.74" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="17.74" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="20.28" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="20.28" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="22.82" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="22.82" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="25.36" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="25.36" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="27.90" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="27.90" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="30.44" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="30.44" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="32.98" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="32.98" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="35.52" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="35.52" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="38.06" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="38.06" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="40.60" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="40.60" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="43.14" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="43.14" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="45.68" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="45.68" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="48.22" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="48.22" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="50.76" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="50.76" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="53.30" cy="103.12" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="53.30" cy="100.58" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="53.30" cy="98.04" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="50.76" cy="98.04" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="53.30" cy="95.50" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="50.76" cy="95.50" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="53.30" cy="92.96" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<circle cx="50.76" cy="92.96" r="0.86" fill="none" stroke="#0a0" stroke-width="0.12"/>
+<text class="dim" x="1.60" y="96.65" style="fill:#0a0">Mega 2560 Pro on the rear, USB at the left edge</text>
+<rect x="4.75" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="1.10">5.5x3.2</text>
+<rect x="4.75" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="10.75" y="123.60">5.5x3.2</text>
+<rect x="121.59" y="1.40" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="127.59" y="1.10">5.5x3.2</text>
+<rect x="121.59" y="123.90" width="5.5" height="3.2" rx="1.6" fill="none" stroke="#c00" stroke-width="0.2"/>
+<text class="dim" x="127.59" y="123.60">5.5x3.2</text>
+<circle cx="15.14" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="13.64" y1="50.00" x2="16.64" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="15.14" y1="48.50" x2="15.14" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="19.29" y="46.05">Ø7.5</text>
+<text class="lbl" x="15.14" y="55.95" text-anchor="middle">STEP A1</text>
+<circle cx="15.14" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="13.64" y1="76.21" x2="16.64" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="15.14" y1="74.71" x2="15.14" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="19.29" y="72.26">Ø7.5</text>
+<text class="lbl" x="15.14" y="82.16" text-anchor="middle">STEP B1</text>
+<circle cx="15.14" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="13.64" y1="62.55" x2="16.64" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="15.14" y1="61.05" x2="15.14" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="18.79" y="59.10">Ø6.5</text>
+<text class="lbl" x="15.14" y="68.00" text-anchor="middle">STEP A1</text>
+<circle cx="15.14" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="13.64" y1="88.76" x2="16.64" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="15.14" y1="87.26" x2="15.14" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="18.79" y="85.31">Ø6.5</text>
+<text class="lbl" x="15.14" y="94.21" text-anchor="middle">STEP B1</text>
+<circle cx="29.64" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.14" y1="50.00" x2="31.14" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="29.64" y1="48.50" x2="29.64" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.79" y="46.05">Ø7.5</text>
+<text class="lbl" x="29.64" y="55.95" text-anchor="middle">STEP A2</text>
+<circle cx="29.64" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.14" y1="76.21" x2="31.14" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="29.64" y1="74.71" x2="29.64" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.79" y="72.26">Ø7.5</text>
+<text class="lbl" x="29.64" y="82.16" text-anchor="middle">STEP B2</text>
+<circle cx="29.64" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.14" y1="62.55" x2="31.14" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="29.64" y1="61.05" x2="29.64" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.29" y="59.10">Ø6.5</text>
+<text class="lbl" x="29.64" y="68.00" text-anchor="middle">STEP A2</text>
+<circle cx="29.64" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.14" y1="88.76" x2="31.14" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="29.64" y1="87.26" x2="29.64" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.29" y="85.31">Ø6.5</text>
+<text class="lbl" x="29.64" y="94.21" text-anchor="middle">STEP B2</text>
+<circle cx="44.14" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="42.64" y1="50.00" x2="45.64" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="44.14" y1="48.50" x2="44.14" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="48.29" y="46.05">Ø7.5</text>
+<text class="lbl" x="44.14" y="55.95" text-anchor="middle">STEP A3</text>
+<circle cx="44.14" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="42.64" y1="76.21" x2="45.64" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="44.14" y1="74.71" x2="44.14" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="48.29" y="72.26">Ø7.5</text>
+<text class="lbl" x="44.14" y="82.16" text-anchor="middle">STEP B3</text>
+<circle cx="44.14" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="42.64" y1="62.55" x2="45.64" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="44.14" y1="61.05" x2="44.14" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="47.79" y="59.10">Ø6.5</text>
+<text class="lbl" x="44.14" y="68.00" text-anchor="middle">STEP A3</text>
+<circle cx="44.14" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="42.64" y1="88.76" x2="45.64" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="44.14" y1="87.26" x2="44.14" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="47.79" y="85.31">Ø6.5</text>
+<text class="lbl" x="44.14" y="94.21" text-anchor="middle">STEP B3</text>
+<circle cx="58.64" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="57.14" y1="50.00" x2="60.14" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="58.64" y1="48.50" x2="58.64" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="62.79" y="46.05">Ø7.5</text>
+<text class="lbl" x="58.64" y="55.95" text-anchor="middle">STEP A4</text>
+<circle cx="58.64" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="57.14" y1="76.21" x2="60.14" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="58.64" y1="74.71" x2="58.64" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="62.79" y="72.26">Ø7.5</text>
+<text class="lbl" x="58.64" y="82.16" text-anchor="middle">STEP B4</text>
+<circle cx="58.64" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="57.14" y1="62.55" x2="60.14" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="58.64" y1="61.05" x2="58.64" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="62.29" y="59.10">Ø6.5</text>
+<text class="lbl" x="58.64" y="68.00" text-anchor="middle">STEP A4</text>
+<circle cx="58.64" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="57.14" y1="88.76" x2="60.14" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="58.64" y1="87.26" x2="58.64" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="62.29" y="85.31">Ø6.5</text>
+<text class="lbl" x="58.64" y="94.21" text-anchor="middle">STEP B4</text>
+<circle cx="73.14" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="71.64" y1="50.00" x2="74.64" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="73.14" y1="48.50" x2="73.14" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="77.29" y="46.05">Ø7.5</text>
+<text class="lbl" x="73.14" y="55.95" text-anchor="middle">STEP A5</text>
+<circle cx="73.14" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="71.64" y1="76.21" x2="74.64" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="73.14" y1="74.71" x2="73.14" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="77.29" y="72.26">Ø7.5</text>
+<text class="lbl" x="73.14" y="82.16" text-anchor="middle">STEP B5</text>
+<circle cx="73.14" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="71.64" y1="62.55" x2="74.64" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="73.14" y1="61.05" x2="73.14" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="76.79" y="59.10">Ø6.5</text>
+<text class="lbl" x="73.14" y="68.00" text-anchor="middle">STEP A5</text>
+<circle cx="73.14" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="71.64" y1="88.76" x2="74.64" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="73.14" y1="87.26" x2="73.14" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="76.79" y="85.31">Ø6.5</text>
+<text class="lbl" x="73.14" y="94.21" text-anchor="middle">STEP B5</text>
+<circle cx="87.64" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="86.14" y1="50.00" x2="89.14" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="87.64" y1="48.50" x2="87.64" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="91.79" y="46.05">Ø7.5</text>
+<text class="lbl" x="87.64" y="55.95" text-anchor="middle">STEP A6</text>
+<circle cx="87.64" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="86.14" y1="76.21" x2="89.14" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="87.64" y1="74.71" x2="87.64" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="91.79" y="72.26">Ø7.5</text>
+<text class="lbl" x="87.64" y="82.16" text-anchor="middle">STEP B6</text>
+<circle cx="87.64" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="86.14" y1="62.55" x2="89.14" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="87.64" y1="61.05" x2="87.64" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="91.29" y="59.10">Ø6.5</text>
+<text class="lbl" x="87.64" y="68.00" text-anchor="middle">STEP A6</text>
+<circle cx="87.64" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="86.14" y1="88.76" x2="89.14" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="87.64" y1="87.26" x2="87.64" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="91.29" y="85.31">Ø6.5</text>
+<text class="lbl" x="87.64" y="94.21" text-anchor="middle">STEP B6</text>
+<circle cx="102.14" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="100.64" y1="50.00" x2="103.64" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="102.14" y1="48.50" x2="102.14" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="106.29" y="46.05">Ø7.5</text>
+<text class="lbl" x="102.14" y="55.95" text-anchor="middle">STEP A7</text>
+<circle cx="102.14" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="100.64" y1="76.21" x2="103.64" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="102.14" y1="74.71" x2="102.14" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="106.29" y="72.26">Ø7.5</text>
+<text class="lbl" x="102.14" y="82.16" text-anchor="middle">STEP B7</text>
+<circle cx="102.14" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="100.64" y1="62.55" x2="103.64" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="102.14" y1="61.05" x2="102.14" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="105.79" y="59.10">Ø6.5</text>
+<text class="lbl" x="102.14" y="68.00" text-anchor="middle">STEP A7</text>
+<circle cx="102.14" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="100.64" y1="88.76" x2="103.64" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="102.14" y1="87.26" x2="102.14" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="105.79" y="85.31">Ø6.5</text>
+<text class="lbl" x="102.14" y="94.21" text-anchor="middle">STEP B7</text>
+<circle cx="116.64" cy="50.00" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="115.14" y1="50.00" x2="118.14" y2="50.00" stroke="#000" stroke-width="0.12"/>
+<line x1="116.64" y1="48.50" x2="116.64" y2="51.50" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="120.79" y="46.05">Ø7.5</text>
+<text class="lbl" x="116.64" y="55.95" text-anchor="middle">STEP A8</text>
+<circle cx="116.64" cy="76.21" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="115.14" y1="76.21" x2="118.14" y2="76.21" stroke="#000" stroke-width="0.12"/>
+<line x1="116.64" y1="74.71" x2="116.64" y2="77.71" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="120.79" y="72.26">Ø7.5</text>
+<text class="lbl" x="116.64" y="82.16" text-anchor="middle">STEP B8</text>
+<circle cx="116.64" cy="62.55" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="115.14" y1="62.55" x2="118.14" y2="62.55" stroke="#000" stroke-width="0.12"/>
+<line x1="116.64" y1="61.05" x2="116.64" y2="64.05" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="120.29" y="59.10">Ø6.5</text>
+<text class="lbl" x="116.64" y="68.00" text-anchor="middle">STEP A8</text>
+<circle cx="116.64" cy="88.76" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="115.14" y1="88.76" x2="118.14" y2="88.76" stroke="#000" stroke-width="0.12"/>
+<line x1="116.64" y1="87.26" x2="116.64" y2="90.26" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="120.29" y="85.31">Ø6.5</text>
+<text class="lbl" x="116.64" y="94.21" text-anchor="middle">STEP B8</text>
+<circle cx="15.50" cy="25.50" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="14.00" y1="25.50" x2="17.00" y2="25.50" stroke="#000" stroke-width="0.12"/>
+<line x1="15.50" y1="24.00" x2="15.50" y2="27.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="19.65" y="21.55">Ø7.5</text>
+<text class="lbl" x="15.50" y="31.45" text-anchor="middle">ROWS</text>
+<circle cx="51.50" cy="25.50" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="50.00" y1="25.50" x2="53.00" y2="25.50" stroke="#000" stroke-width="0.12"/>
+<line x1="51.50" y1="24.00" x2="51.50" y2="27.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="55.65" y="21.55">Ø7.5</text>
+<text class="lbl" x="51.50" y="31.45" text-anchor="middle">DIRECTION</text>
+<circle cx="84.00" cy="25.50" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="82.50" y1="25.50" x2="85.50" y2="25.50" stroke="#000" stroke-width="0.12"/>
+<line x1="84.00" y1="24.00" x2="84.00" y2="27.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="88.15" y="21.55">Ø7.5</text>
+<text class="lbl" x="84.00" y="31.45" text-anchor="middle">BUTTONS</text>
+<circle cx="105.50" cy="25.50" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="104.00" y1="25.50" x2="107.00" y2="25.50" stroke="#000" stroke-width="0.12"/>
+<line x1="105.50" y1="24.00" x2="105.50" y2="27.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="109.65" y="21.55">Ø7.5</text>
+<text class="lbl" x="105.50" y="31.45" text-anchor="middle">DUTY</text>
+<circle cx="121.00" cy="25.50" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="119.50" y1="25.50" x2="122.50" y2="25.50" stroke="#000" stroke-width="0.12"/>
+<line x1="121.00" y1="24.00" x2="121.00" y2="27.00" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="124.65" y="22.05">Ø6.5</text>
+<text class="lbl" x="121.00" y="30.95" text-anchor="middle">SHIFT</text>
+<circle cx="15.14" cy="111.41" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="13.64" y1="111.41" x2="16.64" y2="111.41" stroke="#000" stroke-width="0.12"/>
+<line x1="15.14" y1="109.91" x2="15.14" y2="112.91" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="18.79" y="107.96">Ø6.5</text>
+<text class="lbl" x="15.14" y="116.86" text-anchor="middle">CLOCK</text>
+<circle cx="29.64" cy="111.41" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="28.14" y1="111.41" x2="31.14" y2="111.41" stroke="#000" stroke-width="0.12"/>
+<line x1="29.64" y1="109.91" x2="29.64" y2="112.91" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="33.29" y="107.96">Ø6.5</text>
+<text class="lbl" x="29.64" y="116.86" text-anchor="middle">RESET</text>
+<circle cx="73.14" cy="111.41" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="71.64" y1="111.41" x2="74.64" y2="111.41" stroke="#000" stroke-width="0.12"/>
+<line x1="73.14" y1="109.91" x2="73.14" y2="112.91" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="76.79" y="107.96">Ø6.5</text>
+<text class="lbl" x="73.14" y="116.86" text-anchor="middle">CV A</text>
+<circle cx="87.64" cy="111.41" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="86.14" y1="111.41" x2="89.14" y2="111.41" stroke="#000" stroke-width="0.12"/>
+<line x1="87.64" y1="109.91" x2="87.64" y2="112.91" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="91.29" y="107.96">Ø6.5</text>
+<text class="lbl" x="87.64" y="116.86" text-anchor="middle">GATE A</text>
+<circle cx="102.14" cy="111.41" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="100.64" y1="111.41" x2="103.64" y2="111.41" stroke="#000" stroke-width="0.12"/>
+<line x1="102.14" y1="109.91" x2="102.14" y2="112.91" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="105.79" y="107.96">Ø6.5</text>
+<text class="lbl" x="102.14" y="116.86" text-anchor="middle">CV B</text>
+<circle cx="116.64" cy="111.41" r="3.25" fill="none" stroke="#c00" stroke-width="0.2"/>
+<line x1="115.14" y1="111.41" x2="118.14" y2="111.41" stroke="#000" stroke-width="0.12"/>
+<line x1="116.64" y1="109.91" x2="116.64" y2="112.91" stroke="#000" stroke-width="0.12"/>
+<text class="dim" x="120.29" y="107.96">Ø6.5</text>
+<text class="lbl" x="116.64" y="116.86" text-anchor="middle">GATE B</text>
+<line x1="15" y1="-8" x2="65" y2="-8" stroke="#000" stroke-width="0.3"/>
+<line x1="15" y1="-9.5" x2="15" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<line x1="65" y1="-9.5" x2="65" y2="-6.5" stroke="#000" stroke-width="0.3"/>
+<text x="40" y="-10" font-size="2.2" text-anchor="middle">50 mm - print at 100 %, check this</text>
+<text x="65.89" y="136.5" font-size="2" text-anchor="middle">Eight 26HP panel, front view. Red circles: final hole size. Dashed grey: the board. Green: the Mega behind it.</text>
+</svg>
