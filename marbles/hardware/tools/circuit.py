@@ -71,7 +71,8 @@ SEED = {
 # ---------------------------------------------------------- CV input stages
 # TL074 section pins: (out, in-, in+)
 SECTION = {1: ("1", "2", "3"), 2: ("7", "6", "5"), 3: ("8", "9", "10"), 4: ("14", "13", "12")}
-# name, label, op-amp, section. Gain -0.27 (100k/27k) puts +-5 V on 0.33..3.03 V.
+# name, label, op-amp, section. Gain -0.13 (13k/100k) puts +-5 V on 1.13..2.43 V and +-12 V on 0.22..3.34 V:
+# an ADC pin may not go above 3V3A + 0.3 V or below GND (STM32H750, AN4899), and its 1k limits nothing.
 CV_CHANNELS = [
     ("T_RATE", "RATE", "U3", 1), ("T_BIAS", "BIAS (t)", "U3", 2), ("T_JITTER", "JITTER", "U3", 3),
     ("DEJAVU", "DEJA VU", "U3", 4),
@@ -95,7 +96,7 @@ def main_board_parts():
         out, inm, inp = SECTION[s]
         tl[u].update({out: f"OA_{name}", inm: f"IN_{name}", inp: "BIAS"})
         parts.append(R(f"R{n}", "100k", f"CV_{name}", f"IN_{name}")); n += 1
-        parts.append(R(f"R{n}", "27k", f"IN_{name}", f"OA_{name}")); n += 1
+        parts.append(R(f"R{n}", "13k", f"IN_{name}", f"OA_{name}")); n += 1
         parts.append(R(f"R{n}", "1k", f"OA_{name}", f"ADC_{name}")); n += 1
         parts.append(C(f"C{21 + i}", "1n", f"IN_{name}", f"OA_{name}"))
     # U4 section 4: -2.5 V from the reference (inverter), for the DAC output stages
@@ -103,8 +104,8 @@ def main_board_parts():
     tl["U4"].update({out: "NEG_REF", inm: "IN_NEGREF", inp: "GND"})
     parts.append(R("R42", "10k", "VREF", "IN_NEGREF"))
     parts.append(R("R43", "10k", "IN_NEGREF", "NEG_REF"))
-    # bias for the input stages: 3.3 V * 10 / 25 = 1.32 V -> ADC mid-scale 1.68 V
-    parts.append(R("R45", "15k", "3V3A", "BIAS"))
+    # bias for the input stages: 3.3 V * 10 / 21 = 1.57 V -> 0 V in reads 1.78 V
+    parts.append(R("R45", "11k", "3V3A", "BIAS"))
     parts.append(R("R46", "10k", "BIAS", "GND"))
     parts.append(C("C29", "1u", "BIAS", "GND"))
     # 2.5 V reference for the DACs and the output stages

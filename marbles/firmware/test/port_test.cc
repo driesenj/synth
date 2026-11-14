@@ -217,14 +217,19 @@ uint32_t CountRisingEdges(uint32_t gate_bit, uint32_t ticks) {
 void TestCv() {
   Boot();
   // Every input reads back the jack voltage through the nominal stage, and
-  // Marbles' reading for it, 0.5 - V / 10 of full scale.
+  // Marbles' reading for it, 0.5 - V / 10 of full scale. A reading is good
+  // to one code of the Seed's 16-bit ADC, which the stage's gain sets (as a
+  // fraction of Marbles' 10 V full scale), plus one of Marbles' own codes.
+  const double kSeedCode = 3.3 / 65536.0 * board::kCvInputResistor /
+      board::kCvFeedbackResistor / 10.0;
+  const double kReadingTolerance = kSeedCode + 1.0 / 65536.0;
   for (int input = 0; input < marblesy::hal::CV_INPUT_LAST; ++input) {
     for (float v = -5.0f; v <= 5.0f; v += 0.25f) {
       fake::SetCv(CvInput(input), v);
       const float back = Adc::JackVoltage(marblesy::hal::ReadCv(CvInput(input)));
       CHECK_NEAR(back, v, 0.001, "input %d", input);
       const float reading = Adc::MarblesReading(back) / 65536.0f;
-      CHECK_NEAR(reading, 0.5f - v / 10.0f, 2.0 / 65536.0, "input %d", input);
+      CHECK_NEAR(reading, 0.5f - v / 10.0f, kReadingTolerance, "input %d", input);
     }
     fake::SetCv(CvInput(input), 0.0f);
   }
@@ -241,10 +246,10 @@ void TestCv() {
     Adc adc;
     adc.Convert();
     raw = adc.values();
-    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_X_SPREAD] / 65536.0, 0.3, 3e-5, "%s", "");
-    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_X_SPREAD_2] / 65536.0, 0.3, 3e-5, "%s", "");
-    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_T_JITTER] / 65536.0, 0.6, 3e-5, "%s", "");
-    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_T_RATE] / 65536.0, 0.5, 3e-5, "%s", "");
+    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_X_SPREAD] / 65536.0, 0.3, kReadingTolerance, "%s", "");
+    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_X_SPREAD_2] / 65536.0, 0.3, kReadingTolerance, "%s", "");
+    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_T_JITTER] / 65536.0, 0.6, kReadingTolerance, "%s", "");
+    CHECK_NEAR(raw[ADC_GROUP_CV + ADC_CHANNEL_T_RATE] / 65536.0, 0.5, kReadingTolerance, "%s", "");
   }
   fake::SetCv(marblesy::hal::CV_X_SPREAD, 0.0f);
   fake::SetCv(marblesy::hal::CV_T_JITTER, 0.0f);
@@ -367,9 +372,13 @@ void TestOutputCalibration() {
     CalibrateOutputs();
     CHECK(!ui.calibrating_outputs(), "seed %d: done", seed);
     // The full +-5 V, into a 100k load, with 1 % parts: what 23.2k is for.
+    // Within 3 mV: half a 12-bit DAC step (1.3 mV) plus X SPREAD's own
+    // quantization (0.39 mV a code since the 13k input stages) carried
+    // through the input and the output calibration, with no noise in the
+    // model to dither it. The 27k stages stayed within 2.5 mV.
     for (size_t channel = 0; channel < kNumDacChannels; ++channel) {
       for (float v = -5.0f; v <= 5.0f; v += 0.5f) {
-        CHECK_NEAR(LoadedOutput(channel, v), v, 0.0025,
+        CHECK_NEAR(LoadedOutput(channel, v), v, 0.003,
                    "seed %d channel %zu", seed, channel);
       }
     }

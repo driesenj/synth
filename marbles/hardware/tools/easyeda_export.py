@@ -387,8 +387,8 @@ def button4_symbol():
 
 # ------------------------------------------------------------------ project
 R_NEW = {"470": ("LR1F470R", "470Ω"), "1k5": ("LR1F1K5", "1.5kΩ"), "3k3": ("LR1F3K3", "3.3kΩ"),
-         "15k": ("LR1F15K", "15kΩ"), "23k2": ("LR1F23K2", "23.2kΩ"), "27k": ("LR1F27K", "27kΩ"),
-         "47k": ("LR1F47K", "47kΩ"), "100k": ("LR1F100K", "100kΩ")}
+         "11k": ("LR1F11K", "11kΩ"), "13k": ("LR1F13K", "13kΩ"), "15k": ("LR1F15K", "15kΩ"),
+         "23k2": ("LR1F23K2", "23.2kΩ"), "47k": ("LR1F47K", "47kΩ"), "100k": ("LR1F100K", "100kΩ")}
 C_NEW = {"1n": ("FG28C0G1H102JNT00", "1nF")}
 
 
@@ -655,7 +655,7 @@ def main_page_1(pr, parts):
     pg.text(150, Y(50), "Daisy Seed on the seed_power_opamps breakout (2.54 mm sockets on this board)", 12)
     seed_block(pg, P, 260, Y(260))
 
-    pg.text(560, Y(32), "CV inputs: TL074 inverting stages, gain -0.27 (+-5 V -> 0.33..3.03 V), biased from 3V3A, 1k into the ADC", 12)
+    pg.text(560, Y(32), "CV inputs: TL074 inverting stages, gain -0.13 (+-5 V -> 1.13..2.43 V), biased from 3V3A, 1k into the ADC", 12)
     for i, (name, label, u, sec) in enumerate(circuit.CV_CHANNELS):
         col, row = divmod(i, 4)
         ox, oy = 730 + col * 490, Y(155 + row * 170)
@@ -708,9 +708,9 @@ def main_page_1(pr, parts):
         pg.text(x0 - 40, y + 40, f"{name} CLOCK", 9)
 
     # bias for the input stages
-    pg.text(530, Y(760), "Bias (1.32 V) and 2.5 V reference", 12)
+    pg.text(530, Y(760), "Bias (1.57 V) and 2.5 V reference", 12)
     x, top = 620, Y(810)
-    a = pg.place("R45", r_dev("15k"), x, top + 20, 270, *V_TXT)
+    a = pg.place("R45", r_dev("11k"), x, top + 20, 270, *V_TXT)
     b = pg.place("R46", r_dev("10k"), x, top + 80, 270, *V_TXT)
     c = pg.place("C29", c_dev("1u"), x + 40, top + 80, 270, des=(8, -2, "LEFT_BOTTOM"), value_at=(8, 8, "LEFT_BOTTOM"))
     node = (x, top + 50)

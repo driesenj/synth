@@ -243,7 +243,7 @@ def write_artwork(feats, path):
     lx, ly = pos["RV5"][2], pos["RV5"][3]
     for i, n in enumerate(LENGTHS):
         a = math.radians(-135 + 270 * i / 7)
-        text(lx + 8.6 * math.sin(a), ly - 8.6 * math.cos(a) + 0.6, n, 1.5)
+        text(lx + 8.6 * math.sin(a), ly - 8.6 * math.cos(a) + 0.6, n, 1.65)    # letters 1.0 mm on the PCB (JLCPCB)
     # STEPS: smooth curve (CCW), S&H steps (12 o'clock), quantized steps (CW); JITTER: steady / random
     sx, sy = pos["RV8"][2], pos["RV8"][3]
     s.append(f'<path d="M {sx - 9.6:.2f} {sy + 7.8:.2f} h 1.0 c 1.0 0 0.6 -2.0 1.6 -2.0 h 1.0" class="silk" stroke-width="0.4"/>')

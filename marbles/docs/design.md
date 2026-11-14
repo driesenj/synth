@@ -95,16 +95,24 @@ gain set for Marbles' ±5 V inputs:
 
 ```
 jack tip ── 100k ──┬── (−) TL074 ──┬── 1k ── Seed ADC
-                   ├── 27k ────────┤
+                   ├── 13k ────────┤
                    └── 1n ─────────┘
-BIAS 1.32 V ──────── (+)
+BIAS 1.57 V ──────── (+)
 ```
 
-V_adc = 1.676 V − 0.27·V_in. ±5 V lands on 0.33–3.03 V; a ±12 V input pushes
-about 1.3 mA through the 1k into the Seed's protection diodes, which is
-within the STM32H7's limit. BIAS is 3V3A × 10k/25k = 1.32 V (R45 15k, R46
-10k, C29 1 µ). Corner frequency 5.9 kHz. The firmware calibrates offset and
-scale per channel, as Marbles does.
+V_adc = 1.776 V − 0.13·V_in. ±5 V lands on 1.13–2.43 V, 39 % of the ADC's
+range (about 26 000 codes, plenty for Marbles), and ±12 V lands on 0.22–3.34 V.
+The gain is set by that second figure. While its ADC input is active, an
+STM32H750 pin may not go above min(VDDA, VREF+) + 0.3 V = 3V3A + 0.3 V (ST
+AN4899), and three of the seven (PB1, PA7, PC4) are 3.3 V-only pins besides.
+Below ground, the clamp current disturbs the other channels' conversions
+(DS12556). The pins have no clamp to VDD, so the 1k limits nothing. With 1 %
+parts and 3V3A at ±3 %, −12 V stays 0.15 V under that limit and +12 V stays
+above ground. BIAS is 3V3A × 10k/21k = 1.57 V (R45 11k, R46 10k, C29 1 µ).
+Corner frequency 12.2 kHz, far above the firmware's own CV filtering. The
+firmware calibrates offset and scale per channel, as Marbles does. Until
+2026-11-13 the stage had 27k and 15k (gain 0.27), which put up to 4.9 V on the
+pins at −12 V (docs/test-report-2026-11-13.md, M1).
 
 | Input | Section | Rin | Rf | Cf | Rs | ADC |
 |---|---|---|---|---|---|---|
@@ -354,16 +362,17 @@ the same spots on every module's panel.
 ticks, graduations, marks, dotted guides as 0.12 mm dashes, LED-colour dots
 as small rings, button rings) and the output band as a copper fill on the top
 layer under a solder-mask opening of the same shape, so it comes out as bare
-ENIG gold; the output labels are silkscreen on top of it. The band
+ENIG gold; the output labels are knocked out of its solder mask (dark on the
+gold, as the artwork draws them; fabs drop silkscreen over bare copper). The band
 (2.6 mm from the panel sides, 86.1 × 15.2 mm) leaves a 0.4 mm ring of bare
 board under black mask around each of the 14 holes through it (EasyEDA's DRC
 wants copper 0.3 mm from a slot region): each ring is a counter-clockwise
-circle in the fill's path list, which EasyEDA fills with the nonzero rule. Text uses the
-default stroke font and estimated centring, so expect to nudge a few labels.
-Order it as a 1.6 mm board, black mask, white silk, ENIG. The fab may ask
-about silkscreen over bare copper (the band labels; some fabs drop it, in
-which case put the labels on the solder-mask layer instead and they come out
-gold on black).
+circle in the fill's path list, which EasyEDA fills with the nonzero rule. Each
+knocked-out label adds a rectangle round its letters to the mask fill and is a
+reverse string on the mask layer that fills it but for the letters. Text uses
+the default stroke font, placed with its metrics as measured on EasyEDA's own
+Gerbers (2026-11-14). Order it as a 1.6 mm board, black mask, white silk,
+ENIG. Check the knocked-out labels in EasyEDA's 3D view after import.
 
 `Marblesy-routed.epro2` carries the same drawing: its panel board's
 holes, slots, silkscreen, copper and outline were replaced with the
@@ -405,7 +414,11 @@ the strip above the CV jacks, U9 and U11 vertical either side of the centre
 between the big knobs, each with its 100 n within 2.6–6.9 mm of pin 16; the
 output-LED resistors R87–R89 and R1 standing beside the output LEDs, the
 gate-LED resistors R91–R93 along the bottom edge between the output jacks,
-the pull-ups and LED resistors wherever routing wanted them.
+the pull-ups and LED resistors wherever routing wanted them. U1, U9, U10 and
+U11 are soldered without sockets. In a socket, a DIP-16 reaches to within
+0.9–1.5 mm of the main board, where the breakout's socket-strip tails stick
+down about 1.4 mm, and U11's socket would overlap the standoff at (45, 82).
+Soldered, each chip leaves about 5.7 mm.
 
 **Main board.** Bottom layer: the seven female sockets. Top (rear) layer: the
 Seed breakout vertical in the middle, centred at (45, 64.5), pad rows at

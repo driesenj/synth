@@ -39,12 +39,12 @@ using namespace marblesy;
 namespace {
 
 // Marblesy's CV input stage (circuit.py): an inverting TL074 stage, Rin 100k,
-// Rf 27k, its + input on 3V3A * 10k / (15k + 10k), into the Seed's ADC,
+// Rf 13k, its + input on 3V3A * 10k / (11k + 10k), into the Seed's ADC,
 // whose reference is 3V3A too. So reading / full scale =
 // kZeroReading - jack voltage / kVoltsPerFullScale.
 const float kRin = 100.0e3f;
-const float kRf = 27.0e3f;
-const float kBiasRatio = 10.0e3f / (15.0e3f + 10.0e3f);
+const float kRf = 13.0e3f;
+const float kBiasRatio = 10.0e3f / (11.0e3f + 10.0e3f);
 const float kAdcReference = 3.3f;
 const float kZeroReading = kBiasRatio * (1.0f + kRf / kRin);
 const float kVoltsPerFullScale = kAdcReference * kRin / kRf;

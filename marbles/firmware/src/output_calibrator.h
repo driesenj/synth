@@ -12,10 +12,10 @@
 // gives.
 //
 // The reading is the jack voltage under X SPREAD's load: the output's 1k
-// into the input's 100k, whose summing node sits at the 1.32 V bias, so
-// the jack reads (100 V_out + 1.32 V) / 101. Into a usual 1V/oct input,
+// into the input's 100k, whose summing node sits at the 1.57 V bias, so
+// the jack reads (100 V_out + 1.57 V) / 101. Into a usual 1V/oct input,
 // 100k to ground, the same output gives 100 V_out / 101: the same slope,
-// 13 mV lower. The fit is made for that load, so the outputs are right
+// 16 mV lower. The fit is made for that load, so the outputs are right
 // into such inputs (and, as any output behind 1k, about 1 % wide into a
 // high-impedance one).
 
@@ -48,12 +48,12 @@ class OutputCalibrator {
   // X SPREAD's calibrated reading is 0.2 per volt (cv_reader.h).
   static constexpr float kVoltsPerSpreadUnit = 5.0f;
   // circuit.py: R73/R77/R81/R85 1k after each output stage; R33 100k into
-  // X SPREAD's stage, its + input at 3V3A * 10k / 25k.
+  // X SPREAD's stage, its + input at 3V3A * 10k / 21k, R46 / (R45 + R46).
   static constexpr float kOutputResistor = 1.0e3f;
   static constexpr float kSpreadInputResistor = 100.0e3f;
-  static constexpr float kSpreadBias = 3.3f * 10.0e3f / 25.0e3f;
+  static constexpr float kSpreadBias = 3.3f * 10.0e3f / 21.0e3f;
   static constexpr float kLoadOffset = kSpreadBias * kOutputResistor / \
-      (kOutputResistor + kSpreadInputResistor);  // 13.07 mV
+      (kOutputResistor + kSpreadInputResistor);  // 15.56 mV
 
   OutputCalibrator() { }
   ~OutputCalibrator() { }

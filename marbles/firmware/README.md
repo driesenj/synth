@@ -249,7 +249,7 @@ module if the rendering stops for 2 s.
 
 **CV inputs.** Marbles reads ±5 V as the full range of its ADC (0.5 − V/10
 of full scale). Marblesy's TL074 stages have another gain and offset
-(1.676 V − 0.27 V_in into the Seed's ADC); the CV driver turns each reading
+(1.776 V − 0.13 V_in into the Seed's ADC); the CV driver turns each reading
 back into the jack voltage through the nominal stage and then into the
 number Marbles would have read, so Marbles' calibration, its checks, the
 reset-mode gate thresholds and every parameter's range apply unchanged.
