@@ -176,8 +176,11 @@ def reference_parts():
 
 
 def power_parts():
-    hdr = {"1": "N12_IN", "2": "N12_IN", "11": "P12_IN", "12": "P12_IN"}
-    hdr.update({str(n): GND for n in range(3, 11)})
+    # Doepfer A-100 16-pin bus (doepfer.de/a100_man/a100t_e.htm), pin 1 = red stripe: 1-2 -12 V, 3-8 GND,
+    # 9-10 +12 V, 11-12 +5 V, 13-14 CV, 15-16 Gate; +5 V, CV and Gate stay open. (Until 2026-11-14 this had GND
+    # on 3-10 and +12 V on 11-12, which shorts the bus +12 V to GND; found by the 2026-11-13 test suites.)
+    hdr = {"1": "N12_IN", "2": "N12_IN", "9": "P12_IN", "10": "P12_IN"}
+    hdr.update({str(n): GND for n in range(3, 9)})
     parts = [
         Part("J7", "HDR16", "16-pin Eurorack", hdr, "POWER"),
         Part("D6", "D5819", "1N5819", {"2": "P12_IN", "1": "P12_D"}, "+12 V reverse protection"),   # 1 = cathode
