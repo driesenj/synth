@@ -598,7 +598,7 @@ way; the stack depth is Plaitsy's.
 | 1 | 43k | IN lug load | R5 |
 | 4 | male headers 1×6, 1×7, 1×8, 1×9, 2.54 mm | | HF1–HF4 |
 
-Plus a 14HP panel PCB and 4 M3 standoffs for the 8.5 mm gap, with screws.
+Plus a 14HP panel PCB and 4 M3 standoffs for the 11 mm gap (8.5 mm sockets + 2.5 mm male plastic), with screws.
 
 ---
 

@@ -13,12 +13,11 @@ corner.
                  the artwork's green / yellow / red tint is preview only)
   copper band    ODD / EVEN: a copper fill on the top layer under a solder-mask opening of the same
                  shape (bare ENIG gold), both cleared 0.4 mm round each hole through it (DRC: copper
-                 0.3 mm from a slot region). ODD, EVEN and the dotted normal between them sit on it as
-                 silkscreen (the artwork knocks them out of the gold; if you prefer that, move them to
-                 the mask layer after import)
+                 0.3 mm from a slot region). ODD, EVEN and the dotted normal between them are knocked
+                 out of the band's mask (KNOCK_*): dark on the gold, as in the artwork
 
-Text uses EasyEDA's default stroke font, not the artwork's sans and serif italic; centring is estimated,
-so nudge a label in the editor if it sits off. Nothing electrical: the panel has no nets, no parts.
+Text uses EasyEDA's default stroke font, not the artwork's sans and serif italic,
+placed with its measured metrics (INK_*, ink_width), so the letters sit where the artwork has them. Nothing electrical: the panel has no nets, no parts.
 """
 import importlib.util
 import math
@@ -39,6 +38,47 @@ pcb = _load("pcb")
 mil = pcb.mil
 SILK_W = 0.3          # mm, line width on silk
 CHAR_W = 0.62         # estimated advance per character, as a fraction of the font size (default stroke font)
+
+# EasyEDA Pro's default stroke font, measured on its own Gerbers (2026-11-14: Gerber_Compressor_PCB and
+# Gerber_Sequencer_PCB against the strings and designators in their project). For fontSize F (0.9 x size here)
+# and stroke w, a LEFT_BOTTOM string's ink runs from its origin x to x + w + the advances of all but its last
+# character + that one's extent, and from 0.2 F to 0.885 F above the origin: the origin sits below the
+# baseline. text() places strings with these numbers, so the letters land where the artwork has them.
+INK_BOTTOM, INK_TOP = 0.2, 0.885
+ADVANCE = {"1": 0.40, ".": 0.23, "I": 0.30}      # x F; any other character 0.64
+EXTENT = {"1": 0.14, ".": 0.0, "I": 0.0}         # x F; any other character 0.38
+MIN_STROKE = 0.16      # mm; JLCPCB's minimum is 0.153
+# Labels on a gold area can't be silk: fabs clip silk inside solder-mask openings. They are knocked out of the
+# mask instead: the area's mask opening gets a hole round the letters, and a reverse STRING on the mask layer (an
+# opening with the letters left masked, its box KNOCK_EXPANSION round them) fills the hole again but for the
+# letters, which read dark on the gold, as in the artwork. The hole sits inside that box with room for the
+# metrics' error.
+KNOCK_MARGIN = 0.35    # mm round the letters: the hole in the gold area's mask opening
+KNOCK_EXPANSION = 0.8  # mm round the letters: the reverse string's box
+
+
+def ink_width(s, size, w):
+    F = 0.9 * size
+    return w + sum(ADVANCE.get(c, 0.64) * F for c in s[:-1]) + EXTENT.get(s[-1], 0.38) * F
+
+
+def ink_box(x, y, s, size, w, angle=0):
+    """The letters' box (x1, y1, x2, y2), PCB frame, of a STRING with its origin at (x, y), angle 0 or 90."""
+    F = 0.9 * size
+    L, B, T = ink_width(s, size, w), INK_BOTTOM * F, INK_TOP * F
+    if angle == 90:                       # reading bottom to top: the letters' up is -x
+        return x - T, y, x - B, y + L
+    return x, y + B, x + L, y + T
+
+
+def inside(p, poly):
+    """Point in polygon (ray casting)."""
+    x, y = p
+    hit = False
+    for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]):
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            hit = not hit
+    return hit
 
 
 def flatten_path(d, steps=8):
@@ -122,10 +162,12 @@ class PanelBoard:
         self.line([(x - 0.01, y), (x + 0.01, y)], d)
 
     def text(self, x, y, s, size, anchor="middle", w=None):
-        """x, y: baseline point in the panel frame; anchor middle / start / end."""
-        width = CHAR_W * size * len(s)
+        """x, y: baseline point in the panel frame; anchor middle / start / end. Placed with EasyEDA's font
+        metrics (ink_width, INK_BOTTOM), so the letters sit on the baseline and centre as in the artwork."""
+        w = w or max(size / 9, MIN_STROKE)
+        width = ink_width(s, size, w)
         x0 = {"middle": x - width / 2, "start": x, "end": x - width}[anchor]
-        self.strings.append((*self.P(x0, y), s, size, w or size / 9))
+        self.strings.append((*self.P(x0, y + INK_BOTTOM * 0.9 * size), s, size, w))
 
     def dots(self, pts, pitch=1.0, dash=0.12, w=0.45):
         """A dotted polyline as short dashes (EasyEDA has no dashed silk)."""
@@ -211,9 +253,85 @@ class PanelBoard:
         for x, y in panel.MOUNTS:
             self.slot(x, y, panel.SLOT_W, panel.SLOT_H)
 
+
+    # -- labels on the gold areas, knocked out of the mask (see KNOCK_MARGIN)
+    def gold_regions(self):
+        """The copper bands as polygons, PCB frame (their rounded corners left square)."""
+        return [[(c[0], c[1] - c[3]), (c[0] + c[2], c[1] - c[3]), (c[0] + c[2], c[1]), (c[0], c[1])]
+                for c in self.copper]
+
+    def string_box(self, st):
+        return ink_box(st[0], st[1], st[2], st[3], st[4], st[5] if len(st) > 5 else 0)
+
+    def knocked(self):
+        """{string index: gold area index} for the strings whose letters lie inside a gold area."""
+        out = {}
+        regions = self.gold_regions()
+        for i, st in enumerate(self.strings):
+            x1, y1, x2, y2 = self.string_box(st)
+            for k, poly in enumerate(regions):
+                if all(inside(p, poly) for p in ((x1, y1), (x2, y1), (x2, y2), (x1, y2))):
+                    out[i] = k
+        return out
+
+    def knock_expansion(self, i):
+        """The reverse box's expansion for knocked string i: KNOCK_EXPANSION, or less where EasyEDA's box, if it
+        is the font's em box (origin to origin + F tall, all advances wide), would leave the gold area."""
+        st, poly = self.strings[i], self.gold_regions()[self.knocked()[i]]
+        x, y, s, size, w = st[:5]
+        F = 0.9 * size
+        L = w + sum(ADVANCE.get(c, 0.64) * F for c in s)
+        e = KNOCK_EXPANSION
+        while e > KNOCK_MARGIN + 0.2:
+            if (st[5] if len(st) > 5 else 0) == 90:
+                r = (x - F - e, y - e, x + e, y + L + e)
+            else:
+                r = (x - e, y - e, x + L + e, y + F + e)
+            if all(inside(p, poly) for p in ((r[0], r[1]), (r[2], r[1]), (r[2], r[3]), (r[0], r[3]))):
+                break
+            e -= 0.05
+        return round(e, 2)
+
+    def knock_paths(self, k):
+        """Counter-clockwise rectangles round the letters on gold area k: holes in its mask opening."""
+        paths = []
+        for i, kk in self.knocked().items():
+            if kk == k:
+                x1, y1, x2, y2 = self.string_box(self.strings[i])
+                x1, y1, x2, y2 = x1 - KNOCK_MARGIN, y1 - KNOCK_MARGIN, x2 + KNOCK_MARGIN, y2 + KNOCK_MARGIN
+                paths.append([mil(x1), mil(y1), "L", mil(x2), mil(y1), "L", mil(x2), mil(y2), "L", mil(x1), mil(y2),
+                              "L", mil(x1), mil(y1)])
+        for j, kk in self.knocked_dashes().items():      # the dotted ODD -> EVEN normal: each dash a masked dot
+            if kk == k:
+                x1, y1, x2, y2 = self.dash_box(self.silk_lines[j])
+                paths.append([mil(x1), mil(y1), "L", mil(x2), mil(y1), "L", mil(x2), mil(y2), "L", mil(x1), mil(y2),
+                              "L", mil(x1), mil(y1)])
+        return paths
+
+    @staticmethod
+    def dash_box(line):
+        """A short silk dash (round caps) as the box it covers, PCB frame."""
+        (a, b), w = line[0], line[1]
+        r = w / 2
+        return min(a[0], b[0]) - r, min(a[1], b[1]) - r, max(a[0], b[0]) + r, max(a[1], b[1]) + r
+
+    def knocked_dashes(self):
+        """{silk line index: gold area index} for the dots of dotted lines that lie on a gold area: silk there
+        would be clipped like the words, so they are holes in its mask opening (dark dots on the gold)."""
+        out, regions = {}, self.gold_regions()
+        for j, (pts, w) in enumerate(self.silk_lines):
+            if len(pts) != 2 or abs(pts[0][0] - pts[1][0]) + abs(pts[0][1] - pts[1][1]) > 0.2:
+                continue
+            x1, y1, x2, y2 = self.dash_box((pts, w))
+            for k, poly in enumerate(regions):
+                if all(inside(p, poly) for p in ((x1, y1), (x2, y1), (x2, y2), (x1, y2))):
+                    out[j] = k
+        return out
+
     # -- EasyEDA document
     def doc(self, ee, template, board_uuid, title):
         d = ee.Doc("PCB")
+        knocked = self.knocked()
         for h, p in template:
             if h["type"] in ("CANVAS", "LAYER", "ACTIVE_LAYER", "RULE_TEMPLATE", "PRIMITIVE", "SILK_OPTS",
                              "PREFERENCE", "LAYER_PHYS", "RULE", "PANELIZE"):
@@ -250,9 +368,9 @@ class PanelBoard:
             fill(12, ["CIRCLE", mil(x), mil(y), mil(dia / 2)])
         for x, y, w, h in self.slots:
             fill(12, rounded(x - w / 2, y + h / 2, w, h, h / 2))
-        for x, y, w, h, rx in self.copper:        # (x, y) is the band's top-left in the PCB frame
+        for k_, (x, y, w, h, rx) in enumerate(self.copper):        # (x, y) is the band's top-left in the PCB frame
             for layer in (1, 5):                  # top copper, top solder mask opening; mask stays on the clearances
-                fill(layer, rounded(x, y, w, h, rx), *(cutout(*c) for c in self.cuts))
+                fill(layer, rounded(x, y, w, h, rx), *(cutout(*c) for c in self.cuts), *(self.knock_paths(k_) if layer == 5 else []))
         for poly in self.gold:                    # the mushroom mark: top copper under a mask opening (ENIG)
             path = [mil(poly[0][0]), mil(poly[0][1])]
             for x, y in poly[1:]:
@@ -262,7 +380,10 @@ class PanelBoard:
         d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 11, "width": 10,
                                 "path": ["R", 0, mil(self.H), mil(self.W), mil(self.H), 0, 0], "locked": False,
                                 "zIndex": d.zi(), "polyType": "BOARD_OUTLINE"})
-        for pts, w in self.silk_lines:
+        dashes = self.knocked_dashes()
+        for j, (pts, w) in enumerate(self.silk_lines):
+            if j in dashes:
+                continue                          # a hole in the band's mask instead (knock_paths)
             path = [mil(pts[0][0]), mil(pts[0][1])]
             for x, y in pts[1:]:
                 path += ["L", mil(x), mil(y)]
@@ -272,11 +393,11 @@ class PanelBoard:
             d.add("POLY", d.nid(), {"partitionId": "", "groupId": 0, "netName": "", "layerId": 3, "width": mil(w),
                                     "path": [mil(p0[0]), mil(p0[1]), "ARC", round(sweep, 3), mil(p1[0]), mil(p1[1])],
                                     "locked": False, "zIndex": d.zi(), "polyType": "NORMAL"})
-        for x, y, s, size, w in self.strings:
-            d.add("STRING", d.nid(), {"partitionId": "", "groupId": 0, "layerId": 3, "x": mil(x), "y": mil(y),
+        for i_, (x, y, s, size, w) in enumerate(self.strings):
+            d.add("STRING", d.nid(), {"partitionId": "", "groupId": 0, "layerId": 5 if i_ in knocked else 3, "x": mil(x), "y": mil(y),
                                       "text": s, "fontFamily": "default", "fontSize": mil(size * 0.9),
                                       "strokeWidth": mil(w), "bold": False, "italic": False, "origin": "LEFT_BOTTOM",
-                                      "angle": 0, "reverse": False, "expansion": 0, "mirror": False, "locked": False,
+                                      "angle": 0, "reverse": i_ in knocked, "expansion": mil(self.knock_expansion(i_)) if i_ in knocked else 0, "mirror": False, "locked": False,
                                       "zIndex": d.zi()})
         return d.lines({"title": title, "parent": "", "board": board_uuid, "zIndex": None})
 
@@ -297,14 +418,17 @@ class PanelBoard:
             dr.ellipse([X - r * scale, Y - r * scale, X + r * scale, Y + r * scale], fill="#141414")
         for poly in self.gold:
             dr.polygon([P(*p) for p in poly], fill="#c9a227")
-        for pts, w in self.silk_lines:
-            dr.line([P(*p) for p in pts], fill="#f0efe9", width=max(1, int(w * scale)), joint="curve")
+        dashes = self.knocked_dashes()
+        for j, (pts, w) in enumerate(self.silk_lines):
+            dr.line([P(*p) for p in pts], fill="#141414" if j in dashes else "#f0efe9", width=max(1, int(w * scale)),
+                    joint="curve")
         for p0, sweep, p1, w, (cx, cy, r, b0, b1) in self.arcs:   # panel frame, from 12 o'clock
             pts = []
             for i in range(25):
                 b = math.radians(b0 + (b1 - b0) * i / 24)
                 pts.append(P(*self.P(cx + r * math.sin(b), cy - r * math.cos(b))))
             dr.line(pts, fill="#f0efe9", width=max(1, int(w * scale)))
+        knocked = self.knocked()
         try:
             fonts = {}
 
@@ -313,9 +437,9 @@ class PanelBoard:
         except OSError:
             def font(size):
                 return ImageFont.load_default()
-        for x, y, s, size, w in self.strings:
+        for i_, (x, y, s, size, w) in enumerate(self.strings):
             X, Y = P(x, y)
-            dr.text((X, Y - size * scale * 0.9), s, fill="#f0efe9", font=font(size))
+            dr.text((X, Y - size * scale * 0.9), s, fill="#141414" if i_ in knocked else "#f0efe9", font=font(size))
         for x, y, dia in self.holes:
             X, Y = P(x, y)
             r = dia / 2 * scale
