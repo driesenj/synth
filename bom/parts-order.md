@@ -20,13 +20,13 @@ per-board detail are in each module's BOM: [Spore](../marbles/docs/bom.md),
 | 1 | Chips | H11L1 opto-isolator (DIP-6) |  |  | 1 |  |  |
 | 2 | Chips | MCP4922-E/P dual 12-bit DAC (DIP-14) | 2 |  |  |  |  |
 | 10 | Chips | Panasonic AQY212EH PhotoMOS relay (DIP-4) |  |  |  | 10 |  |
-| 2 | Semiconductors | 1N4148 diode (DO-35) |  |  | 1 | 1 |  |
+| 1 | Semiconductors | 1N4148 diode (DO-35) |  |  | 1 |  |  |
 | 2 | Semiconductors | 1N5819 Schottky diode (DO-41) |  |  |  | 2 |  |
 | 2 | Semiconductors | 2N3904 NPN transistor (TO-92) | 2 |  |  |  |  |
 | 1 | Semiconductors | 2N3904 NPN transistor (TO-92), formed leads on 2.54 mm; or spread a bulk part's 1.27 mm leads to the pads |  |  | 1 |  |  |
 | 1 | Semiconductors | BAT85 Schottky diode (DO-35), the clock input's clamp; BAT42, BAT43, 1N5711, SD101 or a 1N4148 fit too, DO-35 only: the holes are 0.8 mm. Low leakage matters here (it raises the clock threshold through R24): no SD103A or BAT86 |  |  | 1 |  |  |
 | 2 | Semiconductors | BAT85 Schottky diode (DO-35); BAT43 leaks least (steadier V/OCT when warm); BAT86, BAT42, BAT46 or SD103A fit too, DO-35 only: the holes are 0.8 mm |  | 2 |  |  |  |
-| 2 | Semiconductors | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | 2 |  |  |  |  |
+| 4 | Semiconductors | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | 2 |  |  | 2 |  |
 | 1 | Semiconductors | LM4040CIZ-2.5/NOPB 2.5 V shunt reference (TO-92); the BIZ grade works too, the AIZ is not needed (the output calibration takes out the error) | 1 |  |  |  |  |
 | 2 | Resistors | 10k × 8 bussed resistor network, SIP-9 (Bourns 4609X-101-103LF, Tayda A103J) |  |  | 2 |  |  |
 | 2 | Resistors | Resistor 10 Ω, metal film 1 %, 0.6 W in the 1/4 W (0207) body: TE LR1F10R or Vishay MBB0207 |  |  |  | 2 |  |
@@ -44,9 +44,11 @@ per-board detail are in each module's BOM: [Spore](../marbles/docs/bom.md),
 | 4 | Resistors | Resistor 23.2k, metal film 1 %, 1/4 W | 4 |  |  |  |  |
 | 1 | Resistors | Resistor 30k, metal film 1 %, 1/4 W |  | 1 |  |  |  |
 | 4 | Resistors | Resistor 47k, metal film 1 %, 1/4 W | 4 |  |  |  |  |
-| 65 | Resistors | Resistor 100k, metal film 1 %, 1/4 W | 13 | 10 | 5 | 37 |  |
+| 68 | Resistors | Resistor 100k, metal film 1 %, 1/4 W | 16 | 10 | 5 | 37 |  |
 | 8 | Resistors | Resistor 200k, metal film 1 %, 1/4 W |  |  |  | 8 |  |
 | 2 | Resistors | Resistor 300k, metal film 1 %, 1/4 W |  |  |  | 2 |  |
+| 2 | Capacitors | Capacitor 4.7 pF C0G ceramic, 50 V or more, 2.54 mm leads (KEMET C315C479D1G5TA) |  |  |  | 2 |  |
+| 1 | Capacitors | Capacitor 10 pF C0G ceramic, 50 V or more, 2.54 mm leads (KEMET C315C100J1G5TA) |  |  |  | 1 |  |
 | 3 | Capacitors | Capacitor 22 pF C0G ceramic, 50 V, 5.08 mm leads |  |  |  | 3 |  |
 | 1 | Capacitors | Capacitor 100 pF C0G ceramic, 50 V, 5.08 mm leads |  | 1 |  |  |  |
 | 14 | Capacitors | Capacitor 1 nF C0G ceramic or film, 50 V, 5.08 mm leads | 7 | 7 |  |  |  |
@@ -66,7 +68,7 @@ per-board detail are in each module's BOM: [Spore](../marbles/docs/bom.md),
 | 15 | Mechanical | M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's 2.5 mm plastic | 4 | 3 | 4 | 4 | one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be) |
 | 30 | Mechanical | M3 × 6 mm pan-head screw | 8 | 6 | 8 | 8 | two per standoff |
 
-56 lines, 473 parts.
+58 lines, 480 parts.
 
 ## Made or built elsewhere
 
