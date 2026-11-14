@@ -212,7 +212,11 @@ servo. All resistors are 1 %; 100 k unless noted.
 ### References and power
 
 - **±5 V:** two LM4040-5.0 (TO-92), each fed through 1 k (7 mA), as on
-  Offset.
+  Offset. The cathode is the middle lead (pin 2). TI's tables disagree on
+  whether the anode is pin 1 or pin 3, so pins 1 and 3 both go to the anode
+  net (GND on D901, −5 V on D902), and the part works whichever table is
+  right. The netlist used to have the SOT-23 order (pin 1 cathode), which
+  would have left both references at about a diode drop; fixed 2026-11-12.
   - **+5 V** feeds the four LEVEL pots (2 mA).
   - **−5 V** feeds the servo references, the EXP offsets and the servo
     biases (under 1 mA).

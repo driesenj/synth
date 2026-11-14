@@ -43,8 +43,10 @@ channels 1-2 / 3-4; U5 / U6: C and D of channels 1-2 / 3-4; U7: the four E.
 Pin maps: TL074 sections (out, in-, in+), 4 V+, 11 V-; SSI2164 cells (IIN,
 VC, IOUT), 1 MODE (open: class AB), 8 GND, 9 V-, 16 V+; jack 1 sleeve, 2
 switch lug, 3 tip; Alpha pot 1 CCW, 2 wiper, 3 CW, 4 / 5 lugs; LED 1 anode,
-2 cathode; diodes 1 cathode (the band), 2 anode; LM4040 (TO-92) 1 cathode,
-2 anode, 3 NC; 78L05 1 OUT, 2 GND, 3 IN; BC557 pins named by function (E,
+2 cathode; diodes 1 cathode (the band), 2 anode; LM4040 (TO-92) 2 cathode,
+1 and 3 both on the anode net (TI's tables disagree on which is the anode and
+which NC, so wired this way it works either way round); 78L05 1 OUT, 2 GND,
+3 IN; BC557 pins named by function (E,
 B, C), so no footprint can swap them.
 
 Net naming: nets that cross to the faceplate carry the same name on both
@@ -190,8 +192,10 @@ def chips():
 
 def reference_parts():
     return [
-        Part("D901", "LM4040", "LM4040-5.0", {"1": P5, "2": GND}, "+5 V: LEVEL"),
-        Part("D902", "LM4040", "LM4040-5.0", {"1": GND, "2": N5}, "-5 V: EXP offsets, servo references"),
+        Part("D901", "LM4040", "LM4040-5.0", {"1": GND, "2": P5, "3": GND},
+             "+5 V: LEVEL (TO-92: cathode pin 2, anode pins 1 and 3)"),
+        Part("D902", "LM4040", "LM4040-5.0", {"1": N5, "2": GND, "3": N5},
+             "-5 V: EXP offsets, servo references (TO-92: cathode pin 2, anode pins 1 and 3)"),
         R("R901", "1k", VP, P5, "+5 V reference feed, 7 mA (LEVEL takes 2 mA)"),
         R("R902", "1k", N5, VN, "-5 V reference feed, 7 mA (under 1 mA used)"),
         C("C901", "100n", P5, GND, "+5 V reference"),
@@ -206,8 +210,11 @@ def reference_parts():
 
 
 def power_parts():
-    hdr = {"1": "N12_IN", "2": "N12_IN", "11": "P12_IN", "12": "P12_IN"}
-    hdr.update({str(n): GND for n in range(3, 11)})                  # 13-16 (+5 V, CV, gate) open
+    # Doepfer A-100 16-pin bus (doepfer.de/a100_man/a100t_e.htm), pin 1 = red stripe: 1-2 -12 V, 3-8 GND,
+    # 9-10 +12 V, 11-12 +5 V, 13-14 CV, 15-16 Gate; +5 V, CV and Gate stay open. (Until 2026-11-14 this had GND
+    # on 3-10 and +12 V on 11-12, which shorts the bus +12 V to GND; found by the 2026-11-13 test suites.)
+    hdr = {"1": "N12_IN", "2": "N12_IN", "9": "P12_IN", "10": "P12_IN"}
+    hdr.update({str(n): GND for n in range(3, 9)})                  # 11-16 (+5 V, CV, gate) open
     parts = [
         Part("J13", "HDR16", "16-pin Eurorack, 2.54 mm", hdr, "POWER (red stripe = -12 V = pin 1)"),
         D("D903", "D5819", "1N5819", "P12_IN", "P12_D", "+12 V reverse protection: anode on the header"),
@@ -301,7 +308,7 @@ def nets_of(parts):
     return nets
 
 
-NO_CONNECT = {"SSI2164": {"1"}, "LM4040": {"3"}}       # MODE open = class AB; the LM4040's NC lead
+NO_CONNECT = {"SSI2164": {"1"}}                        # MODE open = class AB
 PINS = {"TL074": 14, "SSI2164": 16, "LM4040": 3, "JACK": 3, "POT": 5, "HDR16": 16, "78L05": 3}
 
 
@@ -325,7 +332,7 @@ def check():
             if p.kind == "JACK" and p.label.startswith("OUT 4"):
                 want -= {"2"}                          # OUT 4's lug: nothing after it
             if p.kind == "HDR16":
-                want -= {"13", "14", "15", "16"}       # +5 V, CV, gate: unused
+                want -= {"11", "12", "13", "14", "15", "16"}       # +5 V, CV, gate: unused
             if set(p.nets) != want:
                 problems.append(f"{name}: {p.ref} pins {sorted(want ^ set(p.nets), key=int)} wrong")
     for ref, kind, pins in HEADERS:
@@ -337,6 +344,10 @@ def check():
         problems.append("D903: the +12 V diode's anode must be on the header")
     if allp["D904"].nets != {"1": "N12_IN", "2": "N12_D"}:
         problems.append("D904: the -12 V diode's cathode must be on the header")
+    if allp["D901"].nets != {"1": GND, "2": P5, "3": GND}:
+        problems.append("D901: the TO-92 LM4040's cathode (pin 2) must be on +5 V, pins 1 and 3 on GND")
+    if allp["D902"].nets != {"1": N5, "2": GND, "3": N5}:
+        problems.append("D902: the TO-92 LM4040's cathode (pin 2) must be on GND, pins 1 and 3 on -5 V")
     return problems
 
 
