@@ -112,7 +112,9 @@ DAC_PIN = {"A": "14", "B": "10"}
 OUTPUTS = [(f"OUT{k + 1}", f"U{2 + k // 2}", "AB"[k % 2], "U6" if k < 4 else "U7", k % 4 + 1) for k in range(8)]
 # Marblesy's output stage: Vout = -(Rf/Rdac) Vdac - (Rf/Rref) NREF = 5.32 V - 4.17 Vdac
 OUT_STAGE = {"Rdac": "24k", "Rref": "47k", "Rf": "100k", "Rs": "1k"}
-# Marblesy's CV input stage, gain -0.27 round BIAS: +-5 V -> 0.33..3.03 V. name, op-amp, section, ADC net
+# Marblesy's CV input stage as fixed on 2026-11-13 (its test report, M1): gain -0.13 round BIAS (Rf 13k, bias
+# 11k / 10k), so +-12 V lands on 0.22..3.34 V and +-5 V on 1.13..2.43 V. The old 27k / 15k (gain -0.27, +-5 V
+# on 0.33..3.03 V) overdrove the ADC pins from about -7 V. name, op-amp, section, ADC net
 CV_CHANNELS = [("CV1", "U8", 1), ("CV2", "U8", 2), ("CV3", "U8", 3)]
 # Marblesy's gate stage, non-inverting x2.5 from a GPIO: 0 / 8.25 V. jack net, GPIO net, op-amp, section
 GATES = [("RUN_OUT", "GATE_RUN", "U9", 1), ("RST_OUT", "GATE_RST", "U9", 2)]
@@ -148,7 +150,7 @@ def main_board_parts():
         tl[u].update({out: f"OA_{name}", inm: f"IN_{name}", inp: "BIAS"})
         n = 62 + 3 * i
         parts.append(R(f"R{n}", "100k", name, f"IN_{name}"))
-        parts.append(R(f"R{n + 1}", "27k", f"IN_{name}", f"OA_{name}"))
+        parts.append(R(f"R{n + 1}", "13k", f"IN_{name}", f"OA_{name}"))
         parts.append(R(f"R{n + 2}", "1k", f"OA_{name}", f"ADC_{name}"))
         parts.append(C(f"C{10 + i}", "1n", f"IN_{name}", f"OA_{name}"))
     # U8D: NREF = -VREF. 100k / 100k, not Marblesy's 10k: four DACs load VREF twice as much as two did
@@ -161,8 +163,8 @@ def main_board_parts():
     parts.append(Part("D11", "LM4040", "LM4040-2.5 (SOT-23)", {"1": "VREF", "2": GND, "3": GND}))
     parts.append(R("R73", "1k5", "3V3A", "VREF"))
     parts.append(C("C14", "100n", "VREF", GND))
-    # bias for the CV inputs: 3.3 V * 10 / 25 = 1.32 V
-    parts.append(R("R74", "15k", "3V3A", "BIAS"))
+    # bias for the CV inputs: 3.3 V * 10 / 21 = 1.57 V
+    parts.append(R("R74", "11k", "3V3A", "BIAS"))
     parts.append(R("R75", "10k", "BIAS", GND))
     parts.append(C("C13", "1u", "BIAS", GND))
     # CLOCK and RESET in: 100k into an NPN inverter, 10k pull-up, Schottky clamp for negative swings
@@ -179,6 +181,9 @@ def main_board_parts():
         parts.append(R(f"R{n}", "10k", GND, f"IN_{jack}"))
         parts.append(R(f"R{n + 1}", "15k", f"IN_{jack}", f"OA_{jack}"))
         parts.append(R(f"R{n + 2}", "1k", f"OA_{jack}", jack))
+        # 100k pull-down on the GPIO: while the Seed is unpowered, in reset or in its bootloader the pin floats
+        # and the x2.5 stage would put out anything up to its swing (Marblesy's test report, L3)
+        parts.append(R(f"R{86 + i}", "100k", gpio, GND))
     for s in (3, 4):                               # U9's spare sections as grounded followers
         out, inm, inp = SECTION[s]
         tl["U9"].update({out: f"U9_SPARE{s}", inm: f"U9_SPARE{s}", inp: GND})
@@ -499,15 +504,23 @@ def circuit_check():
     for name, u, s in CV_CHANNELS:
         g = r_between(mb, f"IN_{name}", f"OA_{name}") / r_between(mb, name, f"IN_{name}")
         adc = [bias * (1 + g) - g * vin for vin in (5.0, -5.0)]
-        lines.append(f"{name}: +5 V -> {adc[0]:.2f} V, -5 V -> {adc[1]:.2f} V at the ADC (BIAS {bias:.2f} V)")
+        wide = [bias * (1 + g) - g * vin for vin in (12.0, -12.0)]
+        lines.append(f"{name}: +5 V -> {adc[0]:.2f} V, -5 V -> {adc[1]:.2f} V, +-12 V -> {wide[0]:.2f}..{wide[1]:.2f} V "
+                     f"at the ADC (BIAS {bias:.2f} V)")
         if not (0.1 < min(adc) and max(adc) < V3A - 0.1):
             bad.append(f"{name}: +-5 V does not stay inside the ADC range")
+        if not (0.0 < min(wide) and max(wide) < V3A + 0.3):     # nominal; the STM32 pin takes VDDA + 0.3 V
+            bad.append(f"{name}: +-12 V drives the ADC pin outside 0..3V3A + 0.3 V")
     # gate outputs
     for jack, gpio, u, s in GATES:
         high = V3A * (1 + r_between(mb, f"IN_{jack}", f"OA_{jack}") / r_between(mb, GND, f"IN_{jack}"))
         lines.append(f"{jack}: high {high:.2f} V")
         if not 5.0 <= high <= TL074_SWING:
             bad.append(f"{jack}: gate high {high:.2f} V")
+        try:
+            r_between(mb, gpio, GND)
+        except LookupError:
+            bad.append(f"{jack}: no pull-down on {gpio}, so the gate is undefined while the Seed boots")
     # transistor inputs: base current at a 5 V clock, the gain the transistor needs to pull the pin low
     for jack, seed, q, d in TRANSISTOR_INPUTS:
         ib = (5.0 - 0.7) / r_between(mb, jack, f"B_{seed}")

@@ -706,7 +706,8 @@ def main_pages(pr, P):
             ("Daisy Seed on the seed_power_opamps breakout (sockets on this board; its audio parts unused)", ["U1"]),
             ("CLOCK and RESET in: 100k into an MMBT3904 inverter, 1N5819HW clamp, 10k pull-up (CLK / RST active low)",
              ["R76", "Q1", "D9", "R77", "R78", "Q2", "D10", "R79"]),
-            ("CV inputs (U8 A-C): 100k / 27k round BIAS 1.32 V, +-5 V -> 0.33..3.03 V, 1k into the ADC; BIAS divider",
+            ("CV inputs (U8 A-C): 100k / 13k round BIAS 1.57 V, +-12 V -> 0.22..3.34 V (+-5 V -> 1.13..2.43 V), 1k into "
+             "the ADC; BIAS divider 11k / 10k",
              [("U8", 1), ("U8", 2), ("U8", 3)] + rr(62, 70) + ["C10", "C11", "C12", "R74", "R75", "C13"]),
             ("Reference: LM4040-2.5 (pin 3 to the anode) fed by 1k5; U8D inverts it, NREF = -2.50 V",
              ["D11", "R73", "C14", ("U8", 4), "R71", "R72"])]),
@@ -718,8 +719,9 @@ def main_pages(pr, P):
                                   for r in [("U6" if k < 5 else "U7", (k - 1) % 4 + 1)] + rr(26 + 4 * k, 29 + 4 * k)])
             for a in (1, 5)]),
         ("Main 3: RUN / RESET out, decoupling, headers", [
-            ("RUN and RESET out (U9 A, B): x2.5 from D18 / D19 (0 / 8.25 V), 1k out; U9 C, D grounded followers",
-             [("U9", 1), ("U9", 2), ("U9", 3), ("U9", 4)] + rr(80, 85)),
+            ("RUN and RESET out (U9 A, B): x2.5 from D18 / D19 (0 / 8.25 V), 1k out, 100k pull-down on each GPIO (low while "
+             "the Seed boots); U9 C, D grounded followers",
+             [("U9", 1), ("U9", 2), ("U9", 3), ("U9", 4)] + rr(80, 87)),
             ("Decoupling: 100 n per rail beside each TL074 (C15-C22), 100 n at each DAC (C23-C26), 10 u bulk by J1 / J3",
              [f"C{n}" for n in range(15, 29)]),
             ("Board-to-board sockets (female on this board, pin 1 at the top); the faceplate has the male pins",

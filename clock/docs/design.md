@@ -97,7 +97,7 @@ circuit values.
         │     rear (SMD): 74HC165 (switches), 2x 74HC595 (LEDs), 12 pull-ups, 11 LED resistors;
         │                 CN1 (8 wire pads, through-hole) for the display cable
         │      36 pins in 4 headers (male on the FB, female on the MB)
-        └─ main board (MB) 59.4 x 108, 93 parts, SMD
+        └─ main board (MB) 59.4 x 108, 95 parts, SMD
               Daisy Seed on seed_power_opamps (through-hole sockets), 4x MCP4922 + LM4040,
               4x TL074 (8 output stages, -2.5 V reference, 3 CV inputs, RUN/RESET gate outputs),
               CLOCK and RESET input transistors
@@ -224,17 +224,23 @@ as much as two. With the new values:
 
 ### CV inputs (3×)
 
-Marblesy's stage, unchanged:
+Marblesy's stage, with the values its hardware test suite changed on
+2026-11-13 (its report, M1):
 
 ```
 jack tip ── 100k ──┬── (−) TL074 ──┬── 1k ── Seed ADC
-                   ├── 27k ────────┤
+                   ├── 13k ────────┤
                    └── 1n ─────────┘
-BIAS 1.32 V ──────── (+)
+BIAS 1.57 V ──────── (+)
 ```
 
-- **Range:** +5 V reads 0.33 V and −5 V reads 3.03 V.
-- **BIAS:** R74 15k / R75 10k from 3V3A, with C13 1 µ.
+- **Range:** ±12 V reads 0.22–3.34 V, so no patch can drive the ADC pin
+  past 3V3A + 0.3 V. ±5 V reads 1.13–2.43 V. The old 27k / 15k (±5 V on
+  0.33–3.03 V) overdrove the pin from about −7 V.
+- **BIAS:** R74 11k / R75 10k from 3V3A, with C13 1 µ.
+- **Corner:** 13k with 1n is 12.2 kHz, as on Marblesy.
+- **Firmware:** the gain is −0.13 and the zero is 1.78 V at the pin (about
+  2200 of 4096); calibrate both, as Marblesy does.
 - **Unplugged:** the switch lug grounds the tip, so the input reads 0 V.
 
 | Input | Section | Rin | Rf | Cf | Rs | ADC |
@@ -270,6 +276,11 @@ Marblesy's gate stage: a TL074 section, non-inverting ×2.5, then 1k out,
 giving 0 V / 8.25 V. U9A (RUN: R80 10k to GND, R81 15k feedback, R82 1k)
 and U9B (RESET: R83, R84, R85), driven from D18 and D19. U9C and U9D are
 grounded followers.
+
+R86 / R87 (100k) pull D18 / D19 to GND. While the Seed is unpowered, in
+reset or in its bootloader, the pins float and the stage could put out
+anything up to its swing; with the pull-downs the outputs sit at 0 V
+(Marblesy's test report, L3).
 
 ### Power
 
@@ -654,10 +665,11 @@ inverter's IN_NREF went from about 50 mm to 9.8 mm.
   and the guides to the soft knobs.
 - **The output band:** bare ENIG copper (a top-layer fill under a mask
   opening of the same shape), 0.4 mm clear round every hole. The output
-  numbers and RUN / RESET are white silk on the gold. The artwork knocks
-  them out of the gold instead; to match it, move them to the mask layer.
-- **Fonts:** EasyEDA's stroke font, not the artwork's serif italic, so
-  expect to nudge labels after import.
+  numbers and RUN / RESET are knocked out of the band's solder mask (a
+  reverse string on the mask layer over a hole in the opening), so they
+  read dark on the gold, as the artwork draws them.
+- **Fonts:** EasyEDA's stroke font, not the artwork's serif italic, placed
+  with its measured metrics; check the title after import.
 - **Order:** 1.6 mm FR4, black mask, white silk, ENIG.
 
 ---
@@ -676,10 +688,12 @@ inverter's IN_NREF went from about 50 mm to 9.8 mm.
 | 2 | MMBT3904 | SOT-23 | Q1, Q2 |
 | 2 | 1N5819HW | SOD-123 | D9, D10 |
 | 15 | 100k 1 % | 0603 | R32, R36, R40, R44, R48, R52, R56, R60, R62, R65, R68, R71, R72, R76, R78 |
+| 2 | 100k | 0603 | R86, R87 |
 | 8 | 47k 1 % | 0603 | R31, R35, R39, R43, R47, R51, R55, R59 |
 | 8 | 24k 1 % | 0603 | R30, R34, R38, R42, R46, R50, R54, R58 |
-| 3 | 27k 1 % | 0603 | R63, R66, R69 |
-| 3 | 15k | 0603 | R74, R81, R84 |
+| 3 | 13k 1 % | 0603 | R63, R66, R69 |
+| 1 | 11k 1 % | 0603 | R74 |
+| 2 | 15k | 0603 | R81, R84 |
 | 5 | 10k | 0603 | R75, R77, R79, R80, R83 |
 | 13 | 1k | 0603 | R33, R37, R41, R45, R49, R53, R57, R61, R64, R67, R70, R82, R85 |
 | 1 | 1k5 | 0603 | R73 |
@@ -708,7 +722,7 @@ inverter's IN_NREF went from about 50 mm to 9.8 mm.
 | 1 | Waveshare 1.9inch LCD Module (ST7789V2) with its cable | glass taped to the panel's rear | DS1 |
 | 4 | male headers 1×6, 1×11, 1×12, 1×7, 2.54 mm | | HF1–HF4 |
 
-Plus a 12HP panel PCB and 3 M3 standoffs for the 8.5 mm gap, with 6
+Plus a 12HP panel PCB and 3 M3 standoffs for the 11 mm gap (8.5 mm sockets + 2.5 mm male plastic), with 6
 screws.
 
 ---
