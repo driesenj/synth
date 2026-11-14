@@ -913,12 +913,12 @@ def sh_page(pr, P):
 
 
 def power_block(pg, P, x0, t0):
-    """16-pin header (red stripe = pin 1 = -12 V), a 1N5819 per rail (the -12 V cathode on the header),
+    """16-pin header (red stripe = pin 1 = -12 V; 3-8 GND, 9-10 +12 V, 11-16 open), a 1N5819 per rail (the -12 V cathode on the header),
     10R and 47 uF (the mixer's drawing)."""
     yh = Y(t0 + 40)
     xh = x0 + 60
     h = pg.place("J10", "HDR16", xh, yh, des=(-30, -45, "LEFT_BOTTOM"), value_at=(-30, 52, "LEFT_BOTTOM"))
-    for side, pns, sgn in (("left", ("3", "5", "7", "9"), -1), ("right", ("4", "6", "8", "10"), 1)):
+    for side, pns, sgn in (("left", ("3", "5", "7"), -1), ("right", ("4", "6", "8"), 1)):
         bx = xh + sgn * 45
         pts = []
         for n in pns:
@@ -927,13 +927,13 @@ def power_block(pg, P, x0, t0):
             pts.append((bx, p[1]))
         for a, b in zip(pts, pts[1:]):
             pg.wire([a, b], "GND")
-        mid = pts[2]
+        mid = pts[1]                         # the middle GND pin (5 / 6): clear of the P12_IN ports on 9 / 10
         pg.wire([mid, (bx + sgn * 15, mid[1])], "GND")
         pg.gnd(bx + sgn * 15, mid[1], 90 if sgn > 0 else 270)
     pg.stub_port(h["1"], "N12_IN", "OUT", "left", 30)
     pg.stub_port(h["2"], "N12_IN", "OUT", "right", 30)
-    pg.stub_port(h["11"], "P12_IN", "OUT", "left", 30)
-    pg.stub_port(h["12"], "P12_IN", "OUT", "right", 30)
+    pg.stub_port(h["9"], "P12_IN", "OUT", "left", 30)
+    pg.stub_port(h["10"], "P12_IN", "OUT", "right", 30)
     xa = x0 + 330
     for k, (port, d, r, c, rail) in enumerate((("P12_IN", "D901", "R901", "C901", "+12V"),
                                                ("N12_IN", "D902", "R902", "C902", "-12V"))):
@@ -970,7 +970,7 @@ def decoupling_pair(pg, P, cp, cn, x, top):
 
 def power_page(pr, P):
     pg = MPage(pr, "Power", 4)
-    pg.text(40, Y(40), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V), a 1N5819 per rail: +12 V anode on "
+    pg.text(40, Y(40), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V; 3-8 GND, 9-10 +12 V, 11-16 open), a 1N5819 per rail: +12 V anode on "
                        "the header, -12 V cathode on the header", 12)
     power_block(pg, P, 80, 120)
     pg.text(900, Y(40), "Decoupling: a 100n pair per op-amp, beside its supply pins", 12)
