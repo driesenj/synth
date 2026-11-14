@@ -188,9 +188,13 @@ class Board:
         return out
 
     def body(self, pl):
-        x1, y1, x2, y2 = pl["geo"]["bbox"]
-        cs = [self.pad_xy(pl, x, y) for x, y in ((x1, y1), (x2, y1), (x2, y2), (x1, y2))]
+        cs = self.body_poly(pl)
         return (min(c[0] for c in cs), min(c[1] for c in cs), max(c[0] for c in cs), max(c[1] for c in cs))
+
+    def body_poly(self, pl):
+        """The housing's four corners on the board (turned with the part)."""
+        x1, y1, x2, y2 = pl["geo"]["bbox"]
+        return [self.pad_xy(pl, x, y) for x, y in ((x1, y1), (x2, y1), (x2, y2), (x1, y2))]
 
     def front_pads(self, ref):
         pl = next(p for p in self.placed if p["ref"] == ref)
@@ -236,10 +240,13 @@ class Board:
                         bad.append(f"{self.title}: pads {ra}.{na} and {rb}.{nb} are {gap:.2f} mm apart")
         for side in (False, True):
             bodies = [(pl["ref"], self.body(pl)) for pl in self.placed if pl["bottom"] == side]
+            polys = {pl["ref"]: self.body_poly(pl) for pl in self.placed if pl["bottom"] == side}
             for i, (ra, a) in enumerate(bodies):
                 for rb, b in bodies[i + 1:]:
                     if a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]:
-                        ov = min(a[2] - b[0], b[2] - a[0], a[3] - b[1], b[3] - a[1])
+                        ov = _sat_overlap(polys[ra], polys[rb])      # the turned outlines, not their boxes
+                        if ov <= 0:
+                            continue
                         bad.append(f"{self.title}: bodies of {ra} and {rb} overlap by {ov:.2f} mm on the "
                                    f"{'bottom' if side else 'top'} side")
             what = "standoff" if (side and gap_side == "bottom") or (not side and gap_side == "top") else "screw head"
@@ -429,6 +436,23 @@ def _stand(ref, p1, p2):
     return ref, p1[0] - dx, p1[1] - dy, round(a) % 360
 
 
+def _sat_overlap(p, q):
+    """Penetration depth of two convex outlines (separating axes); <= 0 when they do not overlap."""
+    best = math.inf
+    for poly in (p, q):
+        for k in range(len(poly)):
+            (ax, ay), (bx, by) = poly[k], poly[(k + 1) % len(poly)]
+            nx, ny = by - ay, ax - bx
+            n = math.hypot(nx, ny)
+            if n < 1e-12:
+                continue
+            nx, ny = nx / n, ny / n
+            pa = [x * nx + y * ny for x, y in p]
+            pb = [x * nx + y * ny for x, y in q]
+            best = min(best, min(max(pa), max(pb)) - max(min(pa), min(pb)))
+    return best
+
+
 def _two(ref, p1, p2):
     """A two-lead part lying flat (capacitor, diode), pad 1 at p1, pad 2 at p2."""
     return ref, (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, round(math.degrees(math.atan2(p2[1] - p1[1],
@@ -476,14 +500,21 @@ def _summer(u, sec, rf, cf, bus):
     return top
 
 
-def _output(u, sec, rin, rf, rs):
-    """An inverting output stage (Plaitsy's CV-stage cluster without Cf)."""
+def _output(u, sec, rin, rf, rs, cf, outer):
+    """An inverting output stage (Plaitsy's CV-stage cluster) and its phase-lead Cf (2.54 mm C0G, added
+    2026-11-14 where it fits in the routed master): `outer` puts Cf one column beyond Rin (pad 1 level with
+    Rin's input pad, pad 2 with IN-, both a 45-degree track from Rin / Rs); otherwise it sits at 45 degrees
+    beyond Rs's jack-line end, pad 2 one pitch past Rf's OUT pad."""
     x0, y0, sx, sy = _corner(u, sec)
     c1, c2 = x0 + sx * 6.35, x0 + sx * 8.89
     y = [y0 + sy * 2.54 * k for k in range(5)]           # y[1] IN+, y[2] IN-, y[3] OUT
+    if outer:
+        cap = _two(cf, (c2 + sx * 2.54, y[1]), (c2 + sx * 2.54, y[2]))
+    else:
+        cap = _two(cf, (c1 + sx * 1.796, y0 + sy * 11.956), (c1, y0 + sy * 10.16))
     return [_stand(rf, (c1, y[2]), (c1, y[3])),          # pad 1 IN-, pad 2 OUT
             _stand(rin, (c2, y[1]), (c2, y[2])),         # pad 1 the input, pad 2 IN-
-            _stand(rs, (c2, y[3]), (c2, y[4]))]          # pad 1 OUT, pad 2 the jack line
+            _stand(rs, (c2, y[3]), (c2, y[4])), cap]     # pad 1 OUT, pad 2 the jack line
 
 
 def _decoupling(u, cp, cn):
@@ -521,10 +552,11 @@ def _main_top(circuit, P):
     for side in "LRS":
         u, sec = circuit.opamp_of("SUM", side)
         top += _summer(u, sec, *fb[side], bus[side])
-    for side, refs in (("L", ("R904", "R905", "R906")), ("R", ("R907", "R908", "R909")),
-                       ("S", ("R910", "R911", "R912"))):
+    for side, refs, outer in (("L", ("R904", "R905", "R906", "C907"), False),
+                              ("R", ("R907", "R908", "R909", "C908"), False),
+                              ("S", ("R910", "R911", "R912", "C909"), True)):
         u, sec = circuit.opamp_of("OUT", side)
-        top += _output(u, sec, *refs)
+        top += _output(u, sec, *refs, outer)
     for i, u in enumerate(("U1", "U2", "U3", "U4")):
         top += _decoupling(u, f"C{911 + 2 * i}", f"C{912 + 2 * i}")
     # logic chips and their 100 n at the pin 14 (VDD) end
@@ -542,9 +574,10 @@ def _main_top(circuit, P):
         top += [_stand(rp, (xh - 2.5, 36.2), (xh - 2.5, 33.66)), _stand(rd, (xh - 5.04, 33.66), (xh - 5.04, 36.2)),
                 _stand(rl, (xh - 7.58, 36.2), (xh - 7.58, 33.66)),
                 _two(cd, (xh - 10.5, 37.0), (xh - 10.5, 31.92))]
-    # power-on reset beside U10
+    # power-on reset beside U10; D903 (cathode = pad 1 on POR) and the +12 V clamp D904 (cathode on +12V) where
+    # the routed master has them (2026-11-14)
     top += [_two("C906", (32.0, 24.5), (32.0, 19.42)), _stand("R920", (35.5, 24.5), (35.5, 21.96)),
-            _two("D903", (31.0, 9.5), (31.0, 17.5))]
+            _two("D903", (28.0, 26.0), (28.0, 18.0)), _two("D904", (25.38, 20.62), (25.38, 12.62))]
     # power entry in the lower-left corner: the box header standing along the left edge, pin 1 (-12 V) at the
     # bottom; the diodes, 10R and 10 u between it and the master header
     top += [("J18", 6.6, 21.5, 90),

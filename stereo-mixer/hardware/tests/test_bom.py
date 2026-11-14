@@ -44,7 +44,7 @@ RAIL = 12.0                # V, Eurorack rail, nominal
 RAIL_WORST = 12.6          # V, a busboard at +5 %
 # 1N5819 (Vishay / ON 1N5817-19 datasheet): 1 A, 40 V VRRM, DO-41 (DO-204AL).
 D5819_VRRM = 40.0
-# 1N4148 (Vishay 81857): 100 V VRRM, DO-35.
+# BAT85 (Vishay): 30 V VR, DO-35 (D903, D904; until 2026-11-14 D903 was a 1N4148).
 # Capacitor voltage: a ceramic or electrolytic must be rated above the DC across it; 1.5x margin is the
 # usual derating (and X7R loses capacitance with DC bias). Rated voltages of the library parts the
 # exporter uses (easyeda_export.DEV / C_NEW):
@@ -257,6 +257,8 @@ LEAD = {
     "R": 0.60,        # 1/4 W metal film, Yageo MFR-25 0.54 +- 0.05 (max 0.59); Tayda's 0.6
     "D5819": 0.864,   # DO-41 (DO-204AL) lead, Vishay 1N5817-19 doc 88525: 0.71..0.864
     "D4148": 0.56,    # DO-35 lead, Vishay 1N4148 doc 81857: 0.56 max (conservative)
+    "BAT85": 0.56,    # DO-35 lead (Vishay BAT85, DO-204AH): the same 0.56 max
+    "C315": 0.56,     # KEMET C315 (Goldmax 300): 0.51 mm (0.020 in) leads, 0.56 with tolerance (ASSUMED)
     "DIP": 0.56,      # PDIP lead width max, TI N package (MS-001): 0.36..0.56 (a turned socket pin ~0.5)
     "CP": 0.5,        # 5 mm radial electrolytic lead, Panasonic / Nichicon: 0.5
 }
@@ -289,8 +291,15 @@ ck.check("D901 / D902 DO-41 footprints and a DO-41 1N5819 line",
          f"{fp_of('D901')}, {fp_of('D902')}, {line_of('D901')['Part']}")
 hole_ok("D901 hole takes a DO-41 lead", "D901", LEAD["D5819"])
 ck.check("1N5819 VRRM >= 2 x 12 V", D5819_VRRM >= 2 * RAIL, f"{D5819_VRRM} V")
-ck.check("D903 DO-35 footprint for the 1N4148", fp_of("D903").startswith("DO-35"), fp_of("D903"))
-hole_ok("D903 hole takes a DO-35 lead", "D903", LEAD["D4148"])
+for ref in ("D903", "D904"):
+    ck.check(f"{ref} DO-35 footprint for the BAT85, a BAT85 line", fp_of(ref).startswith("DO-35")
+             and "BAT85" in line_of(ref)["Part"], f"{fp_of(ref)}, {line_of(ref)['Part']}")
+    hole_ok(f"{ref} hole takes a DO-35 lead", ref, LEAD["BAT85"])
+for ref, val in (("C907", "4p7"), ("C908", "4p7"), ("C909", "10p")):
+    ck.check(f"{ref} {val}: 2.54 mm C0G footprint and a 2.54 mm C0G line", fp_of(ref) == "CAP-TH_P2.54-L4.0-W2.5"
+             and abs(pitch_of(ref, "1", "2") - 2.54) < 0.02 and "C0G" in line_of(ref)["Part"]
+             and "2.54 mm" in line_of(ref)["Part"], f"{fp_of(ref)}, {line_of(ref)['Part']}")
+    hole_ok(f"{ref} hole takes the C315's lead", ref, LEAD["C315"])
 
 
 def silk_x(title):
@@ -310,7 +319,7 @@ def pad_x(title, num):
     return next(p["centerX"] for h, p in fp_docs[title]["recs"] if h["type"] == "PAD" and p["num"] == num)
 
 
-for ref in ("D901", "D903"):
+for ref in ("D901", "D903", "D904"):
     band, p1 = silk_x(fp_of(ref)), pad_x(fp_of(ref), "1")
     ck.check(f"{fp_of(ref)[:5]} footprint: cathode band on pad 1", bool(band) and all((x < 0) == (p1 < 0) for x in band),
              f"band x {band} mil, pad 1 x {p1} mil")
@@ -318,8 +327,12 @@ ck.check("D901 (+12 V series): anode on the header, cathode (pad 1) towards the 
          part("D901").nets == {"2": "P12_IN", "1": "P12_D"}, f"{part('D901').nets}")
 ck.check("D902 (-12 V series): cathode (pad 1) on the header", part("D902").nets == {"1": "N12_IN", "2": "N12_D"},
          f"{part('D902').nets}")
-ck.check("D903: cathode (pad 1) on +12 V, so C906's POR end is clamped at power-off",
-         part("D903").nets == {"1": circuit.VP, "2": "POR"}, f"{part('D903').nets}")
+ck.check("D903: cathode (pad 1) on POR, anode on GND, so it clamps POR and empties C906 at power-off",
+         part("D903").nets == {"1": "POR", "2": circuit.GND}, f"{part('D903').nets}")
+BAT85_VR = 30.0
+ck.check("BAT85 VR >= 2 x the 12 V it blocks (D903 at power-up, D904 in use)", BAT85_VR >= 2 * RAIL, f"{BAT85_VR} V")
+ck.check("D904: cathode (pad 1) on +12V, anode on GND: it clamps the +12V net when the bus has no +12 V",
+         part("D904").nets == {"1": circuit.VP, "2": circuit.GND}, f"{part('D904').nets}")
 plus = [p for h, p in fp_docs[fp_of("C904")]["recs"] if h["type"] == "FILL" and p["layerId"] == 3]
 plus_x = sum(p["path"][0] for p in plus) / len(plus) if plus else 0
 p2 = pad_x(fp_of("C904"), "2")

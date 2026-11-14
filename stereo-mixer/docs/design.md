@@ -118,15 +118,16 @@ above the 3 mA the AQY212EH needs at most. Every flip-flop's RESET comes from on
 debounce caps take to settle for any rail ramp from 1 to 200 ms, so the
 mixer always starts with every channel open.
 
-D903, a 1N4148, sits across C906 and never conducts. C906 empties at
-power-off through the CD4013B RESET inputs' protection diodes instead: POR
-goes to about −0.6 V for a moment, at under 1 mA per input typically and
-about 4 mA at worst (every channel muted, the rail collapsing fast), inside
-their 10 mA rating, and the next power-up resets as it should. Likewise each
-debounce cap empties into VDD through its CD4093B inputs' diodes (DB about
-0.6 V above VDD, 0.13 mA), well inside the rating. On a respin, a BAT85 from GND
-(anode) to POR (cathode) would do the job. Don't simply turn D903 round:
-on +12 V that way it holds every flip-flop in reset.
+D903, a BAT85 beside R920 (cathode on POR, anode on GND), empties C906 at
+power-off: the falling +12 V drags POR below GND through C906, and D903
+holds it at about −0.3 to −0.4 V, inside the CD4013B's −0.5 V limit, so the
+RESET inputs' own protection diodes carry next to nothing (up to about
+15 mA flows through D903 when the rail collapses fast, against its 200 mA).
+The next power-up resets as it should. Until 2026-11-14 D903 was a 1N4148
+across C906 with its cathode on +12 V: it never conducted, and the RESET
+inputs' diodes did the job at about −0.6 V. Each debounce cap still empties
+into VDD through its CD4093B inputs' diodes (DB about 0.6 V above VDD,
+0.13 mA), well inside their 10 mA rating.
 
 A rail dip to between 3 and 7 V (an overloaded bus) can leave channels
 randomly muted or unmuted; dips that stay above 8 V keep every mute, and a
@@ -160,13 +161,15 @@ mutes more softly.
   headroom than the outputs.
 - **Send output:** the send summer, a unity inverter (100k / 100k) and 1k.
   No level knob: Clouds' IN GAIN does that.
-- **Phase margin:** the output stages and the send inverter have no
-  capacitor across their feedback resistors, and the few pF on each
-  inverting input with Rin ∥ Rf (67–77k on the output stages, 50k on the
-  send inverter) leave them about 18° of phase
-  margin: some peaking near 1 MHz, nothing in the audio band, no
-  oscillation predicted. For margin, solder 4.7 pF C0G across R905 and
-  R908 and 10 pF across R911, on the standing resistors' legs.
+- **Phase margin:** the few pF on each output stage's inverting input,
+  with Rin ∥ Rf behind them (67–77k on the output stages, 50k on the send
+  inverter), put a pole inside the loop. C907 / C908 (4.7 pF C0G across
+  R905 / R908) and C909 (10 pF across R911) cancel it (Cf Rf ≥ C Rin):
+  the worst case the suite finds (TL074 GBW 3 MHz, the PhotoMOS off
+  capacitance at its 20 V value) is now 66° on the send inverter and 72° on
+  OUT L / R. Without them (until 2026-11-14) these stages had about
+  18°, with peaking near 1 MHz. The caps are KEMET C315 parts with 2.54 mm
+  leads; they cost under 0.1 dB at 20 kHz.
 
 ### Gains (unchanged)
 
@@ -216,6 +219,15 @@ Picked by where each chip sits on the main board (see placement).
   re-netted and re-routed at J18 that day.
 - **Reverse protection:** series 1N5819 per rail (−12 V: cathode on the
   header), then 10 Ω, 10 µF per rail.
+- **Missing +12 V:** if the bus has −12 V but no +12 V, the op-amps' 20–40 mA
+  pulls the +12 V net below GND. D904, a BAT85 from GND (anode) to +12 V
+  (cathode), clamps it at about −0.4 V typically (22 mA), inside the
+  CD4000B's −0.5 V limit for the CMOS chips' VDD. At the worst case (40 mA,
+  the BAT85's maximum VF) it is about −0.55 V, a little past the limit
+  but better than the −0.6 V the chips' substrate diodes held without it. A
+  1N5819 in D904's place would hold about −0.34 V even then (2026-11-14).
+- **J18 pads:** 1.7 mm round on the 1.1 mm holes, a 0.30 mm annular ring
+  (the library footprint's 1.524 mm pads gave 0.212 mm; 2026-11-14).
 - **Decoupling:** 100 n per TL074 per rail beside pins 4 and 11; 100 n per
   CMOS chip beside its pin 14.
 - **Current:** about 25 mA on −12 V; on +12 V about 25 mA plus 6–7 mA per
@@ -344,7 +356,13 @@ on this board.
   CD4013s at y 12 (one per two channels), each with its 100 n at the pin
   14 end; the power-on reset left of U10.
 - **Power:** J18 standing along the left edge, pin 1 (−12 V) at the bottom,
-  the diodes, 10 Ω and 10 µF between it and H9.
+  the diodes, 10 Ω and 10 µF between it and H9. D903 (POR clamp) at
+  (28, 18–26) beside C906, cathode up; D904 (+12 V clamp) at x 25.4 just
+  left of it, its cathode pad sitting on the +12 V trunk.
+- **Phase-lead caps:** C907 at 45° under R906 (both tracks on the top
+  layer, the NO_L one running up between the R904 / R906 and R905 columns),
+  C908 at the board's left edge beside R907 / R909, C909 one column left
+  of R910 / R912 (2026-11-14).
 
 **Mounting.** Four 3.2 mm holes, the same on both boards: front view
 (17.5, 103.75), (113.25, 103.75), (17.5, 4.75), (113.25, 4.75), in the

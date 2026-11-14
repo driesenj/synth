@@ -29,6 +29,7 @@ Run from stereo-mixer/hardware/tools:  python easyeda_export.py
 """
 import collections
 import importlib.util
+import json
 import os
 import sys
 
@@ -84,7 +85,11 @@ ee.DEV = DEV          # Page._flag looks the ground flag up here
 D1N4148 = "c0160a3f74384e849dc1cc5a24d54846"      # library 1N4148: its DO-35 footprint and attributes
 R_NEW = {"100k": ("LR1F100K", "100kΩ"), "200k": ("LR1F200K", "200kΩ"), "300k": ("LR1F300K", "300kΩ"),
          "820R": ("LR1F820R", "820Ω")}
-C_NEW = {"22p": ("FG28C0G1H220JNT00", "22pF")}
+# value: (part, value text, tolerance, voltage, footprint key or None for the library 100n's 5.08 mm one)
+C_NEW = {"22p": ("FG28C0G1H220JNT00", "22pF", "±5%", "50V", None),
+         "4p7": ("C315C479D1G5TA", "4.7pF", "±0.5pF", "100V", "C254"),      # KEMET Goldmax 300, 2.54 mm leads
+         "10p": ("C315C100J1G5TA", "10pF", "±5%", "100V", "C254")}
+J18_PAD = 1.7          # mm: the library box header's 1.524 mm pads leave a 0.212 mm ring round its 1.1 mm holes
 
 # ---------------------------------------------------------------- footprints
 LAYERS = [(1, "TOP", "Top Layer", "#FF0000", "#7F0000"), (2, "BOTTOM", "Bottom Layer", "#0000FF", "#00007F"),
@@ -199,6 +204,15 @@ def fp_res_vertical():
     f.pad(2, 0, -2.0574, 0.8, 1.6)
     f.circle(0, 0.48006, 1.1)
     f.line(0, -0.79, 0, -1.11)
+    return f
+
+
+def fp_cap254():
+    """Small leaded C0G, 2.54 mm lead spacing (KEMET C315: 3.81 x 2.54 mm body): the mult's footprint."""
+    f = Footprint("CAP-TH_P2.54-L4.0-W2.5", "C?")
+    f.pad(1, -1.27, 0, 0.8, 1.6)
+    f.pad(2, 1.27, 0, 0.8, 1.6)
+    f.rect(-2.0, -1.25, 2.0, 1.25)
     return f
 
 
@@ -474,6 +488,21 @@ class MProject(Project):
                 self._fpgeo[u] = pcb.footprint_geometry(d)
         return self._fpgeo[uid]
 
+    def _footprint_pads(self, uid, size):
+        """A copy of a library footprint with every pad round at `size` mm (same title, new uuid)."""
+        new, lines = new_uuid(), []
+        for line in self.lib[uid]["lines"]:
+            h, _, p = line.partition("||")
+            h, p = json.loads(h), json.loads(p[:-1] if p.endswith("|") else p)
+            if h["type"] == "DOCHEAD":
+                p["uuid"] = new
+            elif h["type"] == "PAD":
+                p["defaultPad"]["width"] = p["defaultPad"]["height"] = round(size * MIL, 3)
+            lines.append(json.dumps(h, ensure_ascii=False, separators=(",", ":")) + "||"
+                         + json.dumps(p, ensure_ascii=False, separators=(",", ":")) + "|")
+        self.new_docs.append(("FOOTPRINT", lines))
+        return new
+
     def _copy(self, key, src, title, tags, **changes):
         a = dict(self.device_attrs(src))
         a.update(changes)
@@ -488,13 +517,21 @@ class MProject(Project):
                       "Description": f"Metal film resistor {value} ±1% 600mW (TE LR1F series)"})
             self._device("R" + val, mpn, a, ["Resistors", "Through Hole Resistors"])
         c100n = meta(self.lib[DEV["C100n"]])["attributes"]
-        for val, (mpn, value) in C_NEW.items():
+        cfp = {"C254": self._footprint(fp_cap254())}
+        for val, (mpn, value, tol, volt, fpk) in C_NEW.items():
             a = dict(c100n)
             a.update({"Manufacturer Part": mpn, "Value": value, "Supplier Part": "", "Datasheet": "",
-                      "Tolerance": "±5%", "Temperature Coefficient": "C0G",
-                      "LCSC Part Name": f"{value} ±5% 50V C0G",
-                      "Description": f"Capacitance:{value} Tolerance:±5% Voltage Rating:50V Temperature Coefficient:C0G"})
+                      "Tolerance": tol, "Temperature Coefficient": "C0G",
+                      "LCSC Part Name": f"{value} {tol} {volt} C0G",
+                      "Description": f"Capacitance:{value} Tolerance:{tol} Voltage Rating:{volt} Temperature "
+                                     f"Coefficient:C0G" + (", 2.54 mm leads" if fpk == "C254" else "")})
+            if fpk:                                               # not the 5.08 mm part's 3D model
+                a.update({"Footprint": cfp[fpk], "Manufacturer": "KEMET", "Supplier Footprint": "P=2.54mm",
+                          "3D Model": "", "3D Model Title": "", "3D Model Transform": ""})
             self._device("C" + val, mpn, a, ["Capacitors", "Multilayer Ceramic Capacitors MLCC - Leaded"])
+        hdr = self.devices["HDR16"][1]                            # the box header with 1.7 mm pads (PCB-7)
+        self._copy("HDR16", "HDR16", hdr["title"], hdr.get("tags", []),
+                   Footprint=self._footprint_pads(self.device_attrs("HDR16")["Footprint"], J18_PAD))
         fps = {"RV": self._footprint(fp_res_vertical()), "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
                "DIP4": self._footprint(fp_dip(4, "DIP-4-W7.62-P2.54")), "SWLED": self._footprint(fp_led_button()),
                "POT": self._footprint(fp_alpha_pot(False)), "POT2": self._footprint(fp_alpha_pot(True))}
@@ -504,9 +541,12 @@ class MProject(Project):
             a = self.device_attrs(key)
             self._copy(key + "V", key, a["Manufacturer Part"], ["Resistors", "Through Hole Resistors"],
                        Footprint=fps["RV"])
-        a = dict(meta(self.lib[D1N4148])["attributes"])            # its own symbol is not cached: the 1N5819's
-        a["Symbol"] = self.device_attrs("D5819")["Symbol"]
-        self._device("D4148S", "1N4148", a, ["Diodes"])
+        a = dict(meta(self.lib[D1N4148])["attributes"])            # the 1N4148's DO-35 footprint; its own symbol
+        a.update({"Symbol": self.device_attrs("D5819")["Symbol"],  # is not cached: the 1N5819's (1 = cathode)
+                  "Manufacturer Part": "BAT85", "Manufacturer": "", "LCSC Part Name": "BAT85", "Supplier Part": "",
+                  "Datasheet": "", "Description": "Schottky diode 30 V 200 mA, DO-35. Symbol pin 1 = cathode = "
+                                                  "the band = pad 1"})
+        self._device("BAT85", "BAT85", a, ["Diodes", "Schottky Diodes"])
         self._copy("TL074N", "TL074", "TL074ACN", ["Amplifiers"], Footprint=fps["DIP14"],
                    Description="Quad JFET op-amp, DIP-14 on the 7.62 mm row pitch")
         for value in ("A100k", "B10k"):                           # your pot symbol on the Alpha footprint
@@ -591,7 +631,7 @@ def dev_of(part):
         return {"100n": "C100n", "1u": "C1u"}.get(part.value, "C" + part.value)
     if part.kind == "POT":
         return "POT" + part.value
-    return {"CP": "C10u", "D5819": "D5819", "D4148": "D4148S", "JACK": "JACK", "TL074": "TL074N",
+    return {"CP": "C10u", "D5819": "D5819", "BAT85": "BAT85", "JACK": "JACK", "TL074": "TL074N",
             "CD4013": "CD4013", "CD4093": "CD4093", "PHOTOMOS": "PHOTOMOS", "POT2": "POT2", "SWLED": "SWLED",
             "HDR8": "HDR8", "HDR12": "HDR12", "HDR16": "HDR16"}[part.kind]
 
@@ -771,11 +811,12 @@ def bus_rows(pg, P):
     """Summers, the MASTER loop through the faceplate and the output stages."""
     x_in = 760
     pg.text(x_in - 80, Y(40), "Buses: inverting summers (100k || 22p); MASTER (dual pot on the faceplate) between MIX "
-                              "and MST; output stages x2 (L, R) and x1 (SEND), 1k to the jacks", 12)
-    for side, t, (rf, cf), (rin, rfb, rs), out in (
-            ("L", 200, ("R901", "C901"), ("R904", "R905", "R906"), "OUT_L"),
-            ("R", 470, ("R902", "C902"), ("R907", "R908", "R909"), "OUT_R"),
-            ("S", 740, ("R903", "C903"), ("R910", "R911", "R912"), "SEND")):
+                              "and MST; output stages x2 (L, R; 200k || 4.7p) and x1 (SEND; 100k || 10p), 1k to the "
+                              "jacks", 12)
+    for side, t, (rf, cf), (rin, rfb, rs, cfb), out in (
+            ("L", 200, ("R901", "C901"), ("R904", "R905", "R906", "C907"), "OUT_L"),
+            ("R", 470, ("R902", "C902"), ("R907", "R908", "R909", "C908"), "OUT_R"),
+            ("S", 740, ("R903", "C903"), ("R910", "R911", "R912", "C909"), "SEND")):
         y = Y(t)
         u, sec = circuit.opamp_of("SUM", side)
         amp, jn, kn = inverting(pg, u, sec, x_in, y, P[rf], P[cf])
@@ -790,7 +831,7 @@ def bus_rows(pg, P):
             pg.wire([(kn[0] + 130, kn[1] + 30), a_in["1"]], f"MST_{side}")
             pg.port(kn[0] + 130, kn[1] + 30, f"MST_{side}", "IN", "left")
         uo, so = circuit.opamp_of("OUT", side)
-        amp2, jn2, kn2 = inverting(pg, uo, so, kn[0] + 210, kn[1] + 30, P[rfb])
+        amp2, jn2, kn2 = inverting(pg, uo, so, kn[0] + 210, kn[1] + 30, P[rfb], P[cfb])
         pg.wire([a_in["2"], jn2], f"NO_{side}")
         a_s = hpart(pg, P[rs], kn2[0] + 20, kn2[1])
         pg.wire([kn2, a_s["1"]], f"OA_{side}")
@@ -885,8 +926,8 @@ def latch_page(pr, P):
     for i, ref in enumerate(("U5", "U6", "U7", "U8", "U9", "U10")):
         col, row = i % 2, i // 2
         chip(pg, P, ref, 1000 + col * 330, Y(170 + row * 290))
-    # power-on reset: C906 from +12 V, R920 to GND; D903 across C906 never conducts (C906 empties through the
-    # CD4013B RESET inputs' protection diodes)
+    # power-on reset: C906 from +12 V, R920 to GND; D903 (BAT85, cathode POR) beside R920 empties C906 at
+    # power-off, when C906 drags POR below GND
     x0, t0 = 1000, 950
     pg.text(x0 - 60, Y(t0 - 50), "Power-on reset: POR high for ~70 ms, every channel starts unmuted", 11)
     y = Y(t0)
@@ -898,10 +939,9 @@ def latch_page(pr, P):
     r = vpart(pg, P["R920"], x0, y + 80)
     pg.wire([jp, r["1"]], "POR")
     pg.stub_gnd(r["2"], "down", 10)
-    dd = vpart(pg, P["D903"], x0 + 80, y + 10, top_pin="1")
-    pg.wire([dd["1"], (x0 + 80, y - 15), (x0 + 100, y - 15)], "+12V")
-    pg.port(x0 + 100, y - 15, "+12V", "IN", "right")
-    pg.wire([jp, (x0 + 80, y + 60), dd["2"]], "POR")
+    dd = vpart(pg, P["D903"], x0 + 80, y + 80, top_pin="1")
+    pg.wire([jp, (x0 + 80, y + 60), dd["1"]], "POR")
+    pg.stub_gnd(dd["2"], "down", 10)
     pg.wire([jp, (x0 - 40, y + 60)], "POR")
     pg.port(x0 - 40, y + 60, "POR", "OUT", "left")
     return pg
@@ -912,7 +952,8 @@ def power_page(pr, P):
     pg.page_count = "4"
     x0, t0 = 80, 120
     pg.text(x0 - 40, Y(t0 - 70), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V, 3-8 GND, 9-10 +12 V, "
-                                 "11-16 open), series 1N5819 per rail, 10R, 10 uF", 12)
+                                 "11-16 open), series 1N5819 per rail, 10R, 10 uF; BAT85 D904 clamps +12V when the "
+                                 "bus has no +12 V", 12)
     yh = Y(t0 + 40)
     xh = x0 + 60
     h = pg.place("J18", "HDR16", xh, yh, des=(-30, -45, "LEFT_BOTTOM"), value_at=(-30, 52, "LEFT_BOTTOM"))
@@ -950,6 +991,10 @@ def power_page(pr, P):
         cp = vpart(pg, P[c], xa + 130, y + 20, top_pin="2" if plus else "1")
         pg.wire([jn, cp["2" if plus else "1"]], rail)
         pg.stub_gnd(cp["1" if plus else "2"], "down", 10)
+        if plus:                             # D904 clamps +12V at about -0.3 V when the bus +12 V is missing
+            dc = vpart(pg, P["D904"], xa + 100, y + 20, top_pin="1", texts_left=True)
+            pg.wire([rp["2"], dc["1"]], rail)
+            pg.stub_gnd(dc["2"], "down", 10)
     # decoupling: a pair per TL074, one cap per CMOS chip
     pg.text(x0 - 40, Y(t0 + 300), "Decoupling: 100n per TL074 per rail, 100n per CMOS chip, each beside its chip", 12)
     caps = [(f"U{i + 1}", f"C{911 + 2 * i}", f"C{912 + 2 * i}") for i in range(4)]

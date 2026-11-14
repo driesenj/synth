@@ -66,6 +66,8 @@ NOTES = [
     "those resistors.",
     "The AQY212EH PhotoMOS relays also come from Farnell or LCSC.",
     "The mute buttons are red because a lit button means muted.",
+    "D904 clamps the +12 V net when the bus has no +12 V, with the op-amps' 20-40 mA through it: fit a BAT85 or "
+    "an SD103A there, not a 1N5711 (about 1 V at 15 mA).",
 ]
 
 # ---------------------------------------------------------------- catalogue (the same in every copy)
@@ -74,6 +76,8 @@ GROUPS = ["Panel parts", "Modules", "Chips", "Semiconductors", "Resistors", "Cap
           "Mechanical", "PCBs"]
 CAPS = {"100n": "100 nF ceramic (X7R, 50 V), 5.08 mm leads", "1n": "1 nF C0G ceramic or film, 50 V, 5.08 mm leads",
         "100p": "100 pF C0G ceramic, 50 V, 5.08 mm leads", "22p": "22 pF C0G ceramic, 50 V, 5.08 mm leads",
+        "10p": "10 pF C0G ceramic, 50 V or more, 2.54 mm leads (KEMET C315C100J1G5TA)",
+        "4p7": "4.7 pF C0G ceramic, 50 V or more, 2.54 mm leads (KEMET C315C479D1G5TA)",
         "1u": "1 µF ceramic (X7R, 50 V), 5.08 mm leads", "2n2": "2.2 nF C0G ceramic or film, 50 V, 5.08 mm leads",
         "10u": "10 µF ceramic (X5R / X7R, 16 V or more), 5.08 mm leads; an electrolytic is too tall"}
 CHIPS = {"TL074": ("Thonk", "TL074 quad op-amp (DIP-14)"),

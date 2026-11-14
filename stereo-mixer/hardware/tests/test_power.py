@@ -7,7 +7,7 @@ What it checks
     pitch and row spacing measured from the pads, the pin-1 triangle and the
     key notch in the footprint's silkscreen, a -12 V / stripe label on the
     board, pins 11-16 (+5 V, CV, Gate) touching no copper.
-  * D901 / D902 (1N5819) and D903 (1N4148): the cathode taken from the
+  * D901 / D902 (1N5819), D903 and D904 (BAT85): the cathode taken from the
     symbol's pin names AND from the band on the footprint's silkscreen;
     conduction with a correct cable, blocking with a reversed one; where the
     bus supplies land with a reversed cable.
@@ -74,6 +74,19 @@ LED_VF_MIN, LED_VF_TYP, LED_VF_MAX = 1.8, 2.0, 2.2
 D5819_VRRM, D5819_IF, D5819_IFSM = 40.0, 1.0, 25.0
 # Typical VF read from the typical forward curve (onsemi / Vishay, 25 C): about 0.30 V at 0.1 A, ~60 mV/decade
 # below that. Approximate (read off a log plot).
+
+
+def vf_bat85(i, worst=False):
+    """BAT85 forward voltage at current i (A). Worst: Vishay's max points (0.24 V at 0.1 mA, 0.32 V at 1 mA,
+    0.40 V at 10 mA, 0.50 V at 30 mA, 0.80 V at 100 mA), interpolated in log(i). Typ: 0.08 V under them
+    (ASSUMED from the datasheet's typical curve)."""
+    pts = [(1e-4, 0.24), (1e-3, 0.32), (1e-2, 0.40), (3e-2, 0.50), (1e-1, 0.80)]
+    i = min(max(i, 1e-4), 0.1)
+    for (i0, v0), (i1, v1) in zip(pts, pts[1:]):
+        if i <= i1:
+            v = v0 + (v1 - v0) * math.log(i / i0) / math.log(i1 / i0)
+            break
+    return v if worst else v - 0.08
 
 
 def vf5819(i, worst=False):
@@ -232,7 +245,7 @@ ck.check("design.md: J18 pins 1-2 -12 V, 3-8 GND, 9-10 +12 V, 11-16 unused",
          is not None, "power section")
 
 # =================================================================== 2. the diodes and C904 / C905
-print("--- D901 / D902 / D903: cathode from the symbol and from the footprint's band")
+print("--- D901 / D902 / D903 / D904: cathode from the symbol and from the footprint's band")
 
 
 def silk_side(title, pads):
@@ -245,7 +258,7 @@ def silk_side(title, pads):
 
 
 CATHODE = {}
-for ref in ("D901", "D902", "D903"):
+for ref in ("D901", "D902", "D903", "D904"):
     pl = mbr.parts[ref]
     dev = device_of(ref)
     pins = symbol_pins(dev)
@@ -260,10 +273,10 @@ for ref in ("D901", "D902", "D903"):
             exp = ("P12_D", "P12_IN")           # cathode towards the circuit, anode on the header's +12 V
         elif ref == "D902":
             exp = ("N12_IN", "N12_D")           # cathode on the header's -12 V, anode towards the circuit
-        elif src == "circuit.py":
-            continue                            # D903's intended orientation is judged in the faults section
-        else:                                   # D903: the routed copper must at least match circuit.py
-            exp = (MB[ref].nets.get(k_sym), MB[ref].nets.get(a_sym))
+        elif ref == "D903":
+            exp = ("POR", GND)                  # cathode on POR, anode on GND: empties C906 at power-off
+        else:
+            exp = (VP, GND)                     # D904: cathode on +12V, anode on GND: clamps a missing +12 V
         ck.check(f"{ref} cathode / anode nets ({src})", (nets.get(k_sym), nets.get(a_sym)) == exp,
                  f"expected K {exp[0]}, A {exp[1]}; got K {nets.get(k_sym)}, A {nets.get(a_sym)}")
 
@@ -555,13 +568,28 @@ for u in ("U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10"):
                  and spokes >= 2, f"track {L if L is None else round(L, 1)} mm, {spokes} spokes, "
                  f"nearest GND via {gvia:.1f} mm")
 
+def clamp(net_k, net_a):
+    """Diodes in circuit.py with the cathode on net_k and the anode on net_a."""
+    out = []
+    for p in MB.values():
+        if p.ref in CATHODE:
+            kk = p.nets[CATHODE[p.ref]]
+            aa = p.nets["2" if CATHODE[p.ref] == "1" else "1"]
+            if (kk, aa) == (net_k, net_a):
+                out.append(p.ref)
+    return out
+
+
 # =================================================================== 7. faults
 print("--- faults: one rail missing, power-off")
 iq_typ, iq_max = n_amps * TL074_IQ_TYP, n_amps * TL074_IQ_MAX
 for name, iq, worst in (("typ", iq_typ, False), ("max", iq_max, True)):
     v = vf5819(iq, worst) + r10 * iq
-    print(f"    +12 V at 0 V, -12 V on: the op-amps' {iq * 1e3:.0f} mA ({name}) returns through D901 + R918 -> "
-          f"+12V net at {-v:+.2f} V (CMOS VDD), unless the CMOS substrate diodes take it from ~{SI_VF_ON} V")
+    if clamp(VP, GND):                     # D904 straight from GND, in parallel with D901 + R918
+        v = min(v, vf_bat85(iq, worst))
+    print(f"    +12 V at 0 V, -12 V on: the op-amps' {iq * 1e3:.0f} mA ({name}) returns through D901 + R918"
+          f"{' and D904' if clamp(VP, GND) else ''} -> +12V net at {-v:+.2f} V (CMOS VDD), unless the CMOS "
+          f"substrate diodes take it from ~{SI_VF_ON} V")
     ck.check(f"+12 V missing (rail at 0 V), {name} IQ: CMOS VDD >= {CMOS_VDD_MIN} V (CD4000B abs max)",
              -min(v, SI_VF_ON + 0.05) >= CMOS_VDD_MIN, f"+12V net at {-min(v, SI_VF_ON + 0.05):+.2f} V")
 gnd_inp = [f"{u}.{pin}" for u in ("U1", "U2", "U3", "U4") for s, (o, im, ip) in circuit.SECTION.items()
@@ -577,26 +605,20 @@ for name, iq, worst in (("typ", iq_typ, False), ("max", iq_max, True)):
              f"-12V net at {v:+.2f} V, at most {i_pin * 1e3:.1f} mA per pin ({len(gnd_inp)} pins)")
 
 
-def clamp(net_k, net_a):
-    """Diodes in circuit.py with the cathode on net_k and the anode on net_a."""
-    out = []
-    for p in MB.values():
-        if p.kind.startswith("D") and p.ref in CATHODE:
-            kk = p.nets[CATHODE[p.ref]]
-            aa = p.nets["2" if CATHODE[p.ref] == "1" else "1"]
-            if (kk, aa) == (net_k, net_a):
-                out.append(p.ref)
-    return out
-
-
 # A rail open (not connected) rather than at 0 V: the op-amps' supply current has no diode path back, so the
 # parasitic paths carry all of it. Verifier: judged against the datasheets' abs max, not "a clamp must exist".
 cl_p = clamp(VP, GND)
-v_p = 0.0 if cl_p else SI_VF_ON                              # a Schottky clamp would hold ~0.3 V; none -> silicon
+for name, iq, worst in (("typ", iq_typ, False), ("max", iq_max, True)):
+    v_p = min(vf_bat85(iq, worst), SI_VF_ON) if cl_p else SI_VF_ON
+    print(f"    +12V open, {name} IQ {iq * 1e3:.0f} mA: +12V net at {-v_p:+.2f} V")
 ck.check(f"+12V open (not connected): CMOS VDD >= {CMOS_VDD_MIN} V (CD4000B abs max)",
          -v_p >= CMOS_VDD_MIN,
-         f"clamps (K +12V, A GND): {cl_p}; {iq_typ * 1e3:.0f}-{iq_max * 1e3:.0f} mA returns through the VSS->VDD "
-         f"diodes of {n_cmos} CMOS chips and the {len(gnd_inp)} TL074 IN+ pins on GND: +12V net near -{SI_VF_ON}..-0.6 V")
+         f"clamps (K +12V, A GND): {cl_p}; {iq_typ * 1e3:.0f}-{iq_max * 1e3:.0f} mA returns through "
+         + (f"D904 (BAT85): +12V net at {-v_p:+.2f} V at the max IQ and the BAT85's max VF "
+            f"({-min(vf_bat85(iq_typ), SI_VF_ON):+.2f} V typical); the CMOS chips' VSS->VDD diodes share it from "
+            f"~{SI_VF_ON} V" if cl_p else
+            f"the VSS->VDD diodes of {n_cmos} CMOS chips and the {len(gnd_inp)} TL074 IN+ pins on GND: +12V net near "
+            f"-{SI_VF_ON}..-0.6 V"))
 cl_n = clamp(GND, VN)
 i_pin = iq_max / len(gnd_inp)
 ck.check(f"-12V open (not connected): TL074 IN+ pins on GND carry the supply current within 10 mA per pin",
@@ -625,7 +647,8 @@ for net, pins in sorted(cmos_in.items()):
           f"to about -12 V and clamped at ~-{SI_VF_ON} V by their input diodes, {i_cl * 1e3:.1f} mA in all")
     cl = clamp(net, GND)
     ck.check(f"{net} stays >= -0.5 V at power-off (CD4000B input abs max): a clamp diode from GND", bool(cl),
-             f"clamps (K {net}, A GND): {cl}; the CMOS inputs' own diodes hold it at about -{SI_VF_ON} V")
+             f"clamps (K {net}, A GND): {cl}; " + (f"{', '.join(cl)} holds it at about -0.3..-0.4 V" if cl else
+                                                    f"the CMOS inputs' own diodes hold it at about -{SI_VF_ON} V"))
     ck.check(f"{net} clamp current at power-off within {CMOS_IIN_MAX * 1e3:.0f} mA per input",
              i_cl / len(pins) <= CMOS_IIN_MAX, f"{i_cl / len(pins) * 1e3:.2f} mA per input")
 d903 = MB["D903"]
@@ -633,7 +656,9 @@ k = d903.nets[CATHODE["D903"]]
 a = d903.nets["2" if CATHODE["D903"] == "1" else "1"]
 # C906 from +12V to POR: V(POR) = V(+12V) - Vc with Vc >= 0 always, so V(A) - V(K) = -Vc <= 0 if A = POR, K = +12V
 never = (a == "POR" and k == VP)
-ck.check("D903 is forward-biased at power-off, so it empties C906", not never,
-         f"D903 anode {a}, cathode {k}: V(POR) - V(+12V) = -V(C906) <= 0 in every state, it never conducts; "
-         f"a diode with its anode on GND and cathode on POR would clamp and empty it")
+ck.check("D903 is forward-biased at power-off, so it empties C906", not never and (a, k) == (GND, "POR"),
+         f"D903 anode {a}, cathode {k}: " + ("POR falls below GND at power-off and D903 conducts from GND"
+                                            if (a, k) == (GND, "POR") else
+                                            "V(POR) - V(+12V) = -V(C906) <= 0 in every state, it never conducts; a "
+                                            "diode with its anode on GND and cathode on POR would clamp and empty it"))
 ck.done()

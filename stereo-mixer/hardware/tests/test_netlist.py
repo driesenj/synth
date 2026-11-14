@@ -73,7 +73,7 @@ POT2_KICAD = {"1": (0, 0), "2": (0, 2.5), "3": (0, 5), "4": (-2.5, 0), "5": (-2.
 # recorded in .claude/skills/module-design/references/parts.md (NOT re-confirmed in this run: Thonk's site blocks
 # fetches and no public copy was found): contacts 1+2 and 3+4, LED anode 5 (L1), cathode 6 (L2).
 BUTTON_DS = {"contact_a": {"1", "2"}, "contact_b": {"3", "4"}, "LED_A": "5", "LED_K": "6"}
-# Diodes: 1N5819 (DO-41) and 1N4148 (DO-35), the band marks the cathode (onsemi 1N5817-D, Vishay 1N4148 sheets).
+# Diodes: 1N5819 (DO-41) and BAT85 (DO-35), the band marks the cathode (onsemi 1N5817-D, Vishay BAT85 sheets).
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -89,8 +89,8 @@ for name, parts in (("main", MB), ("face", FB)):
     single = {n: v for n, v in nets.items() if len(v) < 2}
     ck.check(f"A.no_single_pin_nets.{name}", not single, f"expected every net on >= 2 pins, got {single}")
 
-ck.check("A.part_counts", (len(MB), len(FB)) == (155, 59),
-         f"README: main board 155 parts, faceplate 59; got {len(MB)}, {len(FB)}")
+ck.check("A.part_counts", (len(MB), len(FB)) == (159, 59),
+         f"README: main board 159 parts (155 + C907-C909 and D904, 2026-11-14), faceplate 59; got {len(MB)}, {len(FB)}")
 
 bad_pairs = []
 for ref, kind, pins in circuit.HEADERS:
@@ -457,7 +457,7 @@ def plus_pin(uid, sym=False):
     return None
 
 
-for ref in ("D901", "D902", "D903"):
+for ref in ("D901", "D902", "D903", "D904"):
     c = COMPS["main"][ref]
     dev = ROUTED.devices.get(c["device"], {})
     sym, fp = dev.get("Symbol"), c["footprint"]
@@ -472,7 +472,7 @@ for ref in ("D901", "D902", "D903"):
     ck.check(f"C.{ref}.pcb_pads_match_circuit", c["nets"] == PARTS["main"][ref].nets,
              f"routed pads {c['nets']}, circuit {PARTS['main'][ref].nets}")
 
-D = {ref: (PARTS["main"][ref].nets["2"], PARTS["main"][ref].nets["1"]) for ref in ("D901", "D902", "D903")}
+D = {ref: (PARTS["main"][ref].nets["2"], PARTS["main"][ref].nets["1"]) for ref in ("D901", "D902", "D903", "D904")}
 
 
 def conducts(ref, v):
@@ -512,13 +512,20 @@ power_up = {"+12V": 12.0, "POR": 12.0, "GND": 0.0}
 power_off = {"+12V": 0.0, "POR": -12.0, "GND": 0.0}
 ck.check("C.D903_off_while_running", not conducts("D903", running) and not conducts("D903", power_up),
          f"D903 anode {D['D903'][0]}, cathode {D['D903'][1]}: must not conduct while running or at power-up")
-ck.check("C.D903_empties_C906_at_power_off", conducts("D903", power_off),
+ok = conducts("D903", power_off)
+ck.check("C.D903_empties_C906_at_power_off", ok,
          f"power-off: +12V -> 0 V, POR -> {power_off['POR']:+.0f} V; D903 anode {D['D903'][0]} at "
          f"{power_off[D['D903'][0]]:+.0f} V, cathode {D['D903'][1]} at {power_off[D['D903'][1]]:+.0f} V -> "
-         f"reverse-biased, it never conducts (across C906 it could only conduct if POR rose above +12V, which the "
-         f"cap cannot do). Wanted across R920: anode GND, cathode POR (a Schottky there keeps POR above -0.5 V)")
+         + ("forward-biased: it clamps POR and empties C906" if ok else
+            "reverse-biased, it never conducts. Wanted across R920: anode GND, cathode POR (a Schottky there keeps "
+            "POR above -0.5 V)"))
+# D904 (2026-11-14): with the bus +12 V missing and -12 V present the +12V net is pulled below GND; the clamp
+# must conduct then and never in use
+missing = {"+12V": -0.6, "GND": 0.0}
+ck.check("C.D904_clamps_a_missing_plus12", D["D904"] == ("GND", "+12V") and conducts("D904", missing)
+         and not conducts("D904", running), f"D904 anode {D['D904'][0]}, cathode {D['D904'][1]}")
 
-# As wired, what empties C906 at power-off is the four CD4013 RESET inputs' protection diodes to VSS: the +12 V rail
+# Until 2026-11-14 what emptied C906 at power-off was the four CD4013 RESET inputs' protection diodes to VSS: the +12 V rail
 # falls with the board's load on its own caps (D901 blocks any return; with the PSU still up the rail falls slower,
 # so the board's own decay is the upper bound), C906 couples that fall onto POR.
 # TI SCHS023E (CD4013B, rev. Sept 2016) absolute maximum: DC input current +-10 mA any one input (max);
@@ -541,11 +548,17 @@ I_PULLUPS = 8 * 12.0 / 100e3
 C_RAIL = 0.8 * harness.farads("10u") + 0.9 * 10 * harness.farads("100n")
 dvdt = (I_TL074_MAX + I_MUTES + I_PULLUPS) / C_RAIL                # V/s
 i_clamp = 1.1 * harness.farads("1u") * dvdt                       # through C906 into the clamps
-ck.check("C.POR_clamp_current_within_abs_max", i_clamp / 4 < 10e-3,
+# Since 2026-11-14 D903 (BAT85, cathode POR, anode GND) takes that current: Vishay BAT85 IF 200 mA max (abs max),
+# VF <= 0.32 V at 1 mA / 0.40 V at 10 mA, under the inputs' silicon diodes, so they carry next to nothing.
+BAT85_IF_MAX = 0.2
+schottky = D["D903"] == ("GND", "POR") and PARTS["main"]["D903"].kind == "BAT85"
+ck.check("C.POR_clamp_current_within_abs_max", (i_clamp < BAT85_IF_MAX) if schottky else (i_clamp / 4 < 10e-3),
          f"worst case: load {(I_TL074_MAX + I_MUTES + I_PULLUPS) * 1e3:.0f} mA on {C_RAIL * 1e6:.1f} uF, +12V falls at "
-         f"{dvdt / 1e3:.1f} V/ms -> {i_clamp * 1e3:.1f} mA through C906 into 4 RESET clamps, {i_clamp / 4 * 1e3:.2f} mA "
-         f"each (abs max 10 mA; {i_clamp * 1e3:.1f} mA if one input took it all); POR still sits about 0.6 V below "
-         f"VSS (abs max -0.5 V)")
+         f"{dvdt / 1e3:.1f} V/ms -> {i_clamp * 1e3:.1f} mA through C906 "
+         + (f"into D903 (BAT85, {BAT85_IF_MAX * 1e3:.0f} mA max): POR held at about -0.3..-0.4 V, inside the CD4013B's "
+            f"-0.5 V" if schottky else
+            f"into 4 RESET clamps, {i_clamp / 4 * 1e3:.2f} mA each (abs max 10 mA; {i_clamp * 1e3:.1f} mA if one input "
+            f"took it all); POR still sits about 0.6 V below VSS (abs max -0.5 V)"))
 
 # polarised caps: + pin from the symbol and the footprint actually used, then + on the more positive net
 VOLTS = {"+12V": 12.0, "GND": 0.0, "-12V": -12.0}
@@ -573,8 +586,9 @@ def expected_device(part):
             v += "0"                                  # 1k -> LR1F1K0
         return "LR1F" + v
     if part.kind == "C":
-        return {"100n": "FG28X7R1H104", "22p": "FG28C0G1H220", "1u": "SR305C105"}[part.value]
-    return {"CP": "178MU0033", "D5819": "1N5819", "D4148": "1N4148", "TL074": "TL074", "CD4013": "CD4013B",
+        return {"100n": "FG28X7R1H104", "22p": "FG28C0G1H220", "1u": "SR305C105", "4p7": "C315C479",
+                "10p": "C315C100"}[part.value]
+    return {"CP": "178MU0033", "D5819": "1N5819", "D4148": "1N4148", "BAT85": "BAT85", "TL074": "TL074", "CD4013": "CD4013B",
             "CD4093": "CD4093B", "PHOTOMOS": "AQY212EH", "HDR16": "DC3-2.54-16", "HDR8": "1x8", "HDR12": "1x12",
             "JACK": "WQP518MA", "POT": f"9mm {part.value}", "POT2": "dual-gang A100k", "SWLED": "LED button"}[part.kind]
 

@@ -86,6 +86,9 @@ LEADS = {
     "CAP-TH_L3.0-W2.0-P5.08-D0.7": {"*": ("round", 0.55, 0.55)},
     # 1 uF KYOCERA AVX SR305C105KAR (SR30 series): lead 0.508 mm (0.020 in) -> 0.55 with tolerance.
     "CAP-TH_L7.6-W3.8-P5.08-D0.51": {"*": ("round", 0.55, 0.55)},
+    # 4.7 / 10 pF KEMET C315 (Goldmax 300, 2.54 mm leads): lead 0.51 mm (0.020 in) -> 0.56 with tolerance (ASSUMED
+    # the same allowance as the other 0.020 in leads; the catalogue gives the nominal only).
+    "CAP-TH_P2.54-L4.0-W2.5": {"*": ("round", 0.56, 0.56)},
     # Alpha 9 mm vertical pots: terminal pins and snap-in legs. Alpha's drawing (RD901F) is an image we could
     # not read; KiCad's RD901F footprint (the source of these footprints) uses 1.0 mm drills for the pins.
     # Assumed pins 0.8 x 0.4 flat (diagonal 0.89), unconfirmed; the snap-in legs are not checked for fit.
@@ -115,6 +118,7 @@ BODY_DIP14 = (19.69, 7.11)  # TI N package max: D 0.775 in, E1 0.280 in
 BODY_DIP4 = (4.78 + 0.1, 6.4 + 0.1)    # Panasonic GU-E DIP-4 body (AQY21xEH family): 4.78 (along the pins) x 6.4
 #   nominal; +0.1 mm is an ASSUMED general tolerance (the drawing could not be read) to make it a maximum
 BODY_DO41 = (5.2, 2.7)     # DO-41 max body: 5.21 x 2.72 (ON Semi 1N5819)
+BODY_C315 = (3.81, 2.54)   # KEMET C315: 3.81 long (along the leads) x 2.54 deep x 5.33 tall, max (distributor listings)
 BODY_DO35 = (4.56, 2.28)   # DO-35 max body (Vishay 1N4148: 3.9 typ, JEDEC 5.08 max length; 2.28 dia)
 BODY_CP_D = 5.5            # 5 mm can + 0.5 tolerance and sleeve (Panasonic FC: D + 0.5 max)
 # 0.3 in 14-pin socket frame, length x width: Oupiin dual-wipe 14-pin drawing A 17.78 / C 10.16 mm, Solo
@@ -565,8 +569,8 @@ def nearer(pt, title, a, b):
 
 
 # diodes: the band is the short silk line across the body nearest one pad; the cathode is the pad the
-# circuit puts on the more positive end in reverse (D901: P12_D, D902: N12_IN, D903: +12V)
-CATHODE = {"D901": "P12_D", "D902": "N12_IN", "D903": "+12V"}
+# circuit puts on the more positive end in reverse (D901: P12_D, D902: N12_IN, D903: POR, D904: +12V)
+CATHODE = {"D901": "P12_D", "D902": "N12_IN", "D903": "POR", "D904": "+12V"}
 for ref, cat in CATHODE.items():
     pl = MB.parts[ref]
     title = pl["fp"]
@@ -641,7 +645,8 @@ def real_body(ref, pl):
     if fp == "CAP-TH_BD4.8-P2.50-D0.5-FD":
         return ("circle", ((P["1"].x + P["2"].x) / 2, (P["1"].y + P["2"].y) / 2), BODY_CP_D / 2)
     two = {"CAP-TH_L3.0-W2.0-P5.08-D0.7": BODY_FG28, "CAP-TH_L7.6-W3.8-P5.08-D0.51": BODY_SR30,
-           "DO-41_BD2.4-L4.7-P8.70-D0.8-RD": BODY_DO41, "DO-35_BD2.0-L4.0-P8.0-D0.5-RD": BODY_DO35}
+           "DO-41_BD2.4-L4.7-P8.70-D0.8-RD": BODY_DO41, "DO-35_BD2.0-L4.0-P8.0-D0.5-RD": BODY_DO35,
+           "CAP-TH_P2.54-L4.0-W2.5": BODY_C315}
     if fp in two:
         L, W = two[fp]
         a = math.degrees(math.atan2(P["2"].y - P["1"].y, P["2"].x - P["1"].x))

@@ -180,6 +180,23 @@ def _inside(p, bb):
     return bb[0] <= p[0] <= bb[2] and bb[1] <= p[1] <= bb[3]
 
 
+def sat_overlap(p, q):
+    """Penetration depth of two convex outlines (separating axes); <= 0 when they do not overlap."""
+    best = math.inf
+    for poly in (p, q):
+        for k in range(len(poly)):
+            (ax, ay), (bx, by) = poly[k], poly[(k + 1) % len(poly)]
+            nx, ny = by - ay, ax - bx
+            n = math.hypot(nx, ny)
+            if n < 1e-12:
+                continue
+            nx, ny = nx / n, ny / n
+            pa = [x * nx + y * ny for x, y in p]
+            pb = [x * nx + y * ny for x, y in q]
+            best = min(best, min(max(pa), max(pb)) - max(min(pa), min(pb)))
+    return best
+
+
 class Island:
     def __init__(self, outline, holes, layer, net):
         self.outline, self.holes, self.layer, self.net = outline, holes, layer, net
@@ -334,6 +351,7 @@ class RoutedBoard:
                 dx, dy = rot(px, -py if pl["bottom"] else py, pl["angle"])
                 cs.append((pl["x"] + dx, pl["y"] + dy))
             pl["body"] = _bbox(cs)
+            pl["body_poly"] = cs                  # the turned housing, for parts at odd angles
             self.parts[ref] = pl
         for pad in self.pads:
             pad.bb = (pad.x - pad.r, pad.y - pad.r, pad.x + pad.r, pad.y + pad.r)
@@ -565,7 +583,8 @@ class RoutedBoard:
             for i, (ra, a) in enumerate(bodies):
                 for rb, b in bodies[i + 1:]:
                     if a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]:
-                        ov = min(a[2] - b[0], b[2] - a[0], a[3] - b[1], b[3] - a[1])
+                        # the turned outlines, not their boxes (the same as the boxes for 0 / 90 / 180 / 270)
+                        ov = sat_overlap(self.parts[ra]["body_poly"], self.parts[rb]["body_poly"])
                         if ov > 0.05:
                             out.append(f"bodies of {ra} and {rb} overlap by {ov:.2f} mm on the "
                                        f"{'bottom' if side else 'top'} side")

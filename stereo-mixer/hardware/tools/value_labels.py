@@ -50,7 +50,7 @@ ca = _load("copper_audit")
 circuit = _load("circuit")
 
 
-LABELLED = ("R", "C", "CP", "D5819", "D4148", "POT", "POT2")
+LABELLED = ("R", "C", "CP", "D5819", "D4148", "BAT85", "POT", "POT2")
 POWER_HEADER = "J18"          # gets "-12V" beside its pin 1: the shroud's key alone does not say which end is red
 
 

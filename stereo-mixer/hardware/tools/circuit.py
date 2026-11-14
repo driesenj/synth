@@ -21,8 +21,8 @@ Signal flow (unchanged from the 2026-10-07 design, mutes now electronic)
   RETURN L/R (R takes L) -> dual A100k -> 200k into each bus
   DRUMS -> A100k -> 300k into each bus (centred); FX IN -> 100k -> SUM_S
   SUM_L/R/S: inverting summers, 100k || 22p
-  MASTER (dual A100k) -> x2 inverting stages -> 1k -> OUT L / OUT R
-  SUM_S -> unity inverter -> 1k -> SEND
+  MASTER (dual A100k) -> x2 inverting stages (200k || 4.7p) -> 1k -> OUT L / OUT R
+  SUM_S -> unity inverter (100k || 10p) -> 1k -> SEND
 
 Mute latch, per channel
   button contacts to GND_F, 100k pull-up to +12 V -> 10k / 100n debounce ->
@@ -156,6 +156,12 @@ def bus_main():
         R("R910", "100k", "MIX_S", "NO_S", "send inverter input"),
         R("R911", "100k", "NO_S", "OA_S", "send inverter feedback"),
         R("R912", "1k", "OA_S", "SEND", "send series"),
+        # phase-lead caps across the output stages' feedback resistors (test report AUDIO_AC-2, 2026-11-14): the
+        # ~5 pF on each inverting input with Rin || Rf put a pole inside the loop (17-18 deg margin); Cf Rf >= C Rin
+        # brings the worst case to about 66 deg. C0G, 2.54 mm leads.
+        C("C907", "4p7", "NO_L", "OA_L", "output L compensation"),
+        C("C908", "4p7", "NO_R", "OA_R", "output R compensation"),
+        C("C909", "10p", "NO_S", "OA_S", "send inverter compensation"),
         R("R913", "200k", "RW_L", "SUM_L", "return into L bus"),
         R("R914", "200k", "RW_R", "SUM_R", "return into R bus"),
         R("R915", "300k", "DRW", "SUM_L", "drums into L bus"),
@@ -178,12 +184,17 @@ def power_main():
         R("R919", "10R", "N12_D", VN, "-12 V filter"),
         Part("C904", "CP", "10u", {"2": VP, "1": GND}, "+12 V bulk"),
         Part("C905", "CP", "10u", {"2": GND, "1": VN}, "-12 V bulk"),
-        # power-on reset for the flip-flops: high for ~70 ms after +12 V comes up (R920 x C906 x ln 2). D903 sits
-        # across C906 and never conducts: C906 empties at power-off through the CD4013B RESET inputs' protection
-        # diodes (POR about -0.6 V, well under their 10 mA). A BAT85 from GND to POR would do it on a respin.
+        # with the bus +12 V missing (-12 V present) the CMOS chips' substrate diodes would pull VDD to about
+        # -0.6 V (abs max -0.5 V): a Schottky from GND clamps +12V at about -0.3 V (test report POWER-2)
+        Part("D904", "BAT85", "BAT85", {"1": VP, "2": GND}, "+12 V clamp, cathode on +12V"),
+        # power-on reset for the flip-flops: high for ~70 ms after +12 V comes up (R920 x C906 x ln 2). At power-off
+        # +12V falls and C906 drags POR below GND: D903 (cathode POR, anode GND) clamps it at about -0.3 V and
+        # empties C906, so the CD4013B RESET inputs' own diodes never conduct. (Until 2026-11-14 D903 was a
+        # 1N4148 with its cathode on +12V, which never conducts; on +12V a cathode-on-POR diode would hold every
+        # flip-flop in reset.)
         C("C906", "1u", VP, "POR", "power-on reset"),
         R("R920", "100k", "POR", GND, "power-on reset"),
-        Part("D903", "D4148", "1N4148", {"1": VP, "2": "POR"}, "across C906"),
+        Part("D903", "BAT85", "BAT85", {"1": "POR", "2": GND}, "empties C906 at power-off, cathode on POR"),
     ]
     for i, u in enumerate(("U1", "U2", "U3", "U4")):      # one pair per TL074, beside its supply pins
         parts.append(C(f"C{911 + 2 * i}", "100n", VP, GND, f"{u} +12 V"))

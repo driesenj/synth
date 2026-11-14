@@ -65,6 +65,8 @@ FLOP_IOH = {(5, 4.6): {"min25": 0.51, "typ": 1.0, "min85": 0.42},
 CMOS_VIN_ABS = 0.5           # absolute max input voltage: VSS - 0.5 ... VDD + 0.5 (both datasheets)
 CMOS_IIN_ABS = 10e-3         # absolute max DC input current, any one input (both datasheets)
 CMOS_DIODE_VF = 0.6          # input protection diode drop at ~0.1-1 mA: ASSUMED (silicon junction; not in the datasheets)
+# D903's own drop: Vishay BAT85 VF <= 0.32 V at 1 mA, 0.40 V at 10 mA (max); a 1N4148 about as a silicon junction
+BAT85_VF = 0.40
 CMOS_RETAIN_V = 1.5          # VDD below which a flip-flop's state is taken as lost: ASSUMED (not specified)
 # --- Panasonic AQY21xEH (GU-E 1 Form A), ASCTB126E 2012-01, AQY212EH column, 25 C
 AQY_IFON_MAX = 3.0e-3        # LED operate current, max (IL = max)
@@ -128,7 +130,7 @@ for k in CH:
 
 C906 = one(parts_between(VP_NET, "POR", "C"), "POR capacitor +12V-POR")
 R920 = one(parts_between("POR", GND, "R"), "POR resistor POR-GND")
-D903 = one([p for p in MB if p.kind.startswith("D") and "POR" in p.nets.values()], "diode on POR")
+D903 = one([p for p in MB if (p.kind.startswith("D") or p.kind == "BAT85") and "POR" in p.nets.values()], "diode on POR")
 NANDS = [p for p in MB if p.kind == "CD4093"]
 FLOPS = [p for p in MB if p.kind == "CD4013"]
 
@@ -438,15 +440,16 @@ def run_power(vp_wave, t_end, contact=lambda t: False, q0=None, db0=0.0, por_q0=
         db_over = max(db_over, db - vp)
         # POR: C906 from VP, R920 to GND
         por = por * math.exp(-DT / tau_por) + (vp - vp_prev)
+        # D903 as built (its two nets read from the routed board): forward when anode - cathode > its drop
+        vf = BAT85_VF if D903.kind == "BAT85" else CMOS_DIODE_VF
+        node = {VP_NET: vp, GND: 0.0, "POR": por}
+        va, vc = node.get(D903_ANODE, 0.0), node.get(D903_CATHODE, 0.0)
+        d903_max = max(d903_max, va - vc)
+        if va - vc > vf:
+            por = va - vf if D903_CATHODE == "POR" else vc + vf
         if por < -CMOS_DIODE_VF:
             i_por_clamp = max(i_por_clamp, C_POR * (-CMOS_DIODE_VF - por) / DT / 8)   # 8 RESET inputs share it
             por = -CMOS_DIODE_VF
-        # D903 as built: forward when anode - cathode > its drop
-        va = por if D903_ANODE == "POR" else vp
-        vc = vp if D903_CATHODE == VP_NET else por
-        d903_max = max(d903_max, va - vc)
-        if va - vc > CMOS_DIODE_VF:
-            por = vp + CMOS_DIODE_VF if D903_ANODE == "POR" else vp - CMOS_DIODE_VF
         if por > vp + CMOS_DIODE_VF:
             por = vp + CMOS_DIODE_VF
         por_min, por_max_over = min(por_min, por), max(por_max_over, por - vp)
@@ -601,14 +604,13 @@ for tau_name, tau_off in (("fast", TAU_FAST), ("slow", 50e-3)):
         cyc.append((f"{d * 1e3:.0f} ms {tau_name}", res))
 d903 = max(r["d903_max"] for _, r in cyc)
 ck.check("D903 empties C906 at power-off (what a diode at C906 is for)", d903 > 0.3,
-         f"D903 as built (anode {D903_ANODE}, cathode {D903_CATHODE}) is never forward biased: max "
-         f"{d903:.2f} V over all power cycles. C906 is emptied instead through the CD4013B RESET input "
-         f"protection diodes: POR pulled to {min(r['por_min'] for _, r in cyc):.2f} V, up to "
-         f"{max(r['i_por'] for _, r in cyc) * 1e3:.2f} mA per input (fast rail decay, tau {TAU_FAST * 1e3:.1f} ms)")
+         f"D903 as built (anode {D903_ANODE}, cathode {D903_CATHODE}): forward by up to {d903:.2f} V over all power "
+         f"cycles; POR down to {min(r['por_min'] for _, r in cyc):.2f} V, the RESET inputs' diodes carry up to "
+         f"{max(r['i_por'] for _, r in cyc) * 1e3:.2f} mA each (fast rail decay, tau {TAU_FAST * 1e3:.1f} ms)")
 ck.check(f"power-off: POR stays inside the CD4013B input range (VSS - {CMOS_VIN_ABS} V)",
          min(r["por_min"] for _, r in cyc) >= -CMOS_VIN_ABS,
-         f"POR min {min(r['por_min'] for _, r in cyc):.2f} V (held only by the input diodes, ASSUMED drop "
-         f"{CMOS_DIODE_VF} V)")
+         f"POR min {min(r['por_min'] for _, r in cyc):.2f} V (D903 {D903.value}, drop {BAT85_VF if D903.kind == 'BAT85' else CMOS_DIODE_VF} V; "
+         f"the input diodes ASSUMED {CMOS_DIODE_VF} V)")
 ck.check(f"power-off: DB stays inside the CD4093B input range (VDD + {CMOS_VIN_ABS} V)",
          max(r["db_over"] for _, r in cyc) <= CMOS_VIN_ABS,
          f"DB - VDD max {max(r['db_over'] for _, r in cyc):.2f} V: each 100 nF debounce cap discharges into VDD "
@@ -616,8 +618,8 @@ ck.check(f"power-off: DB stays inside the CD4093B input range (VDD + {CMOS_VIN_A
 ck.check("power-off: clamp currents under the 10 mA abs max DC input current per input",
          max(max(r["i_por"], r["i_db"]) for _, r in cyc) < CMOS_IIN_ABS,
          f"RESET {max(r['i_por'] for _, r in cyc) * 1e3:.2f} mA, CD4093 {max(r['i_db'] for _, r in cyc) * 1e3:.2f} mA")
-# with a diode across R920 (cathode POR, anode GND) instead, a BAT85-class Schottky (VF ~0.3 V at 1 mA, ASSUMED)
-# would hold POR at about -0.3 V: inside the -0.5 V limit, the CMOS diodes then carry almost nothing.
+# D903 (BAT85) across R920, cathode POR (2026-11-14), holds POR at about -0.3..-0.4 V: inside the -0.5 V limit, the
+# CMOS diodes carry almost nothing. Until then a 1N4148 sat across C906 (cathode +12V) and never conducted.
 
 # --- brown-out: muted channel, rail dips to v_dip for 20 ms (0.5 ms down, 1 ms back)
 def dip(v_dip, d=20e-3, t0=0.3):

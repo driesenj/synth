@@ -308,7 +308,7 @@ def _node(net):
 
 
 def build(model, caps, pots=None, patched=None, mutes=(), ron=RON_TYP, coff=None, load=True, src=R_SOURCE,
-          extra_cable=0.0, extra_c=()):
+          extra_cable=0.0, extra_c=(), skip=()):
     """The whole mixer as a Net.
 
     pots: {ref or ref+'B' (dual gang B): wiper fraction a, 0 = wiper on pin 1 (pin 4 for gang B)}; default 1.
@@ -319,6 +319,8 @@ def build(model, caps, pots=None, patched=None, mutes=(), ron=RON_TYP, coff=None
     coff = COFF_CURVE[0][1] * 1e-12 if coff is None else coff
     net = Net()
     for p in MAIN_PARTS:
+        if p.ref in skip:
+            continue                          # a part left out, to price it
         if p.kind != "PHOTOMOS" and any(_node(n).startswith(AUDIO_SKIP) for n in p.nets.values()):
             continue                          # the latch; a PhotoMOS's LED side is on latch nets, its switch is not
         if p.kind == "R":
@@ -653,22 +655,22 @@ for op in sorted(pm_rows, key=lambda o: (o.split(".")[0], int(o.split(".")[1])))
     ck.check(f"phase margin >= {PM_MIN:.0f} deg: {op} ({ROLE[op]})", pm >= PM_MIN,
              f"expected >= {PM_MIN:.0f} deg; worst {pm:.1f} deg at {fc / 1e6:.2f} MHz ({mname}, {cname})")
 
-# A fix to try: a small capacitor across each output stage's feedback resistor (Cf Rf >= C_node Rin)
-FIX = [("NO_L", "OA_L", 4.7e-12), ("NO_R", "OA_R", 4.7e-12), ("NO_S", "OA_S", 10e-12)]
-worst_fix = []
-for model, mname in ((OP_NEW, "GBW 5.25 MHz"), (OP_OLD, "GBW 3 MHz")):
-    for cname, kw in CONFIGS:
-        net = build(model, caps, extra_c=FIX, **kw)
-        for op in ("U3.3", "U4.3", "U4.4"):
-            worst_fix.append(phase_margin(net, op) + (op, mname))
-pm_fix = min(worst_fix)
+# The output stages' phase-lead caps (C907 / C908 4.7 pF across R905 / R908, C909 10 pF across R911; added
+# 2026-11-14 for AUDIO_AC-2, where these stages had 17-18 deg): their worst margin as built, and what they cost at
+# 20 kHz against the same board without them.
+CF = [p.ref for p in MAIN_PARTS if p.kind == "C" and {_node(n) for n in p.nets.values()} in
+      ({"NO_L", "OA_L"}, {"NO_R", "OA_R"}, {"NO_S", "OA_S"})]
+outs = [o for o in pm_rows if ROLE[o].startswith("OUT")]
+pm_out = min(min(pm_rows[o]) + (o,) for o in outs)
+ck.check("the output stages carry their phase-lead caps (C across Rf on L, R and SEND)", len(CF) == 3, f"{CF}")
 loss = []
 for name, jacks, out in (("IN 7 L -> OUT L", ["J7"], "OUT_L"), ("FX IN -> SEND", ["J14"], "SEND")):
-    a0 = response(build(OP_NEW, caps, patched={j: "in" for j in jacks}), out)[-1]
-    a1 = response(build(OP_NEW, caps, patched={j: "in" for j in jacks}, extra_c=FIX), out)[-1]
+    a1 = response(build(OP_NEW, caps, patched={j: "in" for j in jacks}), out)[-1]
+    a0 = response(build(OP_NEW, caps, patched={j: "in" for j in jacks}, skip=CF), out)[-1]
     loss.append(a1 - a0)
-print(f"      with 4.7 pF across R905 / R908 and 10 pF across R911: worst output-stage phase margin "
-      f"{pm_fix[0]:.1f} deg ({pm_fix[2]}, {pm_fix[3]}); extra loss at 20 kHz {min(loss):+.3f} dB")
+print(f"      output stages as built ({', '.join(CF)}): worst phase margin {pm_out[0]:.1f} deg ({pm_out[4]}, "
+      f"{pm_out[2]}, {pm_out[3]}); the caps cost {min(loss):+.3f} dB at 20 kHz")
+ck.check("the phase-lead caps cost under 0.1 dB at 20 kHz", min(loss) > -0.1, f"{min(loss):+.3f} dB")
 
 
 # ------------------------------------------------------------------------------------ 5. slew rate

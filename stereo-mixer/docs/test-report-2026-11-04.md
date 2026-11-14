@@ -84,6 +84,46 @@ had the same `power_main()` and were fixed in their generators on
   pour keeps the old 11–12 link's void and a few thin fill necks around
   J18. EasyEDA's rebuild clears them.
 
+## Fixed in copper on 2026-11-14: D903, AUDIO_AC-2, POWER-2, PCB-7
+
+The user asked for every recommended and optional fix before routing ("Do
+all recommended fixes and optional fixes", 2026-11-14).
+
+| Finding | Change |
+|---|---|
+| D903 | Now a BAT85 with its cathode (pad 1) on POR and its anode on GND, across R920 rather than C906. In the routed master the part turns round in place (angle 90 → 270): its cathode lands on the old POR pad, its anode on the old +12 V pad, which now has GND spokes. The +12 V trunk that ran through that pad now stops short of it: (21, 25) → (26.58, 19.42) → C906 pad 1 at (32, 19.42), a new 0.6 mm bottom-layer track, 0.32 mm from the anode pad. Its old (28, 18) → (30.58, 18) segment is deleted. At power-off POR now sits at about −0.3 to −0.4 V instead of −0.6 V on the CD4013B inputs' diodes. |
+| AUDIO_AC-2 | C907 / C908 4.7 pF across R905 / R908, C909 10 pF across R911: KEMET C315 C0G with 2.54 mm leads (C315C479D1G5TA, C315C100J1G5TA), a new CAP-TH_P2.54-L4.0-W2.5 footprint. Each has two top-layer 0.3 mm tracks. C907 sits at 45° under R906, and its NO_L track runs up between the R904 / R906 and R905 columns to R904 pad 2, 0.32 mm from the pads. C908 is at the left edge with two 45° tracks to R907 pad 2 and R909 pad 1. C909 is one column left of R910 / R912 with two 45° tracks. Worst phase margin is now 66° on the send inverter and 72° on OUT L / R, against 17–18° before. The caps cost 0.07 dB at 20 kHz. |
+| POWER-2 | D904, a BAT85 from GND (anode) to +12 V (cathode). Its cathode pad sits on the +12 V trunk at (25.38, 20.62), so it needs no new track; its anode is 8 mm below at (25.38, 12.62) on four spokes per layer. It is not right beside C904 (the only DO-35 spot there squeezes between two output tracks at 0.26 mm), but it is on the same +12 V net 13 mm away. With +12 V missing the +12 V net now sits at −0.39 V typically. At worst (40 mA, the BAT85's maximum VF) it is −0.55 to −0.57 V, still a little past the CD4000B's −0.5 V but better than −0.60 V. A 1N5819 in D904's place (DO-41, 8.7 mm; the spot has room) would hold about −0.34 V even then. |
+| PCB-7 | J18's pads 1.524 → 1.7 mm on the 1.1 mm holes: a 0.30 mm ring. The master's J18 footprint was edited in place; the generator copies the library footprint with the bigger pads. |
+
+**How.**
+- `circuit.py`, `easyeda_export.py` (devices, the 2.54 mm cap footprint, the J18 footprint copy, schematic drawing),
+  `pcb.py` (placement) and `bom.py` were changed first. The regenerated StereoMixer.epro2 has 0 schematic and
+  0 PCB problems. `pcb.py`'s and `copper_audit.py`'s body checks now test the turned outlines of parts at odd
+  angles (a 45° part's bounding box overlapped R906's).
+- The routed master was patched by script:
+  - three schematic pages synced to the generator's; all 7 pages now compare equal;
+  - the new devices and footprint copied in;
+  - pad nets, tracks, components and pours. New cutouts (0.358 mm clearance) were unioned with the cutouts they
+    touch; D903's and D904's anodes got spokes.
+- The value labels were added for the new parts (D903's BAT85 label re-placed). Four old labels that the new pads
+  covered, or that read as a new part's, became legend lines: "1k: R909", "100k: R910", "100n: C917",
+  "300k: R915".
+- **No ratlines are left**: every new pad is routed or tied into the pour.
+
+**Checks after the change:**
+- Copper audit: 0 differences against circuit.py, 0 split nets, 0 other-net contacts, 0 gaps under 0.152 mm,
+  the same 32 between 0.152 and 0.25 mm. The faceplate and panel are unchanged.
+- Suite: **1960 checks, 69 failing** (was 1932 / 68).
+  - 9 fixed: the 3 output-stage phase margins, 5 D903 / POR checks, J18's ring.
+  - 28 new checks for the new parts, all passing.
+  - The two POWER-2 checks still fail at the worst case, with better figures (above).
+  - 10 flatness checks that sat at −0.45 to −0.48 dB now read −0.50 to −0.53 dB at 20 kHz (SEND swept, MASTER
+    swept). The caps' 0.07 dB tips them over the 0.5 dB line. Most of that droop is still M1's PhotoMOS off
+    capacitance; the other flatness checks were already failing at about −1 dB.
+- Rebuild the copper areas in EasyEDA before the Gerbers. The stored pours carry the old trunk segment's void
+  beside D903 and a few cutouts that now meet the pour's outer edge.
+
 ## Fixed the same day (no copper changed)
 
 The copper audit of the patched master is identical to the one before.
@@ -101,11 +141,10 @@ findings below.
 | Docs | Every figure in the "Docs" list below, the PhotoMOS off capacitance, the muted input loading, the input range, D903, the brown-out, the phase margin, the DC offset and the worst-case current are now in design.md; build notes for the LED button pinout, socket order, decouplers and pour islands. |
 
 Still open, and still failing their checks: M1 (the PhotoMOS off
-capacitance: no drop-in part does better, see M1; a respin would cure it), D903, the output stages'
-phase margin, the mute loading its input, the DC offset, the TL074's
-common-mode limit, the latch's bounce / brown-out / abs-max margins, a
-missing +12 V, J18's annular ring, the body / socket overlaps and the pour
-wedge.
+capacitance: no drop-in part does better, see M1; a respin would cure it), the mute loading its input, the DC
+offset, the TL074's common-mode limit, the latch's bounce / brown-out / DB abs-max margins, the body / socket
+overlaps and the pour wedge. D903, the output stages' phase margin, a missing +12 V (improved, still marginal at
+the worst case) and J18's annular ring were fixed in copper on 2026-11-14 (see above).
 
 ---
 
@@ -184,16 +223,16 @@ standoffs (or 10 mm + a washer), in all four BOMs and the skill.
 
 | Id | Finding | Fix |
 |---|---|---|
-| D903 (NETLIST-1, LATCH-3, -4, POWER-1) | D903 (anode POR, cathode +12V) sits across C906 and can never conduct. C906 empties through the CD4013B RESET inputs' protection diodes instead: POR goes to about −0.6 V at every power-off (abs max −0.5 V), 0.25–0.33 mA per input typically and about 3.6 mA at worst with the new LED currents, against the 10 mA rating. The debounce caps do the same into VDD (DB 0.6 V above VDD, 0.13 mA). The reset still works every time. | Leave it (harmless) and correct design.md, or on a respin put a BAT85 from GND (anode) to POR (cathode). Don't just flip D903: on +12V that holds every flip-flop in reset, cathode on GND removes the reset. |
-| AUDIO_AC-2 | The OUT L/R stages and the SEND inverter have 17–18° phase margin: the ~5 pF on each inverting input with Rin ∥ Rf (67–77k on the output stages, 50k on the send inverter) puts a pole inside the loop. +9 / +11 dB closed-loop peaking near 1 MHz; nothing in the audio band, no oscillation predicted. | 4.7 pF C0G across R905 and R908, 10 pF across R911, soldered on the standing resistors' legs (66° worst). |
+| D903 (NETLIST-1, LATCH-3, -4, POWER-1), **fixed 2026-11-14** | D903 (anode POR, cathode +12V) sits across C906 and can never conduct. C906 empties through the CD4013B RESET inputs' protection diodes instead: POR goes to about −0.6 V at every power-off (abs max −0.5 V), 0.25–0.33 mA per input typically and about 3.6 mA at worst with the new LED currents, against the 10 mA rating. The debounce caps do the same into VDD (DB 0.6 V above VDD, 0.13 mA). The reset still works every time. | Leave it (harmless) and correct design.md, or on a respin put a BAT85 from GND (anode) to POR (cathode). Don't just flip D903: on +12V that holds every flip-flop in reset, cathode on GND removes the reset. |
+| AUDIO_AC-2, **fixed 2026-11-14** | The OUT L/R stages and the SEND inverter have 17–18° phase margin: the ~5 pF on each inverting input with Rin ∥ Rf (67–77k on the output stages, 50k on the send inverter) puts a pole inside the loop. +9 / +11 dB closed-loop peaking near 1 MHz; nothing in the audio band, no oscillation predicted. | 4.7 pF C0G across R905 and R908, 10 pF across R911, soldered on the standing resistors' legs (66° worst). |
 | AUDIO_DC-4 | Muting loads the input: at full LEVEL a muted mono input is 9.1k (stereo L with R normalled 4.5k); a source multed elsewhere drops 0.4–1.5 dB. design.md says the source is never loaded. | Doc; raising R*k*01 to 100k would fix it but makes M1 worse unless the PhotoMOS changes. |
 | AUDIO_DC-2 | The followers leave the TL074's common-mode range below −8.5 V typ / −7.1 V worst at the jack (LEVEL near full), where a TL07x can reverse phase. ±5 V audio is always inside. | Note it in the docs. |
 | AUDIO_DC-3 | DC offset at OUT L/R: 53 mV typical, 278 mV worst at 25 °C (TL074 Vos max through an offset gain of 28, 20 of it in U4); SEND 31 / 197 mV. MASTER moves it by up to 225 mV. | A TL074B in U4 halves the worst case; or AC-couple the outputs. |
 | LATCH-5 | A contact-bounce gap of 2.1 ms or more right after the press edge can re-arm the Schmitt (worst threshold corner; 4.7 ms typical). 300 random bouncy presses per corner toggle exactly once. | Accept; or a 220k pull-up (4.4 ms). |
 | LATCH-6, V1 | A rail dip to 3–7 V for 20 ms leaves channels randomly reset, kept or toggled, and can mute an unmuted one. Dips to 8 V or more keep everything; 2 V or less resets everything. | Accept (overloaded bus only). |
-| POWER-2 | With +12 V missing, the 6 CMOS chips' VDD is pulled to about −0.55…−0.6 V through their substrate diodes (abs max −0.5 V). | Accept; or a BAT85 from GND to +12V by C904. |
+| POWER-2, **improved 2026-11-14** | With +12 V missing, the 6 CMOS chips' VDD is pulled to about −0.55…−0.6 V through their substrate diodes (abs max −0.5 V). | Accept; or a BAT85 from GND to +12V by C904. |
 | PCB-4, -5 | At the largest socket and body sizes, DIP-14 socket frames touch R502, R706, R405 by 0.14–0.21 mm, and the CMOS decouplers lean on their chips. R805 / C903 do not collide (copper_audit's 0.10 mm is the outline). | Fit sockets first; bend the decouplers away. |
-| PCB-7 | J18's annular ring is 0.212 mm: above JLCPCB's 0.20 mm minimum, under its recommended 0.25 mm. | Optional: 1.7 mm pads. |
+| PCB-7, **fixed 2026-11-14** | J18's annular ring is 0.212 mm: above JLCPCB's 0.20 mm minimum, under its recommended 0.25 mm. | Optional: 1.7 mm pads. |
 | PCB-8, POWER-7 | No "−12V" text beside J18 (the triangle and key notch are the only marks), as on every house board. | Optional silk string. |
 | PCB-9 | A 0.17 mm² pour wedge hangs on one spoke beside C913; no dead copper anywhere. | Minimum island area when the pours are rebuilt. |
 | BOM-2…6, POWER-6 | No voltage on the 22 p / 100 n / 1 µ lines (the library parts are 50 V); no screw length; the 10 µF line's "5 mm can, 2.5 mm leads" is not a stock combination (the library part is a dipped tantalum); the 10 DIP-14 sockets are spread over three chip lines; one PCB line covers two designs. | bom.py text. |
