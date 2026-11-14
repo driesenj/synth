@@ -9,8 +9,10 @@ the project's third board. Every designator matches
 
 Status: schematic done and checked (6 pages, 0 problems), footprints
 assigned, both PCBs placed and net-assigned, header pin orders picked for
-the fewest crossing lines, the panel as the third board. Nothing routed or
-built.
+the fewest crossing lines, the panel as the third board. Both boards are
+routed and audited (`StereoMixer-routed.epro2`, third export 2026-11-02,
+patched 2026-11-04 for the LED resistors, value labels and a −12V mark);
+nothing built yet.
 
 What changed from the 2026-10-07 design: the mutes are Thonk LED buttons
 with a latch instead of toggles (a lit button = muted, every channel starts
@@ -66,12 +68,31 @@ Clouds' wet signal comes back in phase with the dry channel.
 - **LEVEL** (A100k, faceplate) is a divider from the jack to GND; the input
   impedance is 100k. Its wiper (LVk) comes down a header to a 10k series
   resistor into the follower's + input (FIk).
-- **Mute:** an AQY212EH PhotoMOS from FIk to GND. Off, it is an open switch
-  on a high-impedance node, so the follower sees the wiper and the channel's
-  gain is unchanged. On, it shorts FIk (0.83 Ω typical, 2.5 Ω max) behind
-  10k plus the wiper's own resistance: the channel drops by 82 dB typically,
-  72 dB at worst. The source is never loaded by the mute, so a multed
-  signal keeps its level elsewhere.
+- **Mute:** an AQY212EH PhotoMOS from FIk to GND. On, it shorts FIk
+  (0.85 Ω typical, 2.5 Ω max) behind 10k plus the wiper's own resistance:
+  the channel drops by 82 dB typically, 72 dB at worst. Off, it is not
+  quite an open switch: its output capacitance (79 pF at 0 V, 35 pF at
+  7.5 V) sits on the high-impedance FI node behind 10k plus the wiper's
+  resistance, up to 31k at about ¾ of LEVEL's travel. That costs up to
+  0.6 dB at 20 kHz, and because the capacitance changes with the voltage it
+  adds 0.05–0.18 % THD at 1 kHz and 0.3–1.7 % at 10 kHz to a 10 V p-p
+  signal at those LEVEL settings. It falls fast with frequency and level:
+  0.005–0.017 % at 100 Hz, 0.004–0.021 % for 2 V p-p at 1 kHz. No DIP-4
+  PhotoMOS does better (test report M1): the low-capacitance ones are
+  18–50 Ω parts that would cut the mute to about 50 dB. A respin with the
+  shunt at a low-impedance node would cure it.
+- **Loading:** muted, the 10k loads the LEVEL wiper. At full LEVEL a mono
+  input falls from 100k to 9.1k (a stereo L input with R normalled to
+  4.5k), so a source multed elsewhere drops by 0.4–1.5 dB while the channel
+  is muted; at LEVEL noon or below the change is negligible.
+- **Input impedance:** 100k on every channel input and on FX IN; a
+  stereo L input with its R unpatched 50k; RETURN R 100k at RETURN off
+  down to 67k at full, RETURN L with R normalled 50k down to 33k; DRUM IN
+  60–100k.
+- **Input range:** the followers' + inputs see the jack's voltage at full
+  LEVEL. Below about −8.5 V (−7.1 V worst case) a TL074 leaves its
+  common-mode range and can flip phase; Eurorack audio at ±5 V is far
+  inside, and only a hot ±10 V source at nearly full LEVEL reaches it.
 - **Follower** (TL074 section) drives CHk: the SEND pot's top (through the
   header), the two 10k pan feeds, or on the stereo channels the 200k bus
   resistor and the 10k send average.
@@ -86,13 +107,30 @@ Per channel: the button's 3+4 contacts pull BTNk to GND_F against a 100k
 pull-up to +12 V; 10k / 100n debounce (1 ms on press, 11 ms on release)
 into a CD4093 NAND with both inputs tied, i.e. a Schmitt inverter, so the
 clock edge is clean and comes on press. The CD4013 half toggles (D = /Q).
-Q high = muted: Q → 1k5 → the PhotoMOS LED (two in series on a stereo
-channel) → header → the button's LED → GND_F, about 5 mA on a mono channel
-and 4.3 mA on a stereo one with a red button LED (the AQY212EH needs 3 mA
-at most). Every flip-flop's RESET comes from one power-on RC (1 µF from
-+12 V, 100k to GND, a 1N4148 to empty it at power-off): about 100 ms of
-reset at power-up, longer than the debounce caps take to settle, so the
+Q high = muted: Q → 1k (820 Ω on a stereo channel) → the PhotoMOS LED
+(two in series on a stereo channel) → header → the button's LED → GND_F,
+about 6.8 mA typical on either kind with a red button LED, inside
+Panasonic's recommended 5–10 mA. With a weak CD4013B output on a low rail
+and high LED voltages it is still about 4 mA (3.9 mA on a stereo channel),
+above the 3 mA the AQY212EH needs at most. Every flip-flop's RESET comes from one power-on RC
+(1 µF from +12 V, 100k to GND): about 70 ms of reset at power-up
+(R × C × ln 2; 35–125 ms over the CD4013B's thresholds), longer than the
+debounce caps take to settle for any rail ramp from 1 to 200 ms, so the
 mixer always starts with every channel open.
+
+D903, a 1N4148, sits across C906 and never conducts. C906 empties at
+power-off through the CD4013B RESET inputs' protection diodes instead: POR
+goes to about −0.6 V for a moment, at under 1 mA per input typically and
+about 4 mA at worst (every channel muted, the rail collapsing fast), inside
+their 10 mA rating, and the next power-up resets as it should. Likewise each
+debounce cap empties into VDD through its CD4093B inputs' diodes (DB about
+0.6 V above VDD, 0.13 mA), well inside the rating. On a respin, a BAT85 from GND
+(anode) to POR (cathode) would do the job. Don't simply turn D903 round:
+on +12 V that way it holds every flip-flop in reset.
+
+A rail dip to between 3 and 7 V (an overloaded bus) can leave channels
+randomly muted or unmuted; dips that stay above 8 V keep every mute, and a
+full power cycle opens them all.
 
 | Channel | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |---|---|---|---|---|---|---|---|---|
@@ -103,8 +141,9 @@ mixer always starts with every channel open.
 
 The switching is fast (about 1 ms on, 0.1 ms off), so muting a loud
 signal can click, as with the toggles before. If it bothers you: a 22 µF
-across the PhotoMOS LED and button LED chain, the 1k5 already in series,
-turns the PhotoMOS on over about 30 ms, which mutes more softly.
+across the PhotoMOS LED and button LED chain, the 1k (820 Ω on a stereo
+channel) already in series, turns the PhotoMOS on over about 20 ms, which
+mutes more softly.
 
 ### Buses, master and outputs
 
@@ -121,6 +160,13 @@ turns the PhotoMOS on over about 30 ms, which mutes more softly.
   headroom than the outputs.
 - **Send output:** the send summer, a unity inverter (100k / 100k) and 1k.
   No level knob: Clouds' IN GAIN does that.
+- **Phase margin:** the output stages and the send inverter have no
+  capacitor across their feedback resistors, and the few pF on each
+  inverting input with Rin ∥ Rf (67–77k on the output stages, 50k on the
+  send inverter) leave them about 18° of phase
+  margin: some peaking near 1 MHz, nothing in the audio band, no
+  oscillation predicted. For margin, solder 4.7 pF C0G across R905 and
+  R908 and 10 pF across R911, on the standing resistors' legs.
 
 ### Gains (unchanged)
 
@@ -131,13 +177,23 @@ turns the PhotoMOS on over about 30 ms, which mutes more softly.
 | Stereo channel | 1.0 per side |
 | RETURN | 1.0 per side |
 | DRUMS | 0.67 per side (−3.5 dB) |
-| Any SEND (mono, stereo (L+R)/2, FX IN) to SEND OUT | 1.0 (stereo 0.95) |
+| Any SEND (mono, stereo (L+R)/2, FX IN) to SEND OUT | 1.0 (stereo 0.91) |
 
 Pan law, B10k from fully CCW: L −0.4 / −1.7 / −3.8 / −8.1 dB / off at 0,
-¼, ½, ¾, 1; L² + R² stays within 0.4 dB. The TL074s swing about ±10.5 V,
-so the outputs clip at twice Eurorack level and the summers at four times.
-Set the output module's IN at noon or below (its input stages have a gain
-of 2).
+¼, ½, ¾, 1; L² + R² stays within 0.4 dB. The TL074s swing about ±10 V on
+the 11.0–11.5 V the chips get after the 1N5819s and 10 Ω (9.5 V on the
++ side with every channel muted; ±7 V guaranteed in the worst case at a
+12 V bus, about ±6.8 V at 11.4 V), so
+the outputs clip at about twice Eurorack level and the L / R summers at
+about four times. The send summer
+clips with the SEND output, at about twice. Set the output module's IN at
+noon or below (its input stages have a gain of 2).
+
+DC offset: everything is DC-coupled, so the TL074s' input offsets add up
+at the outputs: about 53 mV typical at OUT L / R, 280 mV at worst at
+25 °C and about 365 mV over 0–70 °C (SEND 31 mV typical, 200 / 260 mV),
+and MASTER moves it as it turns. A TL074B (3 mV max) in U4,
+which carries most of the offset gain, halves the worst case.
 
 ### Op-amps
 
@@ -153,13 +209,19 @@ Picked by where each chip sits on the main board (see placement).
 ### Power
 
 - **J18:** 16-pin 2.54 mm box header (your C3406 footprint), pins 1–2
-  −12 V (red stripe), 3–10 GND, 11–12 +12 V; 13–16 unused.
+  −12 V (red stripe), 3–8 GND, 9–10 +12 V; 11–16 (+5 V, CV, Gate) unused.
+  That is the Doepfer A-100 bus (doepfer.de a100t_e.htm, image
+  a100b_e.gif). Until 2026-11-14 the design had GND on 3–10 and +12 V on
+  11–12, which shorts the bus +12 V to GND; the routed master was
+  re-netted and re-routed at J18 that day.
 - **Reverse protection:** series 1N5819 per rail (−12 V: cathode on the
   header), then 10 Ω, 10 µF per rail.
 - **Decoupling:** 100 n per TL074 per rail beside pins 4 and 11; 100 n per
   CMOS chip beside its pin 14.
-- **Current:** about 25 mA on −12 V; on +12 V about 25 mA plus 4–5 mA per
-  muted channel, 65 mA with all eight muted.
+- **Current:** about 25 mA on −12 V; on +12 V about 25 mA plus 6–7 mA per
+  muted channel, 75 mA with all eight muted. At most, with the TL074s at
+  their maximum supply current and full-swing loads: about 125 mA on +12 V
+  (all muted) and 60 mA on −12 V. Budget the case's supply for those.
 
 ---
 
@@ -182,7 +244,7 @@ both boards, length as the tie-break, GND pins left in place: 90 crossings
 | H8 | SD8, AV8, GND, LV8L, LV8R, GND, LED8, BTN8 |
 | H9 | SEND, RW_R, RW_L, GND, DRW, FXI, MIX_R, MIX_L, MST_L, MST_R, OUT_R, OUT_L |
 
-The faceplate side of each net has `_F` added (GND → GND_F). Ten GND pins
+The faceplate side of each net has `_F` added (GND → GND_F). Eleven GND pins
 join the faceplate's ground to the main board's.
 
 ---
@@ -233,7 +295,7 @@ exporter checks the result (pads 0.25 mm apart, 0.5 mm from the edge, no
 bodies overlapping on one side, nothing within 3 mm of a standoff or screw
 head, header pins coinciding on both boards, panel parts exactly at
 `PLACEMENT`, no rear-side pad under a panel part's housing): 0 problems.
-Nothing is routed. Previews: `hardware/easyeda/stereo-mixer-easyeda-pcb-*.png`.
+Routed since: see `StereoMixer-routed.epro2`. Placement previews: `hardware/easyeda/stereo-mixer-easyeda-pcb-*.png`.
 
 **Frame.** As on Plaitsy: each PCB drawn as EasyEDA shows it, looking at
 the top layer, which is the rear of the stack on both boards. The front
@@ -290,7 +352,7 @@ strip above the SEND row and below the jacks. M3 standoffs as long as the
 mated headers make the gap (measure the pair, about 11 mm with standard
 sockets and male headers).
 
-**What EasyEDA's DRC will still say.** Floating pins on J18's pins 13–16
+**What EasyEDA's DRC will still say.** Floating pins on J18's pins 11–16
 and on the output jacks' open switch lugs (J15–J17): intentional.
 
 ---
@@ -329,7 +391,7 @@ ground pin; the grounds meet there.
    the CMOS chips and C906.
 5. Logic: DB from the debounce caps to the CD4093 inputs, CK from the
    CD4093 outputs to the CD4013 clocks, POR along all four CD4013s. QK from
-   the CD4013s to the 1k5s, then LA up to the PhotoMOS LEDs at the
+   the CD4013s to the LED resistors, then LA up to the PhotoMOS LEDs at the
    op-amps and back down to the header's LED pin: DC, route them wherever
    there is room, away from the FI nodes.
 
@@ -341,6 +403,17 @@ jack sleeve to the pour.
 ---
 
 ## BOM
+
+Build notes (from the 2026-11-04 test suite):
+- Before soldering, check one LED button with a meter: contacts 1+2 / 3+4, LED anode on 5. If 1 and 3
+  were the joined pair instead, BTN would be shorted to GND_F.
+- Fit the DIP sockets before the standing resistors: at the largest socket sizes R502, R706 (U2) and
+  R405 (U4) lean on a socket corner. Lean the CMOS decoupling caps (C921–C926) slightly away from
+  their chips.
+- R918 carries up to about 125 mA (R919 about 60 mA): 0.6 W parts in the 1/4 W body (TE LR1F, Vishay
+  MBB0207) for both.
+- When rebuilding the copper areas, give the pours a minimum island area of about 2 mm²: that drops
+  the 0.17 mm² wedge beside C913 that hangs on one spoke.
 
 Generated from `circuit.py` by `hardware/tools/bom.py`, with the Thonk parts in their own table:
 [bom.md](bom.md), and as CSV in `hardware/bom/`. The Thonk parts of Spore, Orchid, Moss and

@@ -4,7 +4,7 @@ Thonk,Panel parts,15,"Alpha 9 mm vertical pot A100K, T18 shaft","RV1, RV3, RV4, 
 Thonk,Panel parts,6,"Alpha 9 mm vertical pot B10K, T18 shaft","RV2, RV5, RV8, RV11, RV14, RV17",Faceplate,
 Thonk,Panel parts,8,"Thonk low-profile LED button, red","SW1, SW2, SW3, SW4, SW5, SW6, SW7, SW8",Faceplate,
 Thonk,Panel parts,17,"Thonkiconn PJ398SM mono jack, with nut","J1, J2, J3, J4, J5, J6, J7, J8, J9, J10, J11, J12, J13, J14, J15, J16, J17",Faceplate,
-Thonk,Chips,4,TL074 quad op-amp (DIP-14) + DIP-14 socket,"U1, U2, U3, U4",Main,
+Thonk,Chips,4,TL074 quad op-amp (DIP-14),"U1, U2, U3, U4",Main,
 Thonk,Connectors,1,"2×8 shrouded box header, 2.54 mm (Eurorack power)",J18,Main,
 Thonk,Connectors,1,"Eurorack power cable, 16-pin at the module end",,—,the other end to suit your bus board
 Thonk,Connectors,9,"Female header, 2.54 mm, 8.5 mm tall: 1 × 1×12, 8 × 1×8","H1, H2, H3, H4, H5, H6, H7, H8, H9",Main,main board side; Thonk's Male + Female Header Bag or cut from 40-pin strips

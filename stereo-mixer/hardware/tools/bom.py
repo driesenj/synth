@@ -9,7 +9,7 @@ checked against the routed master's components; a mismatch stops the run.
 Writes docs/bom.md and hardware/bom/stereo-mixer-bom.csv (every line, with its
 source) and hardware/bom/stereo-mixer-bom-thonk.csv (the Thonk lines alone).
 The same file sits in marbles/, plaits/, side-fx/: the code below the
-catalogue line is identical, MODULE, BUTTONS, knobs(), EXTRA and NOTES are
+catalogue line is identical, MODULE, BUTTONS, RATING, knobs(), EXTRA and NOTES are
 the module's own. Copy it, don't import it across modules.
 Run from stereo-mixer/hardware/tools:  python bom.py
 """
@@ -41,6 +41,10 @@ pcb = _load("pcb")
 MODULE = {"project": "Stereo mixer", "file": "stereo-mixer", "routed": "StereoMixer-routed.epro2",
           "holes": len(circuit.HOLES_FRONT)}
 BUTTONS = {"SWLED": "red"}
+RATING = {ref: ("Mouser", "0.6 W in the 1/4 W (0207) body: TE LR1F10R or Vishay MBB0207")
+          for ref in ("R918", "R919")}      # the 10 R rail filters: about 150 mW at the worst-case current
+SOLDERED = set()  # (board, ref) of chips without a socket
+REF_PART = {}     # ref -> (source, group, part) for a part that needs its own line
 
 
 def knobs():
@@ -57,9 +61,9 @@ EXTRA = [        # (source, group, part, qty, note)
     ("Thonk", "Connectors", "Eurorack power cable, 16-pin at the module end", 1, "the other end to suit your bus board"),
 ]
 NOTES = [
-    "Dual-gang Alpha pots (LEVEL 7, LEVEL 8, RETURN, MASTER) were not in the Thonk stock list you pasted on "
-    "2026-10-31, and dual-gang Alphas are mostly sold linear: check before ordering. If no A100K dual can be had, "
-    "B100K duals work with a 22k from each wiper to GND; ask and the netlist gets those resistors.",
+    "Dual-gang Alpha pots (LEVEL 7, LEVEL 8, RETURN, MASTER): Thonk listed the A100K dual-gang (T18) as in stock "
+    "on 2026-11-04. If it runs out, B100K duals work with a 22k from each wiper to GND; ask and the netlist gets "
+    "those resistors.",
     "The AQY212EH PhotoMOS relays also come from Farnell or LCSC.",
     "The mute buttons are red because a lit button means muted.",
 ]
@@ -68,19 +72,21 @@ NOTES = [
 # Sources: Thonk where the repo orders from it (the module-design skill's parts.md), Tayda / Mouser for the rest.
 GROUPS = ["Panel parts", "Modules", "Chips", "Semiconductors", "Resistors", "Capacitors", "Connectors",
           "Mechanical", "PCBs"]
-CAPS = {"100n": "100 nF ceramic (X7R), 5.08 mm leads", "1n": "1 nF C0G ceramic or film, 5.08 mm leads",
-        "100p": "100 pF C0G ceramic, 5.08 mm leads", "22p": "22 pF C0G ceramic, 5.08 mm leads",
-        "1u": "1 µF ceramic (X7R), 5.08 mm leads",
+CAPS = {"100n": "100 nF ceramic (X7R, 50 V), 5.08 mm leads", "1n": "1 nF C0G ceramic or film, 50 V, 5.08 mm leads",
+        "100p": "100 pF C0G ceramic, 50 V, 5.08 mm leads", "22p": "22 pF C0G ceramic, 50 V, 5.08 mm leads",
+        "1u": "1 µF ceramic (X7R, 50 V), 5.08 mm leads", "2n2": "2.2 nF C0G ceramic or film, 50 V, 5.08 mm leads",
         "10u": "10 µF ceramic (X5R / X7R, 16 V or more), 5.08 mm leads; an electrolytic is too tall"}
-CHIPS = {"TL074": ("Thonk", "TL074 quad op-amp (DIP-14) + DIP-14 socket"),
-         "MCP4922": ("Mouser", "MCP4922-E/P dual 12-bit DAC (DIP-14) + DIP-14 socket"),
-         "MUX": ("Tayda", "74HC4051 8-channel mux (DIP-16) + DIP-16 socket; CD4051B also works"),
-         "HC595": ("Tayda", "74HC595 shift register (DIP-16) + DIP-16 socket"),
-         "HC165": ("Tayda", "74HC165 shift register (DIP-16) + DIP-16 socket"),
-         "H11L1": ("Tayda", "H11L1 opto-isolator (DIP-6) + DIP-6 socket"),
-         "CD4013": ("Tayda", "CD4013BE dual D flip-flop (DIP-14) + DIP-14 socket"),
-         "CD4093": ("Tayda", "CD4093BE quad Schmitt NAND (DIP-14) + DIP-14 socket"),
+CHIPS = {"TL074": ("Thonk", "TL074 quad op-amp (DIP-14)"),
+         "MCP4922": ("Mouser", "MCP4922-E/P dual 12-bit DAC (DIP-14)"),
+         "MUX": ("Tayda", "74HC4051 8-channel mux (DIP-16); CD4051B also works"),
+         "HC595": ("Tayda", "74HC595 shift register (DIP-16)"),
+         "HC165": ("Tayda", "74HC165 shift register (DIP-16)"),
+         "H11L1": ("Tayda", "H11L1 opto-isolator (DIP-6)"),
+         "CD4013": ("Tayda", "CD4013BE dual D flip-flop (DIP-14)"),
+         "CD4093": ("Tayda", "CD4093BE quad Schmitt NAND (DIP-14)"),
          "PHOTOMOS": ("Mouser", "Panasonic AQY212EH PhotoMOS relay (DIP-4)")}
+SOCKETS = {"TL074": 14, "MCP4922": 14, "MUX": 16, "HC595": 16, "HC165": 16, "H11L1": 6, "CD4013": 14,
+           "CD4093": 14}           # pins of the socket each chip sits in; the PhotoMOS are soldered
 SEMIS = {"NPN": ("Tayda", "Semiconductors", "2N3904 NPN transistor (TO-92)"),
          "BAT85": ("Tayda", "Semiconductors", "BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm"),
          "1N4148": ("Tayda", "Semiconductors", "1N4148 diode (DO-35)"),
@@ -104,6 +110,8 @@ def ohms(v):
 def describe(p):
     """(source, group, part) for one netlist part; None for parts build() handles (headers, the Seed)."""
     k, v = p.kind, p.value
+    if p.ref in REF_PART:
+        return REF_PART[p.ref]
     if k == "JACK":
         return "Thonk", "Panel parts", "Thonkiconn PJ398SM mono jack, with nut"
     if k == "JACK_TRS":
@@ -122,13 +130,16 @@ def describe(p):
     if k in SEMIS:
         return SEMIS[k]
     if k == "R":
-        return "Tayda", "Resistors", f"Resistor {ohms(v)}, metal film 1 %, 1/4 W"
+        source, rating = RATING.get(p.ref, ("Tayda", "1/4 W"))
+        return source, "Resistors", f"Resistor {ohms(v)}, metal film 1 %, {rating}"
     if k == "RN9":
         return "Tayda", "Resistors", "10k × 8 bussed resistor network, SIP-9 (Bourns 4609X-101-103LF, Tayda A103J)"
     if k == "C":
         return "Tayda", "Capacitors", "Capacitor " + CAPS[v]
     if k == "CP":
-        return "Tayda", "Capacitors", f"Capacitor {v.replace('u', ' µF')} electrolytic, 35 V, 5 mm across, 2.5 mm leads"
+        return "Tayda", "Capacitors", (f"Capacitor {v.replace('u', ' µF')} 35 V, polarised: a dipped tantalum (2.54 mm "
+                                       "leads), or a 5 mm electrolytic with its 2 mm leads spread to the pads; + to "
+                                       "the + pad")
     if k == "HDR16":
         return "Thonk", "Connectors", "2×8 shrouded box header, 2.54 mm (Eurorack power)"
     if k == "HDR8RA":
@@ -171,6 +182,9 @@ def build():
             d = describe(p)
             if d:
                 add(*d, refs=[(board, p.ref)], size=magnitude(p.value) if p.kind in ("R", "C", "CP") else 0.0)
+                if p.kind in SOCKETS and (board, p.ref) not in SOLDERED:
+                    add("Tayda", "Connectors", f"DIP-{SOCKETS[p.kind]} IC socket", refs=[(board, p.ref)], owns=False,
+                        size=SOCKETS[p.kind])
             elif p.kind.startswith("HDR"):
                 gender = "male" if board == "Faceplate" else "female"
                 headers[(gender, int(p.kind[3:]))] += 1
@@ -179,12 +193,14 @@ def build():
             elif p.kind == "SEED":
                 add("Thonk", "Modules", "Electrosmith Daisy Seed", refs=[(board, p.ref)])
                 add("OSHWLab / JLCPCB", "Modules", "Rob Heel's seed_power_opamps breakout, built: its own PCB and parts",
-                    refs=[(board, p.ref)], owns=False, note="carries the Seed, the Eurorack power header and the audio stages")
+                    refs=[(board, p.ref)], owns=False, note="carries the Seed, the Eurorack power header and the audio stages; "
+                    "its parts list: github.com/rob-scape/daisy-seed-breakout-boards, daisy-seed-dcdc-opamps BOM")
                 add("Tayda", "Connectors", "Female header 2.54 mm, 8.5 mm tall, for the breakout's two rows on the main "
                     "board: 2 × 1×24 (audio header + Seed pins) and 2 × 1×4 (power header, after one empty position)",
                     qty=4, refs=[(board, p.ref)], owns=False, note="cut from 1×40 strips; male pins under the breakout")
-                add("Thonk", "Connectors", "Eurorack power cable for the breakout's power header",
-                    note="check the header's pin count (10 or 16)")
+                add("Thonk", "Connectors", "Eurorack power cable for the breakout, 10-pin to 16-pin (10 at the "
+                    "module, 16 at the bus)", note="the breakout's J2 is a 2×5 header: the red stripe to its RED "
+                    "STRIPE mark (−12 V)")
     for gender in ("male", "female"):
         sizes = sorted(((pins, n) for (g, pins), n in headers.items() if g == gender), reverse=True)
         if sizes:
@@ -198,11 +214,15 @@ def build():
             add(source, "Mechanical", part, qty=n, note=note)
     for source, group, part, qty, note in EXTRA:
         add(source, group, part, qty=qty, note=note)
-    add("Tayda", "Mechanical", "M3 standoff, female-female, the mated headers' height (about 8.5 mm), + 2 M3 screws",
-        qty=MODULE["holes"], note="one per mounting hole between the boards; measure the mated headers first")
-    (w, h), _ = routed()["Main"]
-    add("JLCPCB", "PCBs", f"Main board + faceplate board, {w:.1f} × {h:.1f} mm each, 2 layers, 1.6 mm", qty=1,
-        note=f"from {MODULE['routed']}")
+    add("Tayda", "Mechanical", "M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's "
+        "2.5 mm plastic", qty=MODULE["holes"],
+        note="one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be)")
+    add("Tayda", "Mechanical", "M3 × 6 mm pan-head screw", qty=2 * MODULE["holes"], note="two per standoff")
+    boards = routed()
+    for board in ("Main", "Faceplate"):
+        (w, h), _ = boards[board]
+        add("JLCPCB", "PCBs", f"{board} board, {w:.1f} × {h:.1f} mm, 2 layers, 1.6 mm", qty=1,
+            note=f"the {board} PCB in {MODULE['routed']}")
     add("JLCPCB", "PCBs", f"Panel {panel.PANEL_W:.1f} × {panel.PANEL_H} mm, 1.6 mm FR4: black mask, white silk, ENIG",
         qty=1, note=f"the panel board in {MODULE['routed']}; ENIG makes the bands and the mushroom gold")
     return lines, owned

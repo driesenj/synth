@@ -1,14 +1,17 @@
 """Add silkscreen value labels to a routed stereo mixer export (copied from side-fx/): every resistor
 and capacitor gets its value (100k, 22p, 10u, ...), every diode its part name (1N5819, 1N4148) and
 every pot its taper and value (A100k, B10k: the PAN pots are the odd ones out) as a STRING on the
-silk layer of its own side, in the first free spot beside it.
+silk layer of its own side, in the first free spot beside it. The power header gets "-12V" beside
+its pin 1.
 
 Free means: not over any pad, not over another part's housing on that side,
 not over a designator, title or earlier label, not over a mounting hole,
 inside the board by 0.5 mm. Spots are tried right, left, above, below, then the
-corners, first at the designator's size (45 mil) and then smaller. A spot
-must read as its own part's: no other labelled part nearer to it, or at
-most a near-tie within NEAR; a part without such a spot gets no label.
+corners, first at the designator's size (45 mil) and then at JLCPCB's
+smallest text (40 mil). A spot must read as its own part's: every labelled
+part of a different value at least MARGIN further from it than its own part
+(a part of the same value may be nearer: it takes the same value). Parts
+without such a spot share a legend line ("100k: R10 R13") near them.
 The patched project keeps every existing record byte for byte; the labels
 are appended to each PCB document.
 
@@ -27,12 +30,12 @@ import zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 MIL = 0.0254
 CHAR_W = 0.62        # advance per character as a fraction of the font size, default stroke font
-SIZES = (45, 38, 32)     # mil; the designators are 45, 32 mil (0.81 mm) is the fab's smallest readable silk
+SIZES = (45, 40)         # mil; the designators are 45, 40 mil (1.02 mm) is JLCPCB's minimum text height (1.0 mm)
 GAP = 0.35               # mm between a label and whatever it sits beside
 STEPS = (0, 1.3, 2.6)    # further out from the part when the first ring is taken
 EDGE = 0.5
-NEAR = 1.0               # mm: a label nearer another labelled part than its own still counts as its own this close
-REACH = 20.0             # mm: how far from its parts a legend line may sit
+MARGIN = 0.3             # mm: a part of a different value must be this much further from a label than its own part
+REACH = 12.0             # mm: how far a legend line may sit from each of its parts
 CLUSTER = 10.0           # mm: parts of one value closer than this share a legend line
 
 
@@ -48,6 +51,7 @@ circuit = _load("circuit")
 
 
 LABELLED = ("R", "C", "CP", "D5819", "D4148", "POT", "POT2")
+POWER_HEADER = "J18"          # gets "-12V" beside its pin 1: the shroud's key alone does not say which end is red
 
 
 def values():
@@ -86,9 +90,9 @@ def rect_dist(a, b):
 
 
 class Labeller:
-    def __init__(self, board, doc, labelled=()):
+    def __init__(self, board, doc, labelled):
         self.b = board
-        self.labelled = set(labelled)          # parts that get a label: a label must not sit nearer another of them
+        self.labelled = dict(labelled)         # ref -> label text: a label must not sit near a part of another value
         self.texts = {True: [], False: []}      # existing text boxes per side (bottom: True)
         for h, p in doc["recs"]:
             if h["type"] == "ATTR" and p.get("key") == "Designator" and p.get("valueVisible") and p.get("x") is not None:
@@ -123,12 +127,14 @@ class Labeller:
                 return False
         return True
 
-    def nearest_is_own(self, rect, ref):
-        """True when no other labelled part on this side is nearer the label than its own part."""
+    def reads_as_own(self, rect, ref):
+        """True when every labelled part of a different value on this side is at least MARGIN further from
+        the label than its own part, so the label cannot be read as theirs."""
         pl = self.b.parts[ref]
         own = rect_dist(rect, extent(pl))
-        return all(rect_dist(rect, extent(o)) >= own - 0.02 for r, o in self.b.parts.items()
-                   if r != ref and r in self.labelled and o["bottom"] == pl["bottom"])
+        text = self.labelled[ref]
+        return all(rect_dist(rect, extent(o)) >= own + MARGIN for r, o in self.b.parts.items()
+                   if r in self.labelled and self.labelled[r] != text and o["bottom"] == pl["bottom"])
 
     def candidates(self, ref, text):
         pl = self.b.parts[ref]
@@ -136,41 +142,57 @@ class Labeller:
         cx, cy = (bx1 + bx2) / 2, (by1 + by2) / 2
         standing = "VERTICAL" in pl["fp"]
         pot = pl["fp"].startswith("POT")
-        for size in SIZES:
-            w, h = CHAR_W * size * MIL * len(text), size * MIL
-            for step in STEPS:
-                g = GAP + step
-                spots = [("right", (bx2 + g, cy - h / 2)), ("left", (bx1 - g - w, cy - h / 2)),
-                         ("above", (cx - w / 2, by2 + g)), ("below", (cx - w / 2, by1 - g - h))]
-                if pot:                               # pots: under or over the body, where the lugs are not
-                    spots = [spots[3], spots[2], spots[0], spots[1]]
-                elif not standing:                    # flat parts: along the body first
-                    tall = (by2 - by1) > (bx2 - bx1)
-                    spots = spots if tall else spots[2:] + spots[:2]
-                if step == 0:
-                    spots += [("above right", (bx2 + g, by2 + g)), ("above left", (bx1 - g - w, by2 + g)),
-                              ("below right", (bx2 + g, by1 - g - h)), ("below left", (bx1 - g - w, by1 - g - h))]
-                for name, (x, y) in spots:
-                    yield name, (x, y, x + w, y + h), size
+
+        def spots(w, h, g, step):
+            out = [("right", (bx2 + g, cy - h / 2)), ("left", (bx1 - g - w, cy - h / 2)),
+                   ("above", (cx - w / 2, by2 + g)), ("below", (cx - w / 2, by1 - g - h))]
+            if pot:                               # pots: under or over the body, where the lugs are not
+                out = [out[3], out[2], out[0], out[1]]
+            elif not standing:                    # flat parts: along the body first
+                tall = (by2 - by1) > (bx2 - bx1)
+                out = out if tall else out[2:] + out[:2]
+            if step == 0:
+                out += [("above right", (bx2 + g, by2 + g)), ("above left", (bx1 - g - w, by2 + g)),
+                        ("below right", (bx2 + g, by1 - g - h)), ("below left", (bx1 - g - w, by1 - g - h))]
+            return out
+
+        # each spot at the larger size, then at the smaller, before the next spot: a near spot in small text
+        # reads better than a far one in large text (and leaves the far spot to the part that owns it)
+        for step in STEPS:
+            g = GAP + step
+            per_size = {s: spots(CHAR_W * s * MIL * len(text), s * MIL, g, step) for s in SIZES}
+            for i in range(len(per_size[SIZES[0]])):
+                for size in SIZES:
+                    name, (x, y) = per_size[size][i]
+                    yield name, (x, y, x + CHAR_W * size * MIL * len(text), y + size * MIL), size
 
     def place(self, ref, text):
-        """The first free spot whose nearest labelled part is its own; failing that, the first free spot
-        within NEAR of its own part (a near-tie between two parts); failing that, no label."""
+        """The first free spot that reads as this part's; failing that, no label (the caller gives the
+        part a legend line)."""
         bottom = self.b.parts[ref]["bottom"]
-        own = extent(self.b.parts[ref])
-        free = [(name, rect, size) for name, rect, size in self.candidates(ref, text) if self.free(rect, bottom, ref)]
-        clear = [c for c in free if self.nearest_is_own(c[1], ref)]
-        close = [c for c in free if rect_dist(c[1], own) <= NEAR]
-        pick = (clear or close or [None])[0]
-        if pick is None:
-            return None                               # no spot that reads as this part's: the caller reports it
-        name, rect, size = pick
-        self.labels.append((ref, text, rect, bottom, size))
-        return name if clear else name + " (nearer another part)"
+        for name, rect, size in self.candidates(ref, text):
+            if self.free(rect, bottom, ref) and self.reads_as_own(rect, ref):
+                self.labels.append((ref, text, rect, bottom, size))
+                return name
+        return None
+
+    def mark(self, ref, pin, text):
+        """`text` at the free spot nearest pad `pin` of `ref`, clear of the part's own housing too (a word
+        that marks the -12 V end of the power header must not hide under the shroud); returns it or None."""
+        pl = self.b.parts[ref]
+        pad = pl["pads"][pin]
+        spots = [(rect, size) for _, rect, size in self.candidates(ref, text)
+                 if self.free(rect, pl["bottom"], None)]
+        if not spots:
+            return None
+        rect, size = min(spots, key=lambda s: (-s[1], math.hypot((s[0][0] + s[0][2]) / 2 - pad.x,
+                                                                  (s[0][1] + s[0][3]) / 2 - pad.y)))
+        self.labels.append((ref, text, rect, pl["bottom"], size))
+        return text
 
     def legend(self, refs, text):
         """One line for parts that found no spot of their own ("100k: R10 R13 R16 R19"), at the free
-        spot nearest their middle, within REACH; returns the line or None."""
+        spot nearest their middle and within REACH of every one of them; returns the line or None."""
         bottom = self.b.parts[refs[0]]["bottom"]
         boxes = [extent(self.b.parts[r]) for r in refs]
         cx = sum((b[0] + b[2]) / 2 for b in boxes) / len(boxes)
@@ -184,7 +206,7 @@ class Labeller:
             for dx, dy in offsets:
                 x, y = cx + dx - w / 2, cy + dy - h / 2
                 rect = (x, y, x + w, y + h)
-                if self.free(rect, bottom, None):
+                if all(rect_dist(rect, b) <= REACH for b in boxes) and self.free(rect, bottom, None):
                     self.labels.append(("+".join(refs), line, rect, bottom, size))
                     return line
         return None
@@ -289,20 +311,16 @@ def main(src, dst):
         board = ca.RoutedBoard(title, d, fps)
         mine = vals[title.split()[1]]
         lab = Labeller(board, d, mine)
-        parked, unclear = [], []
+        parked = []
         for ref in sorted(board.parts, key=lambda r: (re.sub(r"\d", "", r), int(re.sub(r"\D", "", r) or 0))):
-            if ref in mine:
-                where = lab.place(ref, mine[ref])
-                if where is None:
-                    parked.append(ref)
-                elif where.endswith("(nearer another part)"):
-                    unclear.append(ref)
+            if ref in mine and lab.place(ref, mine[ref]) is None:
+                parked.append(ref)
         # the parts left over: one legend line per value and cluster ("100k: R10 R13 R16 R19") near them;
         # parts of one value further apart than CLUSTER get a line each, so a line stays beside its parts
         groups = []
         for ref in parked:
             key = (mine[ref], board.parts[ref]["bottom"])
-            near = [g for g in groups if g[0] == key and any(
+            near = [g for g in groups if g[0] == key and all(          # every member within CLUSTER: no chains
                 rect_dist(extent(board.parts[ref]), extent(board.parts[r])) <= CLUSTER for r in g[1])]
             if near:
                 near[0][1].append(ref)
@@ -313,15 +331,24 @@ def main(src, dst):
             line = lab.legend(refs, text)
             if line:
                 legends.append(line)
-            else:
+                continue
+            for ref in refs if len(refs) > 1 else ():      # no room for the whole line: a short line per part
+                line = lab.legend([ref], text)
+                if line:
+                    legends.append(line)
+                else:
+                    parked.append(ref)
+            if len(refs) == 1:
                 parked += refs
+        if POWER_HEADER in board.parts and not lab.mark(POWER_HEADER, "1", "-12V"):    # pins 1-2 carry -12 V
+            parked.append(POWER_HEADER)
         s = spans[u]
         new = []
         for k, (ref, text, rect, bottom, size) in enumerate(lab.labels):
             new.append(string_record(s["string"], f"e{s['maxe'] + 1 + k}", s["maxticket"] + 1 + k, s["maxz"] + 1 + k,
                                      text, rect, bottom, size))
         inserts[s["meta"]] = new
-        report.append((title, len(lab.labels), parked, unclear, legends))
+        report.append((title, len(lab.labels), parked, legends))
         render(board, lab, os.path.join(os.path.dirname(dst), "stereo-mixer-labels-" + title.split()[1].lower() + "-{}.png"))
     out = []
     for i, line in enumerate(lines):
@@ -332,10 +359,9 @@ def main(src, dst):
         for info, data in entries:
             z.writestr(info, "\n".join(out).encode("utf-8") if info.filename == name else data,
                        compress_type=info.compress_type)
-    for title, n, parked, unclear, legends in report:
+    for title, n, parked, legends in report:
         print(f"{title}: {n} labels" + (f", legend lines {legends}" if legends else "")
-              + (f", no spot at all for {parked}" if parked else "")
-              + (f", a near-tie with another labelled part: {unclear}" if unclear else ""))
+              + (f", no spot at all for {parked}" if parked else ""))
     print("written", os.path.normpath(dst))
 
 

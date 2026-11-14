@@ -27,9 +27,9 @@ Signal flow (unchanged from the 2026-10-07 design, mutes now electronic)
 Mute latch, per channel
   button contacts to GND_F, 100k pull-up to +12 V -> 10k / 100n debounce ->
   CD4093 NAND (inputs tied: a Schmitt inverter) -> CD4013 clock, D = /Q
-  (toggle). Q high = muted: Q -> 1.5k -> PhotoMOS LED(s) -> button LED ->
-  GND_F, about 4-5 mA. RESET of every flip-flop from one power-on RC, so
-  the mixer starts unmuted.
+  (toggle). Q high = muted: Q -> 1k (820R on a stereo channel) -> PhotoMOS
+  LED(s) -> button LED -> GND_F, about 6.8 mA. RESET of every flip-flop from
+  one power-on RC, so the mixer starts unmuted.
 
 Net naming: nets that cross the board-to-board headers carry the same name
 on both boards, with _F on the faceplate side (GND -> GND_F). The faceplate
@@ -124,13 +124,16 @@ def stereo_main(c):
 
 def latch_main(k, r):
     """Button pull-up and debounce, LED series resistor, the PhotoMOS switch(es)."""
+    ks = PHOTOMOS[k]
+    # about 6.8 mA typical through one or two AQY212EH LEDs and the button LED (Panasonic recommends 5-10 mA),
+    # 4 mA at worst (weak CD4013B output, low rail, high VFs), above the 3 mA the AQY212EH needs at most
+    led_r = "1k" if len(ks) == 1 else "820R"
     parts = [
         R(f"R{r}", "100k", VP, f"BTN{k}", "button pull-up"),
         R(f"R{r + 1}", "10k", f"BTN{k}", f"DB{k}", "debounce"),
         C(f"C{100 * k + 1}", "100n", f"DB{k}", GND, "debounce"),
-        R(f"R{r + 2}", "1k5", f"QK{k}", f"LA{k}", "LED / PhotoMOS current"),
+        R(f"R{r + 2}", led_r, f"QK{k}", f"LA{k}", "LED / PhotoMOS current"),
     ]
-    ks = PHOTOMOS[k]
     sides = [""] if len(ks) == 1 else ["L", "R"]
     chain = [f"LA{k}"] + ([f"LM{k}"] if len(ks) == 2 else []) + [f"LED{k}"]
     for i, (ref, side) in enumerate(zip(ks, sides)):
@@ -162,8 +165,11 @@ def bus_main():
 
 
 def power_main():
-    hdr = {"1": "N12_IN", "2": "N12_IN", "11": "P12_IN", "12": "P12_IN"}
-    hdr.update({str(n): GND for n in range(3, 11)})
+    # Doepfer A-100 16-pin bus (doepfer.de/a100_man/a100t_e.htm, image a100b_e.gif), pin 1 = red stripe:
+    # 1-2 -12 V, 3-8 GND, 9-10 +12 V, 11-12 +5 V, 13-14 CV, 15-16 Gate. +5 V, CV and Gate stay open here.
+    # (Until 2026-11-13 this had GND on 3-10 and +12 V on 11-12, which shorts the bus +12 V to GND.)
+    hdr = {"1": "N12_IN", "2": "N12_IN", "9": "P12_IN", "10": "P12_IN"}
+    hdr.update({str(n): GND for n in range(3, 9)})
     parts = [
         Part("J18", "HDR16", "16-pin Eurorack", hdr, "POWER"),
         Part("D901", "D5819", "1N5819", {"2": "P12_IN", "1": "P12_D"}, "+12 V reverse protection"),
@@ -172,10 +178,12 @@ def power_main():
         R("R919", "10R", "N12_D", VN, "-12 V filter"),
         Part("C904", "CP", "10u", {"2": VP, "1": GND}, "+12 V bulk"),
         Part("C905", "CP", "10u", {"2": GND, "1": VN}, "-12 V bulk"),
-        # power-on reset for the flip-flops: high for ~100 ms after +12 V comes up; D903 empties C906 at power-off
+        # power-on reset for the flip-flops: high for ~70 ms after +12 V comes up (R920 x C906 x ln 2). D903 sits
+        # across C906 and never conducts: C906 empties at power-off through the CD4013B RESET inputs' protection
+        # diodes (POR about -0.6 V, well under their 10 mA). A BAT85 from GND to POR would do it on a respin.
         C("C906", "1u", VP, "POR", "power-on reset"),
         R("R920", "100k", "POR", GND, "power-on reset"),
-        Part("D903", "D4148", "1N4148", {"1": VP, "2": "POR"}, "discharges C906"),
+        Part("D903", "D4148", "1N4148", {"1": VP, "2": "POR"}, "across C906"),
     ]
     for i, u in enumerate(("U1", "U2", "U3", "U4")):      # one pair per TL074, beside its supply pins
         parts.append(C(f"C{911 + 2 * i}", "100n", VP, GND, f"{u} +12 V"))
@@ -266,7 +274,7 @@ JACKS = [(f"J{k}", f"IN {k}", f"IN{k}_F", "GND_F") for k in MONO]
 JACKS += [("J7", "IN 7 L", "IN7L_F", "GND_F"), ("J8", "IN 7 R", "IN7R_F", "IN7L_F"),
           ("J9", "IN 8 L", "IN8L_F", "GND_F"), ("J10", "IN 8 R", "IN8R_F", "IN8L_F"),
           ("J11", "RETURN L", "RT_L_F", "GND_F"), ("J12", "RETURN R", "RT_R_F", "RT_L_F"),
-          ("J13", "DRUMS", "DRM_F", "GND_F"), ("J14", "FX IN", "FXI_F", "GND_F"),
+          ("J13", "DRUM IN", "DRM_F", "GND_F"), ("J14", "FX IN", "FXI_F", "GND_F"),
           ("J15", "SEND", "SEND_F", None), ("J16", "OUT L", "OUT_L_F", None), ("J17", "OUT R", "OUT_R_F", None)]
 # ref, label, value, (CW end, wiper, CCW end). Pins 1 / 3 are the CCW / CW ends: fully CW puts the wiper on
 # pin 3. PAN: CW end on PL, so turning right grounds more of the left side.

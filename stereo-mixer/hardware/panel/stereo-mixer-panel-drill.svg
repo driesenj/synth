@@ -246,7 +246,7 @@
 <line x1="132.00" y1="70.00" x2="135.00" y2="70.00" stroke="#000" stroke-width="0.12"/>
 <line x1="133.50" y1="68.50" x2="133.50" y2="71.50" stroke="#000" stroke-width="0.12"/>
 <text class="dim" x="137.15" y="66.55">Ø6.5</text>
-<text class="lbl" x="133.50" y="75.45" text-anchor="middle">DRUMS</text>
+<text class="lbl" x="133.50" y="75.45" text-anchor="middle">DRUM IN</text>
 <circle cx="126.75" cy="83.50" r="3.75" fill="none" stroke="#c00" stroke-width="0.2"/>
 <line x1="125.25" y1="83.50" x2="128.25" y2="83.50" stroke="#000" stroke-width="0.12"/>
 <line x1="126.75" y1="82.00" x2="126.75" y2="85.00" stroke="#000" stroke-width="0.12"/>

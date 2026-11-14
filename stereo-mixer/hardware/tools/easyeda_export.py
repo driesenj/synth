@@ -83,7 +83,7 @@ DEV = {
 ee.DEV = DEV          # Page._flag looks the ground flag up here
 D1N4148 = "c0160a3f74384e849dc1cc5a24d54846"      # library 1N4148: its DO-35 footprint and attributes
 R_NEW = {"100k": ("LR1F100K", "100kΩ"), "200k": ("LR1F200K", "200kΩ"), "300k": ("LR1F300K", "300kΩ"),
-         "1k5": ("LR1F1K5", "1.5kΩ")}
+         "820R": ("LR1F820R", "820Ω")}
 C_NEW = {"22p": ("FG28C0G1H220JNT00", "22pF")}
 
 # ---------------------------------------------------------------- footprints
@@ -877,17 +877,18 @@ def latch_page(pr, P):
     pg = MPage(pr, "Main board: mute latch", 3)
     pg.page_count = "4"
     pg.text(40, Y(30), "Mute latch, per channel: button (to GND_F on the faceplate) with a 100k pull-up, 10k / 100n "
-                       "debounce, CD4093 Schmitt NAND, CD4013 toggle (D = /Q). Q high = muted: Q -> 1k5 -> "
-                       "PhotoMOS LED(s) -> button LED -> GND_F, about 4-5 mA.", 11)
+                       "debounce, CD4093 Schmitt NAND, CD4013 toggle (D = /Q). Q high = muted: Q -> 1k (820R "
+                       "stereo) -> PhotoMOS LED(s) -> button LED -> GND_F, about 6.8 mA.", 11)
     for i, k in enumerate(circuit.MONO + circuit.STEREO):
         col, row = i % 2, i // 2
         latch_block(pg, P, k, 50 + col * 380, 80 + row * 250)
     for i, ref in enumerate(("U5", "U6", "U7", "U8", "U9", "U10")):
         col, row = i % 2, i // 2
         chip(pg, P, ref, 1000 + col * 330, Y(170 + row * 290))
-    # power-on reset: C906 from +12 V, R920 to GND, D903 empties C906 at power-off
+    # power-on reset: C906 from +12 V, R920 to GND; D903 across C906 never conducts (C906 empties through the
+    # CD4013B RESET inputs' protection diodes)
     x0, t0 = 1000, 950
-    pg.text(x0 - 60, Y(t0 - 50), "Power-on reset: POR high for ~100 ms, every channel starts unmuted", 11)
+    pg.text(x0 - 60, Y(t0 - 50), "Power-on reset: POR high for ~70 ms, every channel starts unmuted", 11)
     y = Y(t0)
     c = vpart(pg, P["C906"], x0, y)
     pg.wire([c["1"], (x0, y - 15), (x0 - 20, y - 15)], "+12V")
@@ -910,12 +911,12 @@ def power_page(pr, P):
     pg = MPage(pr, "Main board: power, decoupling, headers", 4)
     pg.page_count = "4"
     x0, t0 = 80, 120
-    pg.text(x0 - 40, Y(t0 - 70), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V), series 1N5819 per rail, "
-                                 "10R, 10 uF", 12)
+    pg.text(x0 - 40, Y(t0 - 70), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V, 3-8 GND, 9-10 +12 V, "
+                                 "11-16 open), series 1N5819 per rail, 10R, 10 uF", 12)
     yh = Y(t0 + 40)
     xh = x0 + 60
     h = pg.place("J18", "HDR16", xh, yh, des=(-30, -45, "LEFT_BOTTOM"), value_at=(-30, 52, "LEFT_BOTTOM"))
-    for side, pins, sgn in (("left", ("3", "5", "7", "9"), -1), ("right", ("4", "6", "8", "10"), 1)):
+    for side, pins, sgn in (("left", ("3", "5", "7"), -1), ("right", ("4", "6", "8"), 1)):
         bx = xh + sgn * 45
         pts = []
         for n in pins:
@@ -924,13 +925,13 @@ def power_page(pr, P):
             pts.append((bx, p[1]))
         for a, b in zip(pts, pts[1:]):
             pg.wire([a, b], "GND")
-        mid = pts[2]
+        mid = pts[1]                         # the middle GND pin (5 / 6): clear of the P12_IN ports on 9 / 10
         pg.wire([mid, (bx + sgn * 15, mid[1])], "GND")
         pg.gnd(bx + sgn * 15, mid[1], 90 if sgn > 0 else 270)
     pg.stub_port(h["1"], "N12_IN", "OUT", "left", 30)
     pg.stub_port(h["2"], "N12_IN", "OUT", "right", 30)
-    pg.stub_port(h["11"], "P12_IN", "OUT", "left", 30)
-    pg.stub_port(h["12"], "P12_IN", "OUT", "right", 30)
+    pg.stub_port(h["9"], "P12_IN", "OUT", "left", 30)
+    pg.stub_port(h["10"], "P12_IN", "OUT", "right", 30)
     xa = x0 + 330
     for k, (port, d, r, c, rail) in enumerate((("P12_IN", "D901", "R918", "C904", "+12V"),
                                                ("N12_IN", "D902", "R919", "C905", "-12V"))):
