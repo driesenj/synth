@@ -118,8 +118,9 @@ BREAKOUT = {
 # 3 mm red / green bicolour LED, common cathode, 3 leads: the part bom.py names is Tayda's SKU A-8599 ("Bi-color
 # LED Red/Green 3mm Common Cathode", OEM, no datasheet). Its product drawing (taydaelectronics.com image 36_4.jpg,
 # read in the browser pane 2026-11-13): leads A, C, B side by side, C (the longest, in the middle) = common
-# cathode, A (outer, medium length) = red anode, B (other outer, shortest) = green anode. No pitch given; three
-# leads inside a 3 mm body cannot be further apart than about 1.27 mm.
+# cathode, A (outer, medium length) = red anode, B (other outer, shortest) = green anode. No pitch given.
+# [2026-11-14: bom.py now names Kingbright's L-3WEGW, the same lead order, its leads kinked out to 2.54 mm; the
+# footprint went to 2.54 mm the same day (test report M2).]
 LED_DS = {"A_R": "1", "K": "2", "A_G": "3", "confirmed": True, "lead_order": ("A red", "C cathode", "B green")}
 
 # ==========================================================================================================

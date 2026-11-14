@@ -545,9 +545,10 @@ ck.check("4.CD4051B_specified_at_3V3", not claims_cd,
 led_txt = line_of("D1")["Part"]
 ck.check("4.LED_line", "bicolour" in led_txt and "common cathode" in led_txt and "3 leads" in led_txt
          and line_of("D1")["Qty"] == 8, f"{line_of('D1')['Qty']} x '{led_txt}'")
-ck.check("4.LED_lead_in_hole", LED_LEAD * 2 ** 0.5 + SQUARE_CLEAR <= min(
-    p["hole"]["width"] * harness.MIL for h, p in R.fp_docs[R.face.parts["D1"]["fp"]]["recs"] if h["type"] == "PAD"),
-         f"{LED_LEAD} mm square lead (diagonal {LED_LEAD * 2 ** 0.5:.2f}) in the LED-3MM-3P 0.8 mm holes (lead not confirmed)")
+led_hole = min(p["hole"]["width"] * harness.MIL for h, p in R.fp_docs[R.face.parts["D1"]["fp"]]["recs"] if h["type"] == "PAD")
+ck.check("4.LED_lead_in_hole", LED_LEAD * 2 ** 0.5 + SQUARE_CLEAR <= led_hole,
+         f"{LED_LEAD} mm square lead (diagonal {LED_LEAD * 2 ** 0.5:.2f}) in the LED-3MM-3P {led_hole:.2f} mm holes "
+         "(lead not confirmed)")      # [2026-11-14: the hole read from the footprint, 0.9 mm since M2]
 r_led = harness.ohms("470")
 
 

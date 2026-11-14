@@ -395,10 +395,10 @@ ck.check("A.led_pitch: LED-3MM-3P takes a real 3-lead 3 mm bicolour LED: leads 2
          all(abs(g - LED_PITCH) < 0.01 for g in gaps) and abs(p["2"]["x"]) < 0.01
          and all(p[k]["hw"] >= LED_HOLE_REC - 1e-3 for k in "123"),
          f"footprint pads {[round(g, 3) for g in gaps]} mm apart, holes {sorted({round(p[k]['hw'], 3) for k in '123'})}; "
-         f"Kingbright: leads kinked out to {LED_PITCH} pitch, holes {LED_HOLE_REC}; Tayda's A-8599 states no pitch: a "
-         "2.54 mm part needs its outer leads jogged 1.27 mm in (the LEDs stand 6.6-9 mm off the board)")
-ck.within("A.led_gap: pad-to-pad gap of the LED's 1.1 mm wide pads at its lead pitch (design rule 0.152, JLCPCB 0.10)",
-          min(gaps) - p["1"]["w"], CLEARANCE, None, " mm", "the 1.7 mm pads are oval along y")
+         f"Kingbright: leads kinked out to {LED_PITCH} pitch, holes {LED_HOLE_REC}")
+ck.within(f"A.led_gap: pad-to-pad gap of the LED's {p['1']['w']:.2f} mm wide pads at its lead pitch (design rule 0.152, "
+          "JLCPCB 0.10)", min(gaps) - p["1"]["w"], CLEARANCE, None, " mm",
+          f"pads {p['1']['w']:.2f} x {p['1']['h']:.2f}")      # [2026-11-14: sizes read from the footprint since M2]
 
 # DO-35
 p = FP["DO-35_BD2.0-L4.0-P8.0-D0.5-RD"]

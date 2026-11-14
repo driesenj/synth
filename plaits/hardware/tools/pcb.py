@@ -621,9 +621,12 @@ def placement_check(fb, circuit):
 
 def front_housing_check(fb, circuit):
     """Rear-side pads must not sit under a panel part's housing: those pads are
-    soldered on the panel side, where the pot and jack bodies lie flat."""
+    soldered on the panel side, where the pot and jack bodies lie flat. The
+    LEDs stand off the board at panel height (6.6-9 mm), so nothing lies flat
+    over the board there (as test_pcb's G.joints_under_housings has it; 2026-11-14,
+    R88 / R92 beside D1 / D8 since the 2.54 mm LED footprint)."""
     bad = []
-    boxes = [(pl["ref"], fb.body(pl)) for pl in fb.placed if pl["bottom"]]
+    boxes = [(pl["ref"], fb.body(pl)) for pl in fb.placed if pl["bottom"] and not pl["ref"].startswith("D")]
     for pl in fb.placed:
         if pl["bottom"]:
             continue

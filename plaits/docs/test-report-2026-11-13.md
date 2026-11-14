@@ -36,9 +36,11 @@ changed and [Still open](#still-open) what is left. In short: M1, M3, M4,
 M8 and most low findings are done in the BOM, the docs, the firmware and
 the routed master's silkscreen and part data. **M2 is now confirmed**:
 the user measured their 3-lead LEDs at 2.54 mm (Ringsy, 2026-11-14), and
-Plaitsy's LED footprint is 1.27 mm. The user chose to jog the leads at
-assembly (no copper change); M6 and M7 need copper and are still the
-user's call before ordering.
+Plaitsy's LED footprint was 1.27 mm. The user first chose to jog the leads,
+then (later on 2026-11-14) to re-pitch the footprint to 2.54 mm. That was
+scripted into the routed master like M6 / L10 / L17, and the user routed
+all of it the same day. The re-import and the rebuilt pours were synced on
+2026-11-15 (47 failing, all open or accepted). M7 is accepted as documented.
 
 The verifiers' fixes cleared 4 first-run failures: the panel's
 caps-in-the-gap check, the pcb's two via-to-track checks and analog_dc's
@@ -64,7 +66,7 @@ bits and 7 mux channels reach the right parts through the copper.
 
 | | Decide | Why now |
 |---|---|---|
-| M2 | **Decided 2026-11-14: jog the leads.** The footprint stays at 1.27 mm and the boards are not re-routed; design.md's Building notes and the BOM say how (bend the outer leads 1.27 mm in, little solder, check for bridges) | **confirmed 2026-11-14**: the user's own 3-lead LEDs measure 2.54 mm (Ringsy's footprint was changed to that the same day), Kingbright's L-3WEGW is 2.54 mm too, the footprint is 1.27 mm |
+| M2 | **Decided 2026-11-14: re-pitch to 2.54 mm** (first "jog the leads", then "do all recommended fixes", option A: keep the 1/4 W resistors). `LED-3MM-3P` is Ringsy's footprint now, and R88 / R92 moved. The user routed it on 2026-11-14. The import reverted the footprint, and a script restored it on the user's routing (see "Faceplate copper" below) | **confirmed 2026-11-14**: the user's own 3-lead LEDs measure 2.54 mm (Ringsy's footprint was changed to that the same day), Kingbright's L-3WEGW is 2.54 mm too, the footprint is 1.27 mm |
 | M1 | Which bicolour LED to buy | Tayda's only one has a 2.8–3.0 V green, which is nearly dark at 3.3 V. The replacement's pitch feeds M2 |
 | M6 | A short 3V3D_F track from C10 to U10 pin 16 (and C9 to U9 pin 16) | U10 has no decoupler within 49 mm of track |
 | M7 | Schottky clamps on the seven wide ADC lines, or a TL074H | a fault-only risk, but the fix is copper |
@@ -97,9 +99,9 @@ against 3V3D at −4.5 %).
 
 **Confirmed 2026-11-14:** the user measured their 3-lead LEDs at 2.54 mm
 while placing Ringsy, whose footprint was re-pitched the same day. Fix:
-**the user chose the second way, jogging the leads** (build notes in
-design.md and the BOM, with a meter check for bridges: the pads are
-0.17 mm apart). The two ways were: re-pitch `LED-3MM-3P` to 2.54 mm with 0.9–1.0 mm holes and 1.5 mm
+**the first way, re-pitching the footprint** (the user's go-ahead for all
+recommended fixes, 2026-11-14, after first choosing to jog the leads); see
+"Faceplate copper" below. The two ways were: re-pitch `LED-3MM-3P` to 2.54 mm with 0.9–1.0 mm holes and 1.5 mm
 pads (a faceplate copper change around the eight LEDs, which also cures
 the ring), or bend the outer leads 1.27 mm inward at assembly (build
 note). This would be high if the LEDs are 2.54 mm and leads are not to be
@@ -272,21 +274,48 @@ and there are no contacts and no clearance items beyond stale pours.
 - **L17:** the DIP-16 footprint's pad 1 is square, in the generator and the master.
 - **Left for the user:** nine ratlines (L_D4_G and L_D2_R ripped, U9's 3V3D_F tie, the caps' and pull-downs' ends), then rebuild the pours and export. Coordinates are in design.md, "Faceplate rework, 2026-11-14", with a picture in `hardware/easyeda/plaits-faceplate-rework-2026-11-14.png`.
 - **Until then the suite shows 66 failing:** 9 more than below. All 9 come from the open ratlines and the stale pours: pcb E.connectivity.face, E.clearance.face, the one-copper-group checks, firmware A.led_bit.4 / .8, A.sr.SRCLR_high_OE_low.U9.
-- **After the export:** the check-up is the copper audit, the labels, `easyeda_export.py` and the suite. power F.C9 / F.C10 and firmware C.595_inputs… should then pass, leaving 54.
+- **After the export:** the check-up is the copper audit, the labels, `easyeda_export.py` and the suite. power F.C9 / F.C10 and firmware C.595_inputs… should then pass, leaving 54 at the time (the panel text fixes and M2 since: see below for the current count).
+
+**M2, the same day: the LED footprint to 2.54 mm.** The user's go-ahead for
+all recommended fixes reached M2 too, with option A: keep the 1/4 W LED
+resistors. The same file is patched again by script:
+- **Footprint:** `LED-3MM-3P` is Ringsy's (pads at ±2.54 mm, 0.9 mm holes, 1.5 mm pads, pad 1 square), in the generator and the master.
+- **R88 / R92:** the new green pads land where they stood, and four 1/4 W columns no longer fit between the LED pads and the HARMONICS / MORPH lugs. R88 lies flat above D1 and R92 below D8. Option B, 1/8 W (0204) resistors in tighter columns, would have left six short ratlines; the user kept the parts.
+- **Ripped:** R88 / R92's nets, POT_HARMO_F (it ran where R88 lies now), LED_D4_R, LED_D5_G and the 3V3D_F trunk up x 32.5. Every other LED track end follows its pad.
+- **Left for the user:** eight more ratlines, numbered 7–14 in design.md's "Faceplate rework" with the same picture. A grid router found a route for each.
+- **Checks:** copper_audit finds no contacts and nothing under the rule but stale pours; the generator gives 0 problems. The generator's no-pad-under-a-housing rule no longer counts the LEDs, which stand 6.6–9 mm off the board, as test_pcb already had it.
+- **The suite, 1891 checks:** 61 failing before M2 (12 of them from the M6 ratlines and stale pours), 68 after. Now passing: pcb A.led_pitch and C.ring_min; R88 / R92's hairlines over D2 / D7 are gone from G.rear_over_joints, and G.bodies.face has 10 touches, not 12. Newly failing, all from the new ratlines: firmware A.led_bit.7 / .11 / .12 / .15, A.pot_mux_channel.Y1, A.sr.SRCLR_high_OE_low.U10; pcb A.tracks_end_on_modelled_panel_pads; power G.3V3D_F_track_reaches_U9.16 / U10.16. 21 failing checks in all come from open ratlines and stale pours, so **47 are expected after the export**.
+
+**Routed, then restored, the same day.** The user routed all 14 ratlines,
+but the export came back with the library parts the scripts had changed
+in place as they were before. EasyEDA's import keeps its own copy of a
+part with the same uuid and updateTime. So `LED-3MM-3P` was back at
+1.27 mm, the DIP-16's pin 1 round, and the 30k and Alpha pot devices had
+their old text. The LED tracks had been routed to the 1.27 mm pads.
+
+A script put the parts back under new uuids, moved the LED track ends with
+their pads and nudged the five tracks that then crossed a pad: LED_D3_G,
+L_D1_G, LED_D5_G (with L_D8_G), U9's 3V3D_F riser and LED_D4_R. One
+stitching via went. design.md's "Faceplate rework" lists them with a
+picture.
+- **Checks:** the copper audit finds every net whole, no contacts and nothing under 0.152 mm except at the stale pours. The tightest new gap is 0.173 mm (LED_D4_R between D3.1 and R83.1). The generator gives 0 problems.
+- **The suite, 1891 checks: 48 failing**, from 68. The routing cleared the 20 ratline failures (firmware A.led_bit ×6, A.pot_mux_channel.Y1, A.sr ×2, C.595_inputs…; power F.C9 / F.C10 and the 3V3D_F / GND_D_F group checks; pcb E.connectivity.face; panel A.tracks_end_on_modelled_panel_pads; netlist E.faceplate_GND_D_F_one_piece). Nothing newly fails.
+- **Still to do:** pcb E.clearance.face fails on the stale pours only. **47 are expected once the user has rebuilt the pours and exported.**
+- **Re-keyed again:** the user's re-import of that file still showed 1.27 mm LEDs. A new uuid is not enough while the part's `source` still names the old library part. The six parts, and the three devices naming the DIP-16, now carry a fresh `source` prefix as well. The audit is unchanged and the suite still has 48 failing. Import it as a new project, and check D1's pad spacing (5.08 mm from pad 1 to 3) before rebuilding the pours.
+- **Synced 2026-11-15:** the user re-imported it, and the pads came in at 2.54 mm with the DIP-16 pin 1 square. They rebuilt the pours and exported. Tracks and vias are unchanged, the audit is clean (nothing under 0.152 mm) and the generator gives 0 problems. **The suite has 47 failing**: E.clearance.face passes now.
 
 ## Still open
 
-59 failing checks before the faceplate rework (54 expected after it), by what they need:
+47 failing checks (2026-11-15), by what they need:
 
 - **Copper on the faceplate:**
-  - M6, L10, L17: scripted 2026-11-14, see above; waiting for the user's routing.
+  - M6, L10, L17 and M2: done. Scripted and routed 2026-11-14, pours rebuilt and synced 2026-11-15; see above.
   - M7: accepted by the user on 2026-11-14 (fault-only; documented in design.md). Its checks stay failing: power I.-12V_missing ×2, analog_dc E.wide_rail_neg / _pos, E.voct_rail_neg.esd.
 - **L23, done 2026-11-14** (see "Panel text" below):
   - OUT / AUX are knocked out of the band's mask, and the button dots start 0.5 mm outside their holes.
   - The FM glyph is now 1.65 (letters 1.0 mm tall, 0.16 mm stroke). With the real metrics it was 0.74 mm tall, under JLCPCB's 1.0.
   - The title against the subtitle is checked with the measured font, with lower case taken as wide as capitals (an upper bound). They don't overlap, by 0.17 mm at that bound.
 - **Measured or accepted, now documented in design.md:**
-  - M2, by the user's choice: the LEDs' leads are jogged to the 1.27 mm footprint (pcb A.led_pitch). Its 0.15 mm ring across the pitch stays under JLCPCB's 0.18 mm minimum (pcb C.ring_min); the 1.7 mm oval still carries the copper, and JLCPCB may flag it at DFM.
   - M5 (power C.DCDC_load_worst) and M8 (panel E.jack_and_pot_heights_agree, E.button_not_held_pressed): their checks test the parts, and the build notes deal with them.
   - L2's residual (analog_ac D.sample_hold.pots, 4.8 LSB16).
   - L3's drift (analog_dc F.bat85_* ×3: with BAT85s, calibrate warm).
@@ -296,7 +325,7 @@ and there are no contacts and no clearance items beyond stale pours.
   - L9 (power I.-12V_missing / I.+12V_missing VDDA).
   - L13 (analog_dc G.fw_probe_low_residual).
   - L14's colours not to pick (analog_dc J.current.green_InGaN / blue / white).
-  - L16 (pcb G.bodies.main / .face, G.rear_over_joints, H.female_on_joints).
+  - L16 (pcb G.bodies.main / .face, G.rear_over_joints, H.female_on_joints; since M2 only HF3 over RV4's lug is left in G.rear_over_joints).
   - L18 (pcb B.breakout_header_holes).
   - L22 (panel E.depth_behind_panel).
   - L24 (panel H.plaits_position ×14).

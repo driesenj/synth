@@ -71,10 +71,9 @@ NOTES = [
     "The main board's resistors (R21–R48) stand up on a 2.54 mm footprint: any 1/4 W or LR1F part fits. R60 and "
     "R61 lie flat on the 10.3 mm footprint.",
     "D1–D8 are 3-lead bicolour LEDs with the cathode in the middle; Thonk only has 2-lead ones. Their leads are on "
-    "2.54 mm, the board's LED footprint on 1.27 mm: jog the two outer leads 1.27 mm in towards the middle one, a few "
-    "mm below the flange (test report 2026-11-13, M2). Solder them with the panel fitted and each LED pushed into its "
-    "hole: the flange stands 6.6–9 mm above the board. The pads are 0.17 mm apart: little solder, then check for "
-    "bridges with a meter.",
+    "2.54 mm, and so is the board's LED footprint (since 2026-11-14, test report M2): the leads go in straight. The "
+    "square pad is the red anode. Solder them with the panel fitted and each LED pushed into its hole: the flange "
+    "stands 6.6–9 mm above the board.",
     "Solder the faceplate's three DIP-16 chips (U1, U9, U10) straight to the board, without sockets: in a socket they "
     "reach the main board's socket tails and clipped leads in the 11 mm header gap. Mind pin 1 before soldering.",
     "The capacitors on the main board stand between standing resistors: pick small bodies (about 4.0 × 2.5 mm, like "

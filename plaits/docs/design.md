@@ -152,7 +152,8 @@ both while the 2022 navigation (all 24 models) is on.
   LED has its red anode on the left (front view) and its green one on the
   right, so U9 on the left drives the eight reds (R80–R87) and U10 on the
   right the eight greens (R88–R95), and no line has to cross the LED
-  column. C9, C10 100 n, each between its 595's VCC pin 16 and OE pin 13
+  column. The LED footprint takes the leads' 2.54 mm pitch as they come
+  (since 2026-11-14; it was 1.27 mm). C9, C10 100 n, each between its 595's VCC pin 16 and OE pin 13
   (on GND_D_F), a few mm from both (since 2026-11-14). R14 / R15 (100k)
   pull SRCLK / RCLK to GND_D_F, so the 595s keep their frame while the
   Seed's pins float in reset and in the bootloader. U1, U9 and U10 sit on a
@@ -387,7 +388,11 @@ never fall under a pot or jack housing, since those are soldered on the
 panel side, and no rear body sits over a panel part's pins or lugs. The one
 touch: HF3's plastic strip covers the outer 0.03 mm of MORPH's lug pad
 ring, 0.78 mm from the lug itself; H2 / H3 cannot move further out without
-crowding the breakout's pads on the main board.
+crowding the breakout's pads on the main board. Since the LED footprint
+went to 2.54 mm (2026-11-14, test report M2) its green pads land where R88
+and R92 stood. Four 1/4 W columns no longer fit between those pads and the
+HARMONICS / MORPH lugs, so R88 lies flat above D1 and R92 below D8, along x
+with pad 2 beside the LED (PCB frame (22.9, 94.75) and (22.9, 54.4)).
 
 **Footprints.** The pots are on `POT-ALPHA-9MM-RD901F`, drawn by the
 exporter as in KiCad's RD901F-40-00D. It sits in the frame of the library
@@ -511,24 +516,63 @@ L17; no other copper touched). `Plaits-routed.epro2` was patched by script:
 - **Square pin 1:** the DIP-16 footprint's pad 1 is now square.
 - **Ripped:** L_D4_G, L_D2_R and U9's 3V3D_F tie along y 80.5. The pours are stale.
 
-Route these (PCB frame, mm; picture: `hardware/easyeda/plaits-faceplate-rework-2026-11-14.png`):
-1. C10.1 (8.21, 82.0) → U10.16 (7.51, 78.81), and C10.2 (13.29, 82.0) →
-   U10.13 (15.13, 78.81): 0.6 mm, a few mm each.
-2. C9.1 (38.46, 80.75) → U9.16 (35.11, 78.81), and C9.2 (43.54, 80.75) →
-   U9.13 (42.73, 78.81): 0.6 mm.
-3. U9.10 (50.35, 78.81), SRCLR tied high → 3V3D_F, to C9.1 or U9.16 around
-   C9's pad 2 (the old bottom-layer run along y 80.5 now meets it): 0.6 mm.
-4. R14.1 (36.4, 69.5) → the SCK_F bottom-layer track at y 73.5 straight
-   above it, between U9's pins 1 and 2: 0.3 mm. R14.2 already sits on
-   GND_D_F.
-5. R15.2 (1.5, 55.35) → HF3.2 (4.4, 57.38), GND_D_F: 0.6 mm. R15.1 already
-   sits on LED_LATCH_F.
-6. L_D4_G: U10.15 (10.05, 78.81) → R91.1 (19.4, 82.85), between C10's pads;
-   L_D2_R: U9.4 (42.73, 71.19) → R82.1 (36.8, 82.85), around C9: 0.3 mm.
+**LED footprint to 2.54 mm, 2026-11-14** (test report M2; the user's
+choice A: keep the 1/4 W resistors). Patched by script in the same file:
+- **Footprint:** `LED-3MM-3P` is now Ringsy's: pads at ±2.54 mm, 0.9 mm holes, 1.5 mm pads, pad 1 square (red anode). The LEDs stay put; their outer pads move 1.27 mm out.
+- **R88 / R92 moved:** the green pads land where they stood. R88 lies flat above D1 at (22.9, 94.75), R92 below D8 at (22.9, 54.4), along x.
+- **Followed their pads:** every other LED track end, and the straight stub into it.
+- **Ripped:** R88 / R92's four nets; POT_HARMO_F, whose run along y 95.0 crossed R88's new pads; LED_D4_R and the 3V3D_F trunk, both up the x 32.5 corridor the red pads now fill; LED_D5_G, whose loop passed D6's red pad. The 3V3D_F copper left dangling along y 60 is gone too.
 
-Then rebuild all copper areas, run DRC and the netlist check, and export.
-The export replaces `Plaits-routed.epro2` after `copper_audit.py`, the
-labels and the test suite have run on it.
+**Routed, 2026-11-14.** The user routed the fourteen ratlines the two
+patches left:
+- **From the rework:** C9 / C10 to their 595's pins 16 and 13, U9's SRCLR feed, R14.1, R15.2, L_D4_G and L_D2_R.
+- **From M2:** LED_D1_G, LED_D8_G, L_D1_G, L_D8_G, LED_D4_R, LED_D5_G, POT_HARMO_F and the 3V3D_F feed from H3. POT_HARMO_F goes round the top and down the right edge on the panel layer.
+- **Also:** some stitching vias were moved.
+
+**Library parts restored, 2026-11-14.** EasyEDA's import kept its own
+older copy of every library part the patches had changed in place (same
+uuid, same updateTime). The export came back with:
+- `LED-3MM-3P` at 1.27 mm, and the LED tracks routed to those pads.
+- The DIP-16's pin 1 round.
+- Both 30k resistor devices described as 33k.
+- The Alpha pot device carrying the PTV09A's data.
+
+A second script then:
+- put the master's parts back under new uuids, since an import cannot swap a part it has not seen;
+- moved the LED track ends 1.27 mm out with their pads;
+- nudged the tracks that then crossed a pad, shown in magenta in `hardware/easyeda/plaits-faceplate-rework-2026-11-14.png`:
+  - **A. LED_D3_G** is back on its earlier line, R90.2 → (27.16, 85.07) → D3.3. The GND_F stitching via at (25.76, 86.72) on that line is gone.
+  - **B. L_D1_G** rises at x 26.0 instead of 27.0 (D4.3's pad) and crosses between D4.3 and U10's pin 9 at 45°.
+  - **C. LED_D5_G** passes left of D6.3 at x 25.93, then right of R14.2 at x 27.6 up to D5.3. To make room, L_D8_G's run moved from x 26.0 to 25.3, 0.19 mm from R93.1.
+  - **D. U9's 3V3D_F riser** to the y 76.5 run is at x 33.6, not 32.5 (D4.1's pad).
+  - **E. LED_D4_R** rises at x 33.0, then at x 33.32 between D3.1 and R83.1 (0.17 mm each side), and joins its old diagonal to R80.2.
+  - **F. LED_D1_G / LED_D8_G** run straight from R88.2 / R92.2 to D1.3 / D8.3.
+
+The copper audit finds every net in one piece, no other-net contacts and
+nothing under 0.152 mm except at the stale pours.
+
+The user re-imported that file, and the LEDs were back at 1.27 mm. A new
+uuid alone is not enough: each part's `source` field (the id of the
+library part it came from) was unchanged, and EasyEDA used its own copy of
+that library part again. The six parts were then re-keyed again with a
+fresh `source` prefix, a new uuid and a new updateTime, together with the
+three devices that name the DIP-16 footprint. Nothing else changed: the
+copper audit is identical and the suite still has 48 failing.
+
+**Synced 2026-11-15.** The user re-imported it: the LED pads came in at
+2.54 mm and the DIP-16 pin 1 square, under yet newer ids EasyEDA gave
+them. They then rebuilt the pours and exported. That export is now
+`Plaits-routed.epro2`:
+- **Copper:** tracks and vias are identical to the patched file. The copper audit is clean: every net whole, no contacts, nothing under 0.152 mm, 0 differences against the generator, headers aligned, panel identical.
+- **Labels:** the value labels match `value_labels.py` exactly, so the user's EasyEDA project and this file are the same.
+- **Suite:** 47 failing, all open or accepted items of the test report.
+
+Gerbers can be made from the EasyEDA project as it is.
+
+**For later patches:** a script that changes a library part (footprint,
+device, symbol) gives it a new uuid and a new `source` prefix, or the next
+import quietly undoes it. The generator already makes both fresh on every
+run, so only the routed master is exposed.
 
 ---
 
@@ -560,16 +604,10 @@ found that the build has to get right. None of it changes the boards.
   until their nuts pull them up. The buttons' cap base stands 9.85 mm up,
   0.15 mm under the panel typically: check both click and spring back with
   the panel on before soldering them.
-- **The LEDs.** Their leads are on 2.54 mm, the LED footprint on 1.27 mm
-  (test report M2; kept as it is by the user's choice, 2026-11-14, so the
-  routed boards stay unchanged). Jog the two outer leads 1.27 mm in towards
-  the middle one, a few mm below the flange, so all three enter their
-  holes straight; the LED stands high enough for a gentle bend. Lead 1,
-  the square pad, is the red anode. Solder them pushed into their holes
-  with the panel fitted: the flange then stands 6.6–9 mm above the board.
-  The pads are only 0.17 mm apart: use little solder, then check with a
-  meter that no two of each LED's three pads are joined (a bridge is
-  harmless, the 470 Ω limits it, but that colour stays dark or both light).
+- **The LEDs.** Their leads are on 2.54 mm, and so is the LED footprint
+  since 2026-11-14 (test report M2): the leads go in straight. Lead 1, the
+  square pad, is the red anode. Solder them pushed into their holes with
+  the panel fitted: the flange then stands 6.6–9 mm above the board.
 - **Power.** The breakout's 10-pin header is not shrouded: plug a 10-to-16
   cable with its red stripe at the RED STRIPE mark (−12 V) and check it
   sits on all ten pins before switching on. The module draws about +62 /
