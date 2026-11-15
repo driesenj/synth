@@ -187,6 +187,14 @@ low-impedance node (or another mute element) would cure it. If you want
 to try the G3VM-351AY1, buy two and measure one channel's THD against an
 AQY212EH first.
 
+To measure M1 itself (2026-11-15): `hardware/bench/` has the test signals,
+a breadboard stand-in of one channel (22k into FI, which reproduces the
+worst-LEVEL figures above at 10 V p-p) and `mute_test.py`. That script
+does THD, CCIF and SMPTE intermodulation, and a null test of a loop
+recorded without and with the part. The intermodulation tests and the
+loop are the ones that land in the audible band. The bench README has the
+predicted figures for each test.
+
 **M2. A stereo mute is not guaranteed to switch** (LATCH-1, -2). Q drives
 1k5 + the PhotoMOS LED(s) + the red button LED. Typical: 4.8 mA mono,
 4.1 mA stereo, as design.md says. Worst case (+12 V at −5 %, TL074 supply

@@ -1,0 +1,5 @@
+tones/
+rec/
+results/
+*.wav
+__pycache__/

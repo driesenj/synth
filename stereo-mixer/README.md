@@ -55,7 +55,7 @@ table, is [docs/bom.md](docs/bom.md).
 | EasyEDA Pro project | Done: 6 schematic pages, 0 problems; both PCBs placed and net-assigned, 0 placement problems; the panel PCB. Not yet opened in EasyEDA | `hardware/easyeda/StereoMixer.epro2` |
 | Panel | Done: hole list, 1:1 drill template, artwork | `hardware/panel/`, `hardware/tools/panel.py` |
 | Routing | Both boards routed and audited clean (third export 2026-11-02). Value labels re-placed, LED resistor values and a -12V mark patched in 2026-11-04; J18 re-routed, D903 / D904 / C907–C909 added and J18's pads grown by script 2026-11-14. Re-import it, rebuild the copper areas (minimum island about 2 mm²), then Gerbers | `hardware/easyeda/StereoMixer-routed.epro2`, `docs/routing-audit-2026-11-02.md`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py` |
-| Tests | 1960 checks in 8 groups (2026-11-04, extended 2026-11-14). The first run found 37 findings; the same day the LED resistors (1k / 820 Ω), value labels, standoff length (11 mm), BOM and docs were fixed without touching copper. On 2026-11-13 J18 turned out to be on the wrong bus pins (GND on 3–10, +12 V on 11–12; Doepfer has +12 V on 9–10): fixed in circuit.py and re-routed at J18 in the routed master on 2026-11-14. The same day, in copper: D903 became a BAT85 from GND to POR, C907–C909 (4.7 / 4.7 / 10 pF C0G) give the output stages 66–72° of phase margin, D904 (BAT85) clamps a missing +12 V, J18's pads are 1.7 mm. 69 checks still fail: the open findings, the main one the PhotoMOS off capacitance (no DIP-4 part does better; a respin would cure it) | `hardware/tests/`, `docs/test-report-2026-11-04.md` |
+| Tests | 1960 checks in 8 groups (2026-11-04, extended 2026-11-14). The first run found 37 findings; the same day the LED resistors (1k / 820 Ω), value labels, standoff length (11 mm), BOM and docs were fixed without touching copper. On 2026-11-13 J18 turned out to be on the wrong bus pins (GND on 3–10, +12 V on 11–12; Doepfer has +12 V on 9–10): fixed in circuit.py and re-routed at J18 in the routed master on 2026-11-14. The same day, in copper: D903 became a BAT85 from GND to POR, C907–C909 (4.7 / 4.7 / 10 pF C0G) give the output stages 66–72° of phase margin, D904 (BAT85) clamps a missing +12 V, J18's pads are 1.7 mm. 69 checks still fail: the open findings, the main one the PhotoMOS off capacitance (no DIP-4 part does better; a respin would cure it). A bench kit measures that one on a breadboard channel or a socketed channel (2026-11-15) | `hardware/tests/`, `hardware/bench/`, `docs/test-report-2026-11-04.md` |
 
 ## Files
 
@@ -68,6 +68,9 @@ docs/test-report-2026-11-04.md          what the test suite found
 hardware/
   tests/
     run_tests.py                        runs the eight test groups (test_*.py); README.md says what each checks
+  bench/
+    mute_test.py                        bench kit for the mute PhotoMOS (M1): test signals, THD, IMD, null test
+    README.md                           the breadboard stand-in, the takes, the predicted figures
   tools/
     circuit.py                          the whole circuit and the panel positions: the single source of truth
     easyeda_export.py                   schematic pages, footprints, devices, project writer (+ PNG previews)
