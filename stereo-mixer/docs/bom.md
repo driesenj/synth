@@ -36,7 +36,6 @@ CSV: `hardware/bom/stereo-mixer-bom.csv` (everything) and `hardware/bom/stereo-m
 
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
-| 10 | Panasonic AQY212EH PhotoMOS relay (DIP-4) | K1, K2, K3, K4, K5, K6, K7, K8, K9, K10 | Main |  |
 | 2 | Resistor 10 Ω, metal film 1 %, 0.6 W in the 1/4 W (0207) body: TE LR1F10R or Vishay MBB0207 | R918, R919 | Main |  |
 
 ### Tayda
@@ -44,28 +43,29 @@ CSV: `hardware/bom/stereo-mixer-bom.csv` (everything) and `hardware/bom/stereo-m
 | Qty | Part | Refs | Board | Note |
 |---|---|---|---|---|
 | 4 | CD4013BE dual D flip-flop (DIP-14) | U7, U8, U9, U10 | Main |  |
+| 8 | CD4053BE triple SPDT analog switch (DIP-16) | U11, U12, U13, U14, U15, U16, U17, U18 | Main |  |
 | 2 | CD4093BE quad Schmitt NAND (DIP-14) | U5, U6 | Main |  |
-| 2 | 1N5819 Schottky diode (DO-41) | D901, D902 | Main |  |
-| 2 | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D903, D904 | Main |  |
-| 2 | Resistor 820 Ω, metal film 1 %, 1/4 W | R710, R810 | Main |  |
-| 9 | Resistor 1k, metal film 1 %, 1/4 W | R109, R209, R309, R409, R509, R609, R906, R909, R912 | Main |  |
+| 3 | 1N5819 Schottky diode (DO-41) | D901, D902, D904 | Main |  |
+| 1 | BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm | D903 | Main |  |
+| 3 | Resistor 1k, metal film 1 %, 1/4 W | R906, R909, R912 | Main |  |
+| 8 | Resistor 1.5k, metal film 1 %, 1/4 W | R109, R209, R309, R409, R509, R609, R710, R810 | Main |  |
 | 34 | Resistor 10k, metal film 1 %, 1/4 W | R101, R102, R103, R108, R201, R202, R203, R208, R301, R302, R303, R308, R401, R402, R403, R408, R501, R502, R503, R508, R601, R602, R603, R608, R701, R702, R705, R706, R709, R801, R802, R805, R806, R809 | Main |  |
 | 37 | Resistor 100k, metal film 1 %, 1/4 W | R104, R105, R106, R107, R204, R205, R206, R207, R304, R305, R306, R307, R404, R405, R406, R407, R504, R505, R506, R507, R604, R605, R606, R607, R707, R708, R807, R808, R901, R902, R903, R904, R907, R910, R911, R917, R920 | Main |  |
 | 8 | Resistor 200k, metal film 1 %, 1/4 W | R703, R704, R803, R804, R905, R908, R913, R914 | Main |  |
 | 2 | Resistor 300k, metal film 1 %, 1/4 W | R915, R916 | Main |  |
 | 2 | Capacitor 4.7 pF C0G ceramic, 50 V or more, 2.54 mm leads (KEMET C315C479D1G5TA) | C907, C908 | Main |  |
-| 1 | Capacitor 10 pF C0G ceramic, 50 V or more, 2.54 mm leads (KEMET C315C100J1G5TA) | C909 | Main |  |
+| 11 | Capacitor 10 pF C0G ceramic, 50 V or more, 2.54 mm leads (KEMET C315C100J1G5TA) | C102, C202, C302, C402, C502, C602, C702, C703, C802, C803, C909 | Main |  |
 | 3 | Capacitor 22 pF C0G ceramic, 50 V, 5.08 mm leads | C901, C902, C903 | Main |  |
-| 22 | Capacitor 100 nF ceramic (X7R, 50 V), 5.08 mm leads | C101, C201, C301, C401, C501, C601, C701, C801, C911, C912, C913, C914, C915, C916, C917, C918, C921, C922, C923, C924, C925, C926 | Main |  |
+| 30 | Capacitor 100 nF ceramic (X7R, 50 V), 5.08 mm leads | C101, C201, C301, C401, C501, C601, C701, C801, C911, C912, C913, C914, C915, C916, C917, C918, C921, C922, C923, C924, C925, C926, C927, C928, C929, C930, C931, C932, C933, C934 | Main |  |
 | 1 | Capacitor 1 µF ceramic (X7R, 50 V), 5.08 mm leads | C906 | Main |  |
 | 2 | Capacitor 10 µF 35 V, polarised: a dipped tantalum (2.54 mm leads), or a 5 mm electrolytic with its 2 mm leads spread to the pads; + to the + pad | C904, C905 | Main |  |
 | 10 | DIP-14 IC socket | U1, U2, U3, U4, U5, U6, U7, U8, U9, U10 | Main |  |
+| 8 | DIP-16 IC socket | U11, U12, U13, U14, U15, U16, U17, U18 | Main |  |
 | 4 | M3 standoff, female-female, 11 mm: the 8.5 mm female header plus the male header's 2.5 mm plastic |  | — | one per mounting hole between the boards; measure the mated headers first (10 mm + two 0.5 mm M3 washers, one at each end, if need be) |
 | 8 | M3 × 6 mm pan-head screw |  | — | two per standoff |
 
 ## Notes
 
 - Dual-gang Alpha pots (LEVEL 7, LEVEL 8, RETURN, MASTER): Thonk listed the A100K dual-gang (T18) as in stock on 2026-11-04. If it runs out, B100K duals work with a 22k from each wiper to GND; ask and the netlist gets those resistors.
-- The AQY212EH PhotoMOS relays also come from Farnell or LCSC.
 - The mute buttons are red because a lit button means muted.
-- D904 clamps the +12 V net when the bus has no +12 V, with the op-amps' 20-40 mA through it: fit a BAT85 or an SD103A there, not a 1N5711 (about 1 V at 15 mA).
+- D904 clamps the +12 V net when the bus has no +12 V, with the op-amps' 20-40 mA through it: a 1N5819 like D901 / D902 (about 0.3 V there); a BAT85 or a 1N5711 drops too much.

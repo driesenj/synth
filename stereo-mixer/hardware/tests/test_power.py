@@ -7,20 +7,25 @@ What it checks
     pitch and row spacing measured from the pads, the pin-1 triangle and the
     key notch in the footprint's silkscreen, a -12 V / stripe label on the
     board, pins 11-16 (+5 V, CV, Gate) touching no copper.
-  * D901 / D902 (1N5819), D903 and D904 (BAT85): the cathode taken from the
+  * D901 / D902 / D904 (1N5819), D903 (BAT85): the cathode taken from the
     symbol's pin names AND from the band on the footprint's silkscreen;
     conduction with a correct cable, blocking with a reversed one; where the
     bus supplies land with a reversed cable.
   * C904 / C905 polarity from the footprint's "+" mark.
   * Rail voltages at the chips at min / typ / max load (1N5819 VF + 10 R).
-  * The current budget per rail, typ and worst case, against design.md.
+  * The current budget per rail, typ and worst case, against design.md:
+    16 TL074 amplifiers, 14 CMOS chips (2 CD4093B, 4 CD4013B, 8 CD4053B
+    mute switches), the pull-ups, and per muted channel its button LED
+    (CD4013B Q -> 1k5 -> LED).
   * Ratings: 10 R dissipation (normal and with a short downstream), the
     1N5819's current and reverse voltage, capacitor voltages in the BOM,
     the 10 R / 10 uF corner, power track widths.
-  * Decoupling: a 100 n per TL074 rail and per CMOS chip in circuit.py, and
-    its track path in the routed copper.
+  * Decoupling: a 100 n per TL074 rail and per CMOS chip (pin 14, pin 16 on
+    the CD4053Bs) in circuit.py, and its track path in the routed copper
+    (none to read while the routed master's main board is placed only).
   * Faults: one rail missing, power-off: what the op-amps and the CMOS chips
-    see (supply reversed, inputs outside their rails).
+    see (supply reversed, inputs outside their rails), and with +12 V
+    missing the CD4053Bs' signal pins, which sit at 0 V above their VDD.
 
 Run from stereo-mixer/hardware/tests:  python test_power.py
 Read only: imports circuit.py and copper_audit.py, opens the routed export.
@@ -64,9 +69,15 @@ CMOS_VDD_MIN, CMOS_VIN_MARGIN, CMOS_IIN_MAX = -0.5, 0.5, 10e-3
 # TI CD4013B SCHS023E IOH (source) at VDD = 10 V, VO = 9.5 V: 1.3 mA min, 2.6 mA typ (25 C) -> Q output resistance
 # about 0.5 V / 2.6 mA = 190 R typ, 0.5 / 1.3 = 385 R worst. 0 R bounds the LED current from above.
 Q_R_TYP, Q_R_MAX = 190.0, 385.0
-# Panasonic AQY21*EH PhotoMOS datasheet: LED VF 1.25 V typ? / 1.5 V max at IF = 50 mA; at ~5 mA lower.
-# Not confirmed at 5 mA: 1.0 V min / 1.15 V typ / 1.5 V max used.
-PM_VF_MIN, PM_VF_TYP, PM_VF_MAX = 1.0, 1.15, 1.5
+# TI CD4053B SCHS047O (rev. O, May 2026), read from `pdftotext -raw` (the -layout table is garbled):
+# quiescent IDD (VIS = VEE = VSS = 0) 17 / 18 / 18 uA typ and 60 uA max at 25 C for VDD 5 / 10 / 15 V; 150 / 300 /
+# 600 uA max at 85 C. (Its features list says "0.2 uW typical", which the table's typ contradicts; the table used.)
+SW_IDD_TYP, SW_IDD_MAX = 18e-6, 60e-6
+SW_IDD_MAX85 = {5: 150e-6, 10: 300e-6, 15: 600e-6}
+# SCHS047O abs max: supply (VDD to VSS) -0.5 ... 20 V; DC input voltage -0.5 ... VDD + 0.5 V; DC input current
+# +-10 mA any one input. 8.2.2: "Inputs cannot be pushed more than 0.5V above VDD or below VEE"; "Outputs cannot be
+# pulled above VDD or below VEE" (the signal pins are both). VEE = VSS = GND here.
+SW_VIN_MARGIN, SW_IIN_MAX = 0.5, 10e-3
 # Thonk low-profile LED button, red LED: no datasheet found; a standard red LED, 1.8 / 2.0 / 2.2 V assumed.
 LED_VF_MIN, LED_VF_TYP, LED_VF_MAX = 1.8, 2.0, 2.2
 # onsemi 1N5817/D (1N5819 column, verified): VRRM 40 V, IF(AV) 1 A, IFSM 25 A, VF max 0.34 V @ 0.1 A,
@@ -87,6 +98,11 @@ def vf_bat85(i, worst=False):
             v = v0 + (v1 - v0) * math.log(i / i0) / math.log(i1 / i0)
             break
     return v if worst else v - 0.08
+
+
+def vf_clamp(i, worst=False):
+    """D904's forward voltage, by the part circuit.py fits there (BAT85 until 2026-11-15, now a 1N5819)."""
+    return (vf5819 if MB["D904"].kind == "D5819" else vf_bat85)(i, worst)
 
 
 def vf5819(i, worst=False):
@@ -342,8 +358,11 @@ val = lambda ref: harness.ohms(MB[ref].value) if ref in MB else harness.ohms(FB_
 FB_POTS = {r: v for r, _, v, _ in circuit.POTS} | {r: v for r, _, v, _, _ in circuit.POTS2}
 POT_TOL = 0.8                                         # Alpha pots +-20 %: the low end loads hardest
 n_amps = sum(1 for p in MB.values() if p.kind == "TL074") * 4
-n_cmos = sum(1 for p in MB.values() if p.kind in ("CD4093", "CD4013"))
-ck.check("16 TL074 amplifiers, 6 CMOS chips", (n_amps, n_cmos) == (16, 6), f"got {n_amps} amplifiers, {n_cmos} chips")
+n_logic = sum(1 for p in MB.values() if p.kind in ("CD4093", "CD4013"))
+n_sw = sum(1 for p in MB.values() if p.kind == "CD4053")
+n_cmos = n_logic + n_sw
+ck.check("16 TL074 amplifiers, 14 CMOS chips (2 CD4093B + 4 CD4013B + 8 CD4053B)",
+         (n_amps, n_logic, n_sw) == (16, 6, 8), f"got {n_amps} amplifiers, {n_logic} CD4093B / CD4013B, {n_sw} CD4053B")
 VSW = 10.5        # a full swing for the load currents: on the high side of design.md's "about +-10 V"
 
 
@@ -384,11 +403,20 @@ i_short = sum(VSW / val(r) for r in ("R906", "R909", "R912"))      # the three o
 # latch: pull-ups (buttons held), LED chains
 
 
+LED_R = {}
+for k in circuit.MONO + circuit.STEREO:          # the LED resistor found by its nets: QKk -> LEDk
+    rs = [p for p in MB.values() if p.kind == "R" and set(p.nets.values()) == {f"QK{k}", f"LED{k}"}]
+    ck.check(f"ch{k}: one LED resistor QK{k} -> LED{k} (the button LED's whole chain on the main board)",
+             len(rs) == 1, f"{[(p.ref, p.value) for p in rs]}")
+    LED_R[k] = harness.ohms(rs[0].value) if rs else 1500.0
+
+
 def led_current(k, vdd, worst_high):
-    n_pm = len(circuit.PHOTOMOS[k])
-    rq, vpm, vled = (0.0, PM_VF_MIN, LED_VF_MIN) if worst_high else (Q_R_TYP, PM_VF_TYP, LED_VF_TYP)
-    r = harness.ohms(MB[f"R{100 * k + (9 if k in circuit.MONO else 10)}"].value)
-    return max(vdd - n_pm * vpm - vled, 0) / (r + rq)
+    """A muted channel's LED current: Q (CD4013B, output resistance typ, or 0 for the most current) -> the LED
+    resistor -> the red button LED (VF typ, or min for the most current). The three CD4053B selects on Q take
+    under 1 uA each."""
+    rq, vled = (0.0, LED_VF_MIN) if worst_high else (Q_R_TYP, LED_VF_TYP)
+    return max(vdd - vled, 0) / (LED_R[k] + rq)
 
 
 pullups = [p for p in MB.values() if p.kind == "R" and p.label == "button pull-up"]
@@ -399,7 +427,8 @@ def budget(vdd_p, worst):
     """(+12 V mA unmuted, +12 V mA all muted, -12 V mA) at a rail voltage vdd_p at the chips."""
     iq = n_amps * (TL074_IQ_MAX if worst else TL074_IQ_TYP)
     il = I_LOAD_WORST if worst else 0.0
-    cm = n_cmos * CMOS_IDD_MAX if worst else 0.0
+    # CMOS quiescent: the CD4093B / CD4013B 4 uA max (typ ~0), the CD4053B 18 uA typ / 60 uA max at 25 C
+    cm = n_logic * CMOS_IDD_MAX + n_sw * SW_IDD_MAX if worst else n_sw * SW_IDD_TYP
     pu = sum(vdd_p / harness.ohms(p.value) for p in pullups) if worst else 0.0
     leds = sum(led_current(k, vdd_p, worst) for k in circuit.MONO + circuit.STEREO)
     return iq + il + cm + pu, iq + il + cm + pu + leds, iq + il, leds
@@ -424,16 +453,25 @@ print(f"    typ: +12 V {typ[0] * 1e3:.1f} mA unmuted, {typ[1] * 1e3:.1f} mA all 
 print(f"    worst: +12 V {wst[0] * 1e3:.1f} mA unmuted, {wst[1] * 1e3:.1f} mA all muted (LEDs {wst[3] * 1e3:.1f}); "
       f"-12 V {wst[2] * 1e3:.1f} mA  (loads {I_LOAD_WORST * 1e3:.1f} mA at {VSW} V, 10k on the outputs)")
 print(f"    with OUT L / OUT R / SEND shorted to 0 V: + {i_short * 1e3:.1f} mA on one rail")
-m = re.search(r"about (\d+) mA on −12 V; on \+12 V about (\d+) mA plus (\d+)–(\d+) mA per\s+muted\s+channel, "
-              r"(\d+) mA with all eight muted", DOC)
+_v85 = rail(wst[1], True)
+_idd85 = SW_IDD_MAX85[10] + (SW_IDD_MAX85[15] - SW_IDD_MAX85[10]) * (_v85 - 10) / 5      # linear in VDD, 10 ... 15 V
+print(f"    CMOS quiescent on +12 V: {n_sw * SW_IDD_TYP * 1e3:.2f} mA typ, "
+      f"{(n_logic * CMOS_IDD_MAX + n_sw * SW_IDD_MAX) * 1e3:.2f} mA max at 25 C (in the budget); the {n_sw} CD4053Bs "
+      f"alone {n_sw * _idd85 * 1e3:.1f} mA max at 85 C ({_v85:.1f} V), not in it")
+# design.md, Power: "about 25 mA on -12 V; on +12 V about 25 mA plus about 6 mA per muted channel (its button LED),
+# 70 mA with all eight muted"
+m = re.search(r"about (\d+) mA on −12 V; on \+12 V about (\d+) mA plus about (\d+(?:\.\d+)?) mA\s+per\s+muted\s+"
+              r"channel[^,]*, (\d+) mA with all eight muted", DOC)
 ck.check("design.md states the current budget", m is not None, "Power: Current")
 if m:
-    d_neg, d_pos, d_lo, d_hi, d_all = (float(x) for x in m.groups())
+    d_neg, d_pos, d_per, d_all = (float(x) for x in m.groups())
     ck.close("doc -12 V 'about 25 mA' vs typical (mA)", typ[2] * 1e3, d_neg, 0.2 * d_neg)
     ck.close("doc +12 V unmuted 'about 25 mA' vs typical (mA)", typ[0] * 1e3, d_pos, 0.2 * d_pos)
     per = [led_current(k, rail(typ[1], False), False) * 1e3 for k in circuit.MONO + circuit.STEREO]
-    ck.check(f"doc '{d_lo:g}-{d_hi:g} mA per muted channel' vs typical", d_lo - 0.3 <= min(per) and max(per) <= d_hi + 0.3,
-             f"typ {min(per):.2f} ... {max(per):.2f} mA per channel")
+    # "about 6 mA": a whole-mA figure, so the typical per channel must round to it (+-0.5 mA)
+    ck.check(f"doc 'about {d_per:g} mA per muted channel' vs typical (each channel, +-0.5 mA)",
+             d_per - 0.5 <= min(per) and max(per) <= d_per + 0.5,
+             f"typ {min(per):.2f} ... {max(per):.2f} mA per channel at {rail(typ[1], False):.2f} V (all muted)")
     ck.close(f"doc '{d_all:g} mA with all eight muted' vs typical (mA)", typ[1] * 1e3, d_all, 0.15 * d_all)
     # the figure a case's PSU budget needs: the doc's maximum must cover the worst case, without overstating it
     mx = re.search(r"about (\d+) mA on \+12 V\s+\(all muted\) and (\d+) mA on −12 V", DOC)
@@ -513,11 +551,21 @@ for shift in range(-14, 15, 2):
             vr_max = max(vr_max, vk[1] - va[0])
 ck.check("1N5819 reverse voltage (reversed or shifted cable, charged circuit side) < VRRM 40 V",
          vr_max < D5819_VRRM, f"worst {vr_max:.1f} V of {D5819_VRRM:.0f} V")
-wmin = min(t["w"] for t in mbr.tracks if t["net"] in ("+12V", "-12V", "P12_IN", "N12_IN", "P12_D", "N12_D"))
-area = wmin / 0.0254 * COPPER_MIL
-i_trk = 0.048 * 10 ** 0.44 * area ** 0.725
-ck.check("power tracks carry the downstream-short current at 10 C rise (IPC-2221, 1 oz)", i_trk >= i_fault,
-         f"narrowest power track {wmin:.2f} mm -> {i_trk:.2f} A vs {i_fault:.2f} A")
+# the routed master's main board may be placed but not routed yet (2026-11-15: every part with its pad nets, no
+# copper): the copper checks then fail once each, saying so, instead of reading nothing
+ROUTED_MAIN = bool(mbr.tracks)
+print(f"    routed main board: {len(mbr.tracks)} tracks, {len(mbr.vias)} vias, {len(mbr.islands)} pour islands")
+pw = [t["w"] for t in mbr.tracks if t["net"] in ("+12V", "-12V", "P12_IN", "N12_IN", "P12_D", "N12_D")]
+if pw:
+    wmin = min(pw)
+    area = wmin / 0.0254 * COPPER_MIL
+    i_trk = 0.048 * 10 ** 0.44 * area ** 0.725
+    ck.check("power tracks carry the downstream-short current at 10 C rise (IPC-2221, 1 oz)", i_trk >= i_fault,
+             f"narrowest power track {wmin:.2f} mm -> {i_trk:.2f} A vs {i_fault:.2f} A")
+else:
+    ck.check("power tracks carry the downstream-short current at 10 C rise (IPC-2221, 1 oz)", False,
+             f"no power tracks on the routed main board ({len(mbr.tracks)} tracks: placed, not routed); "
+             f"{i_fault:.2f} A to carry")
 fc = 1 / (2 * math.pi * r10 * harness.farads(MB["C904"].value))
 print(f"    10 R + 10 uF corner {fc:.0f} Hz: {20 * math.log10(100e3 / fc):.0f} dB down at 100 kHz (switching PSU noise)")
 ck.check("10 R / 10 uF filter >= 20 dB down at 100 kHz", 20 * math.log10(100e3 / fc) >= 20, f"corner {fc:.0f} Hz")
@@ -547,9 +595,13 @@ ck.check(f"the export's devices for all {len(cer)} 100 n / 1 u ceramics are 50 V
 
 # =================================================================== 6. decoupling
 print("--- decoupling")
-for u in ("U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10"):
+CHIPS = [f"U{n}" for n in range(1, 11)] + [p.ref for p in sorted(MB.values(), key=lambda p: int(p.ref[1:]))
+                                           if p.kind == "CD4053"]
+unrouted = []
+for u in CHIPS:
     chip = MB[u]
-    sup = [("4", VP), ("11", VN)] if chip.kind == "TL074" else [("14", VP)]
+    sup = ([("4", VP), ("11", VN)] if chip.kind == "TL074" else [("16", VP)] if chip.kind == "CD4053"
+           else [("14", VP)])
     for pin, net in sup:
         ck.check(f"{u}.{pin} on {net}", chip.nets.get(pin) == net, f"got {chip.nets.get(pin)}")
         caps = [c for c in MB.values() if c.kind == "C" and set(c.nets.values()) == {net, GND}
@@ -559,6 +611,9 @@ for u in ("U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10"):
         if not caps:
             continue
         c = caps[0].ref
+        if not ROUTED_MAIN:
+            unrouted.append(f"{c}->{u}.{pin}")
+            continue
         cp = next(n for n, v in mbr.parts[c]["nets"].items() if v == net)
         L = mbr.track_path(net, ("pad", c, cp), ("pad", u, pin))
         g = mbr.parts[c]["pads"][next(n for n, v in mbr.parts[c]["nets"].items() if v == GND)]
@@ -567,6 +622,10 @@ for u in ("U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10"):
         ck.check(f"{c} -> {u}.{pin}: track <= 6 mm, GND pad tied into the pour", L is not None and L <= 6.0
                  and spokes >= 2, f"track {L if L is None else round(L, 1)} mm, {spokes} spokes, "
                  f"nearest GND via {gvia:.1f} mm")
+if unrouted:
+    ck.check(f"decoupler -> supply pin: track <= 6 mm, GND pad tied into the pour ({len(unrouted)} pairs)", False,
+             f"the routed main board has no copper (placed, not routed): none of {', '.join(unrouted)} can be "
+             f"checked")
 
 def clamp(net_k, net_a):
     """Diodes in circuit.py with the cathode on net_k and the anode on net_a."""
@@ -583,15 +642,75 @@ def clamp(net_k, net_a):
 # =================================================================== 7. faults
 print("--- faults: one rail missing, power-off")
 iq_typ, iq_max = n_amps * TL074_IQ_TYP, n_amps * TL074_IQ_MAX
+V_MISS = {}                                # how far the +12V net sits below GND with +12 V missing
 for name, iq, worst in (("typ", iq_typ, False), ("max", iq_max, True)):
     v = vf5819(iq, worst) + r10 * iq
     if clamp(VP, GND):                     # D904 straight from GND, in parallel with D901 + R918
-        v = min(v, vf_bat85(iq, worst))
+        v = min(v, vf_clamp(iq, worst))
+    V_MISS[name] = min(v, SI_VF_ON + 0.05)
     print(f"    +12 V at 0 V, -12 V on: the op-amps' {iq * 1e3:.0f} mA ({name}) returns through D901 + R918"
           f"{' and D904' if clamp(VP, GND) else ''} -> +12V net at {-v:+.2f} V (CMOS VDD), unless the CMOS "
           f"substrate diodes take it from ~{SI_VF_ON} V")
-    ck.check(f"+12 V missing (rail at 0 V), {name} IQ: CMOS VDD >= {CMOS_VDD_MIN} V (CD4000B abs max)",
-             -min(v, SI_VF_ON + 0.05) >= CMOS_VDD_MIN, f"+12V net at {-min(v, SI_VF_ON + 0.05):+.2f} V")
+    ck.check(f"+12 V missing (rail at 0 V), {name} IQ: VDD of all {n_cmos} CMOS chips >= {CMOS_VDD_MIN} V "
+             f"(CD4000B / CD4053B abs max)", -V_MISS[name] >= CMOS_VDD_MIN, f"+12V net at {-V_MISS[name]:+.2f} V")
+
+# +12 V missing, the CD4053Bs: VEE = VSS = GND, VDD = the +12V net below GND. Their throws sit at 0 V by design (y on
+# GND, x on a summer's virtual earth), so with VDD below GND every signal pin is ABOVE VDD, against "inputs cannot
+# be pushed more than 0.5 V above VDD" (SCHS047O 8.2.2; abs max DC input voltage VDD + 0.5 V).
+def si_junction(v):
+    """A CMOS pin's diode to its rail: 1 mA at SI_VF_ON + 0.05 V and 60 mV per decade. ASSUMED (no datasheet gives
+    it); only the order of magnitude is used."""
+    return 1e-3 * 10 ** ((v - (SI_VF_ON + 0.05)) / 0.06)
+
+
+SWS = [p for p in MB.values() if p.kind == "CD4053"]
+# pins 7 (VEE) and 8 (VSS) are supplies; every other pin on GND is a y throw or INH: 0 V hard, no series resistance
+sw_gnd = [f"{p.ref}.{pin}" for p in SWS for pin, n in sorted(p.nets.items()) if n == GND and pin not in ("7", "8")]
+for name in ("typ", "max"):
+    v = V_MISS[name]
+    i_j = si_junction(v)
+    ck.check(f"+12 V missing, {name} IQ: the CD4053B pins on GND ({len(sw_gnd)}: y throws + INH) within VDD + "
+             f"{SW_VIN_MARGIN} V", v <= SW_VIN_MARGIN,
+             f"pins at 0 V, VDD (+12V net) at {-v:+.2f} V: {v:.2f} V above it")
+    ck.check(f"+12 V missing, {name} IQ: current from GND into each of those pins (its diode to VDD) under the "
+             f"{SW_IIN_MAX * 1e3:.0f} mA DC input current", i_j <= SW_IIN_MAX,
+             f"about {i_j * 1e3:.3f} mA per pin at {v:.2f} V forward (junction ASSUMED 1 mA at {SI_VF_ON + 0.05:.2f} V, "
+             f"60 mV/decade), {len(sw_gnd) * i_j * 1e3:.2f} mA over all {len(sw_gnd)}: GND -> pin -> VDD -> the "
+             f"TL074s' V+ pins, i.e. a share of the op-amps' {iq_typ * 1e3:.0f}-{iq_max * 1e3:.0f} mA that D904 "
+             f"carries in parallel (without D904, spread over these pins alone: "
+             f"{(iq_typ if name == 'typ' else iq_max) / len(sw_gnd) * 1e3:.2f} mA each)")
+# x throws (SUM_L / SUM_R / SUM_S) and commons (BLk / BRk / BSk): no longer held at 0 V. The summers' and followers'
+# TL074s run between -12 V and the +12V net (about -0.4 V), so their outputs sit at about -2 V or lower and cannot
+# hold a virtual earth at the GND on their IN+; these nets are reached only through >= 100k (feedback, return,
+# drums, FX IN, bus resistors) from those outputs or from whatever is patched into the jacks. Bound: every
+# resistor on the net (and, for a SUM net, every bus resistor too, as if every switch conducted) from 12 V, less a
+# clamp drop: the most current a pin's diode (to VDD above, to VEE = GND below) could ever see.
+sig = {}
+for p in SWS:
+    for pin, n in p.nets.items():
+        if n not in (GND, VP) and not n.startswith("QK"):
+            sig.setdefault(n, []).append(f"{p.ref}.{pin}")
+
+
+def r_on(net):
+    return [(p.ref, harness.ohms(p.value)) for p in MB.values() if p.kind == "R" and net in p.nets.values()]
+
+
+bound = {}
+for n, pins in sig.items():
+    rs = r_on(n)
+    if n.startswith("SUM_"):
+        rs += [r for k in circuit.MONO + circuit.STEREO for r in r_on(f"B{n[4]}{k}")]
+    bound[n] = sum((V_RAIL - SI_VF_ON) / r for _, r in rs)
+    if n.startswith("SUM_"):
+        print(f"    +12 V missing: {n} ({len(pins)} x throws) reached through {len(rs)} resistors "
+              f"(>= {min(r for _, r in rs) / 1e3:.0f}k): at most {bound[n] * 1e3:.2f} mA into the whole net")
+worst_net = max(bound, key=bound.get)
+ck.check(f"+12 V missing: the CD4053B x throws and commons (SUM_*, B*) can only be driven through >= 100k: at most "
+         f"{SW_IIN_MAX * 1e3:.0f} mA into any one pin", bound[worst_net] <= SW_IIN_MAX,
+         f"worst {worst_net} at {bound[worst_net] * 1e3:.2f} mA even if one pin took the whole net with every source "
+         f"at 12 V (commons: {max(v for n, v in bound.items() if not n.startswith('SUM_')) * 1e3:.2f} mA at most); "
+         f"pulled below GND they clamp to VEE, above VDD + 0.5 V to VDD, at that current")
 gnd_inp = [f"{u}.{pin}" for u in ("U1", "U2", "U3", "U4") for s, (o, im, ip) in circuit.SECTION.items()
            for pin in (ip,) if MB[u].nets.get(pin) == GND]
 print(f"    TL074 IN+ pins hard on GND: {gnd_inp}")
@@ -609,13 +728,13 @@ for name, iq, worst in (("typ", iq_typ, False), ("max", iq_max, True)):
 # parasitic paths carry all of it. Verifier: judged against the datasheets' abs max, not "a clamp must exist".
 cl_p = clamp(VP, GND)
 for name, iq, worst in (("typ", iq_typ, False), ("max", iq_max, True)):
-    v_p = min(vf_bat85(iq, worst), SI_VF_ON) if cl_p else SI_VF_ON
+    v_p = min(vf_clamp(iq, worst), SI_VF_ON) if cl_p else SI_VF_ON
     print(f"    +12V open, {name} IQ {iq * 1e3:.0f} mA: +12V net at {-v_p:+.2f} V")
 ck.check(f"+12V open (not connected): CMOS VDD >= {CMOS_VDD_MIN} V (CD4000B abs max)",
          -v_p >= CMOS_VDD_MIN,
          f"clamps (K +12V, A GND): {cl_p}; {iq_typ * 1e3:.0f}-{iq_max * 1e3:.0f} mA returns through "
-         + (f"D904 (BAT85): +12V net at {-v_p:+.2f} V at the max IQ and the BAT85's max VF "
-            f"({-min(vf_bat85(iq_typ), SI_VF_ON):+.2f} V typical); the CMOS chips' VSS->VDD diodes share it from "
+         + (f"D904 ({MB['D904'].value}): +12V net at {-v_p:+.2f} V at the max IQ and its max VF "
+            f"({-min(vf_clamp(iq_typ), SI_VF_ON):+.2f} V typical); the CMOS chips' VSS->VDD diodes share it from "
             f"~{SI_VF_ON} V" if cl_p else
             f"the VSS->VDD diodes of {n_cmos} CMOS chips and the {len(gnd_inp)} TL074 IN+ pins on GND: +12V net near "
             f"-{SI_VF_ON}..-0.6 V"))
@@ -628,9 +747,11 @@ ck.check(f"-12V open (not connected): TL074 IN+ pins on GND carry the supply cur
 
 # CMOS input nets: any capacitor from the net to a rail other than GND pushes it outside 0 .. VDD at power-off
 cmos_in = {}
-for u in ("U5", "U6", "U7", "U8", "U9", "U10"):
+for u in [f"U{n}" for n in range(5, 11)] + [p.ref for p in SWS]:
     chip = MB[u]
-    outs = ({"3", "4", "10", "11"} if chip.kind == "CD4093" else {"1", "2", "12", "13"}) | {"7", "14"}
+    # outputs and supplies; the CD4053B has none but its supplies (every signal pin is an input / output both ways)
+    outs = ({"3", "4", "10", "11", "7", "14"} if chip.kind == "CD4093" else
+            {"1", "2", "12", "13", "7", "14"} if chip.kind == "CD4013" else {"7", "8", "16"})
     for pin, net in chip.nets.items():
         if pin not in outs and net != GND:
             cmos_in.setdefault(net, []).append(f"{u}.{pin}")

@@ -89,9 +89,10 @@ CHIPS = {"TL074": ("Thonk", "TL074 quad op-amp (DIP-14)"),
          "H11L1": ("Tayda", "H11L1 opto-isolator (DIP-6)"),
          "CD4013": ("Tayda", "CD4013BE dual D flip-flop (DIP-14)"),
          "CD4093": ("Tayda", "CD4093BE quad Schmitt NAND (DIP-14)"),
+         "CD4053": ("Tayda", "CD4053BE triple SPDT analog switch (DIP-16)"),
          "PHOTOMOS": ("Mouser", "Panasonic AQY212EH PhotoMOS relay (DIP-4)")}
 SOCKETS = {"TL074": 14, "MCP4922": 14, "MUX": 16, "HC595": 16, "HC165": 16, "H11L1": 6, "CD4013": 14,
-           "CD4093": 14}           # pins of the socket each chip sits in; the PhotoMOS are soldered
+           "CD4093": 14, "CD4053": 16}           # pins of the socket each chip sits in; a PhotoMOS is soldered
 SEMIS = {"NPN": ("Tayda", "Semiconductors", "2N3904 NPN transistor (TO-92)"),
          "BAT85": ("Tayda", "Semiconductors", "BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm"),
          "1N4148": ("Tayda", "Semiconductors", "1N4148 diode (DO-35)"),

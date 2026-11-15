@@ -1,5 +1,14 @@
 # Mute test kit (test report M1)
 
+**Status 2026-11-15: the mixer no longer has the AQY212EH.** The mutes are now
+one CD4053B per channel at the buses' summing ends, where the switch carries
+no signal voltage ([design.md](../../docs/design.md), "Channel inputs and
+mutes"), so M1 is gone and the breadboard test below is no longer needed to
+decide anything. The kit still works as it is: as a THD / intermodulation /
+null-test bench for a built channel (record the channel against a straight
+wire instead of without / with a part), or to compare switch parts on the
+stand-in. What follows is the kit as it was built for the PhotoMOS.
+
 An off AQY212EH is not an open switch. It is a capacitance from the
 channel's FI node to GND, 79 pF at 0 V falling to 35 pF at 7.5 V, and
 because it changes with the voltage it distorts. The suite's two models
@@ -26,8 +35,8 @@ delay and a filter). It should say `all passed`.
   test cannot see its third harmonic (30 kHz).
 - ±12 V: the Eurorack supply through a ribbon to a breadboard, or a bench
   supply.
-- A TL074 (or two TL072s), an AQY212EH, 22k, 2 × 30k, 2 × 10k, 2 × 100 nF
-  (one from each rail to GND at the chip).
+- A TL074 (or two TL072s), an AQY212EH, 22k, 2 × 30k, 2 × 10k, 100k,
+  2 × 100 nF (one from each rail to GND at the chip).
 - A multimeter with AC volts.
 
 ## The stand-in
@@ -62,6 +71,33 @@ predicts for the worst LEVEL setting.
   open, which is "not muted": the state in which it distorts.
 - Use the tip and sleeve of the interface's jacks (a TS cable, or a TRS
   with its ring unconnected).
+
+### Wiring by pin (TL074)
+
+| Pin | Connect to |
+|---|---|
+| 4 | +12 V, with 100 nF to GND at the pin |
+| 11 | −12 V, with 100 nF to GND at the pin |
+| 3 (U1A +) | interface OUT tip, and 100k to GND so it never floats |
+| 2 (U1A −) | 10k to GND, 30k to pin 1 |
+| 1 (U1A out) | 22k to pin 5 |
+| 5 (U1B +) | FI: the 22k, and later the AQY212EH's pin 3 |
+| 6 (U1B −) | pin 7 |
+| 7 (U1B out) | OUT: the meter, and 30k to the interface IN tip |
+| interface IN tip | 10k to GND |
+| 10, 12 | GND (the unused sections C and D) |
+| 9, 13 | pin 8 and pin 14 (C and D as followers, so they keep quiet) |
+
+Also:
+- The AQY212EH, for the second set of takes: pin 3 to pin 5, pin 4 to
+  GND, and pins 1 and 2 left empty.
+- Keep the wire from pin 5 short, and leave everything else exactly in
+  place between the two sets: the only change is the part going in.
+- 33k in place of the 30ks works too. The levels are set on the meter
+  anyway.
+
+Before the first tone, turn the interface's output (or the DAW fader) well
+down. A full-scale signal ×4 would clip U1A at the rails.
 
 ## The takes
 

@@ -4,21 +4,30 @@ What it checks
   A  circuit.py on its own: unique designators per board, no single-pin nets,
      every header pin pair used on both boards, faceplate nets end in _F and
      main-board nets never do, no net on both boards except through a header.
-  B  circuit.py's pin maps (SECTION, NAND, FLOP, PHOTOMOS, J18, jacks, pots,
-     buttons) against the manufacturers' pinouts (constants block below), and
-     the same against the pin names in the symbols the routed master uses.
+  B  circuit.py's pin maps (SECTION, NAND, FLOP, MUX, J18, jacks, pots,
+     buttons) against the manufacturers' pinouts (constants block below); the
+     latch and each channel's CD4053B mute switch (U11-U18: commons on the bus
+     resistors' summing ends, x throws on the buses, y throws on GND, selects
+     on Q, INH / VEE / VSS on GND, VDD on +12V), the mute's polarity and the
+     button LED chain; the CD4053B symbol's pin names in the routed master
+     and in the generated project against the datasheet.
   C  The diodes and polarised caps: cathode / + pin in the symbol AND the
      footprint actually used (pin names, silkscreen band, + mark), then
      whether D901 / D902 block a reversed cable, D903 empties C906 at
      power-off, C904 / C905 sit with + on the more positive net.
   D  The routed master (StereoMixer-routed.epro2): every pad's net on both
      PCBs against circuit.py, designators complete, no extra or missing
-     parts (own parser, independent of copper_audit.py's code).
+     parts (own parser, independent of copper_audit.py's code); the DIP-14,
+     DIP-16, jack, J18, button and pot footprints the pin maps rely on. Since
+     2026-11-15 the master's main board is the generated placement, unrouted.
   E  Header stacking: for H1-H9, the faceplate pin and the main-board pin that
-     land at the same spot when the boards are stacked carry X and X_F.
+     land at the same spot when the boards are stacked carry X and X_F. The
+     pad transform is validated against the routed faceplate's track ends on
+     both layers (the main board has no tracks yet).
   F  Schematic pages in the routed master and in the generated
      StereoMixer.epro2 against circuit.py (pin positions joined to wires).
-  G  design.md's tables (latch, op-amps, headers, signal flow) against circuit.py.
+  G  design.md's tables (latch with the mute switches and bus resistors,
+     op-amps, headers, signal flow, what the mute switches) against circuit.py.
 
 Run from stereo-mixer/hardware/tests:  python test_netlist.py
 Only reads: imports circuit.py, opens the two exports as zip files.
@@ -50,9 +59,13 @@ CD4093_DS = {1: ("1", "2", "3"), 2: ("5", "6", "4"), 3: ("8", "9", "10"), 4: ("1
 CD4013_DS = {1: {"Q": "1", "QN": "2", "CLK": "3", "RESET": "4", "D": "5", "SET": "6"},
              2: {"Q": "13", "QN": "12", "CLK": "11", "RESET": "10", "D": "9", "SET": "8"}, "VDD": "14", "VSS": "7"}
 # CD4013B truth table (SCHS023): data is taken on the POSITIVE clock edge; RESET and SET are active HIGH.
-# Panasonic "PhotoMOS GU 1 Form A AQY21_EH" datasheet (AQY212EH), schematic / pin assignment, DIP-4:
-# 1 = LED anode, 2 = LED cathode, 3 and 4 = the MOSFET output (bidirectional AC/DC switch).
-AQY212EH_DS = {"A": "1", "K": "2", "SW": ("3", "4")}
+# TI SCHS047O "CD4051B, CD4052B, CD4053B" (rev. O, May 2026), Figure 4-3 (16-pin PDIP, top view) and Table 4-3
+# "Pin Functions CD4053B": 1 BY, 2 BX, 3 CY, 4 C common ("CX OR CY OUT/IN"), 5 CX, 6 INH, 7 VEE, 8 VSS, 9 C,
+# 10 B, 11 A (the channel selects), 12 AX, 13 AY, 14 A common ("AX OR AY OUT/IN"), 15 B common, 16 VDD.
+CD4053B_DS = {"BY": "1", "BX": "2", "CY": "3", "C COM": "4", "CX": "5", "INH": "6", "VEE": "7", "VSS": "8",
+              "C": "9", "B": "10", "A": "11", "AX": "12", "AY": "13", "A COM": "14", "B COM": "15", "VDD": "16"}
+# Truth table (SCHS047O Table 7-1, CD4053B): INH 0 and select A 0 -> ax on, A 1 -> ay on (b, c the same with
+# B, C); INH 1 -> every channel off.
 # Doepfer A-100 "Technical details / bus" (doepfer.de/a100_man/a100t_e.htm, pinout image a100b_e.gif), 16-pin
 # module header, pairs from the red stripe: 1, 2 = -12 V, 3-8 = GND, 9, 10 = +12 V, 11, 12 = +5 V, 13, 14 = CV,
 # 15, 16 = Gate. (Until 2026-11-14 this table had GND on 3-10 and +12 V on 11-12, as the design did.)
@@ -89,8 +102,10 @@ for name, parts in (("main", MB), ("face", FB)):
     single = {n: v for n, v in nets.items() if len(v) < 2}
     ck.check(f"A.no_single_pin_nets.{name}", not single, f"expected every net on >= 2 pins, got {single}")
 
-ck.check("A.part_counts", (len(MB), len(FB)) == (159, 59),
-         f"README: main board 159 parts (155 + C907-C909 and D904, 2026-11-14), faceplate 59; got {len(MB)}, {len(FB)}")
+ck.check("A.part_counts", (len(MB), len(FB)) == (175, 59),
+         f"README: main board 175 parts (2026-11-15: 159 - the 10 AQY212EH + 8 CD4053B + their 8 100 n + 10 x 10 p "
+         f"on the follower inputs), faceplate 59; "
+         f"got {len(MB)}, {len(FB)}")
 
 bad_pairs = []
 for ref, kind, pins in circuit.HEADERS:
@@ -172,33 +187,85 @@ used_gates = collections.Counter(circuit.NAND_OF.values())
 used_halves = collections.Counter(circuit.FLOP_OF.values())
 ck.check("B.latch_gates_unique", max(used_gates.values()) == 1 and max(used_halves.values()) == 1,
          f"each gate / flip-flop half serves one channel: {used_gates}, {used_halves}")
-# Q high = muted: Q -> LED resistor -> PhotoMOS LED anode (pin 1) ... cathode chain -> LED<k> -> button LED anode (5),
-# button LED cathode (6) -> GND_F
-pm_bad = []
-for k, ks in circuit.PHOTOMOS.items():
-    chain = []
-    for ref in ks:
-        n = PARTS["main"][ref].nets
-        chain.append((n[AQY212EH_DS["A"]], n[AQY212EH_DS["K"]]))
-        if n["4"] != "GND" or not n["3"].startswith(f"FI{k}"):
-            pm_bad.append((ref, "switch", n["3"], n["4"]))
-    nets_chain = [chain[0][0]] + [c[1] for c in chain]
-    if chain[0][0] != f"LA{k}" or chain[-1][1] != f"LED{k}" or any(chain[i][1] != chain[i + 1][0]
-                                                                     for i in range(len(chain) - 1)):
-        pm_bad.append((k, nets_chain))
-    rq = [p for p in MB if p.kind == "R" and set(p.nets.values()) == {f"QK{k}", f"LA{k}"}]
+# The mute switch (2026-11-15): circuit.MUX's (common, x, y, select) per section against the datasheet; section a
+# serves the L bus, b the R bus, c the send bus (design.md, "Mute")
+SECTION_OF = {"L": "A", "R": "B", "S": "C"}
+mux_ds = {bus: (CD4053B_DS[f"{s} COM"], CD4053B_DS[f"{s}X"], CD4053B_DS[f"{s}Y"], CD4053B_DS[s])
+          for bus, s in SECTION_OF.items()}
+ck.check("B.CD4053B_MUX", circuit.MUX == mux_ds, f"SCHS047O Table 4-3 as (common, x, y, select): expected {mux_ds}, "
+                                                 f"got {circuit.MUX}")
+ck.check("B.mute_switch_refs", circuit.SWITCH == {k: f"U{10 + k}" for k in circuit.MONO + circuit.STEREO}
+         and all(PARTS["main"][u].kind == "CD4053" and PARTS["main"][u].value == "CD4053B"
+                 for u in circuit.SWITCH.values()),
+         f"one CD4053B per channel, U11-U18 (design.md); got {circuit.SWITCH}")
+# every channel's switch, pin by pin: common on the bus resistor's summing end, x on the bus, y on GND, select on
+# Q; INH (6) low, VEE (7) = VSS (8) = GND, VDD (16) = +12V; all 16 pins tied
+for k in circuit.MONO + circuit.STEREO:
+    u = circuit.SWITCH[k]
+    n = PARTS["main"][u].nets
+    want = {CD4053B_DS["INH"]: "GND", CD4053B_DS["VEE"]: "GND", CD4053B_DS["VSS"]: "GND", CD4053B_DS["VDD"]: "+12V"}
+    for bus, s in SECTION_OF.items():
+        want.update({CD4053B_DS[f"{s} COM"]: f"B{bus}{k}", CD4053B_DS[f"{s}X"]: f"SUM_{bus}",
+                     CD4053B_DS[f"{s}Y"]: "GND", CD4053B_DS[s]: f"QK{k}"})
+    diff = {p: (n.get(p), want.get(p)) for p in sorted(set(n) | set(want), key=int) if n.get(p) != want.get(p)}
+    ck.check(f"B.mute_switch_wiring.{u}", not diff and len(n) == 16,
+             f"channel {k}: pin: (circuit, datasheet-derived) differ at {diff}; {len(n)} pins tied")
+# each switched net is just the bus resistor's summing end and the common: nothing else may hang on it
+cold_bad = []
+for k in circuit.MONO + circuit.STEREO:
+    u = circuit.SWITCH[k]
+    hot = ({"L": f"PL{k}", "R": f"PR{k}", "S": f"SD{k}"} if k in circuit.MONO else
+           {"L": f"CH{k}L", "R": f"CH{k}R", "S": f"SD{k}"})
+    for bus, s in SECTION_OF.items():
+        pins = sorted(MBN[f"B{bus}{k}"])
+        rs = [p.split(".")[0] for p in pins if p.split(".")[0] != u]
+        ok = (len(pins) == 2 and f"{u}.{CD4053B_DS[f'{s} COM']}" in pins and len(rs) == 1
+              and PARTS["main"][rs[0]].kind == "R" and set(PARTS["main"][rs[0]].nets.values()) == {hot[bus], f"B{bus}{k}"})
+        if not ok:
+            cold_bad.append((k, bus, pins))
+ck.check("B.bus_resistor_ends_on_the_commons", not cold_bad,
+         f"B<bus><k> = one bus resistor (from PL / PR / SD, or CH L / R on a stereo channel) and the switch common; "
+         f"bad: {cold_bad}")
+# the summing nodes: every channel reaches a bus only through its switch's x throw; the rest of each node is the
+# summer (IN-, Rf, Cf) and the unswitched inputs (RETURN, DRUMS, FX IN)
+sum_bad = {}
+for bus, s in SECTION_OF.items():
+    members = MBN[f"SUM_{bus}"]
+    xs = {f"{circuit.SWITCH[k]}.{CD4053B_DS[f'{s}X']}" for k in circuit.MONO + circuit.STEREO}
+    chan = [m for m in members if m not in xs and re.fullmatch(r"[RC][1-8]\d\d\.\d+", m)]
+    if not xs <= set(members) or chan:
+        sum_bad[bus] = {"x throws missing": sorted(xs - set(members)), "channel parts straight on the node": chan}
+ck.check("B.channels_reach_the_buses_only_through_the_switch", not sum_bad,
+         f"SUM_L / SUM_R / SUM_S: {sum_bad or {b: sorted(MBN[f'SUM_{b}']) for b in SECTION_OF}}")
+# polarity: Q high = muted. The selects sit on Q (QK); select high puts the y throw (GND) on, so the bus resistor's
+# end is grounded and the channel leaves the bus; select low (Q low, as RESET leaves it at power-up) puts x (the
+# bus) on. The LED resistor on the same Q lights the button while muted.
+pol_bad = []
+for k in circuit.MONO + circuit.STEREO:
+    u = circuit.SWITCH[k]
+    n = PARTS["main"][u].nets
+    fq = PARTS["main"][circuit.FLOP_OF[k][0]].nets[CD4013_DS[circuit.FLOP_OF[k][1]]["Q"]]
+    for bus, s in SECTION_OF.items():
+        sel = n[CD4053B_DS[s]]
+        on_high, on_low = n[CD4053B_DS[f"{s}Y"]], n[CD4053B_DS[f"{s}X"]]
+        if not (sel == fq and on_high == "GND" and on_low == f"SUM_{bus}"):
+            pol_bad.append((u, bus, "select", sel, "flip-flop Q", fq, "on when high", on_high, "on when low", on_low))
+ck.check("B.mute_polarity_Q_high_mutes", not pol_bad,
+         f"select = the CD4013 Q; Q high -> y = GND (muted), Q low (power-up reset) -> x = SUM (playing); bad: {pol_bad}")
+# the button LED: Q -> LED resistor -> LED<k> -> header -> button LED anode (5), cathode (6) -> GND_F, lit = muted
+led_bad = []
+for k in circuit.MONO + circuit.STEREO:
+    rq = [p for p in MB if p.kind == "R" and set(p.nets.values()) == {f"QK{k}", f"LED{k}"}]
     if len(rq) != 1:
-        pm_bad.append((k, "no single QK-LA resistor", [p.ref for p in rq]))
+        led_bad.append((k, "no single QK-LED resistor", [p.ref for p in rq]))
+    others = sorted(m for m in MBN[f"LED{k}"] if not (rq and m.startswith(rq[0].ref + ".")))
+    if len(others) != 1 or not others[0].startswith(f"H{k}."):
+        led_bad.append((k, f"LED{k} beyond the resistor", others))
     sw = PARTS["face"][f"SW{k}"].nets
     if sw[BUTTON_DS["LED_A"]] != f"LED{k}_F" or sw[BUTTON_DS["LED_K"]] != "GND_F":
-        pm_bad.append((f"SW{k}", "LED", sw[BUTTON_DS["LED_A"]], sw[BUTTON_DS["LED_K"]]))
-ck.check("B.mute_LED_chain_polarity", not pm_bad,
-         f"expected Q -> LED resistor -> AQY212EH 1(A)->2(K) [-> next 1->2] -> LED -> button 5(A) -> 6(K) -> GND_F; "
-         f"bad: {pm_bad}")
-pm_sw = [(ref, PARTS["main"][ref].nets["3"], PARTS["main"][ref].nets["4"]) for ks in circuit.PHOTOMOS.values()
-         for ref in ks]
-ck.check("B.photomos_switch_pins", all(a.startswith("FI") and b == "GND" for _, a, b in pm_sw),
-         f"AQY212EH 3/4 = output switch from FI to GND; got {pm_sw}")
+        led_bad.append((f"SW{k}", "LED", sw[BUTTON_DS["LED_A"]], sw[BUTTON_DS["LED_K"]]))
+ck.check("B.mute_LED_chain_polarity", not led_bad,
+         f"expected Q -> LED resistor -> LED<k> -> H<k> -> button 5(A) -> 6(K) -> GND_F; bad: {led_bad}")
 
 # J18 against the Doepfer bus
 j18 = PARTS["main"]["J18"].nets
@@ -391,6 +458,35 @@ COMPS = {}
 for b in ("main", "face"):
     COMPS[b], dups = pcb_components(PCB[b])
     ck.check(f"D.no_duplicate_designators.{b}", not dups, f"duplicates {dups}")
+GEN = Export(harness.GENERATED)
+
+
+# B (continued)  the CD4053B symbol's pin names against SCHS047O, in both exports: the symbol of the device the
+# main PCB's U11-U18 use. The exporter names a section's common by its lower-case letter ("a"), the select by the
+# upper-case one ("A") and the throws "ax" / "ay", as TI's Figure 4-3 does ("OUT/IN ax OR ay", "A", "ax").
+def canon_4053(name):
+    s = (name or "").strip()
+    if re.fullmatch(r"[abc]", s):
+        return s.upper() + " COM"
+    s = re.sub(r"\s*(OUT/IN|IN/OUT)\s*", " ", s.upper()).strip()
+    m = re.fullmatch(r"([ABC])X OR \1Y", s)
+    return m.group(1) + " COM" if m else s
+
+
+for label, ex in (("routed", ROUTED), ("generated", GEN)):
+    comps, _ = pcb_components(ex.pcb("Mixer Main"))
+    syms = sorted({ex.devices.get(comps[u]["device"], {}).get("Symbol") for u in circuit.SWITCH.values() if u in comps},
+                  key=str)
+    if len(syms) != 1 or syms[0] not in ex.docs:
+        ck.check(f"B.CD4053B_symbol_pins.{label}", False, f"U11-U18 should share one CD4053B symbol; got {syms}")
+        continue
+    pins = ex.symbol_pins(syms[0])
+    got = {num: canon_4053(v[0]) for num, v in pins.items()}
+    want = {num: name for name, num in CD4053B_DS.items()}
+    bad = {num: (pins[num][0] if num in pins else None, want.get(num)) for num in sorted(set(got) | set(want), key=int)
+           if got.get(num) != want.get(num)}
+    ck.check(f"B.CD4053B_symbol_pins.{label}", not bad and len(pins) == 16,
+             f"symbol {syms[0][:8]}, {len(pins)} pins; pin: (symbol name, datasheet) differ at {bad}")
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -534,18 +630,19 @@ ck.check("C.D904_clamps_a_missing_plus12", D["D904"] == ("GND", "+12V") and cond
 # still taken as /4, but every other quantity is at its worst corner (verifier change: was nominal 5 mA mutes,
 # nominal caps).
 # TI SLOS080: TL074 supply current 1.4 mA typ / 2.5 mA max per amplifier -> 16 amplifiers at max.
-# Mute LED current, fastest-fall corner: Q at VDD, AQY212EH LED VF taken as 1.0 V (Panasonic gives 1.25 V typ /
-# 1.5 V max at 50 mA, no min: 1.0 V is a conservative assumption), button LED VF 1.6 V (not confirmed: Thonk sheet
-# unavailable; red LEDs are 1.8-2.0 V typ), through circuit.py's LED resistors: one PhotoMOS LED per mono channel,
-# two per stereo one.
-# Rail capacitance at its smallest: 10 uF electrolytic -20 %, 100 nF X7R -10 %; C906 1 uF at +10 %.
+# Mute LED current, fastest-fall corner: Q at VDD, button LED VF 1.6 V (not confirmed: Thonk sheet unavailable; red
+# LEDs are 1.8-2.0 V typ), through circuit.py's LED resistors (Q -> R -> LED, since 2026-11-15 no PhotoMOS LED in
+# the chain). The CD4053Bs' own supply current (SCHS047O quiescent current, microamps) is left out.
+# Rail capacitance at its smallest: 10 uF electrolytic -20 %, every 100 nF X7R on +12V (counted from circuit.py)
+# -10 %; C906 1 uF at +10 %.
 I_TL074_MAX = 2.5e-3 * 16
-VF_PM, VF_BTN = 1.0, 1.6
-_LED_R = {k: next(p for p in MB if p.kind == "R" and set(p.nets.values()) == {f"QK{k}", f"LA{k}"})
+VF_BTN = 1.6
+_LED_R = {k: next(p for p in MB if p.kind == "R" and set(p.nets.values()) == {f"QK{k}", f"LED{k}"})
           for k in circuit.MONO + circuit.STEREO}
-I_MUTES = sum((12.0 - len(circuit.PHOTOMOS[k]) * VF_PM - VF_BTN) / harness.ohms(r.value) for k, r in _LED_R.items())
+I_MUTES = sum((12.0 - VF_BTN) / harness.ohms(r.value) for k, r in _LED_R.items())
 I_PULLUPS = 8 * 12.0 / 100e3
-C_RAIL = 0.8 * harness.farads("10u") + 0.9 * 10 * harness.farads("100n")
+N_100N_P12 = sum(1 for p in MB if p.kind == "C" and p.value == "100n" and set(p.nets.values()) == {"+12V", "GND"})
+C_RAIL = 0.8 * harness.farads("10u") + 0.9 * N_100N_P12 * harness.farads("100n")
 dvdt = (I_TL074_MAX + I_MUTES + I_PULLUPS) / C_RAIL                # V/s
 i_clamp = 1.1 * harness.farads("1u") * dvdt                       # through C906 into the clamps
 # Since 2026-11-14 D903 (BAT85, cathode POR, anode GND) takes that current: Vishay BAT85 IF 200 mA max (abs max),
@@ -589,7 +686,7 @@ def expected_device(part):
         return {"100n": "FG28X7R1H104", "22p": "FG28C0G1H220", "1u": "SR305C105", "4p7": "C315C479",
                 "10p": "C315C100"}[part.value]
     return {"CP": "178MU0033", "D5819": "1N5819", "D4148": "1N4148", "BAT85": "BAT85", "TL074": "TL074", "CD4013": "CD4013B",
-            "CD4093": "CD4093B", "PHOTOMOS": "AQY212EH", "HDR16": "DC3-2.54-16", "HDR8": "1x8", "HDR12": "1x12",
+            "CD4093": "CD4093B", "CD4053": "CD4053B", "HDR16": "DC3-2.54-16", "HDR8": "1x8", "HDR12": "1x12",
             "JACK": "WQP518MA", "POT": f"9mm {part.value}", "POT2": "dual-gang A100k", "SWLED": "LED button"}[part.kind]
 
 
@@ -641,19 +738,33 @@ def fp_of(board, ref):
     return ROUTED.footprint_pads(COMPS[board][ref]["footprint"])
 
 
-dip = fp_of("main", "U1")
-dip_ok = all(abs(dip[str(i)][1] + 3.81) < 0.01 and abs(dip[str(15 - i)][1] - 3.81) < 0.01 and
-             abs(dip[str(i)][0] - dip[str(15 - i)][0]) < 0.01 for i in range(1, 8)) and \
-    all(dip[str(i + 1)][0] > dip[str(i)][0] for i in range(1, 7))
-ck.check("D.DIP14_numbering", dip_ok and len(dip) == 14,
-         "pin 1 bottom-left, 1-7 left to right along one row, 8-14 back along the other (counter-clockwise from "
-         "the top, JEDEC), rows 7.62 mm apart")
+def dip_numbering(ref, n):
+    """Pin 1 bottom-left, 1..n/2 left to right along the y = -3.81 row, n/2+1..n back along y = +3.81 (pin i
+    across from n+1-i), 2.54 mm apart: the JEDEC counter-clockwise order seen from the top."""
+    d = fp_of("main", ref)
+    h = n // 2
+    if len(d) != n or set(d) != {str(i) for i in range(1, n + 1)}:
+        return False, sorted(d, key=int)
+    ok = all(abs(d[str(i)][1] + 3.81) < 0.01 and abs(d[str(n + 1 - i)][1] - 3.81) < 0.01 and
+             abs(d[str(i)][0] - d[str(n + 1 - i)][0]) < 0.01 for i in range(1, h + 1)) and \
+        all(abs(d[str(i + 1)][0] - d[str(i)][0] - 2.54) < 0.01 for i in range(1, h))
+    return ok, {k: (round(v[0], 2), round(v[1], 2)) for k, v in sorted(d.items(), key=lambda kv: int(kv[0]))}
+
+
+ok, pads = dip_numbering("U1", 14)
+ck.check("D.DIP14_numbering", ok, f"pin 1 bottom-left, 1-7 left to right along one row, 8-14 back along the other "
+                                  f"(counter-clockwise from the top, JEDEC), rows 7.62 mm apart, pitch 2.54; {pads}")
 same_dip = sorted({COMPS["main"][u]["footprint"] for u in ("U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10")})
 ck.check("D.all_ICs_on_the_DIP14", len(same_dip) == 1, f"footprints {same_dip}")
-dip4 = fp_of("main", "K1")
-ck.check("D.DIP4_numbering", len(dip4) == 4 and abs(dip4["1"][0] - dip4["4"][0]) < 0.01 and
-         abs(dip4["2"][0] - dip4["3"][0]) < 0.01 and dip4["1"][1] == dip4["2"][1] and dip4["2"][0] > dip4["1"][0],
-         f"AQY212EH DIP-4: 1, 2 one row (LED), 4 across from 1, 3 across from 2; pads {dip4}")
+# the CD4053Bs (2026-11-15): SCHS047O Figure 4-3 numbers its 16-pin PDIP the same way (1-8 down one side, 9-16 back
+# up the other, top view), so circuit.MUX's pin numbers hold on this footprint
+ok, pads = dip_numbering("U11", 16)
+ck.check("D.DIP16_numbering", ok, f"CD4053B DIP-16: 1-8 along one row, 9-16 back along the other, pin i across from "
+                                  f"17-i, rows 7.62 mm apart, pitch 2.54; {pads}")
+same16 = sorted({COMPS["main"][u]["footprint"] for u in circuit.SWITCH.values()})
+ck.check("D.all_switches_on_the_DIP16", len(same16) == 1 and same16 == [COMPS["main"]["U11"]["footprint"]]
+         and doc_meta(ROUTED.docs[same16[0]]).get("title") == "DIP-16-W7.62-P2.54",
+         f"U11-U18 footprints {[doc_meta(ROUTED.docs[u]).get('title') for u in same16 if u in ROUTED.docs]}")
 jack = fp_of("face", "J1")
 d12 = math.hypot(jack["2"][0] - jack["1"][0], jack["2"][1] - jack["1"][1])
 d13 = math.hypot(jack["3"][0] - jack["1"][0], jack["3"][1] - jack["1"][1])
@@ -672,12 +783,12 @@ ck.check("D.J18_pairs_in_order", all(abs(j18[str(2 * i + 1)][0] - j18[str(2 * i 
          f"{[round(j18[str(2 * i - 1)][0], 2) for i in range(1, 9)]}")
 # assembly: pin 1 marked by the only square pad on the polarised multi-pin footprints
 sq_bad = []
-for b, ref in (("main", "U1"), ("main", "U5"), ("main", "U7"), ("main", "K1"), ("main", "H1"), ("main", "H9"),
+for b, ref in (("main", "U1"), ("main", "U5"), ("main", "U7"), ("main", "U11"), ("main", "H1"), ("main", "H9"),
                ("face", "HF1"), ("face", "HF9")):
     rects = sorted(n for n, v in fp_of(b, ref).items() if v[2] == "RECT")
     if rects != ["1"]:
         sq_bad.append((ref, rects))
-ck.check("D.pin1_square_pad", not sq_bad, f"DIP-14, DIP-4 and header footprints: square pad = pin 1 only; {sq_bad}")
+ck.check("D.pin1_square_pad", not sq_bad, f"DIP-14, DIP-16 and header footprints: square pad = pin 1 only; {sq_bad}")
 j18c = COMPS["main"]["J18"]
 y1, y15 = pad_xy(j18c, j18["1"][:2])[1], pad_xy(j18c, j18["15"][:2])[1]
 ck.check("D.J18_pin1_at_bottom", y1 < y15, f"design.md: J18 pin 1 (-12 V) at the bottom; pad 1 y {y1:.2f}, "
@@ -774,22 +885,29 @@ def track_ends(doc):
     return ends
 
 
-hit = tot = 0
-for b in ("main", "face"):
-    ends = track_ends(PCB[b])
-    for ref, kind, pins in circuit.HEADERS:
-        r = ref if b == "main" else circuit.fb_ref(ref)
-        c = COMPS[b][r]
-        for num, v in fp_of(b, r).items():
-            net = c["nets"].get(num)
-            if net in ("GND", "GND_F"):
-                continue
-            tot += 1
-            xy = pad_xy(c, v[:2])
-            hit += any(math.hypot(e[0] - xy[0], e[1] - xy[1]) < 0.3 for e in ends[net])
-ck.check("E.transform_sanity_tracks_end_on_pads", hit == tot,
-         f"{hit} of {tot} non-ground header pads have a same-net track end or via within 0.3 mm of the computed "
-         f"pad centre (validates the bottom-layer mirror + rotation used for stacking)")
+# Until 2026-11-15 this used the header pads of both boards. The master's main board is now placed but not routed
+# (no tracks), so the transform is checked on the routed faceplate alone, on both of its layers: the male headers
+# on the top, the jacks, pots and buttons on the bottom (the mirror the main board's sockets need too).
+hit, tot, miss = collections.Counter(), collections.Counter(), []
+ends = track_ends(PCB["face"])
+for r, c in COMPS["face"].items():
+    for num, v in fp_of("face", r).items():
+        net = c["nets"].get(num)
+        if net in (None, "GND_F"):
+            continue
+        side = "bottom" if c["bottom"] else "top"
+        tot[side] += 1
+        xy = pad_xy(c, v[:2])
+        if any(math.hypot(e[0] - xy[0], e[1] - xy[1]) < 0.3 for e in ends[net]):
+            hit[side] += 1
+        else:
+            miss.append(f"{r}.{num} ({net})")
+main_tracks = len(track_ends(PCB["main"]))
+ck.check("E.transform_sanity_tracks_end_on_pads", hit == tot and tot["top"] > 0 and tot["bottom"] > 0,
+         f"faceplate: {hit['top']} of {tot['top']} top-layer and {hit['bottom']} of {tot['bottom']} bottom-layer "
+         f"non-ground pads have a same-net track end or via within 0.3 mm of the computed pad centre (validates the "
+         f"bottom-layer mirror + rotation used for stacking); missed {miss[:10]}; main board: {main_tracks} routed nets "
+         f"(not routed yet), not used")
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -972,15 +1090,32 @@ ALL = {p.ref: p for p in MB + FB}
 
 # latch table
 lt = md_table("### Mute latch")
-# the LED resistor's value as the Mute latch section's text writes it ("Q → 1k ...", "820 Ω on a stereo channel")
+# the LED resistor's value as the Mute latch section's text writes it (2026-11-15: "Q drives the three selects of the
+# channel's CD4053B and, through 1k5, the header and the button's LED to GND_F", one value on every channel)
 LATCH_TEXT = DESIGN[DESIGN.index("### Mute latch"):].split("\n### ", 1)[0]
-LED_WORD = {"820R": "820 Ω"}
-_led_doc = re.search(r"Q → (\S+) \((\S+ Ω) on a stereo\s+channel\)", LATCH_TEXT)
-DOC_LED = {"mono": _led_doc.group(1), "stereo": _led_doc.group(2)} if _led_doc else {}
+LED_WORD = {"1k5": ("1k5", "1.5 kΩ", "1k5 Ω")}
+_led_doc = re.search(r"through\s+(\S+?),\s+the\s+header\s+and\s+the\s+button's\s+LED", LATCH_TEXT)
+DOC_LED = _led_doc.group(1) if _led_doc else None
+ck.check("G.latch_text_states_the_LED_resistor", DOC_LED is not None,
+         "design.md's Mute latch text: 'through <R>, the header and the button's LED'")
+
+
+def refs_in(cell):
+    """'R104–R106' -> [R104, R105, R106]; 'R703, R704, R707' -> as listed."""
+    m = re.fullmatch(r"R(\d+)\s*[–-]\s*R(\d+)", cell)
+    if m:
+        return [f"R{n}" for n in range(int(m.group(1)), int(m.group(2)) + 1)]
+    return [r.strip() for r in cell.split(",")]
+
+
 cols = lt[0][1:]
 rows = {r[0]: r[1:] for r in lt[1:]}
-latch_bad = []
+want_rows = ["CD4093 gate", "CD4013 half", "Mute switch (CD4053B), its 100 n", "Bus resistors L, R, send",
+             "Pull-up, debounce, LED resistor, debounce cap"]
+latch_bad = [("rows", sorted(rows), "expected", want_rows)] if sorted(rows) != sorted(want_rows) else []
 for i, ch in enumerate(cols):
+    if sorted(rows) != sorted(want_rows):
+        break
     k = int(ch)
     g = rows["CD4093 gate"][i]
     if g != "%s.%d" % circuit.NAND_OF[k]:
@@ -988,9 +1123,22 @@ for i, ch in enumerate(cols):
     h = rows["CD4013 half"][i]
     if h != "%s.%d" % circuit.FLOP_OF[k]:
         latch_bad.append((k, "half", h, circuit.FLOP_OF[k]))
-    pm = re.findall(r"K\d+", rows["PhotoMOS"][i])
-    if pm != circuit.PHOTOMOS[k]:
-        latch_bad.append((k, "photomos", pm, circuit.PHOTOMOS[k]))
+    # the mute switch and its decoupling cap: U1k, a 100 n from +12V to GND labelled for that chip
+    cell = rows["Mute switch (CD4053B), its 100 n"][i]
+    m = re.fullmatch(r"(U\d+), (C\d+)", cell)
+    u, cap = (m.group(1), ALL.get(m.group(2))) if m else (None, None)
+    if not (m and u == circuit.SWITCH[k] and ALL[u].kind == "CD4053" and cap is not None and cap.value == "100n"
+            and set(cap.nets.values()) == {"+12V", "GND"} and cap.label == f"{u} VDD"):
+        latch_bad.append((k, "switch / 100 n", cell, circuit.SWITCH[k]))
+    # the bus resistors in the order L, R, send: hot ends on the pan feeds / SEND wiper (mono) or the followers
+    # (stereo), cold ends on BL / BR / BS; values 100k / 100k / 100k (mono), 200k / 200k / 100k (stereo)
+    cell = rows["Bus resistors L, R, send"][i]
+    brs = [ALL.get(r) for r in refs_in(cell)]
+    hot = ([f"PL{k}", f"PR{k}", f"SD{k}"] if k in circuit.MONO else [f"CH{k}L", f"CH{k}R", f"SD{k}"])
+    vals = ["100k"] * 3 if k in circuit.MONO else ["200k", "200k", "100k"]
+    if not (len(brs) == 3 and all(brs) and all(r.kind == "R" and r.value == v and set(r.nets.values()) == {hn, f"B{b}{k}"}
+                                               for r, v, hn, b in zip(brs, vals, hot, "LRS"))):
+        latch_bad.append((k, "bus resistors", cell, [(r.ref, r.value, r.nets) if r else None for r in brs]))
     cell = rows["Pull-up, debounce, LED resistor, debounce cap"][i]
     m = re.match(r"R(\d+)\W+R(\d+), (C\d+)", cell)
     if not m:
@@ -1004,12 +1152,26 @@ for i, ch in enumerate(cols):
         pu, dbr, led = trio
         ok = (set(pu.nets.values()) == {"+12V", f"BTN{k}"} and pu.value == "100k"
               and set(dbr.nets.values()) == {f"BTN{k}", f"DB{k}"} and dbr.value == "10k"
-              and set(led.nets.values()) == {f"QK{k}", f"LA{k}"}
-              and LED_WORD.get(led.value, led.value) == DOC_LED.get("mono" if k in circuit.MONO else "stereo")
+              and set(led.nets.values()) == {f"QK{k}", f"LED{k}"}
+              and DOC_LED in LED_WORD.get(led.value, (led.value,))
               and set(c.nets.values()) == {f"DB{k}", "GND"} and c.value == "100n")
     if not ok:
-        latch_bad.append((k, "R/C", cell))
+        latch_bad.append((k, "R/C", cell, "LED resistor in the text", DOC_LED,
+                          "in circuit.py", trio[2].value if len(trio) == 3 and trio[2] else None))
 ck.check("G.latch_table", not latch_bad and len(cols) == 8, f"design.md latch table against circuit.py: {latch_bad}")
+# "Q high = muted: Q drives the three selects of the channel's CD4053B and, through 1k5, the header and the
+# button's LED": QK<k> is the flip-flop's Q, the three selects and the LED resistor, nothing else
+q_bad = []
+for k in circuit.MONO + circuit.STEREO:
+    u, hf = circuit.FLOP_OF[k]
+    sw = circuit.SWITCH[k]
+    want = {f"{u}.{CD4013_DS[hf]['Q']}"} | {f"{sw}.{CD4053B_DS[s]}" for s in "ABC"} | {f"{_LED_R[k].ref}.1",
+                                                                                       f"{_LED_R[k].ref}.2"}
+    got = set(MBN[f"QK{k}"])
+    if not (got <= want and len(got) == 5):
+        q_bad.append((k, sorted(got)))
+ck.check("G.Q_drives_the_selects_and_the_LED", not q_bad,
+         f"design.md: Q drives the three selects and the LED resistor; QK nets with other members: {q_bad}")
 
 # op-amp table
 ot = md_table("### Op-amps")
@@ -1072,7 +1234,7 @@ def find_parts(kind, value, nets):
 flow_bad = []
 for k in circuit.MONO:
     for cl in [("R", "10k", [f"LV{k}", f"FI{k}"]), ("R", "10k", [f"CH{k}", f"PL{k}"]), ("R", "10k", [f"CH{k}", f"PR{k}"]),
-               ("R", "100k", [f"PL{k}", "SUM_L"]), ("R", "100k", [f"PR{k}", "SUM_R"]), ("R", "100k", [f"SD{k}", "SUM_S"])]:
+               ("R", "100k", [f"PL{k}", f"BL{k}"]), ("R", "100k", [f"PR{k}", f"BR{k}"]), ("R", "100k", [f"SD{k}", f"BS{k}"])]:
         if len(find_parts(*cl)) != 1:
             flow_bad.append((k, cl))
     lv, pan, snd = (PARTS["face"][f"RV{3 * k - j}"] for j in (2, 1, 0))
@@ -1084,8 +1246,8 @@ for k in circuit.MONO:
         flow_bad.append((k, "SEND", snd.value, snd.nets))
 for c in circuit.STEREO:
     for cl in [("R", "10k", [f"LV{c}L", f"FI{c}L"]), ("R", "10k", [f"LV{c}R", f"FI{c}R"]),
-               ("R", "200k", [f"CH{c}L", "SUM_L"]), ("R", "200k", [f"CH{c}R", "SUM_R"]),
-               ("R", "10k", [f"CH{c}L", f"AV{c}"]), ("R", "10k", [f"CH{c}R", f"AV{c}"]), ("R", "100k", [f"SD{c}", "SUM_S"])]:
+               ("R", "200k", [f"CH{c}L", f"BL{c}"]), ("R", "200k", [f"CH{c}R", f"BR{c}"]),
+               ("R", "10k", [f"CH{c}L", f"AV{c}"]), ("R", "10k", [f"CH{c}R", f"AV{c}"]), ("R", "100k", [f"SD{c}", f"BS{c}"])]:
         if len(find_parts(*cl)) != 1:
             flow_bad.append((c, cl))
 for cl in [("R", "200k", ["RW_L", "SUM_L"]), ("R", "200k", ["RW_R", "SUM_R"]), ("R", "300k", ["DRW", "SUM_L"]),
@@ -1111,24 +1273,39 @@ drm = PARTS["face"]["RV24"]
 if not (drm.value == "A100k" and drm.nets["3"] == "DRM_F" and drm.nets["2"] == "DRW_F"):
     flow_bad.append(("DRUMS", drm.nets))
 ck.check("G.signal_flow_parts", not flow_bad, f"every part the signal-flow drawing names, value and nets: {flow_bad}")
-ck.check("G.mute_after_series_resistor", all(PARTS["main"][r].nets["3"].startswith("FI") for ks in
-                                             circuit.PHOTOMOS.values() for r in ks),
-         "design.md: the mute shorts FI behind the 10k, never the source (LV)")
-ck.check("G.send_post_fader_post_mute",
-         all(PARTS["face"][f"RV{3 * k}"].nets["3"] == f"CH{k}_F" for k in circuit.MONO) and
-         PARTS["face"]["RV20"].nets["3"] == "AV7_F" and PARTS["face"]["RV22"].nets["3"] == "AV8_F",
-         "design.md: SEND pot tops on CH k (mono) / AV c (stereo), after the follower and the mute")
+# design.md, "Mute" / "Nothing on the input side" (2026-11-15): the switch works on the summing ends of the bus
+# resistors only; it touches neither the LEVEL wiper (LV), the follower's input (FI) nor its output (CH)
+touch = {u: sorted(n for n in PARTS["main"][u].nets.values() if re.match(r"(LV|FI|CH|IN)\d", n))
+         for u in circuit.SWITCH.values()}
+ck.check("G.mute_leaves_the_input_side_alone", not any(touch.values()),
+         f"design.md: a mute leaves the LEVEL wiper and the follower alone; switch pins on LV / FI / CH: "
+         f"{ {u: t for u, t in touch.items() if t} }")
+# "Send is post-fader and post-mute": the SEND pot hangs off CH k / AV c, and its bus resistor's end is switched by
+# the channel's section c like the L / R ones
+send_bad = [k for k in circuit.MONO if PARTS["face"][f"RV{3 * k}"].nets["3"] != f"CH{k}_F"]
+send_bad += [k for k, rv in ((7, "RV20"), (8, "RV22")) if PARTS["face"][rv].nets["3"] != f"AV{k}_F"]
+send_bad += [(k, "send resistor not switched") for k in circuit.MONO + circuit.STEREO
+             if not (len(find_parts("R", "100k", [f"SD{k}", f"BS{k}"])) == 1 and
+                     PARTS["main"][circuit.SWITCH[k]].nets[CD4053B_DS["C COM"]] == f"BS{k}")]
+ck.check("G.send_post_fader_post_mute", not send_bad,
+         f"design.md: SEND pot tops on CH k (mono) / AV c (stereo), after the follower; SD k -> 100k -> BS k on the "
+         f"switch's c common; bad: {send_bad}")
+# design.md, Power: "100 n per TL074 per rail beside pins 4 and 11; 100 n per CMOS chip beside its VDD pin (14; 16
+# on the CD4053Bs)"
+n_amp = sum(1 for p in MB if p.kind == "TL074")
+n_cmos = sum(1 for p in MB if p.kind in ("CD4093", "CD4013", "CD4053"))
 dec_p, dec_n = find_parts("C", "100n", ["+12V", "GND"]), find_parts("C", "100n", ["GND", "-12V"])
-ck.check("G.decoupling_counts", (len(dec_p), len(dec_n)) == (10, 4),
-         f"design.md: 100n per TL074 per rail and per CMOS chip: +12V caps {len(dec_p)} (want 10), "
-         f"-12V caps {len(dec_n)} (want 4)")
+ck.check("G.decoupling_counts", (len(dec_p), len(dec_n)) == (n_amp + n_cmos, n_amp),
+         f"design.md: 100n per TL074 per rail and per CMOS chip ({n_amp} TL074, {n_cmos} CMOS): +12V caps {len(dec_p)} "
+         f"(want {n_amp + n_cmos}), -12V caps {len(dec_n)} (want {n_amp})")
 kinds = collections.Counter(p.kind for p in MB + FB)
 ck.check("G.panel_counts", (kinds["POT"], kinds["POT2"], kinds["SWLED"], kinds["JACK"]) == (21, 4, 8, 17),
          f"README: 25 knobs (4 dual-gang), 8 LED buttons, 17 jacks; got {kinds['POT']} + {kinds['POT2']} pots, "
          f"{kinds['SWLED']} buttons, {kinds['JACK']} jacks")
-ck.check("G.main_counts", (kinds["TL074"], kinds["PHOTOMOS"], kinds["CD4093"], kinds["CD4013"]) == (4, 10, 2, 4),
-         f"design.md: 4 TL074, 10 AQY212EH, 2 CD4093, 4 CD4013; got {kinds['TL074']}, {kinds['PHOTOMOS']}, "
-         f"{kinds['CD4093']}, {kinds['CD4013']}")
+ck.check("G.main_counts", (kinds["TL074"], kinds["CD4053"], kinds["CD4093"], kinds["CD4013"], kinds["PHOTOMOS"])
+         == (4, 8, 2, 4, 0),
+         f"design.md: 4 TL074, 8 CD4053B mute switches, 2 CD4093, 4 CD4013, no PhotoMOS left; got {kinds['TL074']}, "
+         f"{kinds['CD4053']}, {kinds['CD4093']}, {kinds['CD4013']}, {kinds['PHOTOMOS']}")
 fb_other = [p.ref for p in FB if p.kind not in ("JACK", "POT", "POT2", "SWLED", "HDR8", "HDR12")]
 ck.check("G.faceplate_only_panel_parts", not fb_other, f"design.md: faceplate holds panel parts and headers only; "
                                                        f"others: {fb_other}")

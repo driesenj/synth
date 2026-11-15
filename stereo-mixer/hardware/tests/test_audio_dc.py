@@ -3,21 +3,34 @@
 What it checks, from circuit.py's netlist (both boards joined at the headers,
 pots with a taper, jacks normalled when unplugged, TL074 sections as
 high-gain op-amps that clip at the datasheet swing on the real rails,
-AQY212EH as Ron on / open off), against design.md's claims and the
-datasheets:
-  - every gain in design.md's "Gains" table, the pan law, the polarity of
-    every input -> OUT L / OUT R / SEND path
+each channel's CD4053B as three SPDT sections: the closed throw Ron, the
+open one R_OFF), against design.md's claims and the datasheets:
+  - every gain in design.md's "Gains" table (with the switches' typical Ron
+    in every bus path), the pan law, the polarity of every input -> OUT L /
+    OUT R / SEND path
   - stereo and RETURN normalling and the levels then
-  - input impedance of every input, unmuted and muted, LEVEL min / mid / max
-  - mute attenuation (typ / max Ron) against the doc's 82 / 72 dB, and
-    whether a mute loads a multed source
+  - input impedance of every input, playing and muted, LEVEL min / mid / max;
+    a mute must leave it alone (100k), so a multed source keeps its level
+  - mute depth at DC: the y throw's Ron pulling the bus resistor's summing
+    end to GND, the open x throw (R_OFF) between it and the bus; the SEND
+    muted with the channel (the frequency dependence, set by the x throw's
+    0.2 pF, is test_audio_ac's)
+  - the playing gain error of the x throw's Ron (typ / max / 85 C) against
+    the doc's "at most 0.045 dB", L / R match within the datasheet's dRon
   - MASTER taper bending by the 100k load, L / R tracking
-  - SEND / RETURN / DRUMS loading, channel independence
+  - SEND / RETURN / DRUMS loading, channel independence (mutes included)
   - headroom: the clip point of every stage on the real rails (1N5819 + 10R
     at the worst-case current), against "outputs clip at twice Eurorack level
     and the summers at four times"
   - TL074 input common-mode range at the followers (phase reversal)
+  - the CD4053B's switch pins against its VSS - 0.5 V / +-10 mA limits when
+    a summer clips and its node leaves the virtual earth
   - DC offset at OUT L / OUT R / SEND, worst case and typical
+
+Not modelled: the latch (its state is Config.muted), the CD4053B's leakage as
+a current (only as R_OFF), its rON against the signal voltage (the throws sit
+at 0 V), its protection diodes (the clamp current is estimated from the node's
+Thevenin equivalent), temperature drift of anything but rON.
 
 Run:  cd stereo-mixer/hardware/tests && python test_audio_dc.py
 Only reads circuit.py (through audio_dc_solver.py); writes nothing.
@@ -53,8 +66,15 @@ TL_IIB_MAX_25C, TL_IIB_MAX_FULL, TL_IIB_TYP = 200e-12, 7e-9, 65e-12    # input b
 TL_IIO_MAX_FULL = 2e-9                         # input offset current max over temp
 TL_ICC_TYP, TL_ICC_MAX = 1.4e-3, 2.5e-3        # supply current per amplifier, typ / max
 TL_AOL_MIN = 25e3                              # large-signal gain min 25 V/mV (typ 200 V/mV)
-# Panasonic AQY21*EH (AQY212EH) datasheet ASCTB126E: on resistance typ 0.85 ohm, max 2.5 ohm; off leakage max 1 uA
-AQY_RON_TYP, AQY_RON_MAX = 0.85, 2.5
+# CD4053B, TI SCHS047O (rev. O, May 2026), 5.5, VEE = VSS = 0, 0 <= VIS <= VDD, VDD = 10 V column (the chips get
+# 11-11.6 V; rON falls as VDD rises, so these are conservative): rON typ 180, max 400 (25 C) / 520 ohm (85 C);
+# change in rON between any two channels typ 10 ohm. Abs max: DC input voltage VSS - 0.5 ... VDD + 0.5 V, DC input
+# current +-10 mA. The open throw as audio_dc_solver.R_OFF (1 Gohm; why there).
+CD_RON_TYP, CD_RON_MAX_25C, CD_RON_MAX_85C = 180.0, 400.0, 520.0
+CD_DRON_TYP = 10.0
+CD_VIN_MARGIN, CD_IIN_MAX = 0.5, 10e-3
+assert (S.RON_TYP, S.RON_MAX_25C, S.RON_MAX_85C, S.DRON_TYP) == (CD_RON_TYP, CD_RON_MAX_25C, CD_RON_MAX_85C,
+                                                                CD_DRON_TYP), "solver and test disagree on rON"
 # 1N5819 (ON Semiconductor 1N5817-D / Vishay 88525): VF max 0.60 V at 1 A; the typ forward curve gives about
 # 0.30-0.33 V at 0.1 A, 25 C. Read off a curve, not a table: 0.30 typ, 0.40 V used as a conservative worst case.
 D5819_VF_TYP, D5819_VF_WORST = 0.30, 0.40
@@ -65,8 +85,11 @@ EURO_RS = (0.0, 470.0, 1000.0)                 # source output impedances tested
 # manufacturer PDF here; modelled as the usual 2-segment approximation, 15 % at half rotation, with 10 %
 # as the other common figure (the A-taper results are given for both where they matter).
 A_MID, A_MID_ALT = 0.15, 0.10
-LED_MA_MONO_MAX = 7.8e-3                       # the most one mute draws (1k / 820 R, strong CD4013B output, low
-                                               # LED VFs): test_power's worst case, 61.9 mA for all eight
+# The most one mute draws: QK at the full +12 V (no output resistance, no diode drop) through the LED resistor into
+# the lowest red LED VF test_power assumes (1.8 V; Thonk give no datasheet). The CD4053B's selects draw nothing.
+LED_VF_MIN = 1.8
+R_LED = harness.ohms(next(p.value for p in C.all_parts() if p.kind == "R" and p.nets["1"].startswith("QK")))
+LED_MA_MONO_MAX = (12.0 - LED_VF_MIN) / R_LED
 
 MONO, STEREO = C.MONO, C.STEREO
 ALL_CH = MONO + STEREO
@@ -108,8 +131,8 @@ for k in MONO:
     g = gain([IN_JACK[k]], dict(rot={PAN[k]: 1.0}))
     ck.close(f"gain mono {k} hard right -> OUT R (doc 0.95)", g["OUT_R"], 0.95, 0.006)
     g = gain([IN_JACK[k]], dict(rot={PAN[k]: 0.5}))
-    ck.close(f"gain mono {k} centred -> OUT L (doc 0.65)", g["OUT_L"], 0.65, 0.006)
-    ck.close(f"gain mono {k} centred -> OUT R (doc 0.65)", g["OUT_R"], 0.65, 0.006)
+    ck.close(f"gain mono {k} centred -> OUT L (doc 0.64)", g["OUT_L"], 0.64, 0.006)
+    ck.close(f"gain mono {k} centred -> OUT R (doc 0.64)", g["OUT_R"], 0.64, 0.006)
     ck.close(f"gain mono {k} centred OUT L -> dB (doc -3.8)", db(g["OUT_L"]), -3.8, 0.05, " dB")
     ck.close(f"gain mono {k} SEND full -> SEND OUT (doc 1.0)", g["SEND"], 1.0, 0.005)
 for c in STEREO:
@@ -160,8 +183,13 @@ ck.check("polarity: every input -> OUT L / OUT R / SEND path in phase (doc: ever
 # ------------------------------------------------------------------ pan law
 DOC_PAN = {0.0: -0.4, 0.25: -1.7, 0.5: -3.8, 0.75: -8.1}
 DESIGN = open(os.path.join(harness.MODULE, "docs", "design.md"), encoding="utf-8").read()
-_mz = re.search(r"mono\s+input falls from 100k to ([\d.]+)k \(a stereo L input with R normalled to\s+([\d.]+)k\)", DESIGN)
-DOC_MUTED_Z = {True: float(_mz.group(1)), False: float(_mz.group(2))} if _mz else {True: 100.0, False: 100.0}
+DOC1 = " ".join(DESIGN.split())                # the same text on one line, for figures that wrap
+_mz = re.search(r"a muted channel's input impedance stays (\d+)k", DOC1)
+DOC_MUTED_Z = float(_mz.group(1)) if _mz else float("nan")
+_md = re.search(r"drops by (\d+) dB typically, (\d+) dB at worst", DOC1)
+DOC_MUTE_TYP, DOC_MUTE_WORST = (float(_md.group(1)), float(_md.group(2))) if _md else (float("nan"), float("nan"))
+_mg = re.search(r"\(200k on the stereo channels\): at most ([\d.]+) dB", DOC1)
+DOC_RON_DB = float(_mg.group(1)) if _mg else float("nan")
 _sw = re.search(r"swing about ±(\d+(?:\.\d+)?) V.*?±(\d+(?:\.\d+)?) V\s+guaranteed in the worst case", DESIGN, re.S)
 D_SW, D_SW_WORST = (float(x) for x in _sw.groups()) if _sw else (10.5, 10.5)
 k = 1
@@ -231,13 +259,21 @@ for k in ALL_CH:
     if k in MONO:
         ck.close(f"input impedance IN {k} unmuted = 100k (doc: 'the input impedance is 100k')",
                  ZIN[(k, 0.5, False)] / 1e3, 100.0, 2.0, "k")
+        ck.close(f"input impedance IN {k} muted at full LEVEL = design.md's {DOC_MUTED_Z:g}k ('stays 100k')",
+                 ZIN[(k, 1.0, True)] / 1e3, DOC_MUTED_Z, 2.0, "k")
     else:
         ck.close(f"input impedance IN {k} L, R unpatched = 50k (doc)", ZIN[(k, 0.5, False)] / 1e3, 50.0, 1.0, "k")
         z = zin(IN_JACK[f"{k}R"], rot={LEVEL[k]: 0.5})
         ck.close(f"input impedance IN {k} R = 100k (doc)", z / 1e3, 100.0, 2.0, "k")
-    want = DOC_MUTED_Z[k in MONO]
-    ck.close(f"input impedance {label} muted at full LEVEL = design.md's {want:g}k", ZIN[(k, 1.0, True)] / 1e3,
-             want, 0.03 * want, "k")
+        zm = zin(IN_JACK[f"{k}R"], rot={LEVEL[k]: 1.0}, muted={k})
+        ck.close(f"input impedance IN {k} R muted at full LEVEL = design.md's {DOC_MUTED_Z:g}k", zm / 1e3,
+                 DOC_MUTED_Z, 2.0, "k")
+    # the mute is after the follower: nothing on the input side may move (the PhotoMOS mute took it to 9.1k)
+    d = max(abs(ZIN[(k, lvl, True)] / ZIN[(k, lvl, False)] - 1) for lvl in (0.0, 0.5, 1.0))
+    ck.check(f"input impedance {label}: muting does not change it at any LEVEL (doc: 'a mute leaves the LEVEL "
+             f"wiper and the follower alone')", d < 1e-4, f"worst change {d:.1e} (LEVEL 0 / 0.5 / 1: " +
+             ", ".join(f"{ZIN[(k, lvl, False)] / 1e3:.1f}k -> {ZIN[(k, lvl, True)] / 1e3:.1f}k" for lvl in (0.0, 0.5, 1.0))
+             + ")")
 for jack, name, kw in (("J11", "RETURN L (R unpatched)", {}), ("J12", "RETURN R", {}), ("J13", "DRUMS", {}),
                        ("J14", "FX IN", {})):
     for lvl in (0.0, 0.5, 1.0):
@@ -250,27 +286,50 @@ for jack, name, kw in (("J11", "RETURN L (R unpatched)", {}), ("J12", "RETURN R"
         ZIN[(name, lvl)] = z
 
 
-# ------------------------------------------------------------------ mute attenuation and multed sources
-DOC_MUTE = {AQY_RON_TYP: 82.0, AQY_RON_MAX: 72.0}
+# ------------------------------------------------------------------ mute depth and multed sources
+# Muted, the y throw ties the bus resistor's summing end (B*k) to GND through Ron, so it sits at Ron / (R + Ron) of
+# the channel's signal, and the open x throw (R_OFF) is all that joins it to the bus: at DC the depth is
+# 20 log(R_OFF / Ron) whatever R is. The doc's figures are at 20 kHz, where the x throw's 0.2 pF (40 Mohm) is the
+# path (test_audio_ac); DC must be at least as deep.
+BUS_R = {k: (100e3, 100e3) if k in MONO else (200e3, 100e3) for k in ALL_CH}       # (L / R bus, send bus)
 for k in ALL_CH:
     ins = [IN_JACK[k]] if k in MONO else [IN_JACK[f"{k}L"], IN_JACK[f"{k}R"]]
-    outn = "OUT_L"
     rot = {PAN[k]: 0.0} if k in MONO else {}
-    for ron, doc_db in DOC_MUTE.items():
+    for ron, doc_db, what in ((CD_RON_TYP, DOC_MUTE_TYP, "typ"), (CD_RON_MAX_85C, DOC_MUTE_WORST, "max 85 C")):
+        model_db = 20 * math.log10(S.R_OFF / ron)
         for rs in EURO_RS:
             srcs = {j: (1.0, rs, "s") for j in ins}
-            a = run(srcs, rot=rot)[outn]
-            b = run(srcs, rot=rot, muted={k}, ron=ron)[outn]
-            att = -db(b / a)
+            Va = run(srcs, rot=rot, ron=ron)
+            Vb = run(srcs, rot=rot, muted={k}, ron=ron)
+            att = -db(Vb["OUT_L"] / Va["OUT_L"])
+            send = -db(Vb["SEND"] / Va["SEND"])
             if rs == 0.0:
-                ck.close(f"mute {k} attenuation, Ron {ron} ohm, LEVEL full (doc {doc_db:.0f} dB)", att, doc_db, 0.6, " dB")
-            ck.check(f"mute {k} attenuation, Ron {ron}, {rs:.0f} ohm source >= {doc_db:.0f} - 0.6 dB",
-                     att >= doc_db - 0.6, f"{att:.1f} dB")
-            send = run(srcs, rot=rot, muted={k}, ron=ron)["SEND"] / run(srcs, rot=rot)["SEND"]
-            ck.check(f"mute {k} also mutes its SEND (post-mute), Ron {ron}, {rs:.0f} ohm", -db(send) >= doc_db - 0.6,
-                     f"{-db(send):.1f} dB")
+                # the y throw: the bus resistor's summing end at Ron / (R + Ron) of its hot end
+                hot = Vb[f"PL{k}"] if k in MONO else Vb[f"CH{k}L"]
+                rl = BUS_R[k][0]
+                ck.close(f"mute {k}: the y throw holds BL{k} at Ron / (R + Ron) of the bus resistor's hot end "
+                         f"(Ron {ron:.0f}, R {rl / 1e3:.0f}k)", Vb[f"BL{k}"] / hot, ron / (rl + ron),
+                         0.01 * ron / (rl + ron))
+                ck.close(f"mute {k} DC depth to OUT L, Ron {ron:.0f} ohm ({what}) = 20 log(R_OFF / Ron) (the open x "
+                         f"throw is the only path)", att, model_db, 0.5, " dB")
+            ck.check(f"mute {k} DC depth to OUT L, Ron {ron:.0f} ({what}), {rs:.0f} ohm source >= the doc's "
+                     f"{doc_db:.0f} dB at 20 kHz", att >= doc_db, f"{att:.1f} dB")
+            ck.check(f"mute {k} also mutes its SEND (post-mute), Ron {ron:.0f} ({what}), {rs:.0f} ohm source >= "
+                     f"{doc_db:.0f} dB", send >= doc_db, f"{send:.1f} dB")
+    # both stereo sides through their own sections
+    if k in STEREO:
+        srcs = {IN_JACK[f"{k}L"]: (1.0, 0.0, "a"), IN_JACK[f"{k}R"]: (1.0, 0.0, "b")}
+        a, b = run(srcs), run(srcs, muted={k})
+        ck.check(f"mute {k} mutes both sides (OUT L and OUT R) >= the doc's {DOC_MUTE_TYP:.0f} dB",
+                 min(-db(b["OUT_L"] / a["OUT_L"]), -db(b["OUT_R"] / a["OUT_R"])) >= DOC_MUTE_TYP,
+                 f"OUT L {-db(b['OUT_L'] / a['OUT_L']):.1f} dB, OUT R {-db(b['OUT_R'] / a['OUT_R']):.1f} dB")
+for r_off, what in ((S.R_OFF_25C, "25 C"), (S.R_OFF_85C, "85 C")):
+    a = run({"J1": (1.0, 0.0, "s")}, rot={PAN[1]: 0.0}, ron=CD_RON_MAX_85C)["OUT_L"]
+    b = run({"J1": (1.0, 0.0, "s")}, rot={PAN[1]: 0.0}, ron=CD_RON_MAX_85C, muted={1}, r_off=r_off)["OUT_L"]
+    print(f"      sensitivity: R_OFF = the {what} leakage limit read as a resistance ({r_off / 1e6:.0f} Mohm, a "
+          f"pessimistic reading, see audio_dc_solver): DC depth {-db(b / a):.1f} dB at Ron {CD_RON_MAX_85C:.0f}")
 
-# a design criterion (the doc states the drop): muting a channel should not change a multed source's level
+# a design criterion (the doc states it): muting a channel must not change a multed source's level
 for rs in EURO_RS[1:]:
     srcs = {"J1": (1.0, rs, "m"), "J2": (1.0, rs, "m")}
     rot = {PAN[1]: 0.0, PAN[2]: 1.0}
@@ -283,6 +342,44 @@ for rs in EURO_RS[1:]:
     b = run(srcs, muted={7})["CH1"]
     ck.check(f"multed source ({rs:.0f} ohm) into IN 1 and IN 7 L (R normalled): muting 7 keeps 1's level (within 0.05 dB)",
              abs(db(b / a)) <= 0.05, f"IN 1 level changes {db(b / a):+.2f} dB when 7 mutes")
+
+
+# ------------------------------------------------------------------ the x throw's Ron while playing
+# Playing, Ron sits in series with the bus resistor (100k, 200k on the stereo L / R buses): the gain error against an
+# ideal switch, every channel and bus, typ / max (25 C) / max (85 C). The doc: "at most 0.045 dB".
+RON_ZERO = 1e-3
+ron_err = {}
+for ron in (CD_RON_TYP, CD_RON_MAX_25C, CD_RON_MAX_85C):
+    worst_e = (0.0, "")
+    for k in ALL_CH:
+        ins = [IN_JACK[k]] if k in MONO else [IN_JACK[f"{k}L"]]
+        for pan, outn in (((0.0, "OUT_L"), (1.0, "OUT_R"), (0.5, "SEND")) if k in MONO else
+                          ((None, "OUT_L"), (None, "OUT_R"), (None, "SEND"))):
+            rot = {PAN[k]: pan} if pan is not None else {}
+            a = run({ins[0]: (1.0, 0.0, "s")}, rot=rot, ron=RON_ZERO)[outn]
+            b = run({ins[0]: (1.0, 0.0, "s")}, rot=rot, ron=ron)[outn]
+            e = -db(b / a)
+            if e > worst_e[0]:
+                worst_e = (e, f"channel {k} -> {outn}")
+    ron_err[ron] = worst_e
+    print(f"      playing loss from the x throw's Ron {ron:.0f} ohm: worst {worst_e[0]:.4f} dB ({worst_e[1]})")
+ck.close(f"playing: the x throw's Ron (max {CD_RON_MAX_85C:.0f} ohm at 85 C) costs at most the doc's {DOC_RON_DB} dB",
+         ron_err[CD_RON_MAX_85C][0], DOC_RON_DB, 0.002, " dB")
+ck.check("playing: the x throw's typical Ron (180 ohm) costs < 0.02 dB on every path", ron_err[CD_RON_TYP][0] < 0.02,
+         f"{ron_err[CD_RON_TYP][0]:.4f} dB ({ron_err[CD_RON_TYP][1]})")
+# L / R match: two sections of one chip differ by dRon (10 ohm typ): the mono centred and stereo L / R level match
+mm = []
+for k in ALL_CH:
+    ins = {IN_JACK[k]: (1.0, 0.0, "s")} if k in MONO else {IN_JACK[f"{k}L"]: (1.0, 0.0, "s")}
+    rot = {PAN[k]: 0.5} if k in MONO else {}
+    a = run(ins, rot=rot)
+    b = run(ins, rot=rot, ron_sec={(k, "R"): CD_RON_TYP + CD_DRON_TYP})
+    mm.append((abs(db(b["OUT_R"] / b["OUT_L"]) - db(a["OUT_R"] / a["OUT_L"])), k))
+m = max(mm)
+want = 20 * math.log10((100e3 + CD_RON_TYP + CD_DRON_TYP) / (100e3 + CD_RON_TYP))
+ck.check(f"playing: L / R match within the {CD_DRON_TYP:.0f} ohm dRon between two sections (doc), < 0.01 dB",
+         m[0] < 0.01 and m[0] <= want * 1.05,
+         f"worst {m[0]:.5f} dB (channel {m[1]}); 20 log((100k + Ron + dRon) / (100k + Ron)) = {want:.5f} dB")
 
 
 # ------------------------------------------------------------------ MASTER taper, SEND / RETURN / DRUMS loading
@@ -544,7 +641,7 @@ for case in ("typ", "worst"):
              f"V+ {vp:+.2f} V; datasheet {'typ' if case == 'typ' else 'guaranteed'} range to {pos:+.2f} V"
              f"{'' if case == 'typ' else ' (the follower output clips first there)'}")
     # a source beyond the follower's rail (a +-12 V module output against the mixer's diode-dropped rails):
-    # TL07x absolute max says the input must not exceed the supply; LEVEL + the 10k mute resistor limit the
+    # TL07x absolute max says the input must not exceed the supply; LEVEL + the 10k input series resistor limit the
     # current into the input structure to well under a milliamp
     i_over = max(12.0 - vp, -12.0 - vn, 0.0) / harness.ohms(next(p.value for p in C.all_parts() if p.ref == "R101"))
     ck.check(f"common-mode {case}: a +-12 V source beyond the {vp:.2f} / {vn:.2f} V rails drives < 1 mA into a "
@@ -552,6 +649,43 @@ for case in ("typ", "worst"):
     # which comes first on the negative side: the follower's output clipping or its input range?
     vclip = clip_point(["J1"], -1, case, rot={PAN[1]: 0.0})[0]
     print(f"      {case}: follower 1 output clips at -{vclip:.2f} V in, input range ends at {neg:+.2f} V")
+
+
+# ------------------------------------------------------------------ the CD4053B's pins when a summer clips
+# Linear, every x pin sits on a virtual earth (0 V) and every y pin on GND: inside VEE ... VDD (0 ... ~11.5 V). A
+# summer that clips loses its virtual earth: its node goes to the weighted mean of its inputs and its stuck output,
+# and every playing channel's common with it. Past VSS - 0.5 V (or VDD + 0.5 V) the switch's pins conduct into the
+# chip (abs max: DC input voltage VSS - 0.5 ... VDD + 0.5 V, DC input current +-10 mA). The solver has no diodes,
+# so the clamp current is the node's Thevenin current into the limit: an upper bound (the diodes start a little
+# past it), taken as if one chip's x pin carried all of it.
+def thevenin(sources, node, case, **kw):
+    vp, vn = RAILS[case]
+    lim = limiter(case, vp, vn)
+    V0 = solve(Config(sources=sources, **kw), limits=lim)[0][node]
+    V1 = solve(Config(sources=sources, **kw), limits=lim, ibias={node: 1e-6})[0][node]
+    return V0, (V1 - V0) / 1e-6
+
+
+for case in ("typ", "worst"):
+    vp, vn = RAILS[case]
+    rows = []
+    for v in (EURO_MAX, -EURO_MAX):
+        srcs = {j: (v, 0.0, "s") for j in ALL_IN}
+        for node in ("SUM_L", "SUM_R", "SUM_S"):
+            v0, rth = thevenin(srcs, node, case, rot={PAN[k]: 0.5 for k in MONO},
+                               loads={"J15": 100e3, "J16": 100e3, "J17": 100e3})
+            lo, hi = -CD_VIN_MARGIN, vp + CD_VIN_MARGIN
+            i_cl = (lo - v0) / rth if v0 < lo else (v0 - hi) / rth if v0 > hi else 0.0
+            rows.append((abs(i_cl), v0, node, v, rth))
+    worst_cl = max(rows)
+    print(f"      {case}: every input at +-{EURO_MAX:.0f} V, summers clipped: summing nodes from "
+          f"{min(r[1] for r in rows):+.2f} to {max(r[1] for r in rows):+.2f} V open-circuit (VSS = VEE = 0, "
+          f"VDD = {vp:.2f} V)")
+    ck.check(f"CD4053B pins, {case}: every input at +-{EURO_MAX:.0f} V clips the summers; a node pulled past "
+             f"VSS - 0.5 / VDD + 0.5 V drives < {CD_IIN_MAX * 1e3:.0f} mA into the chip (abs max)",
+             worst_cl[0] < CD_IIN_MAX,
+             f"worst {worst_cl[2]} at {worst_cl[1]:+.2f} V open-circuit ({worst_cl[3]:+.0f} V in, Thevenin "
+             f"{worst_cl[4] / 1e3:.1f}k) -> {worst_cl[0] * 1e3:.2f} mA into the x pins at the limit")
 
 
 # ------------------------------------------------------------------ DC offset at the outputs

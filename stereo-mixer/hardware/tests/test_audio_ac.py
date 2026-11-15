@@ -2,28 +2,40 @@
 
 What it checks
   - frequency response 20 Hz - 20 kHz of every input -> output path at the worst pot positions, with the
-    summers' 22 p, the AQY212EH's off-state output capacitance on every FI node, the TL074's input
-    capacitance, open-loop gain / output impedance, and PCB stray capacitance from the routed net lengths;
-  - the distortion the PhotoMOS's voltage-dependent off capacitance adds (10 V p-p, 10 kHz, worst LEVEL),
-    by a time-domain simulation of the LV / FI nodes;
-  - mute attenuation against frequency (on-resistance, typical and maximum);
+    summers' 22 p, the CD4053B mute switches (Ron, pin and feedthrough capacitances) on the summing nodes, the
+    TL074's input capacitance, open-loop gain / output impedance, and PCB stray capacitance per net;
+  - what the switches' capacitance costs at 20 kHz (with against without it), the summing node's capacitance
+    against the doc's "about 125 pF with the lane";
+  - the summing nodes' (the switches' x pins') own swing at 20 kHz with every channel up and the summers at
+    their full swing, against the doc's "within about 30 mV", and from it a first-principles bound on the
+    distortion the switch's Ron adds;
+  - mute attenuation against frequency (20 Hz, 1 kHz, 20 kHz) of every channel, Ron typical and worst
+    (85 C), against the doc's "drops by X dB typically, Y dB at worst"; the bleed of a stray 0.1 pF from a
+    muted channel's track into a playing bus;
   - op-amp stability: the loop gain of every TL074 section in the whole circuit (followers with their
-    pan / SEND / track load, summers with their summing-node capacitance and 22 p, output stages and the
-    send inverter driving 1k + a patch cable): phase margin;
+    pan / SEND / track load, summers with their summing-node capacitance and 22 p, playing and with every
+    channel muted, output stages and the send inverter driving 1k + a patch cable): phase margin, and the
+    doc's worst-case figures;
   - slew rate at full scale and 20 kHz;
   - output noise at OUT L / OUT R / SEND with every channel up and with every channel muted (TL074 en and
-    in, Johnson noise of every resistor and pot track), as dBu and SNR against a 10 V p-p signal.
+    in, Johnson noise of every resistor, pot track and closed switch), as dBu and SNR against 10 V p-p.
 
 How the model is built
   circuit.py's netlist (both boards), header nets merged (X_F == X, GND_F == GND), power rails as AC
-  ground, the latch left out (it does not touch the audio nets). Each TL074 section is a two-pole
-  VCVS with its open-loop output resistance and input capacitance. Pots are two resistors at a wiper
-  fraction a (0 = wiper on pin 1, the CCW end). Inputs are 1k sources (a typical Eurorack output);
-  unpatched jacks take their switch-lug net. Stray capacitance per net = routed track length x pF/mm
-  (computed below for 0.3 mm tracks on 1.6 mm FR4) + pads + vias + mated header pins.
+  ground, the latch left out (it only drives the switches' selects, QK nets; the mute state is a build()
+  argument). Each TL074 section is a two-pole VCVS with its open-loop output resistance and input
+  capacitance. Each CD4053B section: common <-> x Ron while its channel plays (R_OFF || 0.2 pF while muted),
+  common <-> y the reverse, 5 pF from each x / y pin and 9 pF from the common to ground. Pots are two
+  resistors at a wiper fraction a (0 = wiper on pin 1, the CCW end). Inputs are 1k sources (a typical
+  Eurorack output); unpatched jacks take their switch-lug net. Stray capacitance per net = track length x
+  pF/mm (computed below for 0.3 mm tracks on 1.6 mm FR4) + pads + vias + mated header pins. Track length is
+  the routed length on a routed board; on a board that is only placed (the main board since the 2026-11-15
+  re-placement) it is estimated from the pads (rectilinear minimum spanning tree x 1.3), and a check says so.
 
-Not modelled: ground-impedance and supply crosstalk, capacitive coupling between tracks (crosstalk,
-  mute bleed round the PhotoMOS), the latch's switching transients, op-amp poles beyond the second,
+Not modelled: ground-impedance and supply crosstalk, capacitive coupling between tracks (crosstalk, a muted
+  channel's tracks into a playing bus: the bleed check prices one 0.1 pF), the latch's switching transients
+  and the CD4053B's select-to-signal spike (65 mV peak into 10k, SCHS047O), the CD4053B's rON against the
+  signal voltage (estimated by hand, labelled), its leakage as a current, op-amp poles beyond the second,
   temperature drift, pot tolerance and wiper noise, EMI, the TL074's own distortion and its input
   capacitance's voltage dependence, the next module's input beyond 100k || 50 pF.
 
@@ -38,6 +50,7 @@ for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
 import numpy as np
 
 import harness
+from audio_dc_solver import R_OFF as CD_R_OFF, R_OFF_25C, R_OFF_85C       # the open throw: why 1 Gohm, there
 
 ck = harness.Checks("audio_ac")
 circuit = harness.load("circuit")
@@ -56,16 +69,20 @@ EN_10K = 21e-9          # V/rtHz, typ at 10 kHz
 IN_NOISE = 80e-15       # A/rtHz, typ at 1 kHz (H table; the legacy table gives 10 fA)
 C_ID = 2e-12            # F, differential input capacitance, typ (ZID = 100 M || 2 pF)
 C_ICM = 1e-12           # F, common-mode input capacitance per input, typ (ZICM = 6 T || 1 pF)
-V_SWING = 10.5          # V peak, the swing on +-12 V the design doc uses (datasheet: +-12 V min at +-15 V, 10k)
+V_SWING = 10.5          # V peak, a TL074 swing on the chips' ~11.5 V rails (design.md: about +-10 V; the higher is used)
 
-# AQY212EH, Panasonic GE 1 Form A (AQY21*EH) datasheet ASCTB126E 201404-T (Mouser copy)
-RON_TYP, RON_MAX = 0.85, 2.5        # ohm, typ / max, IF = 5 mA
-# Output capacitance between terminals 3 and 4 against applied voltage, f = 1 MHz, 25 C: graph 12-(2),
-# read off the datasheet's vector curve (typical; no min / max given). Assumed symmetric in V (the two
-# MOSFETs are anti-series, so either polarity reverse-biases one body diode).
-COFF_CURVE = [(0.0, 78.8), (0.9, 69.0), (1.9, 58.5), (2.9, 49.4), (3.7, 43.5), (4.6, 40.2), (5.6, 37.3),
-              (6.6, 35.2), (7.5, 34.1), (8.4, 33.6), (9.5, 33.2), (10.5, 32.7), (11.3, 31.7), (12.8, 29.6),
-              (15.4, 26.3), (18.1, 23.2), (20.0, 21.5)]          # (V, pF)
+# CD4053B, TI SCHS047O (rev. O, May 2026), 5.5, VEE = VSS = 0. rON at VDD = 10 V, 0 <= VIS <= VDD (the chips
+# get 11-11.6 V; rON falls as VDD rises, so the 10 V column is the conservative one): typ 180, max 400 at 25 C,
+# max 520 at 85 C.
+CD_RON_TYP, CD_RON_MAX_25C, CD_RON_MAX_85C = 180.0, 400.0, 520.0
+# Capacitance, VDD = 10 V, 25 C, typ (no min / max given): CIS 5 pF on a channel pin (x or y), COS 9 pF on the
+# common (CD4053), CIOS 0.2 pF feedthrough across an open throw.
+CD_CIS, CD_COS, CD_CIOS = 5e-12, 9e-12, 0.2e-12
+# rON against the signal voltage near VIS = 0: rev. O has no curve for it, so a first-principles bound. Near 0 V
+# only the n-channel half of the transmission gate conducts (the p-channel's |VGS| is about VIS), and
+# rON ~ 1 / (VDD - VIS - VT): with VDD 11 V and VT up to 3 V (metal-gate CD4000B) 1/8 per volt, doubled for the
+# body effect: 0.25 / V. An estimate, used only for the distortion bound below.
+CD_RON_SLOPE = 0.25
 
 # Board and wiring (estimates, see track_pf_per_mm())
 ER_FR4 = 4.5            # FR4 relative permittivity near 1 MHz (typ 4.2-4.7)
@@ -81,7 +98,7 @@ C_NEXT, R_NEXT = 50e-12, 100e3      # the next module's input
 T_K = 313.0             # K, inside a warm case (40 C)
 KB = 1.380649e-23
 
-# Criteria (first principles; the doc states no AC or noise figures)
+# Criteria (first principles; the doc's own AC figures are read from design.md below)
 FLAT_DB = 0.5           # every path flat within +-0.5 dB, 20 Hz - 20 kHz, at any pot position
 PM_MIN = 45.0           # deg: the usual minimum for no ringing / peaking (the datasheet's follower is 56)
 THD_MAX = 1e-4          # 0.01 %: a passive part must not add more than ~3x the TL07x's own 0.003 % THD+N
@@ -98,12 +115,20 @@ def dbu(v):
 import re
 with open(os.path.join(harness.MODULE, "docs", "design.md"), encoding="utf8") as _f:
     DOC = " ".join(_f.read().split())
-_m = re.search(r"\(([\d.]+) Ω typical, ([\d.]+) Ω max\)", DOC)
-DOC_RON_TYP, DOC_RON_MAX = (float(_m.group(1)), float(_m.group(2))) if _m else (float("nan"), float("nan"))
+_m = re.search(r"the on-resistance \((\d+) Ω typical, (\d+) Ω max at VDD = 10 V and 25 °C, (\d+) Ω at 85 °C\)", DOC)
+DOC_RON = tuple(float(x) for x in _m.groups()) if _m else (float("nan"),) * 3
 _m = re.search(r"drops by (\d+) dB typically, (\d+) dB at worst", DOC)
 DOC_MUTE_TYP, DOC_MUTE_MAX = (float(_m.group(1)), float(_m.group(2))) if _m else (float("nan"), float("nan"))
 _m = re.search(r"a pole at (\d+) kHz", DOC)
 DOC_SUM_POLE_KHZ = float(_m.group(1)) if _m else float("nan")
+_m = re.search(r"hold their virtual earth within about (\d+) mV at (\d+) kHz", DOC)
+DOC_VE_MV, DOC_VE_KHZ = (float(_m.group(1)), float(_m.group(2))) if _m else (float("nan"), 20.0)
+_m = re.search(r"about (\d+) pF with the lane", DOC)
+DOC_SUM_PF = float(_m.group(1)) if _m else float("nan")
+_m = re.search(r"is (\d+)° on the send inverter and (\d+)° on OUT L / R", DOC)
+DOC_PM_S, DOC_PM_LR = (float(_m.group(1)), float(_m.group(2))) if _m else (float("nan"), float("nan"))
+_m = re.search(r"so ([\d.]+) pF from a muted channel's track into a playing bus is −(\d+) dB of bleed at (\d+) kHz", DOC)
+DOC_BLEED = (float(_m.group(1)) * 1e-12, float(_m.group(2)), float(_m.group(3)) * 1e3) if _m else (0.1e-12, float("nan"), 1e4)
 
 
 # ---------------------------------------------------------------------------- stray capacitance per net
@@ -150,17 +175,49 @@ def base(net):
     return net[:-2] if net.endswith("_F") else net
 
 
+# Estimate: a routed net runs about 1.3 x its rectilinear minimum spanning tree (round parts, vias). For SUM_L / R /
+# S the MST strings the eight x pins together along the switch row; the route the routing notes plan (a lane at
+# y 63-66 above the switches, a tap down from each x pin under its chip) is longer still, so this is not an upper bound.
+DETOUR = 1.3
+
+
+def rmst(pts):
+    """Length of the rectilinear (Manhattan) minimum spanning tree over the points, mm (Prim)."""
+    if len(pts) < 2:
+        return 0.0
+    d = [float("inf")] * len(pts)
+    d[0], todo, total = 0.0, set(range(len(pts))), 0.0
+    while todo:
+        i = min(todo, key=lambda j: d[j])
+        todo.discard(i)
+        total += d[i]
+        for j in todo:
+            d[j] = min(d[j], abs(pts[i][0] - pts[j][0]) + abs(pts[i][1] - pts[j][1]))
+    return total
+
+
 def net_caps(pf_mm):
-    """Stray capacitance to ground per (merged) net, F, and the per-net breakdown (track mm, pads, vias)."""
+    """Stray capacitance to ground per (merged) net, F, and the per-net breakdown
+    [routed track mm, pads, vias, header pins, estimated track mm]. A board with tracks gives its routed lengths;
+    a board with none (placed, not routed) gets DETOUR x the rectilinear MST over each net's pads, no vias."""
     main, face = routed_boards()
-    caps, info = collections.defaultdict(float), collections.defaultdict(lambda: [0.0, 0, 0, 0])
+    caps, info = collections.defaultdict(float), collections.defaultdict(lambda: [0.0, 0, 0, 0, 0.0])
     for b in (main, face):
-        st = b.net_stats()
-        for n, s in st.items():
-            nb = base(n)
-            caps[nb] += s["length"] * pf_mm * 1e-12 + s["vias"] * C_VIA
-            info[nb][0] += s["length"]
-            info[nb][2] += s["vias"]
+        if b.tracks:
+            for n, s in b.net_stats().items():
+                nb = base(n)
+                caps[nb] += s["length"] * pf_mm * 1e-12 + s["vias"] * C_VIA
+                info[nb][0] += s["length"]
+                info[nb][2] += s["vias"]
+        else:
+            pts = collections.defaultdict(list)
+            for p in b.pads:
+                if p.net:
+                    pts[p.net].append((p.x, p.y))
+            for n, xy in pts.items():
+                est = DETOUR * rmst(xy)
+                caps[base(n)] += est * pf_mm * 1e-12
+                info[base(n)][4] += est
         for p in b.pads:
             if p.net:
                 caps[base(p.net)] += C_PAD
@@ -299,7 +356,7 @@ class Net:
 
 # --------------------------------------------------------------------------------- the circuit as a Net
 MAIN_PARTS = circuit.main_board_parts()
-AUDIO_SKIP = ("BTN", "DB", "QK", "LA", "LM", "LED", "CK", "QN", "POR")
+AUDIO_SKIP = ("BTN", "DB", "QK", "LED", "CK", "QN", "POR")
 AC_GROUND = {"+12V", "-12V", "P12_IN", "N12_IN", "P12_D", "N12_D", "GND", "GND_F"}
 
 
@@ -307,32 +364,40 @@ def _node(net):
     return "GND" if net in AC_GROUND else base(net)
 
 
-def build(model, caps, pots=None, patched=None, mutes=(), ron=RON_TYP, coff=None, load=True, src=R_SOURCE,
-          extra_cable=0.0, extra_c=(), skip=()):
+def build(model, caps, pots=None, patched=None, mutes=(), ron=CD_RON_TYP, switch_c=True, r_off=CD_R_OFF, load=True,
+          src=R_SOURCE, extra_cable=0.0, extra_c=(), skip=()):
     """The whole mixer as a Net.
 
     pots: {ref or ref+'B' (dual gang B): wiper fraction a, 0 = wiper on pin 1 (pin 4 for gang B)}; default 1.
     patched: {jack ref: source name}; a patched jack gets a source V (name) behind src ohms. Others take their
-    switch lug (or float, for the outputs). mutes: channel numbers muted (PhotoMOS on). coff: off capacitance
-    (F) of every PhotoMOS that is off; default its 0 V value."""
+    switch lug (or float, for the outputs). mutes: channel numbers muted (their CD4053B's y throws closed).
+    ron: every closed throw; switch_c: the CD4053B's pin and feedthrough capacitances in or out; r_off: an
+    open throw's conduction."""
     pots, patched = pots or {}, patched or {}
-    coff = COFF_CURVE[0][1] * 1e-12 if coff is None else coff
     net = Net()
     for p in MAIN_PARTS:
         if p.ref in skip:
             continue                          # a part left out, to price it
-        if p.kind != "PHOTOMOS" and any(_node(n).startswith(AUDIO_SKIP) for n in p.nets.values()):
-            continue                          # the latch; a PhotoMOS's LED side is on latch nets, its switch is not
+        if p.kind == "CD4053":
+            # the selects are on QKk (the latch); the switch sections are audio
+            for bus, (com, x, y, sel) in circuit.MUX.items():
+                k = int(p.nets[sel][2:])
+                c_, x_, y_ = _node(p.nets[com]), _node(p.nets[x]), _node(p.nets[y])
+                on, off = (y_, x_) if k in mutes else (x_, y_)
+                net.r(c_, on, ron, tag=f"{p.ref}.{bus}")
+                net.r(c_, off, r_off, tag=f"{p.ref}.{bus}.off")
+                if switch_c:
+                    net.c(c_, off, CD_CIOS)
+                    net.c(x_, "GND", CD_CIS)
+                    net.c(y_, "GND", CD_CIS)
+                    net.c(c_, "GND", CD_COS)
+            continue
+        if any(_node(n).startswith(AUDIO_SKIP) for n in p.nets.values()):
+            continue                          # the latch
         if p.kind == "R":
             net.r(_node(p.nets["1"]), _node(p.nets["2"]), harness.ohms(p.value), tag=p.ref)
         elif p.kind == "C":
             net.c(_node(p.nets["1"]), _node(p.nets["2"]), harness.farads(p.value))
-        elif p.kind == "PHOTOMOS":
-            k = int("".join(ch for ch in p.label.split()[1] if ch.isdigit()))
-            if k in mutes:
-                net.r(_node(p.nets["3"]), _node(p.nets["4"]), ron, tag=p.ref)
-            else:
-                net.c(_node(p.nets["3"]), _node(p.nets["4"]), coff)
     for (u, s), (kind, name) in circuit.OPAMPS.items():
         out, inm, inp = circuit.SECTION[s]
         nets = next(p for p in MAIN_PARTS if p.ref == u).nets
@@ -374,14 +439,17 @@ ck.check("track capacitance per mm is in the textbook range for 0.3 mm on 1.6 mm
          f"{ms:.3f}, grounded coplanar (gap {GAP_POUR * 1e3:.2f} mm) {cpw:.3f} pF/mm; using {cpw:.3f} (worst)")
 PF_MM = cpw
 caps, info = net_caps(PF_MM)
-for n in ("SUM_L", "SUM_R", "SUM_S", "NO_L", "NO_S", "FI1", "LV5", "CH7L", "PL1", "OUT_R", "MIX_R"):
-    L, pads, vias, hdr = info[n]
-    print(f"      stray {n:6}: {L:6.1f} mm track, {pads:2d} pads, {vias} vias, {hdr} header pins -> "
-          f"{caps[n] * 1e12:5.1f} pF")
-ck.check("every summing node's stray capacitance is known from the routed export",
-         all(info[n][0] > 0 for n in ("SUM_L", "SUM_R", "SUM_S", "NO_L", "NO_R", "NO_S")),
+for n in ("SUM_L", "SUM_R", "SUM_S", "NO_L", "NO_S", "BL1", "BS8", "FI1", "LV5", "CH1", "CH7L", "PL1", "OUT_R", "MIX_R"):
+    L, pads, vias, hdr, est = info[n]
+    print(f"      stray {n:6}: {L:6.1f} mm routed + {est:6.1f} mm estimated track, {pads:2d} pads, {vias} vias, "
+          f"{hdr} header pins -> {caps[n] * 1e12:5.1f} pF")
+SUMN = ("SUM_L", "SUM_R", "SUM_S", "NO_L", "NO_R", "NO_S")
+ck.check("every summing node's stray capacitance comes from routed tracks, not a placement estimate",
+         all(info[n][0] > 0 and info[n][4] == 0 for n in SUMN),
          "expected routed track on SUM_L/R/S and NO_L/R/S; got " +
-         ", ".join(f"{n} {info[n][0]:.1f} mm" for n in ("SUM_L", "SUM_R", "SUM_S", "NO_L", "NO_R", "NO_S")))
+         ", ".join(f"{n} {info[n][0]:.0f} mm routed / {info[n][4]:.0f} mm estimated" for n in SUMN) +
+         " (the main board in the routed master is placed, not routed: its lengths are rectilinear MST x "
+         f"{DETOUR} estimates)")
 
 OP_NEW, OP_OLD = Opamp(GBW_NEW), Opamp(GBW_OLD)
 print(f"      TL074 model: second pole {OP_NEW.w2 / 2 / math.pi / 1e6:.2f} MHz (GBW 5.25 MHz), "
@@ -434,19 +502,41 @@ for name, jacks, out, sweep, fixed in PATHS:
              f"expected |deviation| <= {FLAT_DB} dB at every position; worst {m[1]:+.2f} dB "
              f"(at 20 kHz {m[2]:+.2f} dB) with the swept pot at a = {m[3]}")
 
-# The PhotoMOS share: the same mono path with and without its off capacitance, at the worst LEVEL
-k_worst = 5                       # the longest LV track (copper_audit: LV5 47.9 + 8.5 mm)
-lvl = f"RV{3 * k_worst - 2}"
+# The CD4053Bs' share: the same paths with and without the switches' capacitances (every channel playing, so
+# every common's 9 pF sits on its bus beside the eight x pins' 5 pF), both TL074 models
 share = []
-for a in LEVELS:
-    pots = {lvl: a, f"RV{3 * k_worst - 1}": 0.0}
-    with_c = response(build(OP_NEW, caps, pots=pots, patched={f"J{k_worst}": "in"}), "OUT_L")[-1]
-    no_c = response(build(OP_NEW, caps, pots=pots, patched={f"J{k_worst}": "in"}, coff=0.0), "OUT_L")[-1]
-    share.append((with_c - no_c, a, with_c, no_c))
-s = min(share)
-ck.check("the PhotoMOS off capacitance costs < 0.1 dB at 20 kHz at any LEVEL", s[0] > -0.1,
-         f"expected > -0.1 dB; at LEVEL a = {s[1]} it costs {s[0]:+.2f} dB ({s[2]:+.2f} dB at 20 kHz with "
-         f"the AQY212EH's {COFF_CURVE[0][1]:.0f} pF, {s[3]:+.2f} dB without)")
+for name, jacks, out, fixed in (("IN 1 -> OUT L (pan hard L)", ["J1"], "OUT_L", {"RV2": 0.0}),
+                                ("IN 5 -> OUT R (pan centre)", ["J5"], "OUT_R", {"RV14": 0.5}),
+                                ("IN 7 L -> OUT L", ["J7"], "OUT_L", {}),
+                                ("IN 1 -> SEND", ["J1"], "SEND", {"RV2": 0.5}),
+                                ("FX IN -> SEND", ["J14"], "SEND", {}),
+                                ("RETURN L -> OUT L", ["J11"], "OUT_L", {})):
+    for model, mname in ((OP_NEW, "GBW 5.25 MHz"), (OP_OLD, "GBW 3 MHz")):
+        w = response(build(model, caps, pots=fixed, patched={j: "in" for j in jacks}), out)[-1]
+        wo = response(build(model, caps, pots=fixed, patched={j: "in" for j in jacks}, switch_c=False), out)[-1]
+        share.append((abs(w - wo), w - wo, name, mname, w, wo))
+s = max(share)
+ck.check("the CD4053Bs' capacitance on the summing nodes costs < 0.1 dB at 20 kHz", s[0] < 0.1,
+         f"expected |with - without| < 0.1 dB; worst {s[1]:+.3f} dB on {s[2]} ({s[3]}: {s[4]:+.3f} dB at 20 kHz "
+         f"with CIS {CD_CIS * 1e12:.0f} / COS {CD_COS * 1e12:.0f} / CIOS {CD_CIOS * 1e12:.1f} pF, {s[5]:+.3f} dB "
+         f"without)")
+# The summing node's capacitance to ground, every channel playing: its own stray (the lane), the op-amp's input
+# C (IN- to GND, and to IN+ = GND), each switch's x pin, and each playing common (9 pF) with its B net's stray,
+# which Ron (180 ohm) ties to the node far beyond 20 kHz
+CH_ALL = circuit.MONO + circuit.STEREO
+for bus in ("L", "R", "S"):
+    sw_x = len(CH_ALL) * CD_CIS
+    sw_c = len(CH_ALL) * CD_COS
+    bnets = sum(caps[f"B{bus}{k}"] for k in CH_ALL)
+    lane = caps[f"SUM_{bus}"]
+    tot = lane + C_ICM + C_ID + sw_x + sw_c + bnets
+    print(f"      SUM_{bus} to ground, every channel playing: {tot * 1e12:.0f} pF = lane + pads {lane * 1e12:.1f} "
+          f"({info[f'SUM_{bus}'][4]:.0f} mm estimated) + x pins {sw_x * 1e12:.0f} + commons {sw_c * 1e12:.0f} + "
+          f"B nets {bnets * 1e12:.1f} + TL074 {(C_ICM + C_ID) * 1e12:.0f}; every channel muted "
+          f"{(lane + C_ICM + C_ID + sw_x) * 1e12:.0f} pF")
+    if bus == "L":
+        ck.close(f"the summing node's capacitance, every channel playing (doc: 'about {DOC_SUM_PF:.0f} pF with the "
+                 f"lane'), SUM_L, within 10 %", tot * 1e12, DOC_SUM_PF, 0.1 * DOC_SUM_PF, " pF")
 # The summers' 22 p alone: the pole the doc names (72 kHz) costs this much at 20 kHz
 _pm = {p.ref: p for p in MAIN_PARTS}
 fps = [1 / (2 * math.pi * harness.ohms(_pm[r].value) * harness.farads(_pm[c].value))
@@ -457,165 +547,113 @@ ck.close(f"the summers' Rf || Cf pole frequency, circuit.py R901-R903 / C901-C90
 print(f"      100k || 22p alone: {harness.db(1 / abs(1 + 1j * 20e3 / fp)):+.2f} dB at 20 kHz per summer stage")
 
 
-# ------------------------------------------------------------- 2. distortion from the off capacitance
-SMOOTH_V = 0.0
-
-
-def coff_of(v):
-    """The datasheet curve at |v|; with SMOOTH_V > 0 the kink at 0 V is rounded off over about +-SMOOTH_V
-    (the curve is a 1 MHz small-signal measurement at DC bias, so its slope at 0 V is not resolved)."""
-    u = np.sqrt(v * v + SMOOTH_V ** 2) - SMOOTH_V
-    return np.interp(u, [p[0] for p in COFF_CURVE], [p[1] for p in COFF_CURVE]) * 1e-12
-
-
-def fi_thd(levels, f0=10e3, vpk=5.0, k=k_worst, curve=True, steps=8000, cycles=10):
-    """THD of the FI node (= the follower's output) for a vpk sine at the jack, by a semi-implicit
-    integration of the LV and FI nodes; vectorised over LEVEL positions."""
-    a = np.array(levels, float)
-    R = 100e3
-    gth = 1 / (a * R) + 1 / ((1 - a) * R + R_SOURCE)          # Thevenin of source + LEVEL pot at the wiper
-    kth = (a * R) / (R + R_SOURCE)                             # open-circuit wiper voltage / source voltage
-    kth = np.where(a >= 1, R / (R + R_SOURCE), kth)
-    gth = np.where(a >= 1, 1 / (R * R_SOURCE / (R + R_SOURCE)), gth)
-    g = 1 / 10e3
-    c1 = caps[f"LV{k}"]
-    cfix = caps[f"FI{k}"] + C_ICM
-    dt = 1 / f0 / steps
-    v1 = np.zeros_like(a)
-    v2 = np.zeros_like(a)
-    keep = []
-    n_tot = steps * cycles
-    for n in range(1, n_tot + 1):
-        vs = vpk * math.sin(2 * math.pi * f0 * n * dt)
-        c2 = cfix + (coff_of(v2) if curve else COFF_CURVE[0][1] * 1e-12)
-        a11, a12, a22 = c1 / dt + gth + g, -g, c2 / dt + g
-        b1, b2 = c1 / dt * v1 + gth * kth * vs, c2 / dt * v2
-        det = a11 * a22 - a12 * a12
-        v1, v2 = (b1 * a22 - a12 * b2) / det, (a11 * b2 - a12 * b1) / det
-        if n > n_tot - 4 * steps:
-            keep.append(v2.copy())
-    x = np.array(keep)
-    X = np.abs(np.fft.rfft(x, axis=0))
-    fund = X[4]
-    harm = np.sqrt(sum(X[4 * h] ** 2 for h in range(2, 11)))
-    return harm / fund, fund
-
-
-thd_lin, _ = fi_thd([0.3], curve=False)
-ck.check("THD simulation: a constant capacitance gives no distortion (test of the test)", thd_lin[0] < 1e-6,
-         f"expected < 1e-6; got {thd_lin[0]:.1e}")
-lv_thd = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-thd_kink, _ = fi_thd(lv_thd)
-SMOOTH_V = 0.5                    # the checks use the rounded curve: the less pessimistic of the two
-thd, _ = fi_thd(lv_thd)
-thd2, _ = fi_thd(lv_thd, steps=16000)
-i = int(np.argmax(thd))
-ck.check("THD simulation converged (step halved: same THD within 5 %)", abs(thd2[i] / thd[i] - 1) < 0.05,
-         f"expected ratio 1 +- 0.05; got {thd2[i] / thd[i]:.3f}")
-print("      THD at 10 kHz, 10 V p-p in, against LEVEL (wiper fraction), curve as read / rounded at 0 V: " +
-      ", ".join(f"{a}: {t0 * 100:.2f} / {t * 100:.2f} %" for a, t0, t in zip(lv_thd, thd_kink, thd)))
-ck.check(f"PhotoMOS off-capacitance THD, 10 V p-p 10 kHz, worst LEVEL <= {THD_MAX * 100:.2f} %", thd[i] <= THD_MAX,
-         f"expected <= {THD_MAX * 100:.2f} %; got {thd[i] * 100:.2f} % ({harness.db(thd[i]):.0f} dB; "
-         f"{thd_kink[i] * 100:.2f} % with the curve's kink at 0 V) at LEVEL a = {lv_thd[i]} (C_off "
-         f"{COFF_CURVE[0][1]:.0f} pF at 0 V -> {float(coff_of(lv_thd[i] * 5)) * 1e12:.0f} pF at the "
-         f"{lv_thd[i] * 5:.1f} V peak, behind {10 + 100 * lv_thd[i] * (1 - lv_thd[i]):.0f}k)")
-thd1k, _ = fi_thd([lv_thd[i]], f0=1e3)
-thd_low, _ = fi_thd([lv_thd[i]], vpk=1.0)
-print(f"      the same at 1 kHz: {thd1k[0] * 100:.3f} %; at 10 kHz and 2 V p-p: {thd_low[0] * 100:.3f} %")
-_curve = COFF_CURVE
-for scale in (0.1, 0.02):
-    COFF_CURVE = [(v, c * scale) for v, c in _curve]
-    t_s, _ = fi_thd([lv_thd[i]])
-    print(f"      with the off-capacitance curve x {scale} ({_curve[0][1] * scale:.1f} pF at 0 V): "
-          f"{t_s[0] * 100:.3f} % at 10 kHz")
-COFF_CURVE = _curve
-ck.check(f"PhotoMOS off-capacitance THD, 10 V p-p 1 kHz, worst LEVEL <= {THD_MAX * 100:.2f} %", thd1k[0] <= THD_MAX,
-         f"expected <= {THD_MAX * 100:.2f} %; got {thd1k[0] * 100:.4f} %")
-
-
-# (verifier) The symmetric C(|v|) above treats the 3-4 capacitance as one two-terminal varactor. Inside, the
-# AQY212EH is two MOSFETs in anti-series with a floating common-source node; under an AC swing that node is
-# clamped by the body diodes and the two junctions see different biases. Second model: each MOSFET's
-# junction Cj(u) is derived from the curve assuming the datasheet's DC measurement puts the full bias on one
-# junction and ~0 V on the other (C_meas(V) = Cj(V) series Cj(0), so Cj(0) = 2 C_meas(0)); the common node
-# floats (charge conserved) between ideal body-diode clamps at 0 V forward; leakage neglected (1 nA into
-# ~60 pF moves it by < 2 mV per 10 kHz cycle). Single node: Thevenin source + 10k into FI with the fixed
-# stray, explicit Euler at 5 ns. The truth should lie between the two models.
-def fi_thd_pair(levels, f0=10e3, vpk=5.0, k=k_worst, curve=True, spc=20000, cycles=12):
-    a = np.array(levels, float)
-    R = 100e3
-    rs = 1 / (1 / (a * R) + 1 / ((1 - a) * R + R_SOURCE)) + 10e3
-    kth = a * R / (R + R_SOURCE)
-    cfix = caps[f"FI{k}"] + C_ICM + caps[f"LV{k}"] * 0      # the LV node sits behind the 10k: left out here
-    c00 = 2 * COFF_CURVE[0][1] * 1e-12
-    vv, cc = [p[0] for p in COFF_CURVE], [p[1] * 1e-12 for p in COFF_CURVE]
-
-    def cj(u):
-        if not curve:
-            return np.full_like(u, c00)
-        return 1 / (1 / np.interp(np.maximum(u, 0), vv, cc) - 1 / c00)
-    dt = 1 / f0 / spc
-    v, s = np.zeros_like(a), np.zeros_like(a)
-    keep = []
-    for n in range(cycles * spc):
-        vth = kth * vpk * math.sin(2 * math.pi * f0 * n * dt)
-        ca, cb = cj(v - s), cj(-s)
-        i = (vth - v) / rs
-        dv = i / (cfix + ca * cb / (ca + cb)) * dt                   # both body diodes off: charge shared
-        ds = dv * ca / (ca + cb)
-        fa = v + dv - (s + ds) < 0                                   # A's body diode forward: s follows v
-        dv = np.where(fa, i / (cfix + cb) * dt, dv)
-        ds = np.where(fa, dv, ds)
-        fb = ~fa & (s + ds > 0)                                      # B's body diode forward: s held at 0
-        dv = np.where(fb, i / (cfix + ca) * dt, dv)
-        ds = np.where(fb, -s, ds)
-        v, s = v + dv, s + ds
-        if n >= (cycles - 4) * spc:
-            keep.append(v.copy())
-    X = np.abs(np.fft.rfft(np.array(keep), axis=0))
-    return np.sqrt(sum(X[4 * h] ** 2 for h in range(2, 11))) / X[4], s
-
-
-lv_pair = [0.3, 0.5, 0.7, 0.8]
-t_lin, _ = fi_thd_pair([0.7], curve=False, spc=4000)
-ck.check("THD, anti-series model: constant junction capacitance gives no distortion once the node has settled "
-         "(test of the test)", t_lin[0] < 1e-5, f"expected < 1e-5; got {t_lin[0]:.1e}")
-t_pair, s_pair = fi_thd_pair(lv_pair)
-t_pair1k, _ = fi_thd_pair(lv_pair, f0=1e3)
-j = int(np.argmax(t_pair))
-print("      THD, anti-series pair model, 10 V p-p, by LEVEL: " +
-      ", ".join(f"{a}: {t * 100:.2f} % at 10 kHz / {t1 * 100:.3f} % at 1 kHz (node {s:+.1f} V)"
-                for a, t, t1, s in zip(lv_pair, t_pair, t_pair1k, s_pair)))
-ck.check(f"PhotoMOS off-capacitance THD, anti-series pair model, 10 V p-p 10 kHz, worst LEVEL <= {THD_MAX * 100:.2f} %",
-         t_pair[j] <= THD_MAX, f"expected <= {THD_MAX * 100:.2f} %; got {t_pair[j] * 100:.2f} % at LEVEL a = "
-         f"{lv_pair[j]} (the symmetric model gives {thd[i] * 100:.2f} %); at 1 kHz {max(t_pair1k) * 100:.3f} %")
+# ---------------------------------------------- 2. the switches' x pins: virtual-earth swing and Ron distortion
+# Every channel up (one source into every input, pans centred, every pot full): the summing node's voltage against
+# its summer's output at the doc's frequency. An op-amp holds its inverting input at Vout / A(f), so this is about
+# the summer's swing / 262 (GBW 5.25 MHz) or / 150 (3 MHz) at 20 kHz. "Full output" taken as the summer's own
+# clip level (V_SWING peak, the worst case and what the doc's sentence is about); the same at 10 V p-p at OUT L / R
+# (MIX_L / R at 2.5 V peak, MASTER full) and at SEND (MIX_S 5 V peak) is printed.
+f_ve = DOC_VE_KHZ * 1e3
+inputs = [j for j, *_ in circuit.JACKS if j not in ("J15", "J16", "J17")]
+pans_c = {f"RV{3 * k - 1}": 0.5 for k in circuit.MONO}
+ve = []
+for model, mname in ((OP_NEW, "GBW 5.25 MHz"), (OP_OLD, "GBW 3 MHz")):
+    net = build(model, caps, pots=pans_c, patched={j: "in" for j in inputs})
+    x = net.solve(f_ve)
+    for bus, nominal in (("L", 2.5), ("R", 2.5), ("S", 5.0)):
+        r = abs(x[net.nodes[f"SUM_{bus}"]]) / abs(x[net.nodes[f"MIX_{bus}"]])
+        ve.append((r * V_SWING, r * nominal, bus, mname, r))
+vw = max(ve)
+print("      summing node at " + f"{f_ve / 1e3:.0f} kHz, every channel up: " +
+      ", ".join(f"SUM_{b} {mn}: {v * 1e3:.1f} mV pk at the summer's {V_SWING} V pk, {vn * 1e3:.1f} mV pk at 10 V p-p "
+                f"out" for v, vn, b, mn, r in ve))
+ck.check(f"the summers hold their virtual earth within the doc's {DOC_VE_MV:.0f} mV at {f_ve / 1e3:.0f} kHz and full "
+         f"output (the summer at its {V_SWING} V peak, every channel up)", vw[0] * 1e3 <= DOC_VE_MV,
+         f"expected <= {DOC_VE_MV:.0f} mV; got {vw[0] * 1e3:.1f} mV peak on SUM_{vw[2]} ({vw[3]}; "
+         f"{min(v[0] for v in ve) * 1e3:.1f} mV with GBW 5.25 MHz); at 10 V p-p at the outputs "
+         f"{max(v[1] for v in ve) * 1e3:.1f} mV peak at worst")
+# The switch's own distortion, a first-principles bound (labelled as an estimate: the datasheet's 0.2 % THD is for
+# a signal through the switch at mid-supply, which this circuit never does). The closed x throw's Ron sits in
+# series with the bus resistor R; its terminals swing by the summing node's v_s plus half the drop across it,
+# I Ron / 2, and Ron(v) = Ron (1 + CD_RON_SLOPE v). The gain Rf / (R + Ron(v)) then moves by Ron SLOPE v / R, and a
+# gain moving in step with the signal makes a second harmonic of half that: H2 <= SLOPE Ron (v_s + I Ron / 2) / 2R.
+# Worst throw: a mono channel's follower at the full V_SWING into its 100k, the summer at full swing (the largest
+# v_s above), Ron 520 ohm (85 C).
+R_BUS = 100e3
+i_pk = V_SWING / R_BUS
+h2 = {}
+for ron in (CD_RON_TYP, CD_RON_MAX_85C):
+    for f, vs in ((f_ve, vw[0]), (10e3, vw[0] * 10e3 / f_ve), (1e3, vw[0] * 1e3 / f_ve)):
+        h2[(ron, f)] = CD_RON_SLOPE * ron * (vs + i_pk * ron / 2) / (2 * R_BUS)
+print("      switch distortion bound (estimate), H2 at full swing: " +
+      ", ".join(f"Ron {ron:.0f}: {h2[(ron, f)] * 100:.4f} % at {f / 1e3:.0f} kHz" for ron, f in h2))
+ck.check(f"the CD4053B's Ron adds <= {THD_MAX * 100:.2f} % distortion at {f_ve / 1e3:.0f} kHz and full swing, Ron "
+         f"{CD_RON_MAX_85C:.0f} ohm (first-principles bound, rON slope {CD_RON_SLOPE} / V assumed)",
+         h2[(CD_RON_MAX_85C, f_ve)] <= THD_MAX,
+         f"expected <= {THD_MAX * 100:.2f} %; bound {h2[(CD_RON_MAX_85C, f_ve)] * 100:.4f} % "
+         f"({harness.db(h2[(CD_RON_MAX_85C, f_ve)]):.0f} dB), from v_s {vw[0] * 1e3:.0f} mV pk + I Ron / 2 "
+         f"{i_pk * CD_RON_MAX_85C / 2 * 1e3:.0f} mV; {h2[(CD_RON_TYP, f_ve)] * 100:.4f} % at Ron {CD_RON_TYP:.0f}")
 
 
 # --------------------------------------------------------------------------- 3. mute attenuation
-def mute_att(k, ron, a, jack, out, pots_extra):
+# Muted, the y throw ties the bus resistor's summing end to GND through Ron and the open x throw (R_OFF || CIOS)
+# is the only path into the bus: depth about 1 / (2 pi f CIOS Ron) at 20 kHz, independent of the bus resistor.
+F_MUTE = (20.0, 1e3, 20e3)
+LEVEL_OF = {7: "RV19", 8: "RV21"}
+
+
+def mute_att(k, ron, a, jack, pots_extra, r_off=CD_R_OFF, outs=("OUT_L", "SEND")):
+    """{(out, f): dB} the channel drops by when it mutes, at LEVEL a; the playing reference has the same Ron."""
     pots = dict(pots_extra)
-    pots[{7: "RV19", 8: "RV21"}.get(k, f"RV{3 * k - 2}")] = a
-    on = build(OP_NEW, caps, pots=pots, patched={jack: "in"}, mutes=(k,), ron=ron)
-    off = build(OP_NEW, caps, pots=pots, patched={jack: "in"})
-    return min(harness.db(abs(off.gain(f, out)) / abs(on.gain(f, out))) for f in (20.0, 1e3, 20e3))
+    pots[LEVEL_OF.get(k, f"RV{3 * k - 2}")] = a
+    muted = build(OP_NEW, caps, pots=pots, patched={jack: "in"}, mutes=(k,), ron=ron, r_off=r_off)
+    playing = build(OP_NEW, caps, pots=pots, patched={jack: "in"}, ron=ron, r_off=r_off)
+    res = {}
+    for f in F_MUTE:
+        xm, xp = muted.solve(f), playing.solve(f)
+        for o in outs:
+            res[(o, f)] = harness.db(abs(xp[playing.nodes[o]]) / abs(xm[muted.nodes[o]]))
+    return res
 
 
-for ron, claim, label in ((RON_TYP, DOC_MUTE_TYP, "typical"), (RON_MAX, DOC_MUTE_MAX, "maximum")):
+for ron, claim, label in ((CD_RON_TYP, DOC_MUTE_TYP, "typical"), (CD_RON_MAX_85C, DOC_MUTE_MAX, "worst (85 C)")):
     rows = []
     for k in circuit.MONO + circuit.STEREO:
         jack = {7: "J7", 8: "J9"}.get(k, f"J{k}")
         extra = {} if k in circuit.STEREO else {f"RV{3 * k - 1}": 0.0}
         for a in (0.1, 0.5, 1.0):
-            rows.append((mute_att(k, ron, a, jack, "OUT_L", extra), k, a))
+            for (o, f), d in mute_att(k, ron, a, jack, extra).items():
+                rows.append((d, k, a, o, f))
     m = min(rows)
-    ck.check(f"mute attenuation 20 Hz-20 kHz with Ron {label} ({ron} ohm) >= the doc's {claim:.0f} dB - 1",
-             m[0] >= claim - 1.0, f"expected >= {claim - 1:.0f} dB on every channel at every LEVEL; worst "
-             f"{m[0]:.1f} dB (channel {m[1]}, LEVEL a = {m[2]})")
-ck.check("the doc's typical AQY212EH on-resistance matches the datasheet", abs(DOC_RON_TYP - RON_TYP) < 0.005,
-         f"expected the datasheet's {RON_TYP} ohm typ (IF = 5 mA; ASCTB126E 201201-T and 201404-T, and Panasonic's "
-         f"product page); design.md says {DOC_RON_TYP} ohm")
-ck.check("the doc's maximum AQY212EH on-resistance matches the datasheet", abs(DOC_RON_MAX - RON_MAX) < 0.005,
-         f"expected the datasheet's {RON_MAX} ohm max; design.md says {DOC_RON_MAX} ohm")
+    per_f = {f: min(r[0] for r in rows if r[4] == f) for f in F_MUTE}
+    hand = 20 * math.log10(1 / (2 * math.pi * 20e3 * CD_CIOS * ron))
+    ck.close(f"mute attenuation 20 Hz-20 kHz, Ron {label} ({ron:.0f} ohm), every channel, OUT L and SEND = the doc's "
+             f"'{claim:.0f} dB'", m[0], claim, 1.0, " dB")
+    print(f"      mute depth, Ron {ron:.0f}: worst {m[0]:.1f} dB (channel {m[1]}, LEVEL a = {m[2]}, {m[3]}, "
+          f"{m[4]:.0f} Hz); per frequency " + ", ".join(f"{f:.0f} Hz {d:.1f} dB" for f, d in per_f.items()) +
+          f"; by hand 1 / (2 pi 20 kHz CIOS Ron) = {hand:.1f} dB")
+for r_off, what in ((R_OFF_25C, "25 C"), (R_OFF_85C, "85 C")):
+    d = mute_att(1, CD_RON_MAX_85C, 1.0, "J1", {"RV2": 0.0}, r_off=r_off, outs=("OUT_L",))
+    print(f"      sensitivity: R_OFF = the {what} leakage limit read as a resistance ({r_off / 1e6:.0f} Mohm, "
+          f"pessimistic): mute depth at Ron {CD_RON_MAX_85C:.0f} " + ", ".join(f"{f:.0f} Hz {d[('OUT_L', f)]:.1f} dB"
+                                                                           for f in F_MUTE))
+ck.check("the doc's CD4053B rON figures match the datasheet (VDD 10 V: typ, max 25 C, max 85 C)",
+         DOC_RON == (CD_RON_TYP, CD_RON_MAX_25C, CD_RON_MAX_85C),
+         f"expected {CD_RON_TYP:.0f} / {CD_RON_MAX_25C:.0f} / {CD_RON_MAX_85C:.0f} ohm (SCHS047O 5.5); design.md says "
+         + " / ".join(f"{x:.0f}" for x in DOC_RON))
+# The doc's routing note: a stray capacitance from a muted channel's track into a playing bus. Channel 1 muted
+# (hard left, so PL1 carries its signal) with the doc's 0.1 pF from PL1 to SUM_L, against channel 1 playing.
+cb, claim_b, fb = DOC_BLEED
+pots_b = {"RV2": 0.0}
+playing = build(OP_NEW, caps, pots=pots_b, patched={"J1": "in"})
+bleed = build(OP_NEW, caps, pots=pots_b, patched={"J1": "in"}, mutes=(1,), extra_c=[("PL1", "SUM_L", cb)])
+quiet = build(OP_NEW, caps, pots=pots_b, patched={"J1": "in"}, mutes=(1,))
+b_db = harness.db(abs(bleed.gain(fb, "OUT_L")) / abs(playing.gain(fb, "OUT_L")))
+q_db = harness.db(abs(quiet.gain(fb, "OUT_L")) / abs(playing.gain(fb, "OUT_L")))
+ck.close(f"bleed: {cb * 1e12:.1f} pF from a muted channel's track (PL1) into a playing bus (SUM_L) at {fb / 1e3:.0f} kHz "
+         f"(doc -{claim_b:.0f} dB)", b_db, -claim_b, 1.0, " dB")
+print(f"      the same channel muted without that stray: {q_db:.1f} dB at {fb / 1e3:.0f} kHz: a single 0.1 pF of "
+      f"layout sets the mute depth, as the doc says")
 
 
 # ------------------------------------------------------------------------------------ 4. stability
@@ -640,8 +678,9 @@ CONFIGS = [
     ("all pots full, 1 m cable on the outputs", dict(pots={}, patched=all_patched)),
     ("all pots at mid, pans centred, nothing patched", dict(pots={r: 0.5 for r, *_ in circuit.POTS + circuit.POTS2})),
     ("all pots full, 10 nF extra on every output", dict(pots={}, patched=all_patched, extra_cable=10e-9)),
-    ("all pots at mid, PhotoMOS off-C at its 20 V value", dict(pots={r: 0.5 for r, *_ in circuit.POTS + circuit.POTS2},
-                                                               coff=COFF_CURVE[-1][1] * 1e-12)),
+    ("all pots at mid, every channel muted (the summers see only RETURN / DRUMS / FX IN and the open x pins)",
+     dict(pots={r: 0.5 for r, *_ in circuit.POTS + circuit.POTS2}, mutes=tuple(CH_ALL))),
+    ("all pots full, every channel muted", dict(pots={}, patched=all_patched, mutes=tuple(CH_ALL))),
 ]
 pm_rows = collections.defaultdict(list)
 for model, mname in ((OP_NEW, "GBW 5.25 MHz"), (OP_OLD, "GBW 3 MHz")):
@@ -654,6 +693,21 @@ for op in sorted(pm_rows, key=lambda o: (o.split(".")[0], int(o.split(".")[1])))
     pm, fc, mname, cname = min(pm_rows[op])
     ck.check(f"phase margin >= {PM_MIN:.0f} deg: {op} ({ROLE[op]})", pm >= PM_MIN,
              f"expected >= {PM_MIN:.0f} deg; worst {pm:.1f} deg at {fc / 1e6:.2f} MHz ({mname}, {cname})")
+# The followers' IN+ (FI) hangs on the 10k input resistor (plus the LEVEL wiper's source resistance) with only its
+# pads and the TL074's 1 pF to ground, so the TL074's 2 pF differential input capacitance feeds the output back onto
+# IN+ and eats about 12 deg of the follower's margin (the AQY212EH's 20-80 pF off capacitance used to hold FI down).
+# What a small C0G from each FI to GND would give, in the followers' worst configuration (a proposed fix, not in
+# circuit.py):
+FOL = [o for o in pm_rows if ROLE[o].startswith("FOL")]
+fw = min(min(pm_rows[o]) + (o,) for o in FOL)
+FIX_C = 10e-12
+_, fkw = next(c for c in CONFIGS if c[0] == fw[3])
+fnet = build(OP_NEW if fw[2] == "GBW 5.25 MHz" else OP_OLD, caps,
+             extra_c=[(f"FI{name}", "GND", FIX_C) for (kind, name) in circuit.OPAMPS.values() if kind == "FOL"], **fkw)
+pm_fix = min(phase_margin(fnet, o)[0] for o in FOL)
+print(f"      followers: worst {fw[0]:.1f} deg ({fw[4]}, {fw[2]}, {fw[3]}); with {FIX_C * 1e12:.0f} pF from each FI to "
+      f"GND {pm_fix:.1f} deg, its pole with the 10k + LEVEL wiper (35k at most) at "
+      f"{1 / (2 * math.pi * 35e3 * FIX_C) / 1e3:.0f} kHz")
 
 # The output stages' phase-lead caps (C907 / C908 4.7 pF across R905 / R908, C909 10 pF across R911; added
 # 2026-11-14 for AUDIO_AC-2, where these stages had 17-18 deg): their worst margin as built, and what they cost at
@@ -671,6 +725,14 @@ for name, jacks, out in (("IN 7 L -> OUT L", ["J7"], "OUT_L"), ("FX IN -> SEND",
 print(f"      output stages as built ({', '.join(CF)}): worst phase margin {pm_out[0]:.1f} deg ({pm_out[4]}, "
       f"{pm_out[2]}, {pm_out[3]}); the caps cost {min(loss):+.3f} dB at 20 kHz")
 ck.check("the phase-lead caps cost under 0.1 dB at 20 kHz", min(loss) > -0.1, f"{min(loss):+.3f} dB")
+# The doc's worst-case margins for the output stages
+u, s_ = circuit.opamp_of("OUT", "S")
+pm_s = min(pm_rows[f"{u}.{s_}"])
+pm_lr = min(min(pm_rows[f"{u}.{s_}"]) for u, s_ in (circuit.opamp_of("OUT", "L"), circuit.opamp_of("OUT", "R")))
+ck.close(f"phase margin, send inverter, worst case (doc {DOC_PM_S:.0f} deg)", pm_s[0], DOC_PM_S, 2.0, " deg")
+ck.close(f"phase margin, OUT L / R stages, worst case (doc {DOC_PM_LR:.0f} deg)", pm_lr[0], DOC_PM_LR, 2.0, " deg")
+print(f"      worst margins: send inverter {pm_s[0]:.1f} deg ({pm_s[2]}, {pm_s[3]}), OUT L / R {pm_lr[0]:.1f} deg "
+      f"({pm_lr[2]}, {pm_lr[3]})")
 
 
 # ------------------------------------------------------------------------------------ 5. slew rate
@@ -719,10 +781,14 @@ def noise(net, out):
 
 
 for bus in ("SUM_L", "SUM_S"):
-    g_in = sum(1 / harness.ohms(p.value) for p in MAIN_PARTS if p.kind == "R" and bus in p.nets.values()
-               and "feedback" not in p.label)
-    print(f"      {bus} summer: {sum(1 for p in MAIN_PARTS if p.kind == 'R' and bus in p.nets.values()) - 1} inputs, "
-          f"DC noise gain about 1 + 100k / {1 / g_in / 1e3:.1f}k = {1 + 100e3 * g_in:.1f}")
+    direct = [harness.ohms(p.value) for p in MAIN_PARTS if p.kind == "R" and bus in p.nets.values()
+              and "feedback" not in p.label]
+    switched = [harness.ohms(p.value) + CD_RON_TYP for p in MAIN_PARTS if p.kind == "R"
+                and any(n.startswith("B" + bus[-1]) and n[2:].isdigit() for n in p.nets.values())]
+    for what, rs in (("every channel playing", direct + switched), ("every channel muted", direct)):
+        g_in = sum(1 / r for r in rs)
+        print(f"      {bus} summer, {what}: {len(rs)} inputs, DC noise gain about 1 + 100k / {1 / g_in / 1e3:.1f}k = "
+              f"{1 + 100e3 * g_in:.1f}")
 print(f"      TL074 en model: {ENW * 1e9:.1f} nV/rtHz white, 1/f corner {FC_1F:.0f} Hz "
       f"({en(1e3) * 1e9:.0f} nV at 1 kHz, {en(1e4) * 1e9:.0f} at 10 kHz, {en(20.0) * 1e9:.0f} at 20 Hz)")
 up_pots = {}

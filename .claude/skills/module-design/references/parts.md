@@ -202,6 +202,21 @@ too big for a dense panel.
   not an older `power_main()`.
 - H11L1 (MIDI in at 3.3 V; works from 3 V): DIP-6, 1 anode, 2 cathode, 3 NC,
   4 open-collector output (idles high), 5 GND, 6 VCC. Give the symbol pin 3.
+- Electronic audio mutes: put the switch where both of its ends sit at 0 V,
+  i.e. at a summer's virtual earth, never on a high-impedance signal node.
+  The stereo mixer's first design shunted each follower's input with an
+  AQY212EH PhotoMOS; its off capacitance (79 pF at 0 V, 35 pF at 7.5 V)
+  distorted every playing channel (0.16 % THD at 1 kHz, 1.5 % at 10 kHz,
+  10 V p-p) and a muted channel loaded its source. Its 2026-11-15 redesign
+  uses a CD4053B (DIP-16, TI SCHS047O) per channel: each bus resistor's
+  summing end goes to the bus (x, select low) or to GND (y, select high), so
+  VEE = VSS = GND works on 0 / +12 V. Pins: 1 by, 2 bx, 3 cy, 4 c, 5 cx,
+  6 INH, 7 VEE, 8 VSS, 9 C, 10 B, 11 A, 12 ax, 13 ay, 14 a, 15 b, 16 VDD.
+  rON 180 Ω typ / 400 max at 10 V; CIS 5 pF, COS 9 pF, CIOS 0.2 pF. A
+  CD4013 Q can drive the selects and an LED through 1k5 (Q stays above
+  VIH); route the summing lines as one short-as-possible lane away from
+  hot tracks, since stray pF into a virtual earth becomes crosstalk and
+  mute bleed.
 
 ## EC11 encoder with switch (Side FXy)
 

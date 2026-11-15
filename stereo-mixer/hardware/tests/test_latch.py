@@ -7,9 +7,14 @@ band + the board's pad nets):
   button contacts -> 100k pull-up to +12 V -> 10k / 100n debounce ->
   CD4093B (inputs tied: a Schmitt inverter) -> CD4013B CLK (D = /Q, SET to
   GND), RESET of every flip-flop from the power-on RC (C906 from +12 V,
-  R920 to GND, D903).
-  1. netlist: every part of the chain found, every CMOS input tied, D903's
-     real orientation;
+  R920 to GND, D903). Q (QKk) drives the three selects of the channel's
+  CD4053B (U1k: low = x on, the summer, playing; high = y on, GND, muted)
+  and, through 1k5, the button LED (LEDk, header, button LED to GND_F).
+  1. netlist: every part of the chain found, every CMOS input tied, QKk
+     loaded by exactly its Q pin, its LED resistor and its own CD4053B's
+     three selects, the CD4053B's INH / VEE / VSS / VDD and 100 n, its
+     sections against the datasheet's pin table and truth table, D903's
+     real orientation, the routed board's pad nets of U5-U18;
   2. button timing: clean press / release, contact bounce (random bursts
      and the worst single gap), short taps, a held button, with the CD4093B
      thresholds at the actual VDD (typ, min, max and the min-hysteresis
@@ -18,13 +23,17 @@ band + the board's pad nets):
      power cycles (off 10 ms / 100 ms / 1 s, fast and slow rail decay), a
      brown-out: does every flip-flop start reset, is reset released only
      after DB / CK have settled, is C906 emptied and by what, do POR / DB
-     stay inside 0 ... VDD;
-  4. drive: the CD4013B Q output (P-channel fitted to the IOH table)
-     through the LED resistor + one / two AQY212EH LEDs + the button LED, against the
-     AQY212EH's operate current and recommended current, at the typical
-     and the worst-case low rail;
-  5. the doc's figures (1 ms / 11 ms, ~70 ms reset, ~6.8 mA, "3 mA at
-     most", "about 1 ms on, 0.1 ms off"), clock edge rate.
+     stay inside 0 ... VDD; a reset Q is below the CD4053B's VIL, so every
+     channel starts playing; a muted channel's Q still clears VIH in the
+     dips that keep the flip-flops;
+  4. drive: the CD4013B Q output (P-channel fitted to the IOH table, two
+     curve shapes) into 1k5 + the button LED: the LED current, and Q's
+     voltage under that load against the CD4053B's VIH min at the actual
+     VDD, typical and every corner (rail typ / low / high, IOH typ / 25 C
+     min / 85 C min, LED VF min / typ / max); Q low against VIL max;
+  5. the doc's figures (1 ms / 11 ms, ~70 ms reset, ~5.7 mA, Q ~10.5 V,
+     the worst corner's 8.8 V / 1.1 V / 7.7 V, "well under a microsecond",
+     65 mV crosstalk), clock edge rate.
 
 Button timing is solved exactly (piecewise exponentials, threshold
 crossings in closed form). Power scenarios are stepped (10 us) with the
@@ -62,30 +71,43 @@ FLOP_IOH = {(5, 4.6): {"min25": 0.51, "typ": 1.0, "min85": 0.42},
             (5, 2.5): {"min25": 1.6, "typ": 3.2, "min85": 1.3},
             (10, 9.5): {"min25": 1.3, "typ": 2.6, "min85": 1.1},
             (15, 13.5): {"min25": 3.4, "typ": 6.8, "min85": 2.8}}
+# VOL max 0.05 V at |IO| < 1 uA (VDD 5 / 10 / 15 V, all temperatures) and IOL min 1.1 mA at VDD 10 V, VO 0.5 V,
+# 85 C: the B-series standard figures as SCHS023E states them (not re-read for this group: no copy here)
+FLOP_VOL_MAX = 0.05
+FLOP_RN_MAX = 0.5 / 1.1e-3   # N-channel output resistance bound at 10 V, 85 C (VO / IOL min)
+FLOP_CL_SPEC = 50e-12        # the load its timing is specified at
 CMOS_VIN_ABS = 0.5           # absolute max input voltage: VSS - 0.5 ... VDD + 0.5 (both datasheets)
 CMOS_IIN_ABS = 10e-3         # absolute max DC input current, any one input (both datasheets)
 CMOS_DIODE_VF = 0.6          # input protection diode drop at ~0.1-1 mA: ASSUMED (silicon junction; not in the datasheets)
 # D903's own drop: Vishay BAT85 VF <= 0.32 V at 1 mA, 0.40 V at 10 mA (max); a 1N4148 about as a silicon junction
 BAT85_VF = 0.40
 CMOS_RETAIN_V = 1.5          # VDD below which a flip-flop's state is taken as lost: ASSUMED (not specified)
-# --- Panasonic AQY21xEH (GU-E 1 Form A), ASCTB126E 2012-01, AQY212EH column, 25 C
-AQY_IFON_MAX = 3.0e-3        # LED operate current, max (IL = max)
-AQY_IFON_TYP = 1.2e-3        # LED operate current, typ
-AQY_IFOFF_MIN = 0.4e-3       # LED turn-off current, min
-AQY_VF_TYP_5MA = 1.14        # LED dropout voltage, typ at IF = 5 mA
-AQY_VF_MAX_50MA = 1.5        # LED dropout voltage, max, at IF = 50 mA (typ 1.25 V there)
-# Verifier: the 1.5 V max is specified at IF = 50 mA, not at the 2.5-5 mA this circuit runs. The datasheet gives
-# no max at 5 mA; shift the 50 mA max down by the typical curve's drop from 50 mA to 5 mA (1.25 -> 1.14 V):
-# 1.39 V, still a max-grade (not typical) figure. ESTIMATE, not a datasheet number.
-AQY_VF_MAX = AQY_VF_MAX_50MA - (1.25 - AQY_VF_TYP_5MA)
-AQY_IF_REC = (5e-3, 10e-3)   # recommended input LED current
-AQY_IF_ABS = 50e-3           # LED forward current, abs max
-AQY_TON = (1.0e-3, 4.0e-3)   # turn-on time typ / max at IF = 5 mA
-AQY_TOFF = (0.05e-3, 1.0e-3)  # turn-off time typ / max at IF = 5 mA
+# --- CD4053B, TI SCHS047O (rev. O, May 2026). Read from `pdftotext -raw` of the datasheet: the -layout text of
+#     5.5 is garbled, the raw order is unambiguous for every figure below.
+#     Pin functions (Table 4-3), per section (common, x, y, select); INH 6, VEE 7, VSS 8, VDD 16.
+SW_SECTIONS = {"a": ("14", "12", "13", "11"), "b": ("15", "2", "1", "10"), "c": ("4", "5", "3", "9")}
+SW_INH, SW_VEE, SW_VSS, SW_VDD = "6", "7", "8", "16"
+SW_ON = {0: "x", 1: "y"}     # truth table (Table 7-1), INH = 0: select 0 -> x on, 1 -> y on; INH = 1 -> none
+# control inputs (address or inhibit), 5.5 continued, every temperature -55 ... 125 C:
+SW_VIH_MIN = {5: 3.5, 10: 7.0, 15: 11.0}   # input high voltage, min
+SW_VIL_MAX = {5: 0.8, 10: 0.8, 15: 0.8}    # input low voltage, max: rev. O prints 0.8 V at every VDD and temperature
+                                           # (the older revisions' 4000B figures were 1.5 / 3 / 4 V); 0.8 V used
+SW_IIN_MAX = 1e-6            # input current max, VIN 0 / 18 V at VDD 18 V: +-1 uA at every temperature (25 C typ +-0.6)
+SW_CIN_MAX = 7.5e-12         # input capacitance, any address or inhibit input: 5 pF typ, 7.5 pF max
+# address-to-signal out propagation delay (channels on or off), RL 10k, CL 50 pF, tr / tf 20 ns: (typ, max) by VDD
+SW_TPD_ADDR = {5: (450e-9, 720e-9), 10: (160e-9, 320e-9), 15: (120e-9, 240e-9)}
+SW_XTALK_ADDR = 65e-3        # address-or-inhibit-to-signal crosstalk, VDD 10 V, RL 10k, both ends: 65 mV peak (typ)
+# quiescent IDD (VIS = VEE = VSS = 0): max 60 uA at 25 C for 5 / 10 / 15 V (typ 17 / 18 / 18 uA; the features
+# list's "0.2 uW typical" disagrees with that typ), 150 / 300 / 600 uA max at 85 C
+SW_IDD_TYP = 18e-6
+SW_IDD_MAX85 = {5: 150e-6, 10: 300e-6, 15: 600e-6}
+SW_VDD_MIN = 3.0             # "Single supply range: 3V to 20V (performance degrades for VDD < 3V)"
 # --- Thonk low-profile LED button, red (bom.py BUTTONS = red). Thonk's drawing (LowProfileButton.pdf) gives no
-#     LED data. ASSUMED generic red LED: VF typ 2.0 V, max 2.5 V at 2-5 mA; no built-in resistor (the repo's
-#     Marblesy notes drive it with 470R from a 3.3 V 74HC595 at ~2.5 mA, which implies VF ~ 2.1 V and no resistor).
-BTN_LED_VF = {"typ": 2.0, "max": 2.5}
+#     LED data. ASSUMED generic red LED: VF min 1.8 V (test_power's figure), typ 2.0 V, max 2.5 V at 2-7 mA; no
+#     built-in resistor (the repo's Marblesy notes drive it with 470R from a 3.3 V 74HC595 at ~2.5 mA, which
+#     implies VF ~ 2.1 V and no resistor). The LOWEST VF draws the most current and so pulls Q lowest.
+BTN_LED_VF = {"min": 1.8, "typ": 2.0, "max": 2.5}
+TRACK_C = 20e-12             # QK track + header stray, ASSUMED (the main board is not routed yet)
 # --- power: Eurorack +12 V at the header: ASSUMED 12.0 V nominal, 11.4 V worst (-5 %); 1N5819 (onsemi
 #     1N5817-D) VF ~0.32 V typ at 0.1 A, 0.4 V taken as worst near 75 mA (the 0.6 V max is at 1 A).
 #     TI TL074 (SLOS080) supply current per amplifier: typ 1.4 mA, max 2.5 mA; 16 amplifiers.
@@ -112,18 +134,31 @@ def one(lst, what):
 
 CH = circuit.MONO + circuit.STEREO
 _design = open(os.path.join(harness.MODULE, "docs", "design.md"), encoding="utf-8").read()
-_m = re.search(r"about ([\d.]+) mA typical on either kind", _design)
+_flat = re.sub(r"\s+", " ", _design)          # line breaks folded: the figures below wrap across lines
+_m = re.search(r"about ([\d.]+) mA typical on either kind", _flat)
 DOC_LED_MA = float(_m.group(1)) * 1e-3 if _m else 0.0
-_m = re.search(r"about (\d+) ms of reset", _design)
+_m = re.search(r"about (\d+) ms of reset", _flat)
 DOC_RESET_MS = float(_m.group(1)) if _m else 0.0
+_m = re.search(r"Q sits at about ([\d.]+) V typically, and at the worst corner \(([^)]*)\) at ([\d.]+) V, "
+               r"still ([\d.]+) V above the CD4053B's VIH \(([\d.]+) V at that VDD\)", _flat)
+DOC_Q_TYP, DOC_CORNER, DOC_Q_WORST, DOC_Q_MARGIN, DOC_VIH = (
+    (float(_m.group(1)), _m.group(2), float(_m.group(3)), float(_m.group(4)), float(_m.group(5))) if _m
+    else (0.0, "", 0.0, 0.0, 0.0))
+ck.check("design.md states Q's typical and worst-corner voltage against the CD4053B's VIH", _m is not None,
+         "Mute latch section")
+_m = re.search(r"([\d.]+) V LED", DOC_CORNER)
+DOC_CORNER_VF = float(_m.group(1)) if _m else BTN_LED_VF["max"]
+DOC_SWITCH_FAST = re.search(r"switching is fast \(well under a microsecond\)", _flat) is not None
+_m = re.search(r"address-to-signal crosstalk is (\d+) mV peak into (\d+)k at VDD = (\d+) V", _flat)
+DOC_XTALK = (float(_m.group(1)) * 1e-3, float(_m.group(2)) * 1e3, float(_m.group(3))) if _m else (0.0, 0.0, 0.0)
 VP_NET, GND = circuit.VP, circuit.GND
 CHAN = {}
 for k in CH:
     c = {"pullup": one(parts_between(VP_NET, f"BTN{k}", "R"), f"pull-up BTN{k} to +12V"),
          "rdb": one(parts_between(f"BTN{k}", f"DB{k}", "R"), f"debounce R BTN{k}-DB{k}"),
          "cdb": one(parts_between(f"DB{k}", GND, "C"), f"debounce C DB{k}-GND"),
-         "rled": one(parts_between(f"QK{k}", f"LA{k}", "R"), f"LED resistor QK{k}-LA{k}")}
-    c["kmos"] = [p for p in MB if p.kind == "PHOTOMOS" and any(n.startswith(f"FI{k}") for n in p.nets.values())]
+         "rled": one(parts_between(f"QK{k}", f"LED{k}", "R"), f"LED resistor QK{k}-LED{k}"),
+         "sw": one([p for p in MB if p.kind == "CD4053" and f"QK{k}" in p.nets.values()], f"CD4053B on QK{k}")}
     c["nand_in"] = [(p.ref, pin) for p in MB if p.kind == "CD4093" for pin, n in p.nets.items() if n == f"DB{k}"]
     c["button"] = [p for p in FB if p.kind == "SWLED" and f"BTN{k}_F" in p.nets.values()]
     CHAN[k] = c
@@ -133,6 +168,7 @@ R920 = one(parts_between("POR", GND, "R"), "POR resistor POR-GND")
 D903 = one([p for p in MB if (p.kind.startswith("D") or p.kind == "BAT85") and "POR" in p.nets.values()], "diode on POR")
 NANDS = [p for p in MB if p.kind == "CD4093"]
 FLOPS = [p for p in MB if p.kind == "CD4013"]
+SWITCHES = [p for p in MB if p.kind == "CD4053"]
 
 # CMOS inputs: CD4093 pins 1 2 5 6 8 9 12 13; CD4013 CLK 3 11, RESET 4 10, D 5 9, SET 6 8
 NAND_INPUTS = ["1", "2", "5", "6", "8", "9", "12", "13"]
@@ -167,15 +203,70 @@ for k in CH:
              c["button"][0].nets["3"] == c["button"][0].nets["4"] == f"BTN{k}_F" and
              c["button"][0].nets["1"] == c["button"][0].nets["2"] == "GND_F",
              f"{c['button'][0].nets if c['button'] else None}")
-    ck.check(f"ch{k}: {'1' if k in circuit.MONO else '2'} PhotoMOS LED(s) in series LA{k} -> LED{k}",
-             len(c["kmos"]) == (1 if k in circuit.MONO else 2), f"{[p.ref for p in c['kmos']]}")
+
+# ---------------------------------------------------------------- the mute switches (CD4053B) and QK's loads
+fbnets = circuit.nets_of(FB)
+ck.check("8 CD4053B mute switches, one per channel", len(SWITCHES) == len(CH) and
+         all(p.value == "CD4053B" for p in SWITCHES), f"{[(p.ref, p.value) for p in SWITCHES]}")
+ck.check("circuit.MUX against SCHS047O Table 4-3: L = section a, R = b, send = c, as (common, x, y, select)",
+         circuit.MUX == {"L": SW_SECTIONS["a"], "R": SW_SECTIONS["b"], "S": SW_SECTIONS["c"]},
+         f"circuit.MUX {circuit.MUX}")
+for p in SWITCHES:
+    missing = [str(n) for n in range(1, 17) if str(n) not in p.nets]
+    ck.check(f"{p.ref} (CD4053B): all 16 pins connected (no floating select / inhibit input)", not missing,
+             f"unconnected: {missing}")
+    ck.check(f"{p.ref}: INH, VEE, VSS on GND, VDD on +12V (throws inside VEE ... VDD at 0 V)",
+             [p.nets.get(x) for x in (SW_INH, SW_VEE, SW_VSS, SW_VDD)] == [GND, GND, GND, VP_NET],
+             f"INH {p.nets.get(SW_INH)}, VEE {p.nets.get(SW_VEE)}, VSS {p.nets.get(SW_VSS)}, VDD {p.nets.get(SW_VDD)}")
+    dec = [c for c in parts_between(VP_NET, GND, "C") if c.label == f"{p.ref} VDD"]
+    ck.check(f"{p.ref}: its own 100 n from +12V to GND", len(dec) == 1 and dec[0].value == "100n",
+             f"{[(c.ref, c.value, c.label) for c in dec]}")
+for k in CH:
+    c = CHAN[k]
+    sw, rled = c["sw"], c["rled"]
+    if sw is None or rled is None:
+        continue
+    ck.check(f"ch{k}: the switch on QK{k} is circuit.SWITCH[{k}], labelled 'mute {k}'",
+             sw.ref == circuit.SWITCH[k] and sw.label == f"mute {k}", f"{sw.ref} '{sw.label}'")
+    qpin = [f"{p.ref}.{pin}" for p in FLOPS for pin in FLOP_PINS["Q"] if p.nets.get(pin) == f"QK{k}"]
+    rpin = [f"{rled.ref}.{pin}" for pin, n in rled.nets.items() if n == f"QK{k}"]
+    sel = [f"{sw.ref}.{s[3]}" for s in SW_SECTIONS.values()]
+    ck.check(f"ch{k}: QK{k} = one CD4013B Q, its LED resistor and the three selects of {sw.ref}, nothing else",
+             len(qpin) == 1 and sorted(mbnets[f"QK{k}"]) == sorted(qpin + rpin + sel),
+             f"QK{k}: {sorted(mbnets[f'QK{k}'])}")
+    ok, detail = True, []
+    for bus, sec in (("L", "a"), ("R", "b"), ("S", "c")):
+        com, x, y, s = SW_SECTIONS[sec]
+        got = (sw.nets.get(com), sw.nets.get(x), sw.nets.get(y), sw.nets.get(s))
+        ok &= got == (f"B{bus}{k}", f"SUM_{bus}", GND, f"QK{k}")
+        bnet = sorted(mbnets.get(f"B{bus}{k}", []))
+        ok &= len(bnet) == 2 and f"{sw.ref}.{com}" in bnet
+        detail.append(f"{sec}: common {got[0]} ({bnet}), x {got[1]}, y {got[2]}, select {got[3]}")
+    ck.check(f"ch{k}: {sw.ref} sections a / b / c switch BL{k} / BR{k} / BS{k} (each only its bus resistor and the "
+             "common) between the summer (x) and GND (y), selects on QK", ok, "; ".join(detail))
+    # Q low (reset, or toggled off) -> select 0 -> x on: the bus end on its summer = playing; Q high -> y = GND
+    on_low = {bus: sw.nets.get(SW_SECTIONS[sec][1 if SW_ON[0] == "x" else 2])
+              for bus, sec in (("L", "a"), ("R", "b"), ("S", "c"))}
+    on_high = {bus: sw.nets.get(SW_SECTIONS[sec][1 if SW_ON[1] == "x" else 2])
+               for bus, sec in (("L", "a"), ("R", "b"), ("S", "c"))}
+    ck.check(f"ch{k}: Q low (reset) -> every common on its summer (playing); Q high -> every common on GND (muted)",
+             on_low == {"L": "SUM_L", "R": "SUM_R", "S": "SUM_S"} and set(on_high.values()) == {GND},
+             f"Q low: {on_low}; Q high: {on_high}")
+    led_mb = sorted(mbnets.get(f"LED{k}", []))
+    hdr = [x for x in led_mb if x.split(".")[0].startswith("H")]
+    btn = c["button"][0] if c["button"] else None
+    hf = [f"{circuit.fb_ref(h.split('.')[0])}.{h.split('.')[1]}" for h in hdr]
+    ck.check(f"ch{k}: LED chain {rled.ref} ({rled.value}) -> LED{k} -> header -> button LED (pin 5) -> GND_F",
+             len(hdr) == 1 and len(led_mb) == 2 and btn is not None and btn.nets.get("5") == f"LED{k}_F"
+             and btn.nets.get("6") == "GND_F" and sorted(fbnets.get(f"LED{k}_F", [])) == sorted(hf + [f"{btn.ref}.5"]),
+             f"LED{k}: {led_mb}; LED{k}_F: {sorted(fbnets.get(f'LED{k}_F', []))}")
 
 # Per-channel values (all channels share one set of values; simulate the distinct sets)
 VALS = {}
 for k in CH:
     c = CHAN[k]
     VALS[k] = (harness.ohms(c["pullup"].value), harness.ohms(c["rdb"].value), harness.farads(c["cdb"].value),
-               harness.ohms(c["rled"].value), len(c["kmos"]))
+               harness.ohms(c["rled"].value))
 R_POR, C_POR = harness.ohms(R920.value), harness.farads(C906.value)
 
 # ---------------------------------------------------------------- D903's real orientation
@@ -216,11 +307,14 @@ D903_CATHODE = _dnets.get("1") if _sym_pins.get("1") == "C" else _dnets.get("2")
 D903_ANODE = _dnets.get("2") if _sym_pins.get("2") == "A" else _dnets.get("1")
 ck.check("D903 on the routed board matches circuit.py", _dnets == D903.nets, f"routed {_dnets}, circuit {D903.nets}")
 print(f"INFO  D903 as built: anode on {D903_ANODE}, cathode on {D903_CATHODE}")
-for ref in [p.ref for p in NANDS + FLOPS]:
+print(f"INFO  routed main board: {len(_mainb.tracks)} tracks, {len(_mainb.vias)} vias (pad nets read from the "
+      f"placed parts)")
+for ref in [p.ref for p in NANDS + FLOPS + SWITCHES]:
     rn = _mainb.parts.get(ref, {}).get("nets", {})
     gn = next(p for p in MB if p.ref == ref).nets
-    ck.check(f"routed {ref} pad nets match circuit.py (every input tied on the board too)", rn == gn,
-             f"diff {[(n, rn.get(n), gn.get(n)) for n in set(rn) | set(gn) if rn.get(n) != gn.get(n)]}")
+    ck.check(f"routed {ref} pad nets match circuit.py (every input tied on the board too)", bool(rn) and rn == gn,
+             f"diff {[(n, rn.get(n), gn.get(n)) for n in set(rn) | set(gn) if rn.get(n) != gn.get(n)]}"
+             + ("" if rn else f"; {ref} not on the routed main board"))
 
 
 # ================================================================== models
@@ -256,8 +350,12 @@ def reset_level(kind, vdd):
 
 
 def supply(case, muted_a=0.0):
-    i = TL074_ICC[case] + muted_a
-    return RAIL[case] - D5819_VF[case] - harness.ohms(next(p for p in MB if p.ref == "R918").value) * i
+    """+12 V at the chips: the bus less D901 and R918 carrying the op-amps, the CD4053Bs' quiescent current
+    (typ, or the 85 C max on the low rail: the corner the weak-output checks use) and the lit LEDs."""
+    v_d = RAIL[case] - D5819_VF[case]
+    i_sw = len(SWITCHES) * (SW_IDD_TYP if case == "typ" else interp(SW_IDD_MAX85, v_d))
+    i = TL074_ICC[case] + i_sw + muted_a
+    return v_d - harness.ohms(next(p for p in MB if p.ref == "R918").value) * i
 
 
 # ---------------------------------------------------------------- button timing, exact
@@ -304,38 +402,68 @@ def bounce_burst(t0, length, final_closed, rng, gmin=20e-6, gmax=1e-3):
     return ev
 
 
-# the CD4013B Q output's drive (used below for the LED currents and here for the rail they pull down)
-PMOS_VT = 1.0   # ASSUMED P-channel threshold for the curve shape between the datasheet points (0.5-1.5 V changes
-                # the currents below by < 2 %)
+# the CD4013B Q output's drive (used below for the LED currents and Q's voltage, and here for the rail they pull
+# down). The square law with k exact at the small-Vds IOH points is the model; Q now drops 1-3 V under the LED, so
+# the curve's shape at large Vds matters: it is evaluated with two thresholds, the ASSUMED 1 V and the one that
+# also fits the 5 V / VO 2.5 V table point (vt_fit), and every Q check takes the lower Q of the two.
+PMOS_VT = 1.0   # ASSUMED P-channel threshold for the curve shape between the datasheet points
 
 
-def pmos_k(col, vdd):
+def _sq(vov, vds):
+    return vov * vds - vds * vds / 2 if vds < vov else vov * vov / 2
+
+
+def pmos_k(col, vdd, vt=PMOS_VT):
     """Square-law k = I / ((VDD - Vt) Vds - Vds^2 / 2), exact at each IOH table point (the small-Vds ones:
     5 V / 4.6 V, 10 V / 9.5 V, 15 V / 13.5 V), linear in VDD between them."""
     ks = {}
     for (v, vo), d in FLOP_IOH.items():
         if (v, vo) == (5, 2.5):
             continue
-        vds = v - vo
-        ks[v] = d[col] * 1e-3 / ((v - PMOS_VT) * vds - vds * vds / 2)
+        ks[v] = d[col] * 1e-3 / _sq(v - vt, v - vo)
     return interp({v: ks[v] for v in (5, 10, 15)}, vdd) if vdd > 5 else ks[5]
 
 
-def ioh(col, vdd, vds):
-    k, vov = pmos_k(col, vdd), vdd - PMOS_VT
-    return k * (vov * vds - vds * vds / 2) if vds < vov else k * vov * vov / 2
+def ioh(col, vdd, vds, vt=PMOS_VT):
+    return pmos_k(col, vdd, vt) * _sq(vdd - vt, vds)
 
 
-def drive(vdd, col, nled, vf_aqy, vf_btn, rled):
+def vt_fit(col):
+    """The threshold for which the model, exact at 5 V / VO 4.6 V, also gives the 5 V / VO 2.5 V table point."""
+    lo, hi, target = 0.0, 4.5, FLOP_IOH[(5, 2.5)][col] * 1e-3
+    for _ in range(60):
+        vt = (lo + hi) / 2
+        if ioh(col, 5, 2.5, vt) > target:
+            lo = vt
+        else:
+            hi = vt
+    return vt
+
+
+VT_FIT = {col: vt_fit(col) for col in ("typ", "min25", "min85")}
+SEL_I = 3 * SW_IIN_MAX       # the three CD4053B selects on QK: +-1 uA each at most
+
+
+def drive(vdd, col, vf_btn, rled, vt=PMOS_VT):
+    """(LED current, Q's drop below VDD): the P-channel output into rled + the button LED + the selects' leakage."""
     lo, hi = 0.0, vdd
     for _ in range(60):
         vds = (lo + hi) / 2
-        i_load = max(0.0, (vdd - vds - nled * vf_aqy - vf_btn) / rled)
-        if ioh(col, vdd, vds) > i_load:
+        i_load = max(0.0, (vdd - vds - vf_btn) / rled) + SEL_I
+        if ioh(col, vdd, vds, vt) > i_load:
             hi = vds
         else:
             lo = vds
-    return max(0.0, (vdd - vds - nled * vf_aqy - vf_btn) / rled), vds
+    return max(0.0, (vdd - vds - vf_btn) / rled), vds
+
+
+def q_high(vdd, col, vf_btn, rled):
+    """(Q, LED current, Q's drop) for the lower Q of the two curve shapes."""
+    return min((vdd - vds, i, vds) for i, vds in (drive(vdd, col, vf_btn, rled, vt) for vt in (PMOS_VT, VT_FIT[col])))
+
+
+def vih(vdd):
+    return interp(SW_VIH_MIN, vdd)
 
 
 def muted_rail(case, muted):
@@ -343,8 +471,7 @@ def muted_rail(case, muted):
     together, so the rail follows whatever LED resistors circuit.py has."""
     v = supply(case)
     for _ in range(8):
-        v = supply(case, sum(drive(v, "typ", VALS[k][4], AQY_VF_TYP_5MA, BTN_LED_VF["typ"], VALS[k][3])[0]
-                             for k in muted))
+        v = supply(case, sum(drive(v, "typ", BTN_LED_VF["typ"], VALS[k][3])[0] for k in muted))
     return v
 
 
@@ -352,7 +479,7 @@ VDDS = {"typ": muted_rail("typ", CH[:5]), "low": muted_rail("low", CH), "high": 
 print(f"INFO  VDD (+12V after D901 + R918): typ {VDDS['typ']:.2f} V, worst low {VDDS['low']:.2f} V, high {VDDS['high']:.2f} V")
 
 for key in sorted(set(VALS.values())):
-    rpu, rdb, cdb, rled, nled = key
+    rpu, rdb, cdb, rled = key
     chans = [k for k in CH if VALS[k] == key]
     tag = f"ch{','.join(map(str, chans))}"
     # --- doc's time constants
@@ -524,9 +651,11 @@ def summary(res):
 
 
 # --- power-up ramps, button open and button held
+ramps_ok = True
 for T in (1e-3, 10e-3, 50e-3, 100e-3, 200e-3):
     res = run_power(ramp(T), T + 0.6)
     bad = {k: v for k, v in res["logic"].items() if v["q"] != 0 or not v["reset"] or v["toggles"]}
+    ramps_ok &= not bad
     qs, rel = summary(res)
     ck.check(f"power-up, +12 V ramp {T * 1e3:.0f} ms: every flip-flop reset while VDD >= 3 V, ends unmuted, "
              "no clock after reset release (all Schmitt / reset-threshold corners)", not bad,
@@ -550,8 +679,26 @@ for T in (1e-3, 10e-3, 50e-3, 100e-3, 200e-3):
              f"POR min {res['por_min']:.2f} V, POR - VDD max {res['por_over']:.2f} V, DB - VDD max {res['db_over']:.2f} V")
     held = run_power(ramp(T), T + 1.2, contact=lambda t: t < T + 0.5)
     bad = {k: v for k, v in held["logic"].items() if v["q"] != 0 or v["toggles"]}
+    ramps_ok &= not bad
     ck.check(f"power-up ramp {T * 1e3:.0f} ms with the button held 0.5 s past the ramp: ends unmuted, no toggle "
              "on release", not bad, f"final Q {summary(held)[0]}, failing corners {list(bad.items())[:2]}")
+
+# --- power-up, the switches: the CD4053Bs ramp on the same +12V net as the flip-flops. From 3 V (where both are
+# specified) every flip-flop is in reset (the ramps above), so Q sits at VOL; the select inputs leak at most 1 uA
+# each through the N-channel. That is below the CD4053B's VIL max at any VDD (VIL is a fixed 0.8 V in rev. O, not a
+# fraction of VDD), so every select reads 0, x is on, and every bus resistor ends on its summer: all channels play.
+VOL_Q = FLOP_VOL_MAX + SEL_I * FLOP_RN_MAX
+_low_ok = all(CHAN[k]["sw"] is not None and all(CHAN[k]["sw"].nets.get(SW_SECTIONS[s][1]) == f"SUM_{b}"
+                                                 for b, s in (("L", "a"), ("R", "b"), ("S", "c"))) for k in CH)
+ck.check("power-up: from VDD 3 V the reset holds every Q at VOL, under the CD4053B's VIL max: every select low, "
+         "x on, every channel playing (all ramps, button open and held)",
+         ramps_ok and _low_ok and SW_VDD_MIN <= FLOP_VDD_MIN and VOL_Q < min(SW_VIL_MAX.values()),
+         f"flip-flops reset from {FLOP_VDD_MIN:g} V in every ramp: {ramps_ok}; CD4053B specified from "
+         f"{SW_VDD_MIN:g} V; Q low <= {VOL_Q * 1e3:.0f} mV vs VIL max {min(SW_VIL_MAX.values())} V; select 0 = x = the "
+         f"summer on every channel: {_low_ok}")
+print("INFO  power-up below 3 V: neither the flip-flops nor the switches are specified, but nothing plays there: the "
+      "op-amps share the rails. If -12 V comes up first, +12V sits at about -0.4 V on D904 meanwhile (test_power's "
+      "missing +12 V case); if +12 V comes first, the switches are on x with their throws inside 0 ... VDD.")
 
 # doc: about 70 ms of reset at power-up (fast ramp)
 res = run_power(ramp(1e-3), 0.5)
@@ -580,12 +727,12 @@ def cycle(d, tau_off, t_on=10e-3, settle=0.3):
     return w
 
 
-# rail decay: the module's own load after D901 blocks the bus (C904 10 uF + 10 x 100 nF; the op-amps and
-# every channel's mute lit, the fastest fall),
+# rail decay: the module's own load after D901 blocks the bus (C904 and every 100 n on +12V, from circuit.py; the
+# op-amps and every channel's mute lit, the fastest fall),
 # or the bus decaying slowly with the PSU (tau 50 ms, ASSUMED)
-C_RAIL = harness.farads("10u") + 10 * 100e-9
-TAU_FAST = C_RAIL * VNOM / (TL074_ICC["typ"] + sum(drive(VNOM, "typ", VALS[k][4], AQY_VF_TYP_5MA,
-                                                         BTN_LED_VF["typ"], VALS[k][3])[0] for k in CH))
+C_RAIL = sum(harness.farads(p.value) for p in MB if p.kind in ("C", "CP") and set(p.nets.values()) == {VP_NET, GND})
+TAU_FAST = C_RAIL * VNOM / (TL074_ICC["typ"] + sum(drive(VNOM, "typ", BTN_LED_VF["typ"], VALS[k][3])[0] for k in CH))
+print(f"INFO  +12V rail capacitance {C_RAIL * 1e6:.1f} uF; fast decay tau {TAU_FAST * 1e3:.1f} ms")
 cyc = []
 for tau_name, tau_off in (("fast", TAU_FAST), ("slow", 50e-3)):
     for d in (10e-3, 100e-3, 1.0):
@@ -663,65 +810,113 @@ ck.check("brown-out: an unmuted channel is never muted by the rail dip itself (n
          all(m == 0 for m, t, n in bo_open.values()),
          "spuriously muted at " + (", ".join(f"{v:g} V ({m} of {n} corners)" for v, (m, t, n) in bo_open.items() if m)
                                    or "no dip depth"))
+# a muted channel through a dip the flip-flops survive: Q (sagging with VDD under the LED) must still read high at
+# the CD4053B, or the channel plays during the dip although the latch keeps it muted
+_kept = [v for v, o in bo.items() if o == "kept"]
+_bo_margin = {v: min(q_high(v, col, vf, r)[0] - vih(v) for col in ("min25", "min85") for vf in BTN_LED_VF.values()
+                     for r in {x[3] for x in VALS.values()}) for v in _kept}
+ck.check("brown-out: in every dip that keeps the flip-flops, a muted channel's Q still clears the CD4053B's VIH "
+         "(IOH 25 / 85 C min, any LED VF)", bool(_kept) and all(m >= 0 for m in _bo_margin.values()),
+         ", ".join(f"{v:g} V: margin {m:+.2f} V" for v, m in _bo_margin.items()) or "no dip keeps them")
 
 
-# ================================================================== drive: Q -> LED resistor -> PhotoMOS LED(s) -> button LED
+# ================================================================== drive: Q -> 1k5 -> button LED, and the CD4053B selects
 for col in ("typ", "min25", "min85"):
     print(f"INFO  CD4013B P-channel ({col}): k {pmos_k(col, 10) * 1e3:.3f} mA/V^2 at 10 V, "
           f"{pmos_k(col, 15) * 1e3:.3f} at 15 V; check point 5 V / VO 2.5 V: table {FLOP_IOH[(5, 2.5)][col]} mA, "
-          f"model {ioh(col, 5, 2.5) * 1e3:.2f} mA")
+          f"model {ioh(col, 5, 2.5) * 1e3:.2f} mA at Vt {PMOS_VT:g} V (Vt {VT_FIT[col]:.2f} V fits it)")
 
-totals = {}
-for key in sorted(set(VALS.values())):
-    rpu, rdb, cdb, rled, nled = key
-    chans = [k for k in CH if VALS[k] == key]
-    tag = f"ch{','.join(map(str, chans))} ({'mono' if nled == 1 else 'stereo'}, {nled} PhotoMOS LED)"
-    i_typ, vds_typ = drive(VDDS["typ"], "typ", nled, AQY_VF_TYP_5MA, BTN_LED_VF["typ"], rled)
-    i_w, vds_w = drive(VDDS["low"], "min25", nled, AQY_VF_MAX, BTN_LED_VF["max"], rled)
-    i_w85, _ = drive(VDDS["low"], "min85", nled, AQY_VF_MAX, BTN_LED_VF["max"], rled)
-    i_w_typvf, _ = drive(VDDS["low"], "min25", nled, AQY_VF_TYP_5MA, BTN_LED_VF["typ"], rled)
-    totals[nled] = i_typ
-    print(f"INFO  {tag}: typical {i_typ * 1e3:.2f} mA (Q drops {vds_typ:.2f} V); worst rail + min IOH 25 C + typ VF "
-          f"{i_w_typvf * 1e3:.2f} mA; + max VF {i_w * 1e3:.2f} mA (Q drops {vds_w:.2f} V); at 85 C IOH {i_w85 * 1e3:.2f} mA")
-    doc = DOC_LED_MA
-    ck.close(f"{tag}: doc's figure ({doc * 1e3:.1f} mA) vs the typical current", i_typ * 1e3, doc * 1e3, 0.5, " mA")
-    ck.check(f"{tag}: worst case (VDD {VDDS['low']:.2f} V, IOH min 25 C, max VFs) above the AQY212EH's max "
-             f"operate current {AQY_IFON_MAX * 1e3:.1f} mA", i_w >= AQY_IFON_MAX,
-             f"{i_w * 1e3:.2f} mA (with typ VFs {i_w_typvf * 1e3:.2f} mA)")
-    ck.check(f"{tag}: typical current inside the AQY212EH's recommended {AQY_IF_REC[0] * 1e3:.0f}-"
-             f"{AQY_IF_REC[1] * 1e3:.0f} mA", AQY_IF_REC[0] <= i_typ <= AQY_IF_REC[1], f"{i_typ * 1e3:.2f} mA")
-    ck.check(f"{tag}: current below the AQY212EH LED abs max and the CD4013B's 100 mW per output transistor",
-             i_typ < AQY_IF_ABS and vds_w * i_w < 0.1 and vds_typ * i_typ < 0.1,
-             f"{i_typ * 1e3:.2f} mA, {vds_typ * i_typ * 1e3:.1f} mW")
-    ck.check(f"{tag}: button LED lit at a sensible current (1-20 mA)", 1e-3 <= i_w and i_typ <= 20e-3,
-             f"{i_w * 1e3:.2f} ... {i_typ * 1e3:.2f} mA")
-    # turn-on / off at the actual current: ton roughly inversely proportional to IF (ASSUMED from the datasheet's
-    # 'turn on time vs LED forward current' curve shape; the datasheet's figures are at IF = 5 mA)
-    ton_typ = AQY_TON[0] * 5e-3 / i_typ
-    ton_max = AQY_TON[1] * 5e-3 / max(i_w, 1e-6)
-    ck.check(f"{tag}: doc 'about 1 ms on' vs turn-on at {i_typ * 1e3:.1f} mA", 0.5e-3 <= ton_typ <= 2e-3,
-             f"typ ~{ton_typ * 1e3:.2f} ms, worst ~{ton_max * 1e3:.1f} ms (datasheet {AQY_TON[0] * 1e3:.0f} / "
-             f"{AQY_TON[1] * 1e3:.0f} ms at 5 mA)")
-    ck.check(f"{tag}: doc 'about 0.1 ms off' vs the datasheet turn-off", AQY_TOFF[0] <= 0.1e-3 <= AQY_TOFF[1],
-             f"typ {AQY_TOFF[0] * 1e3:.2f} ms, max {AQY_TOFF[1] * 1e3:.1f} ms")
+RAILS = ("typ", "low", "high")
+COLS = ("typ", "min25", "min85")
+KINDS = (("mono", circuit.MONO), ("stereo", circuit.STEREO))
+totals = {kind: q_high(VDDS["typ"], "typ", BTN_LED_VF["typ"], VALS[cs[0]][3])[1] for kind, cs in KINDS}
+# one pass per distinct LED resistor (mono and stereo share 1k5 now)
+for rled in sorted({v[3] for v in VALS.values()}):
+    chans = [k for k in CH if VALS[k][3] == rled]
+    tag = (f"ch{','.join(map(str, chans))} ({' + '.join(kd for kd, cs in KINDS if set(cs) & set(chans))}, "
+           f"{rled:g} R)")
+    q_typ, i_typ, vds_typ = q_high(VDDS["typ"], "typ", BTN_LED_VF["typ"], rled)
+    print(f"INFO  {tag}: typical (VDD {VDDS['typ']:.2f} V, five muted) {i_typ * 1e3:.2f} mA, Q {q_typ:.2f} V "
+          f"(drops {vds_typ:.2f} V); CD4053B VIH min {vih(VDDS['typ']):.2f} V there")
+    ck.close(f"{tag}: doc's 'about {DOC_LED_MA * 1e3:g} mA typical' vs the typical LED current", i_typ * 1e3,
+             DOC_LED_MA * 1e3, 0.5, " mA")
+    ck.close(f"{tag}: doc's 'Q sits at about {DOC_Q_TYP:g} V typically' vs Q under the typical LED current",
+             q_typ, DOC_Q_TYP, 0.3, " V")
+    # the essential one: Q under the LED load against the CD4053B's VIH min at that VDD, every corner
+    margins = {}
+    for rail in RAILS:
+        for col in COLS:
+            qs = {vn: q_high(VDDS[rail], col, vf, rled) for vn, vf in BTN_LED_VF.items()}
+            for vn, (q, i, vds) in qs.items():
+                margins[(rail, col, vn)] = (q - vih(VDDS[rail]), q, i, vds)
+            ck.check(f"{tag}: Q high clears the CD4053B's VIH min, VDD {rail} {VDDS[rail]:.2f} V, IOH {col}, "
+                     f"LED VF {' / '.join(f'{v:g}' for v in BTN_LED_VF.values())} V",
+                     all(margins[(rail, col, vn)][0] >= 0 for vn in BTN_LED_VF),
+                     f"VIH {vih(VDDS[rail]):.2f} V; Q " + ", ".join(
+                         f"{margins[(rail, col, vn)][1]:.2f} V ({margins[(rail, col, vn)][2] * 1e3:.2f} mA, margin "
+                         f"{margins[(rail, col, vn)][0]:+.2f})" for vn in BTN_LED_VF))
+    worst = min(margins, key=lambda x: margins[x][0])
+    m_w, q_w, i_w, _ = margins[worst]
+    print(f"INFO  {tag}: worst corner VDD {worst[0]} ({VDDS[worst[0]]:.2f} V), IOH {worst[1]}, LED VF "
+          f"{BTN_LED_VF[worst[2]]:g} V: Q {q_w:.2f} V, {i_w * 1e3:.2f} mA, {m_w:+.2f} V above VIH "
+          f"{vih(VDDS[worst[0]]):.2f} V")
+    # the doc's own worst corner, read from its words: the rail ("12.6 V on the chips" / "the low rail"), the
+    # IOH column ("85 °C" / "25 °C") and the LED VF ("1.8 V LED")
+    rail_d = next((r for r in RAILS if f"{VDDS[r]:.1f} V" in DOC_CORNER), "low" if "low rail" in DOC_CORNER else "typ")
+    col_d = "min85" if "85" in DOC_CORNER else "min25" if "25" in DOC_CORNER else "typ"
+    q_d, i_d, _ = q_high(VDDS[rail_d], col_d, DOC_CORNER_VF, rled)
+    ck.close(f"{tag}: doc's Q at its worst corner ({DOC_CORNER}) vs the model", q_d, DOC_Q_WORST, 0.3, " V")
+    ck.close(f"{tag}: doc's CD4053B VIH 'at that VDD' vs VIH min at that rail ({VDDS[rail_d]:.2f} V)",
+             vih(VDDS[rail_d]), DOC_VIH, 0.1, " V")
+    ck.close(f"{tag}: doc's margin above VIH at its worst corner vs the model", q_d - vih(VDDS[rail_d]),
+             DOC_Q_MARGIN, 0.3, " V")
+    ck.check(f"{tag}: the doc's corner ({DOC_CORNER}) is the worst one for Q (within 0.05 V)",
+             q_d - vih(VDDS[rail_d]) <= m_w + 0.05,
+             f"doc's corner margin {q_d - vih(VDDS[rail_d]):+.2f} V; the worst is VDD {worst[0]}, IOH {worst[1]}, "
+             f"LED VF {BTN_LED_VF[worst[2]]:g} V: {m_w:+.2f} V (a LOW VF draws more current and pulls Q lower)")
+    # Q low: VOL with only the selects' leakage (the LED is off) against VIL max, every rail
+    ck.check(f"{tag}: Q low (VOL max {FLOP_VOL_MAX} V + 3 selects x {SW_IIN_MAX * 1e6:g} uA through the "
+             f"N-channel) under the CD4053B's VIL max", all(VOL_Q < interp(SW_VIL_MAX, VDDS[r]) for r in RAILS),
+             f"{VOL_Q * 1e3:.1f} mV vs VIL max {min(interp(SW_VIL_MAX, VDDS[r]) for r in RAILS):.2f} V")
+    # the LED current over the corners: lit at the weakest, sane at the strongest (Q's drop taken as 0 there)
+    i_min = min(v[2] for v in margins.values())
+    i_max = (VDDS["high"] - BTN_LED_VF["min"]) / rled
+    ck.check(f"{tag}: button LED lit at a sensible current over every corner (1-20 mA)",
+             1e-3 <= i_min and i_max <= 20e-3, f"{i_min * 1e3:.2f} mA (weakest) ... {i_max * 1e3:.2f} mA "
+             f"(VDD high, Q drop 0, VF min)")
+    p_max = max(v[2] * v[3] for v in margins.values())
+    ck.check(f"{tag}: the CD4013B's P-channel under its 100 mW per output transistor", p_max < 0.1,
+             f"{p_max * 1e3:.1f} mW at most")
+# the edge: Q's capacitive load against the CD4013B's 50 pF timing load
+c_q = 3 * SW_CIN_MAX + TRACK_C
+ck.check("QK's capacitive load (3 CD4053B selects at CIN max + track) within the CD4013B's 50 pF timing load",
+         c_q <= FLOP_CL_SPEC, f"{c_q * 1e12:.1f} pF (3 x {SW_CIN_MAX * 1e12:g} pF + {TRACK_C * 1e12:g} pF ASSUMED)")
 ck.check("mono and stereo button LEDs about equally bright (current ratio > 0.7)",
          min(totals.values()) / max(totals.values()) > 0.7,
-         f"stereo / mono {min(totals.values()) / max(totals.values()):.2f}")
-ck.check("doc: 'the AQY212EH needs 3 mA at most' = datasheet LED operate current max", AQY_IFON_MAX == 3.0e-3,
-         f"datasheet IFon max {AQY_IFON_MAX * 1e3:.1f} mA (typ {AQY_IFON_TYP * 1e3:.1f}) at 25 C; recommended IF "
-         f"{AQY_IF_REC[0] * 1e3:.0f}-{AQY_IF_REC[1] * 1e3:.0f} mA")
+         f"stereo / mono {totals.get('stereo', 0) / max(totals.get('mono', 1e-9), 1e-9):.2f}")
 
-# what LED resistor would give >= 5 mA typical on a stereo channel and >= 3 mA at the worst case
-for r in (1500, 1200, 1000, 820, 680):
-    it, _ = drive(VDDS["typ"], "typ", 2, AQY_VF_TYP_5MA, BTN_LED_VF["typ"], r)
-    iw, _ = drive(VDDS["low"], "min25", 2, AQY_VF_MAX, BTN_LED_VF["max"], r)
-    im, _ = drive(VDDS["typ"], "typ", 1, AQY_VF_TYP_5MA, BTN_LED_VF["typ"], r)
-    imw, _ = drive(VDDS["low"], "min25", 1, AQY_VF_MAX, BTN_LED_VF["max"], r)
-    print(f"INFO  LED resistor {r} R: stereo typ {it * 1e3:.2f} mA, worst {iw * 1e3:.2f} mA; mono typ {im * 1e3:.2f} "
-          f"mA, worst {imw * 1e3:.2f} mA")
+# timing: the doc's "well under a microsecond" against the address-to-signal delay at the actual VDD
+tpd = {r: (interp({v: SW_TPD_ADDR[v][0] for v in SW_TPD_ADDR}, VDDS[r]),
+           interp({v: SW_TPD_ADDR[v][1] for v in SW_TPD_ADDR}, VDDS[r])) for r in RAILS}
+ck.check("doc 'the switching is fast (well under a microsecond)' vs the CD4053B's address-to-signal delay max "
+         "at the low rail (<= 0.5 us)", DOC_SWITCH_FAST and tpd["low"][1] <= 0.5e-6,
+         f"phrase in design.md: {DOC_SWITCH_FAST}; typ {tpd['typ'][0] * 1e9:.0f} ns, max {tpd['low'][1] * 1e9:.0f} ns "
+         f"at {VDDS['low']:.2f} V (RL 10k, CL 50 pF); the debounce (about 1 ms) sets the press-to-mute time")
+ck.check("doc's select-edge crosstalk figure = the datasheet's address-to-signal crosstalk (65 mV peak, VDD 10 V, "
+         "RL 10k)", (round(DOC_XTALK[0], 4), DOC_XTALK[1], DOC_XTALK[2]) == (SW_XTALK_ADDR, 10e3, 10.0),
+         f"doc {DOC_XTALK[0] * 1e3:g} mV into {DOC_XTALK[1] / 1e3:g}k at {DOC_XTALK[2]:g} V; datasheet "
+         f"{SW_XTALK_ADDR * 1e3:g} mV")
+
+# the margin against the LED resistor: what the typical current and the worst-corner VIH margin would be
+for r in (1000, 1200, 1500, 1800, 2200):
+    it = q_high(VDDS["typ"], "typ", BTN_LED_VF["typ"], r)[1]
+    mw = min(q_high(VDDS[rl], col, vf, r)[0] - vih(VDDS[rl]) for rl in RAILS for col in COLS
+             for vf in BTN_LED_VF.values())
+    print(f"INFO  LED resistor {r} R: typ {it * 1e3:.2f} mA, worst-corner margin above VIH {mw:+.2f} V")
 
 # ESD note: BTN reaches the panel; the CMOS input sits behind 10k + 100n, the Q output behind the LED resistor
 print("INFO  ESD: BTN_F runs to the panel button; the CD4093B input sees it only through the 10k / 100n debounce "
-      "(a finger's ESD pulse is absorbed by the 100 nF), the CD4013B Q only through its LED resistor + LEDs: no extra parts needed")
+      "(a finger's ESD pulse is absorbed by the 100 nF), the CD4013B Q only through its 1k5 and the LED; the "
+      "CD4053B selects sit on QK, on the main board only: no extra parts needed")
 
 ck.done()

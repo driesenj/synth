@@ -414,18 +414,27 @@ def faceplate_board(pr, parts, info, circuit):
 # is on the right and the master section on the left. Every TL074 stands
 # vertical (angle 90: pins 1-7 in the +x column, pin 1 at the bottom), each
 # section's parts clustered at its corner the Plaitsy way:
-#   follower   10k mute resistor beside IN+ (pad 2 = FI on the chip side), the
-#              PhotoMOS switch pins under it, the pan feeds (mono) or the send
-#              average (stereo) beyond the chip's end, pad 1 = CH
-#   summer     Rf on IN- / OUT, Cf one column out, the bus resistors in a 2 x 5
-#              block beyond the chip's end, their summing pads (2) facing
-#              each other in the middle
+#   follower   10k input resistor beside IN+ (pad 2 = FI on the chip side),
+#              the pan feeds (mono) or the send average (stereo) beyond the
+#              chip's end, pad 1 = CH
+#   summer     Rf on IN- / OUT, Cf one column out, the RETURN / DRUMS / FX IN
+#              resistors beyond the chip's end
 #   output     Rf on IN- / OUT, Rin and Rs one column out
-# and the 100 n for each rail beside its supply pin. The latch logic, the
-# power entry and the headers' sockets fill the lower half.
+# and the 100 n for each rail beside its supply pin. Each channel's strip
+# between two header sockets holds its mute switch (CD4053B, standing beside
+# the channel's own header), the switch's 100 n above it, then a lane for the
+# three summing lines, then the channel's three bus resistors: the summing
+# nodes stay one short lane, away from every hot track, and each resistor's
+# hot end faces the follower above. The latch cells sit under the sockets,
+# the logic and the power entry in the lower band.
 DIPX = 3.81                    # half the 7.62 mm row pitch
 X_U = {"U1": 111.5, "U2": 70.0, "U3": 40.0, "U4": 13.0}
-Y_U = 81.0
+Y_U = 86.0                     # 5 mm above the 2026-11-02 row: room for the switch strip's resistors
+Y_SW = 48.9                    # mute switch centre: pins 40.01 ... 57.79, beside the header's 39.47 ... 57.25,
+                               # its socket clear of the latch cell's debounce cap below
+Y_SWC = 61.55                  # its 100 n, across the top pins (16 = VDD, 1 = GND)
+Y_LANE = (63.2, 66.0)          # the summing lane SUM_L / SUM_R / SUM_S (routing note, nothing placed)
+Y_BUSR = 66.9                  # the bus resistors' cold pads (2); the hot pads (1, the body) 2.54 above
 VR_P1 = 0.48006                # a standing resistor's pad 1 (the body) sits this far above its origin
 
 
@@ -465,20 +474,34 @@ def _corner(u, sec):
 
 
 def _follower(P, u, sec, side_net, feeds):
-    """Parts of one follower: the mute resistor, the PhotoMOS switch (as pin targets), the feed resistors."""
+    """Parts of one follower: the 10k input resistor, the 10 p from FI to GND under its FI pad (where the
+    PhotoMOS sat until 2026-11-15), the feed resistors."""
     x0, y0, sx, sy = _corner(u, sec)
     c1, c2 = x0 + sx * 6.35, x0 + sx * 8.89
-    rmute = next(p.ref for p in P.values() if p.kind == "R" and p.nets.get("2") == f"FI{side_net}")
-    kref = next(p.ref for p in P.values() if p.kind == "PHOTOMOS" and p.nets["3"] == f"FI{side_net}")
-    top = [_stand(rmute, (c2, y0 + sy * 2.54), (c1, y0 + sy * 2.54))]
-    # the PhotoMOS can't be mirrored on the top layer: where its LED side would face the chip (corners with
-    # sx * sy > 0) it turns over and pin 4 (GND) comes first; FI then runs under its body to pin 3
-    near, far = ("3", "4") if sx * sy < 0 else ("4", "3")
-    pins = [(kref, {near: (c1, y0 + sy * 5.08), far: (c1, y0 + sy * 7.62)})]
+    rin = next(p.ref for p in P.values() if p.kind == "R" and p.nets.get("2") == f"FI{side_net}")
+    cfi = next(p.ref for p in P.values() if p.kind == "C" and p.nets.get("1") == f"FI{side_net}")
+    top = [_stand(rin, (c2, y0 + sy * 2.54), (c1, y0 + sy * 2.54)),
+           _two(cfi, (c1, y0 + sy * 5.08), (c1, y0 + sy * 7.62))]
     for ref, slot in feeds:          # slot 0 = x0 + 2.54, slot 1 = x0 + 5.08 (outward)
         x = x0 + sx * 2.54 * (slot + 1)
         top.append(_stand(ref, (x, y0 + sy * 11.43), (x, y0 + sy * 13.97)))
-    return top, pins
+    return top
+
+
+def _switch(circuit, P, k):
+    """Channel k's mute switch in the strip left of its header (rear view): the CD4053B at angle 270 (pins 1-8
+    down the -x column, 16-9 down the +x column, so 1 = GND and 16 = VDD are the top row and the selects 9-11
+    face the latch cell below), its 100 n across the top row, the bus resistors above the summing lane: the
+    send bus over the -x column, L in the middle, R over the +x column (BS on pin 4, BL / BR on 14 / 15)."""
+    xh = circuit.BOARD_W - circuit.HEADERS_FRONT[f"H{k}"][0]
+    c = xh - 6.75
+    u = circuit.SWITCH[k]
+    cap = next(p.ref for p in P.values() if p.kind == "C" and p.label == f"{u} VDD")
+    top = [(u, c, Y_SW, 270), _two(cap, (c + 2.54, Y_SWC), (c - 2.54, Y_SWC))]      # pad 1 (+12V) towards pin 16
+    for bus, dx in (("S", -2.54), ("L", 0.0), ("R", 2.54)):
+        ref = next(p.ref for p in P.values() if p.kind == "R" and p.nets.get("2") == f"B{bus}{k}")
+        top.append(_stand(ref, (c + dx, Y_BUSR + 2.54), (c + dx, Y_BUSR)))              # body (hot end) up
+    return top
 
 
 def _summer(u, sec, rf, cf, bus):
@@ -528,10 +551,14 @@ def _decoupling(u, cp, cn):
 X_FLOP = {"U7": 129.0, "U8": 102.5, "U9": 75.5, "U10": 48.5}
 X_NAND = {"U5": 115.75, "U6": 62.0}
 Y_FLOP, Y_NAND = 12.0, 25.5
+Y_FLOP_OF = {"U7": 14.5}       # U7 2.5 mm up, clear of the M3 hardware at the (122.9, 4.75) hole: the routed board
+                               # had it there since 2026-11-02; the generator only got it back on 2026-11-15
+C_LOGIC_DX = 11.2              # each CMOS chip's 100 n this far left of its centre: a real FG28 body clears the chip
+                               # (at 10.9 they overlapped by 0.2 mm, test report PCB-4)
 
 
 def _main_top(circuit, P):
-    top, pins = [], []
+    top = []
     for u in X_U:
         top.append((u, X_U[u], Y_U, 90))
     for (u, sec), (kind, name) in circuit.OPAMPS.items():
@@ -542,12 +569,10 @@ def _main_top(circuit, P):
             else:                                   # stereo: its send-average resistor in the outer slot
                 c, side = int(name[0]), name[1]
                 feeds = [(f"R{100 * c + (5 if side == 'L' else 6)}", 1)]
-            t, p = _follower(P, u, sec, name, feeds)
-            top += t
-            pins += p
-    bus = {"L": [f"R{100 * k + 4}" for k in circuit.MONO] + ["R703", "R803", "R913", "R915"],
-           "R": [f"R{100 * k + 5}" for k in circuit.MONO] + ["R704", "R804", "R914", "R916"],
-           "S": [f"R{100 * k + 6}" for k in circuit.MONO] + ["R707", "R807", "R917"]}
+            top += _follower(P, u, sec, name, feeds)
+    for k in circuit.MONO + circuit.STEREO:
+        top += _switch(circuit, P, k)
+    bus = {"L": ["R913", "R915"], "R": ["R914", "R916"], "S": ["R917"]}     # the unswitched inputs
     fb = {"L": ("R901", "C901"), "R": ("R902", "C902"), "S": ("R903", "C903")}
     for side in "LRS":
         u, sec = circuit.opamp_of("SUM", side)
@@ -561,9 +586,9 @@ def _main_top(circuit, P):
         top += _decoupling(u, f"C{911 + 2 * i}", f"C{912 + 2 * i}")
     # logic chips and their 100 n at the pin 14 (VDD) end
     for i, u in enumerate(("U5", "U6", "U7", "U8", "U9", "U10")):
-        x0, y0 = (X_NAND[u], Y_NAND) if u in X_NAND else (X_FLOP[u], Y_FLOP)
+        x0, y0 = (X_NAND[u], Y_NAND) if u in X_NAND else (X_FLOP[u], Y_FLOP_OF.get(u, Y_FLOP))
         top.append((u, x0, y0, 0))
-        top.append(_two(f"C{921 + i}", (x0 - 10.9, y0 + 3.81), (x0 - 10.9, y0 - 1.27)))
+        top.append(_two(f"C{921 + i}", (x0 - C_LOGIC_DX, y0 + 3.81), (x0 - C_LOGIC_DX, y0 - 1.27)))
     # per channel, in its cell under the header's bottom pins (BTN, LED): pull-up, debounce R and C, LED resistor
     for k in circuit.MONO + circuit.STEREO:
         xh = circuit.BOARD_W - circuit.HEADERS_FRONT[f"H{k}"][0]
@@ -577,14 +602,14 @@ def _main_top(circuit, P):
     # power-on reset beside U10; D903 (cathode = pad 1 on POR) and the +12 V clamp D904 (cathode on +12V) where
     # the routed master has them (2026-11-14)
     top += [_two("C906", (32.0, 24.5), (32.0, 19.42)), _stand("R920", (35.5, 24.5), (35.5, 21.96)),
-            _two("D903", (28.0, 26.0), (28.0, 18.0)), _two("D904", (25.38, 20.62), (25.38, 12.62))]
+            _two("D903", (28.0, 26.0), (28.0, 18.0)), _two("D904", (23.6, 20.0), (23.6, 11.3))]   # DO-41: 8.7 mm, clear of D903 and R918
     # power entry in the lower-left corner: the box header standing along the left edge, pin 1 (-12 V) at the
     # bottom; the diodes, 10R and 10 u between it and the master header
     top += [("J18", 6.6, 21.5, 90),
             _two("D901", (14.0, 35.0), (22.7, 35.0)), _two("D902", (22.7, 29.0), (14.0, 29.0)),
             _stand("R918", (24.5, 25.0), (24.5, 22.46)), _stand("R919", (21.0, 25.0), (21.0, 22.46)),
             _two("C904", (16.0, 16.0), (16.0, 18.5)), _two("C905", (16.0, 10.0), (16.0, 12.5))]
-    return top, pins
+    return top
 
 
 def main_board(pr, parts, info, circuit):
@@ -595,11 +620,8 @@ def main_board(pr, parts, info, circuit):
         b.hole_front(xf, y)
     for ref, (xf, y, a) in circuit.HEADERS_FRONT.items():   # female sockets, bottom layer, same spot
         b.place_front(ref, xf, y, a, bottom=True)
-    top, pins = _main_top(circuit, P)
-    for ref, x, y, a in top:
+    for ref, x, y, a in _main_top(circuit, P):
         b.place(ref, x, y, a)
-    for ref, targets in pins:
-        place_pins(b, ref, targets)
     b.text(56, H - 2.6, "Stereo mixer main board", 1.8)
     return b
 

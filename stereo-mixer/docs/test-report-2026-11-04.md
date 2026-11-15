@@ -36,6 +36,68 @@ found needs the boards re-routed before ordering. **That was wrong: the
 power group checked J18 against the design's own wrong pinout. See H1
 below, found and fixed in copper on 2026-11-14.**
 
+## 2026-11-15: the mutes redesigned with CD4053B switches (M1, M2, AUDIO_DC-4 resolved)
+
+The mutes no longer shunt each follower's input with an AQY212EH. One CD4053B per channel (U11–U18)
+switches the summing ends of the channel's three bus resistors, to the bus while it plays and to GND
+when it is muted. Both throws sit at 0 V, so the switch never carries the signal's voltage. That
+removes M1 (the PhotoMOS's off capacitance distorting every playing channel), M2 (the stereo LED
+chain near the PhotoMOS's operate current: the LED now has its own 1k5) and AUDIO_DC-4 (a muted
+channel loading its source). Only the main board changed. The master `StereoMixer-routed.epro2`
+now holds the routed faceplate and panel beside the re-placed, unrouted main board.
+
+The suite was rewritten for it. Three helper agents took one part each (the audio models; the latch
+and power; netlist, PCB and BOM), with the CD4053B datasheet (TI SCHS047O, May 2026).
+
+| Group | Checks | Failing |
+|---|---|---|
+| netlist | 148 | 0 |
+| audio_dc | 361 | 9 |
+| audio_ac | 77 | 1 |
+| latch | 296 | 4 |
+| power | 160 | 3 |
+| pcb | 85 | 2 |
+| panel | 760 | 0 |
+| bom | 159 | 0 |
+| **all** | **2046** | **19** |
+
+Six of the 19 wait for the main board's routing:
+- the summing nodes' stray capacitance comes from a placement estimate (SUM_L about 218 mm);
+- the main board's copper and its value labels, which gate 7 and 9 PCB checks;
+- J18's −12V word, placed by value_labels.py;
+- the power tracks' width;
+- the decouplers' paths.
+
+The other 13 are the findings accepted earlier: AUDIO_DC-2 (common-mode range, 2), AUDIO_DC-3 (DC
+offset, 7), LATCH-5, LATCH-6 (2), and the debounce caps emptying into VDD at power-off.
+
+What the redesign measures (from the groups' models):
+- **Mute depth:** 107 dB typical, 98 dB at worst at 20 kHz; 131 / 122 dB at 1 kHz. It is set by
+  the y throw's 180 / 520 Ω and the open x throw's 0.2 pF. A single 0.1 pF of stray from a muted
+  channel's track into a playing bus's summing lane gives −64 dB at 10 kHz, so the layout sets the
+  real limit.
+- **The switch's own distortion:** under 0.006 % at 20 kHz and full swing. This is a first-principles
+  bound: the summing nodes move by at most 70 mV, and the slope of the on-resistance is assumed.
+  M1 was 0.16 % at 1 kHz and 1.5 % at 10 kHz.
+- **Summing nodes:** about 155 pF each with every channel playing, 64 pF all muted. They cost under
+  0.1 dB at 20 kHz, and every path stays flat within 0.5 dB.
+- **Latch drive:** about 5.4 mA into the button LED. Q stays at least 0.8 V above the CD4053B's VIH
+  at every corner (27 corners).
+- **Current:** +12 V about 65 mA typical with all eight muted, at most about 110 mA.
+
+Found by the rewrite and fixed the same day:
+- **The followers lost phase margin** (44°, under the suite's 45°). The PhotoMOS's off capacitance
+  had been damping their + inputs by accident. 10 pF C0G from each FI to GND (C102 … C803) brings
+  them back to about 56°, with the pole at 455 kHz or above.
+- **U7 sat under the bottom-right standoff and screw head** in the generator's placement. The routed
+  board had moved it up 2.5 mm by hand on 2026-11-02; the generator now does the same. pcb.py's own
+  check measures pads to the hole edge, so it missed this; test_pcb.py checks the M3 hardware's real
+  radii and the sockets' frames.
+- **C921–C926 touched their chips by 0.2 mm** (PCB-4). They now sit 0.3 mm further out.
+- **D904 is now a 1N5819.** With +12 V missing, the BAT85 let the +12V net reach −0.55 V at the
+  worst case. That is past the CMOS chips' −0.5 V VDD limit, and now also past the CD4053Bs' limit
+  for signal pins (their throws sit at 0 V, above a VDD below GND). The 1N5819 holds −0.34 V.
+
 ## H1, found 2026-11-13: J18 on the wrong bus pins (fixed 2026-11-14)
 
 **What was wrong.** J18 had −12 V on 1–2, **GND on 3–10 and +12 V on
@@ -150,7 +212,7 @@ the worst case) and J18's annular ring were fixed in copper on 2026-11-14 (see a
 
 ## Medium
 
-**M1. The PhotoMOS off capacitance distorts every channel** (AUDIO_AC-1, -3).
+**M1. The PhotoMOS off capacitance distorts every channel** (resolved 2026-11-15: no PhotoMOS any more, see above) (AUDIO_AC-1, -3).
 An off AQY212EH is not an open switch: it is a voltage-dependent
 capacitance from FI*k* to GND, 79 pF at 0 V falling to 35 pF at 7.5 V
 (Panasonic ASCTB126E, graph 12-(2), read from the PDF's vector path). It
@@ -195,7 +257,7 @@ recorded without and with the part. The intermodulation tests and the
 loop are the ones that land in the audible band. The bench README has the
 predicted figures for each test.
 
-**M2. A stereo mute is not guaranteed to switch** (LATCH-1, -2). Q drives
+**M2. A stereo mute is not guaranteed to switch** (resolved 2026-11-15: the LED has its own 1k5, see above) (LATCH-1, -2). Q drives
 1k5 + the PhotoMOS LED(s) + the red button LED. Typical: 4.8 mA mono,
 4.1 mA stereo, as design.md says. Worst case (+12 V at −5 %, TL074 supply
 current at max, all eight muted: 10.2 V at the CD4013B, its IOH min, LED
@@ -233,7 +295,7 @@ standoffs (or 10 mm + a washer), in all four BOMs and the skill.
 |---|---|---|
 | D903 (NETLIST-1, LATCH-3, -4, POWER-1), **fixed 2026-11-14** | D903 (anode POR, cathode +12V) sits across C906 and can never conduct. C906 empties through the CD4013B RESET inputs' protection diodes instead: POR goes to about −0.6 V at every power-off (abs max −0.5 V), 0.25–0.33 mA per input typically and about 3.6 mA at worst with the new LED currents, against the 10 mA rating. The debounce caps do the same into VDD (DB 0.6 V above VDD, 0.13 mA). The reset still works every time. | Leave it (harmless) and correct design.md, or on a respin put a BAT85 from GND (anode) to POR (cathode). Don't just flip D903: on +12V that holds every flip-flop in reset, cathode on GND removes the reset. |
 | AUDIO_AC-2, **fixed 2026-11-14** | The OUT L/R stages and the SEND inverter have 17–18° phase margin: the ~5 pF on each inverting input with Rin ∥ Rf (67–77k on the output stages, 50k on the send inverter) puts a pole inside the loop. +9 / +11 dB closed-loop peaking near 1 MHz; nothing in the audio band, no oscillation predicted. | 4.7 pF C0G across R905 and R908, 10 pF across R911, soldered on the standing resistors' legs (66° worst). |
-| AUDIO_DC-4 | Muting loads the input: at full LEVEL a muted mono input is 9.1k (stereo L with R normalled 4.5k); a source multed elsewhere drops 0.4–1.5 dB. design.md says the source is never loaded. | Doc; raising R*k*01 to 100k would fix it but makes M1 worse unless the PhotoMOS changes. |
+| AUDIO_DC-4, **resolved 2026-11-15** | Muting loads the input: at full LEVEL a muted mono input is 9.1k (stereo L with R normalled 4.5k); a source multed elsewhere drops 0.4–1.5 dB. design.md says the source is never loaded. | Doc; raising R*k*01 to 100k would fix it but makes M1 worse unless the PhotoMOS changes. |
 | AUDIO_DC-2 | The followers leave the TL074's common-mode range below −8.5 V typ / −7.1 V worst at the jack (LEVEL near full), where a TL07x can reverse phase. ±5 V audio is always inside. | Note it in the docs. |
 | AUDIO_DC-3 | DC offset at OUT L/R: 53 mV typical, 278 mV worst at 25 °C (TL074 Vos max through an offset gain of 28, 20 of it in U4); SEND 31 / 197 mV. MASTER moves it by up to 225 mV. | A TL074B in U4 halves the worst case; or AC-couple the outputs. |
 | LATCH-5 | A contact-bounce gap of 2.1 ms or more right after the press edge can re-arm the Schmitt (worst threshold corner; 4.7 ms typical). 300 random bouncy presses per corner toggle exactly once. | Accept; or a 220k pull-up (4.4 ms). |

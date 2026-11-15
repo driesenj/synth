@@ -1,5 +1,9 @@
 # Stereo mixer routing audit, 2026-11-02
 
+**2026-11-15: the main board in this audit is history.** The mute redesign (CD4053B switches at the
+buses' summing ends, see design.md) re-placed the main board, and the master now holds it unrouted
+beside the routed faceplate. What follows about the faceplate and the panel still holds.
+
 ## Panel name and mark, patched into the master on 2026-11-02
 
 The panel board in `StereoMixer-routed.epro2` now carries the Garden name:

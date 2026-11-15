@@ -1,7 +1,8 @@
 """PCB group: manufacturing and assembly checks on the routed master (StereoMixer-routed.epro2) that
 copper_audit.py does not do.
 
-  footprints    DIP-14 / DIP-4 / header / power-header / jack geometry against the datasheets; pin 1 square
+  footprints    DIP-14 / DIP-16 / header / power-header / jack geometry against the datasheets; pin 1 square;
+                every TL074 / CD4093B / CD4013B on the DIP-14, every CD4053B on the DIP-16
   holes         every pad's drill against the lead it takes (IPC-2222 fit), annular rings and plated slots
                 against JLCPCB's 2-layer minimums, via drill / diameter, hole-to-hole and drill-to-track
                 spacing, track widths (fab minimum and design.md's 0.6 mm POWER class), pads and pours to
@@ -11,11 +12,22 @@ copper_audit.py does not do.
   panel parts   the routed faceplate's jacks, pots and buttons at circuit.PLACEMENT (0.05 mm), oriented
                 per design.md, their shafts / barrels / caps under the routed panel's holes
   silkscreen    every value label nearest a part of the value it states, every labelled part labelled,
-                text heights, designators, polarity marks (diodes, electrolytics, IC and PhotoMOS pin 1,
+                text heights, designators, polarity marks (diodes, electrolytics, DIP-14 / DIP-16 pin 1,
                 power header pin 1 = -12 V)
-  bodies        real body sizes (datasheets) against each other on the main board's top, R805 / C903,
-                what sits in the stacking gap, the standoff length against the header / socket heights
+  bodies        real body sizes (datasheets) against each other on the main board's top, the DIP-14 and
+                DIP-16 sockets against their neighbours, top-side bodies over the bottom sockets' solder joints,
+                each chip's 100 n beside its supply pin, what sits in the stacking gap, the standoff length
+                against the header / socket heights
   pours         the small pour islands: what holds them to their net, which are dead copper
+
+Since 2026-11-15 the master's main board is the generated placement (swap_main_board.py): placed, net-assigned,
+not routed (no tracks, vias or pours) and without value labels. Every check that needs the main board's copper
+or its value labels is skipped there (a SKIP line each, not counted) and two gate checks at the end fail instead,
+naming what was skipped: "Main: routed (tracks, vias, pours)" and "Main: value labels placed" (the faceplate's
+pass). Everything that reads the placement (footprints, drills and rings
+of its pads, holes, outline, standoffs, bodies, sockets, pin-1 marks, designators, the stacking gap, J18) runs on
+it as before; the faceplate's checks are unchanged. Once the main board is routed and labelled the gates pass and
+the skipped checks run by themselves.
 
 Run from stereo-mixer/hardware/tests:  python test_pcb.py
 Read-only: imports the tools and opens the committed export as a zip.
@@ -64,10 +76,10 @@ LEADS = {
     # TI TL074 / CD4093B / CD4013B, N (PDIP-14, MS-001) package drawing: b 0.36-0.56 (0.014-0.022 in),
     # c 0.20-0.36 (0.008-0.014 in): max values. Standard 0.300 in row pitch, 0.100 in pin pitch.
     "DIP-14-W7.62-P2.54": {"*": ("rect", 0.56, 0.36)},
-    # Panasonic AQY212EH, DIP-4 (GU-E family drawing): 2.54 pitch, 7.62 rows; terminal width/thickness NOT
-    # confirmed from the drawing (search 2026-11-04 found only body 4.78 x 6.4 x 3.2); assumed the PDIP
-    # maxima above, conservative for an optocoupler-style lead frame (0.5 x 0.25 typ).
-    "DIP-4-W7.62-P2.54": {"*": ("rect", 0.56, 0.36)},
+    # TI CD4053BE, N (PDIP-16) package (SCHS047O, 2026-11-15): the same MS-001 lead frame as the 14-pin N package
+    # (b 0.36-0.56, c 0.20-0.36 max). The package drawing is not in the datasheet's text extraction, so these are
+    # the DIP-14 figures above, not re-read for 16 pins.
+    "DIP-16-W7.62-P2.54": {"*": ("rect", 0.56, 0.36)},
     # 2.54 mm male header / female socket tails: 0.64 mm square post (industry standard 0.025 in).
     "HDR-1x8-P2.54": {"*": ("rect", 0.64, 0.64)},
     "HDR-1x12-P2.54": {"*": ("rect", 0.64, 0.64)},
@@ -115,8 +127,10 @@ BODY_FG28 = (4.0, 2.5)     # TDK FG28: W 4.0 x T 2.5 (x H 5.5), distributor list
 # expectation here: the finding asks the BOM to name a <= 4.0 x 2.5 body.
 BODY_SR30 = (7.62, 3.81)   # AVX SR30: 0.300 x 0.150 in (as the footprint name says; not re-confirmed)
 BODY_DIP14 = (19.69, 7.11)  # TI N package max: D 0.775 in, E1 0.280 in
-BODY_DIP4 = (4.78 + 0.1, 6.4 + 0.1)    # Panasonic GU-E DIP-4 body (AQY21xEH family): 4.78 (along the pins) x 6.4
-#   nominal; +0.1 mm is an ASSUMED general tolerance (the drawing could not be read) to make it a maximum
+# TI CD4053BE, N (PDIP-16): SCHS047O's package table gives 19.3 x 9.4 mm, nominal, the width over the pins. TI's
+# N-package drawing gives 16 pins the same 0.775 in (19.69 mm) maximum length as 14 and the same 0.280 in body
+# width (recalled from that drawing, not in the datasheet's text extraction): taken as BODY_DIP14.
+BODY_DIP16 = (19.69, 7.11)
 BODY_DO41 = (5.2, 2.7)     # DO-41 max body: 5.21 x 2.72 (ON Semi 1N5819)
 BODY_C315 = (3.81, 2.54)   # KEMET C315: 3.81 long (along the leads) x 2.54 deep x 5.33 tall, max (distributor listings)
 BODY_DO35 = (4.56, 2.28)   # DO-35 max body (Vishay 1N4148: 3.9 typ, JEDEC 5.08 max length; 2.28 dia)
@@ -125,6 +139,11 @@ BODY_CP_D = 5.5            # 5 mm can + 0.5 tolerance and sleeve (Panasonic FC: 
 # SL-STIC-14 17.73 x 9.95 mm, Winslow W3114 17.65 x 10.14 mm (distributor listings, 2026-11-04): the largest of
 # these. (The first version assumed 19.3 x 10.16, longer than any listed socket.)
 SOCKET_DIP14 = (17.78, 10.16)
+# 0.3 in 16-pin socket frame: one pin pitch longer, 8 x 2.54 = 20.32 x 10.16 mm (the 14-pin frames above are
+# 7 x 2.54 = 17.78 long); Mill-Max 110-44-316-41-001000 (Digi-Key / elcodis listing via a search summary,
+# 2026-11-15: 20.32 x 10.16 mm, not opened). The CD4053Bs sit in these (bom.md: 8 DIP-16 IC sockets).
+SOCKET_DIP16 = (20.32, 10.16)
+SOCKETS = {"DIP-14-W7.62-P2.54": SOCKET_DIP14, "DIP-16-W7.62-P2.54": SOCKET_DIP16}
 
 # Stacking: 2.54 mm headers
 MALE_PLASTIC = 2.5         # standard male header plastic body height
@@ -171,6 +190,31 @@ for b in (MB, FB):
     for ref, pl in b.parts.items():
         USED[pl["fp"]].append((b.title, ref))
 
+# What the main board has to check (2026-11-15: placed, not routed, no value labels). A check that needs copper or
+# labels the board does not have yet is skipped on it, never passed on nothing; the two gates at the end fail with
+# the list of what was skipped.
+VALUES = vl.values()
+COPPER = {b.title: bool(b.tracks or b.vias or b.islands) for b in (MB, FB)}
+LABELS = {b.title: any(h["type"] == "STRING" and p.get("layerId") in (3, 4) and p["text"] in set(VALUES[b.title.split()[1]].values())
+                       for h, p in DOC[b.title]["recs"]) for b in (MB, FB)}
+SKIPPED = {"routed": [], "labels": []}
+
+
+def skip(gate, name, b):
+    """Record and print a check that cannot run on board b yet (gate 'routed' or 'labels')."""
+    SKIPPED[gate].append(name)
+    why = ("not routed yet: 0 tracks, 0 vias, 0 pour islands" if gate == "routed" else
+           "no value labels yet (value_labels.py runs on the routed export)")
+    print(f"SKIP  {name}: {b.title} {why}", flush=True)
+
+
+def runs(gate, name, b):
+    """True when the check can run on board b; otherwise records the skip."""
+    ok = COPPER[b.title] if gate == "routed" else LABELS[b.title]
+    if not ok:
+        skip(gate, name, b)
+    return ok
+
 
 def front(x):
     return BOARD_W - x
@@ -199,14 +243,19 @@ def dip_geometry(title, n):
 
 
 dip_geometry("DIP-14-W7.62-P2.54", 14)
-dip_geometry("DIP-4-W7.62-P2.54", 4)
+dip_geometry("DIP-16-W7.62-P2.54", 16)
 ck.check("every TL074 / CD4093B / CD4013B uses the 7.62 mm DIP-14, none the library's 8.89 mm PDIP-14",
          sorted(r for t, r in USED["DIP-14-W7.62-P2.54"]) == sorted(f"U{i}" for i in range(1, 11))
          and not USED.get("PDIP-14_L19.3-W6.4-P2.54-LS9.0-BL"),
          f"DIP-14-W7.62 on {sorted(r for t, r in USED['DIP-14-W7.62-P2.54'])}, "
          f"PDIP-14 LS9.0 on {USED.get('PDIP-14_L19.3-W6.4-P2.54-LS9.0-BL', [])}")
-ck.check("every AQY212EH uses DIP-4-W7.62", sorted(r for t, r in USED["DIP-4-W7.62-P2.54"]) == sorted(f"K{i}" for i in range(1, 11)),
-         str(sorted(r for t, r in USED["DIP-4-W7.62-P2.54"])))
+cd4053 = sorted(p.ref for p in circuit.main_board_parts() if p.kind == "CD4053")
+ck.check("every CD4053B uses DIP-16-W7.62, and nothing else does",
+         sorted(r for t, r in USED["DIP-16-W7.62-P2.54"]) == cd4053 == sorted(circuit.SWITCH.values()),
+         f"DIP-16-W7.62 on {sorted(r for t, r in USED['DIP-16-W7.62-P2.54'])}, CD4053B in circuit.py {cd4053}")
+ck.check("no AQY212EH / DIP-4 left on the boards (2026-11-15)", not any(t.startswith("DIP-4") for t in USED)
+         and not any(r.startswith("K") for t, r in sum(USED.values(), [])),
+         f"DIP-4 footprints used: {[t for t in USED if t.startswith('DIP-4')]}")
 # the placed parts: pin 1 to pin 14 etc. on the routed board itself (the mirror of a wrong flip would show here)
 bad = []
 for ref, pl in MB.parts.items():
@@ -294,15 +343,19 @@ ck.check(f"plated slots >= JLCPCB's {JLC_PSLOT_MIN} mm minimum width", not slot_
 for b in (MB, FB):
     name = b.title.split()[1]
     vd = sorted({(round(v["drill"], 3), round(2 * v["r"], 3)) for v in b.vias})
-    ck.check(f"{name}: vias drill >= {JLC_VIA_DRILL_MIN}, diameter >= {JLC_VIA_DIA_MIN}, ring >= 0.1",
-             all(d >= JLC_VIA_DRILL_MIN and D >= JLC_VIA_DIA_MIN and (D - d) / 2 >= 0.1 for d, D in vd),
-             f"(drill, diameter) used: {vd}")
+    title = f"{name}: vias drill >= {JLC_VIA_DRILL_MIN}, diameter >= {JLC_VIA_DIA_MIN}, ring >= 0.1"
+    if runs("routed", title, b):
+        ck.check(title, all(d >= JLC_VIA_DRILL_MIN and D >= JLC_VIA_DIA_MIN and (D - d) / 2 >= 0.1 for d, D in vd),
+                 f"(drill, diameter) used: {vd}")
     tw = sorted({round(t["w"], 3) for t in b.tracks})
-    ck.check(f"{name}: track widths >= {JLC_TRACK_SAFE} mm", all(w >= JLC_TRACK_SAFE for w in tw), f"widths {tw}")
+    title = f"{name}: track widths >= {JLC_TRACK_SAFE} mm"
+    if runs("routed", title, b):
+        ck.check(title, all(w >= JLC_TRACK_SAFE for w in tw), f"widths {tw}")
 POWER = ("+12V", "-12V", "P12_IN", "N12_IN", "P12_D", "N12_D")
-thin = sorted({(t["net"], round(t["w"], 3)) for t in MB.tracks if t["net"] in POWER and t["w"] < 0.6 - 1e-3})
-ck.check("main: every POWER-class track (+12V, -12V, P12_IN, N12_IN, P12_D, N12_D) is 0.6 mm (design.md rule)",
-         not thin, f"thinner: {thin}")
+title = "main: every POWER-class track (+12V, -12V, P12_IN, N12_IN, P12_D, N12_D) is 0.6 mm (design.md rule)"
+if runs("routed", title, MB):
+    thin = sorted({(t["net"], round(t["w"], 3)) for t in MB.tracks if t["net"] in POWER and t["w"] < 0.6 - 1e-3})
+    ck.check(title, not thin, f"thinner: {thin}")
 
 
 hole_bad = []
@@ -334,10 +387,12 @@ for b in (MB, FB):
                 worst.append((round(gap, 3), a[5], c[5], need))
     worst.sort()
     ck.check(f"{name}: hole-to-hole >= JLCPCB's {JLC_HOLE_HOLE_PAD} (pad holes) / {JLC_HOLE_HOLE_VIA} (vias)", not worst,
-             f"{len(worst)} under: {worst[:8]}")
+             f"{len(worst)} under: {worst[:8]} ({sum(1 for d in drills if d[4] == 'pad')} pad holes, {len(b.vias)} vias)")
     # drill edge to other-net tracks
     near = []
-    for x, y, r, R, kind, label, net, raw, pad in drills:
+    title = f"{name}: drill edge to another net's track >= JLCPCB's {JLC_PTH_TRACK} mm"
+    routed = runs("routed", title, b)
+    for x, y, r, R, kind, label, net, raw, pad in (drills if routed else ()):
         for t in b.tracks:
             if t["net"] == net:
                 continue
@@ -351,13 +406,16 @@ for b in (MB, FB):
             if g < JLC_PTH_TRACK:
                 near.append((round(g, 3), label, t["net"]))
     near.sort()
-    ck.check(f"{name}: drill edge to another net's track >= JLCPCB's {JLC_PTH_TRACK} mm", not near, f"{len(near)} under: {near[:8]}")
+    if routed:
+        ck.check(title, not near, f"{len(near)} under: {near[:8]}")
     # pads and pours to the board edge
     x1, y1, x2, y2 = b.outline
     pe = min(min(p.x - p.r - x1, x2 - p.x - p.r, p.y - p.r - y1, y2 - p.y - p.r) for p in b.pads)
-    pour_e = min(min(q[0] - x1, x2 - q[0], q[1] - y1, y2 - q[1]) for isl in b.islands for q in isl.outline)
     ck.check(f"{name}: pads >= {JLC_EDGE} mm from the routed edge", pe >= JLC_EDGE, f"nearest pad copper {pe:.2f} mm")
-    ck.check(f"{name}: pour fill >= {JLC_EDGE} mm from the routed edge", pour_e >= JLC_EDGE - 1e-3, f"nearest pour point {pour_e:.2f} mm")
+    title = f"{name}: pour fill >= {JLC_EDGE} mm from the routed edge"
+    if runs("routed", title, b):
+        pour_e = min(min(q[0] - x1, x2 - q[0], q[1] - y1, y2 - q[1]) for isl in b.islands for q in isl.outline)
+        ck.check(title, pour_e >= JLC_EDGE - 1e-3, f"nearest pour point {pour_e:.2f} mm")
 
 # ================================================================== 3. outlines, mounting holes, hardware
 want_holes = sorted((round(front(xf), 2), round(y, 2)) for xf, y in circuit.HOLES_FRONT)
@@ -390,7 +448,7 @@ for b, gap_bottom in ((MB, True), (FB, False)):
             if d < max(M3_HEAD_R, M3_STANDOFF_R) and v["net"] != ground:
                 under.append(f"via {v['net']} {d:.2f} mm")
     ck.check(f"{name}: no pad, and no via but ground, under an M3 standoff (hex 5.5 AF, r {M3_STANDOFF_R:.2f}) or "
-             f"button head (r {M3_HEAD_R:.2f}) + 0.2", not under, f"{under}")
+             f"button head (r {M3_HEAD_R:.2f}) + 0.2", not under, f"{under} ({len(b.pads)} pads, {len(b.vias)} vias on the board)")
 
 # ================================================================== 4. panel parts on the routed faceplate
 pos_bad, rot_bad = [], []
@@ -452,7 +510,6 @@ for ref, (xf, y, a) in circuit.HEADERS_FRONT.items():
 ck.check("faceplate: male headers at circuit.HEADERS_FRONT, pin 1 at the top, on the top (rear) side", not hdr_bad, f"{hdr_bad}")
 
 # ================================================================== 5. silkscreen
-VALUES = vl.values()
 KIND = {p.ref: p.kind for p in circuit.all_parts()}
 LEGEND = re.compile(r"^(\S+): ((?:[A-Z]+\d+ ?)+)$")
 
@@ -463,6 +520,12 @@ def strings(title):
         if h["type"] == "STRING" and p.get("layerId") in (3, 4):
             out.append(p)
     return out
+
+
+def lcheck(b, name, ok, detail=""):
+    """A value-label check: run on a board that has its value labels, skipped (and gated) on one that has none."""
+    if runs("labels", name, b):
+        ck.check(name, ok, detail)
 
 
 for b in (MB, FB):
@@ -514,11 +577,11 @@ for b in (MB, FB):
                          f"nearer than {own} {own_d:.2f} mm")
         elif other and other[0][0] < own_d + 0.3:
             ties.append(f"'{txt}' {own} {own_d:.2f} / {other[0][1]} ({vals[other[0][1]]}) {other[0][0]:.2f}")
-    ck.check(f"{name}: no value label sits nearer a part of a different value (assembly trap)", not traps,
+    lcheck(b, f"{name}: no value label sits nearer a part of a different value (assembly trap)", not traps,
              f"{len(traps)}: {traps}")
-    ck.check(f"{name}: no value label within 0.3 mm of a tie with a part of a different value", not ties,
+    lcheck(b, f"{name}: no value label within 0.3 mm of a tie with a part of a different value", not ties,
              f"{len(ties)}: {ties[:10]}")
-    ck.check(f"{name}: every label states a value circuit.py gives the part", not wrong_text, f"{wrong_text}")
+    lcheck(b, f"{name}: every label states a value circuit.py gives the part", not wrong_text, f"{wrong_text}")
     # coverage: a label of the part's value within 3 mm of it (several parts of one value may share the
     # nearest label, which is harmless), or a legend line naming it
     boxes = [(p["text"], p["layerId"] == 4, vl.text_box(p["x"] * MIL, p["y"] * MIL, p["text"], p["fontSize"], p.get("mirror", False)))
@@ -531,14 +594,14 @@ for b in (MB, FB):
         d = min((vl.rect_dist(rect, vl.extent(pl)) for t, bot, rect in boxes if t == vals[r] and bot == pl["bottom"]), default=99)
         if d > 3.0:
             missing.append(f"{r} ({vals[r]}, nearest {d:.1f} mm)")
-    ck.check(f"{name}: every R / C / diode / pot has a value label within 3 mm, or a legend line", not missing,
+    lcheck(b, f"{name}: every R / C / diode / pot has a value label within 3 mm, or a legend line", not missing,
              f"{len(labelled)} parts, unlabelled: {missing}")
-    ck.check(f"{name}: value labels at least JLCPCB's {JLC_SILK_H} mm (40 mil) text height", not small,
+    lcheck(b, f"{name}: value labels at least JLCPCB's {JLC_SILK_H} mm (40 mil) text height", not small,
              f"{len(small)} smaller: {collections.Counter(s.split()[-2] + ' mil' for s in small)}")
-    ck.check(f"{name}: value labels' stroke >= {JLC_SILK_W} mm", not thin, f"{thin[:5]}")
-    ck.check(f"{name}: each label on its part's side, mirrored on the bottom so it reads from that side", not wrong_side,
+    lcheck(b, f"{name}: value labels' stroke >= {JLC_SILK_W} mm", not thin, f"{thin[:5]}")
+    lcheck(b, f"{name}: each label on its part's side, mirrored on the bottom so it reads from that side", not wrong_side,
              f"{wrong_side[:5]}")
-    ck.check(f"{name}: value labels >= {JLC_PAD_SILK} mm off every pad", not on_pad, f"{on_pad[:5]}")
+    lcheck(b, f"{name}: value labels >= {JLC_PAD_SILK} mm off every pad", not on_pad, f"{on_pad[:5]}")
     # designators
     des = {}
     for h, p in DOC[b.title]["recs"]:
@@ -601,7 +664,7 @@ for ref, plus, minus in (("C904", "+12V", "GND"), ("C905", "GND", "-12V")):
     ck.check(f"{ref}: the silk '+' marks the pad on {plus} (pad {pp}), the more positive rail",
              mark is not None and nearer(mark, title, pp, pm),
              f"'+' at {None if mark is None else (round(mark[0], 2), round(mark[1], 2))}, pad {pp} at x {FP[title][pp]['x']:.2f}")
-for title, refs in (("DIP-14-W7.62-P2.54", "U"), ("DIP-4-W7.62-P2.54", "K")):
+for title in ("DIP-14-W7.62-P2.54", "DIP-16-W7.62-P2.54"):
     dots = [raw for t, pts, raw in silk_items(title) if t == "POLY" and raw and raw[0] == "CIRCLE"]
     n = len(FP[title])
     ok = bool(dots) and all(nearer((d[1] * MIL, d[2] * MIL), title, "1", str(n)) and
@@ -624,8 +687,9 @@ neg = [p["text"] for p in strings(MB.title) if re.search(r"-12|−12|RED|STRIPE"
 j18 = MB.parts["J18"]["pads"]["1"]
 near_neg = [p["text"] for p in strings(MB.title) if re.search(r"-12|−12|RED|STRIPE", p["text"], re.I)
             and math.hypot(p["x"] * MIL - j18.x, p["y"] * MIL - j18.y) < 15]
-ck.check("main: a '-12V' / 'red stripe' word on the silk beside J18's pin 1 (the shroud key alone does not say which end)",
-         bool(near_neg), f"-12 V texts on the board: {neg}, near pin 1: {near_neg}")
+# value_labels.py puts the '-12V' beside pin 1 together with the value labels, so it waits for them too
+lcheck(MB, "main: a '-12V' / 'red stripe' word on the silk beside J18's pin 1 (the shroud key alone does not say which end)",
+       bool(near_neg), f"-12 V texts on the board: {neg}, near pin 1: {near_neg}")
 
 # ================================================================== 6. bodies
 def rect_poly(cx, cy, L, W, ang):
@@ -653,7 +717,7 @@ def real_body(ref, pl):
         return ("poly", rect_poly((P["1"].x + P["2"].x) / 2, (P["1"].y + P["2"].y) / 2, L, W, a))
     if fp.startswith("DIP-"):
         n = len(P)
-        L, W = BODY_DIP14 if n == 14 else BODY_DIP4
+        L, W = {14: BODY_DIP14, 16: BODY_DIP16}[n]
         cx = sum(p.x for p in P.values()) / n
         cy = sum(p.y for p in P.values()) / n
         a = math.degrees(math.atan2(P["2"].y - P["1"].y, P["2"].x - P["1"].x))
@@ -704,26 +768,76 @@ for i, ra in enumerate(refs):
             hits.append((round(s, 2), ra, rb))
 hits.sort()
 ck.check("main top: no two real bodies (datasheet max sizes) overlap", not hits, f"{len(hits)} overlaps (mm, a, b): {hits[:12]}")
-s = separation(bodies["R805"], bodies["C903"])
-ck.check("R805 (standing 1/4 W, D 2.5) and C903 (TDK FG28, 4.0 x 2.5) do not collide", s >= 0,
-         f"separation {s:.2f} mm (copper_audit's footprint outlines: 0.10 mm overlap)")
-# DIP sockets (BOM: every DIP-14 in a socket): the socket's frame against its neighbours
-sock_hits = []
+# (The R805 / C903 pair, a 0.10 mm footprint-outline overlap on the 2026-11-02 placement, is gone: the 2026-11-15
+# placement puts them 15 mm apart, and the overlap check above covers every pair.)
+# DIP sockets (bom.md: every DIP-14 and DIP-16 chip in a socket): the socket's frame against its neighbours, a
+# neighbouring socketed chip by its own socket frame
+sockets = {}
 for ref, pl in MB.parts.items():
-    if pl["fp"] != "DIP-14-W7.62-P2.54":
+    if pl["fp"] not in SOCKETS or pl["bottom"]:
         continue
     P = pl["pads"]
-    cx, cy = sum(p.x for p in P.values()) / 14, sum(p.y for p in P.values()) / 14
+    n = len(P)
+    cx, cy = sum(p.x for p in P.values()) / n, sum(p.y for p in P.values()) / n
     a = math.degrees(math.atan2(P["2"].y - P["1"].y, P["2"].x - P["1"].x))
-    sock = ("poly", rect_poly(cx, cy, SOCKET_DIP14[0], SOCKET_DIP14[1], a))
-    for rb, bb in bodies.items():
-        if rb == ref:
-            continue
-        s = separation(sock, bb)
+    sockets[ref] = ("poly", rect_poly(cx, cy, *SOCKETS[pl["fp"]], a))
+for fp, (L, W) in SOCKETS.items():
+    sock_hits = []
+    mine = [r for r in sockets if MB.parts[r]["fp"] == fp]
+    for ref in mine:
+        for rb, bb in bodies.items():
+            if rb == ref:
+                continue
+            s = separation(sockets[ref], sockets.get(rb, bb))
+            if s < 0:
+                sock_hits.append((round(s, 2), ref, rb))
+    ck.check(f"main top: an assumed {L} x {W} {fp[:6]} socket clears its neighbours (their real bodies, or their own "
+             f"sockets)", bool(mine) and not sock_hits, f"{len(mine)} sockets, {len(sock_hits)} overlaps: {sorted(sock_hits)[:10]}")
+# The M3 screws go in from the main board's top (rear), so their heads sit on that side among the parts: a button
+# head (ISO 7380, dk 5.7) must clear every top body and socket frame. (Section 3 checks the pads under the head and
+# the standoff; this is the plastic.)
+head_hits = []
+for hx, hy, hd in MB.holes:
+    for ref, bb in bodies.items():
+        s = separation(("circle", (hx, hy), M3_HEAD_R), sockets.get(ref, bb))
         if s < 0:
-            sock_hits.append((round(s, 2), ref, rb))
-ck.check(f"main top: an assumed {SOCKET_DIP14[0]} x {SOCKET_DIP14[1]} DIP-14 socket clears its neighbours' real bodies",
-         not sock_hits, f"{len(sock_hits)} overlaps: {sorted(sock_hits)[:10]}")
+            head_hits.append((round(s, 2), ref, f"hole ({hx:.2f}, {hy:.2f})"))
+ck.check(f"main top: no body or socket frame under an M3 button head (r {M3_HEAD_R:.2f})", not head_hits,
+         f"{len(head_hits)} overlaps (mm, part, hole): {sorted(head_hits)}")
+# The female sockets H1-H9 stand on the bottom; their solder joints come through on the top, where the CD4053B
+# strips sit between them (design.md: 'in the 11 mm between two header sockets'). A socket frame or a body that
+# sits on a joint stands crooked: every top-side outline (socket frames for the socketed chips) must clear the
+# bottom parts' pads (their copper, the joint's footprint).
+joints = [p for p in MB.pads if MB.parts[p.ref]["bottom"]]
+on_joint = []
+for ref, bb in bodies.items():
+    shape = sockets.get(ref, bb)
+    for p in joints:
+        s = separation(shape, ("circle", (p.x, p.y), p.r))
+        if s < 0:
+            on_joint.append((round(s, 2), ref, f"{p.ref}.{p.num}"))
+ck.check("main top: no body or socket frame over a bottom socket's solder joint", not on_joint,
+         f"{len(joints)} joints; {len(on_joint)} overlaps (mm, top part, joint): {sorted(on_joint)[:10]}")
+# design.md, Power: '100 n per TL074 per rail beside pins 4 and 11; 100 n per CMOS chip beside its VDD pin (14; 16
+# on the CD4053Bs)'. 'Beside': the cap's pad on that rail within 5 mm of the supply pin (a house figure: one cap
+# length, no track longer than the chip is wide).
+DECOUPLE_MAX = 5.0
+far_caps = []
+for p in circuit.main_board_parts():
+    if p.kind != "C" or p.value != "100n" or not p.label.endswith((" VDD", " +12 V", " -12 V")):
+        continue
+    u = p.label.split()[0]
+    chip = MB.parts[u]
+    rail = "-12V" if p.label.endswith("-12 V") else "+12V"
+    pin = {"TL074": "11" if rail == "-12V" else "4", "CD4053": "16"}.get(KIND[u], "14")
+    cpad = next(n for n, v in MB.parts[p.ref]["nets"].items() if v == rail)
+    d = math.hypot(MB.parts[p.ref]["pads"][cpad].x - chip["pads"][pin].x, MB.parts[p.ref]["pads"][cpad].y - chip["pads"][pin].y)
+    if d > DECOUPLE_MAX or chip["pads"][pin].net != rail:
+        far_caps.append(f"{p.ref} ({u} pin {pin} {rail}) {d:.1f} mm")
+n_dec = sum(1 for p in circuit.main_board_parts() if p.kind == "C" and p.value == "100n"
+            and p.label.endswith((" VDD", " +12 V", " -12 V")))
+ck.check(f"main: every chip's 100 n within {DECOUPLE_MAX} mm of its supply pin (design.md)", n_dec == 22 and not far_caps,
+         f"{n_dec} decoupling caps (4 TL074 x 2 + 6 CD40xx + 8 CD4053B = 22); further: {far_caps}")
 # stacking gap
 mb_bottom = sorted(r for r, pl in MB.parts.items() if pl["bottom"])
 fb_top = sorted(r for r, pl in FB.parts.items() if not pl["bottom"])
@@ -786,6 +900,11 @@ def inscribed_r(poly, step=0.01):
 
 for b in (MB, FB):
     name = b.title.split()[1]
+    t_dead = f"{name}: no dead pour islands (copper joined to nothing), any size"
+    t_sliver = f"{name}: no pour piece under 1 mm2 narrower than {SLIVER_W} mm at its widest, hanging on a spoke"
+    if not runs("routed", t_dead, b):
+        skip("routed", t_sliver, b)
+        continue
     groups, _ = b.connectivity()
     key_of = {}
     for i, isl in enumerate(b.islands):
@@ -820,9 +939,19 @@ for b in (MB, FB):
             if width < SLIVER_W:
                 slivers.append(f"{isl.net} layer {isl.layer} {isl.area:.2f} mm2, at most {width:.2f} mm wide, at "
                                f"({isl.bb[0]:.1f}, {isl.bb[1]:.1f}), held by {len(spokes)} spoke(s)")
-    ck.check(f"{name}: no dead pour islands (copper joined to nothing), any size", not dead, f"dead: {dead}")
+    ck.check(t_dead, bool(b.islands) and not dead, f"{len(b.islands)} islands; dead: {dead}")
     print(f"      {name}: small islands held to their net: {held}")
-    ck.check(f"{name}: no pour piece under 1 mm2 narrower than {SLIVER_W} mm at its widest, hanging on a spoke",
-             not slivers, f"{slivers}")
+    ck.check(t_sliver, not slivers, f"{slivers}")
+
+# ================================================================== 8. gates: what the main board cannot be checked for yet
+for gate, what in (("routed", "routed (tracks, vias, pours)"), ("labels", "value labels placed (value_labels.py)")):
+    for b in (MB, FB):
+        name = b.title.split()[1]
+        mine = [n for n in SKIPPED[gate] if n.lower().startswith(name.lower() + ":")]
+        ok = (COPPER if gate == "routed" else LABELS)[b.title] and not mine
+        ck.check(f"{name}: {what}", ok,
+                 f"{b.title} in StereoMixer-routed.epro2: {len(b.tracks)} tracks, {len(b.vias)} vias, "
+                 f"{len(b.islands)} pour islands, value labels {'yes' if LABELS[b.title] else 'none'}; "
+                 f"{len(mine)} checks skipped until it is: {mine}")
 
 ck.done()

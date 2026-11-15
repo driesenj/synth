@@ -13,15 +13,14 @@ and with real pin numbers:
 
   footprints  DIP-14 on the standard 7.62 mm row pitch (the TL074ACN library
               footprint has its rows 8.89 mm apart, too wide for a socket),
-              DIP-4, Alpha 9 mm single and dual-gang pots (lugs on the shaft
+              DIP-16, Alpha 9 mm single and dual-gang pots (lugs on the shaft
               line, as on the Alpha part; the library PTV09A is Bourns'),
               the Thonk LED button, standing resistors, 1xN headers
-  symbols     CD4013, CD4093, AQY212EH (LED and switch as two units), the
-              dual-gang pot (one unit per gang, lugs on gang A), LED button,
-              headers
+  symbols     CD4013, CD4093, CD4053, the dual-gang pot (one unit per gang,
+              lugs on gang A), LED button, headers
 
 Pages: main board (mono channels; stereo channels, buses and outputs; mute
-latch; power and headers), faceplate (jacks and pots; dual pots, buttons
+switches; mute latch; power and headers), faceplate (jacks and pots; dual pots, buttons
 and headers), panel note. Net ports with the same name connect within a
 board; nets that cross between the boards are the header pins.
 
@@ -84,7 +83,7 @@ DEV = {
 ee.DEV = DEV          # Page._flag looks the ground flag up here
 D1N4148 = "c0160a3f74384e849dc1cc5a24d54846"      # library 1N4148: its DO-35 footprint and attributes
 R_NEW = {"100k": ("LR1F100K", "100kΩ"), "200k": ("LR1F200K", "200kΩ"), "300k": ("LR1F300K", "300kΩ"),
-         "820R": ("LR1F820R", "820Ω")}
+         "1k5": ("LR1F1K5", "1.5kΩ")}
 # value: (part, value text, tolerance, voltage, footprint key or None for the library 100n's 5.08 mm one)
 C_NEW = {"22p": ("FG28C0G1H220JNT00", "22pF", "±5%", "50V", None),
          "4p7": ("C315C479D1G5TA", "4.7pF", "±0.5pF", "100V", "C254"),      # KEMET Goldmax 300, 2.54 mm leads
@@ -390,26 +389,14 @@ def dual_pot_symbol():
     return s
 
 
-def photomos_symbol():
-    """AQY212EH as two units: the LED (1 anode on top, 2 cathode below) and the
-    switch (3 on top, 4 below)."""
-    s = MultiSymbol("AQY212EH", "AQY212", "K?", 2, [NAME])
-    s.unit(1)
-    s.poly([(-5, -4), (5, -4), (0, 4), (-5, -4)], closed=True)
-    s.poly([(-5, 4), (5, 4)])
-    s.poly([(7, -2), (11, 2)])
-    s.poly([(7, 2), (11, 6)])
-    s.pin("1", "A", 0, -20, 270, 16)
-    s.pin("2", "K", 0, 20, 90, 16)
-    s.unit(2)
-    s.poly([(0, -12), (0, -6)])
-    s.poly([(0, 6), (0, 12)])
-    s.poly([(0, 6), (-6, -5)])
-    s.poly([(-12, -2), (-8, 2)])
-    s.poly([(-12, 2), (-8, 6)])
-    s.pin("3", "D", 0, -20, 270, 8)
-    s.pin("4", "D", 0, 20, 90, 8)
-    return s
+def cd4053_symbol():
+    """CD4053B (TI SCHS047O): the three commons and their selects on the left, each section's x / y throws and
+    the supplies on the right. Select low = x on."""
+    left = [(0, "14", "a"), (1, "15", "b"), (2, "4", "c"), (4, "11", "A"), (5, "10", "B"), (6, "9", "C"),
+            (8, "6", "INH")]
+    right = [(0, "12", "ax"), (1, "13", "ay"), (2, "2", "bx"), (3, "1", "by"), (4, "5", "cx"), (5, "3", "cy"),
+             (7, "16", "VDD"), (8, "7", "VEE"), (9, "8", "VSS")]
+    return ic_symbol("CD4053B", "CD4053.1", left, right)
 
 
 # ------------------------------------------------------------------ project
@@ -533,7 +520,7 @@ class MProject(Project):
         self._copy("HDR16", "HDR16", hdr["title"], hdr.get("tags", []),
                    Footprint=self._footprint_pads(self.device_attrs("HDR16")["Footprint"], J18_PAD))
         fps = {"RV": self._footprint(fp_res_vertical()), "DIP14": self._footprint(fp_dip(14, "DIP-14-W7.62-P2.54")),
-               "DIP4": self._footprint(fp_dip(4, "DIP-4-W7.62-P2.54")), "SWLED": self._footprint(fp_led_button()),
+               "DIP16": self._footprint(fp_dip(16, "DIP-16-W7.62-P2.54")), "SWLED": self._footprint(fp_led_button()),
                "POT": self._footprint(fp_alpha_pot(False)), "POT2": self._footprint(fp_alpha_pot(True))}
         for n in (8, 12):
             fps[f"HDR{n}"] = self._footprint(fp_header(n))
@@ -558,6 +545,8 @@ class MProject(Project):
         new = [
             ("CD4013", cd4013_symbol(), "CD4013B", "U?", fps["DIP14"], "Dual D flip-flop, DIP-14"),
             ("CD4093", cd4093_symbol(), "CD4093B", "U?", fps["DIP14"], "Quad 2-input Schmitt NAND, DIP-14"),
+            ("CD4053", cd4053_symbol(), "CD4053B", "U?", fps["DIP16"],
+             "Triple 2-channel analog switch (SPDT), DIP-16. Select low = x on; VEE = VSS = GND here"),
             ("SWLED", led_button_symbol(), "LED button, Thonk low profile", "SW?", fps["SWLED"],
              "Thonk low-profile LED button: 7.5 mm body, 5.5 mm round cap, 1+2 / 3+4 contacts, LED anode 5, "
              "cathode 6. Clip the three plastic feet off: the board has no holes for them"),
@@ -578,12 +567,6 @@ class MProject(Project):
             "Footprint": fps["POT2"], "3D Model": "", "3D Model Title": "", "3D Model Transform": "",
             "Description": "Alpha 9 mm vertical dual-gang pot, A100K (audio). Gang A pins 1-2-3 (the row nearer "
                            "the shaft), gang B 4-5-6, wipers 2 and 5, mounting lugs 7 / 8"})
-        su = self._symbol(photomos_symbol())
-        self._device("PHOTOMOS", "AQY212EH", {
-            "Name": "={Manufacturer Part}", "Manufacturer": "Panasonic", "Manufacturer Part": "AQY212EH",
-            "Designator": "K?", "Add into BOM": "yes", "Convert to PCB": "yes", "Symbol": su,
-            "Footprint": fps["DIP4"], "3D Model": "", "3D Model Title": "", "3D Model Transform": "",
-            "Description": "PhotoMOS relay, 1 form A, 60 V 0.5 A, DIP-4: LED 1 (anode) / 2, switch 3 / 4"})
 
     def _symbol(self, sym):
         lines = sym.build()
@@ -632,7 +615,7 @@ def dev_of(part):
     if part.kind == "POT":
         return "POT" + part.value
     return {"CP": "C10u", "D5819": "D5819", "BAT85": "BAT85", "JACK": "JACK", "TL074": "TL074N",
-            "CD4013": "CD4013", "CD4093": "CD4093", "PHOTOMOS": "PHOTOMOS", "POT2": "POT2", "SWLED": "SWLED",
+            "CD4013": "CD4013", "CD4093": "CD4093", "CD4053": "CD4053", "POT2": "POT2", "SWLED": "SWLED",
             "HDR8": "HDR8", "HDR12": "HDR12", "HDR16": "HDR16"}[part.kind]
 
 
@@ -706,25 +689,25 @@ def find(P, kind, pin, net):
     return next(p for p in P.values() if p.kind == kind and p.nets.get(pin) == net)
 
 
-def mute_input(pg, P, s, x, y):
-    """Port LV -> 10k (pin 1 at (x, y)) -> FI junction at (x + 60, y) -> PhotoMOS switch to GND below it.
-    Returns the junction."""
+def series_input(pg, P, s, x, y):
+    """Port LV -> 10k (pin 1 at (x, y)) -> FI junction at (x + 60, y) -> 10 p to GND below it. Returns the
+    junction."""
     rs = find(P, "R", "2", f"FI{s}")
-    km = find(P, "PHOTOMOS", "3", f"FI{s}")
+    cf = find(P, "C", "1", f"FI{s}")
     a = hpart(pg, rs, x, y)
     pg.wire([(x - 20, y), a["1"]], f"LV{s}")
     pg.port(x - 20, y, f"LV{s}", "IN", "left")
     j = (x + 60, y)
     pg.wire([a["2"], j], f"FI{s}")
-    sw = pg.place(km.ref, "PHOTOMOS", x + 60, y + 40, unit=2, des=(8, 4, "LEFT_BOTTOM"), name=False)
-    pg.wire([j, sw["3"]], f"FI{s}")
-    pg.stub_gnd(sw["4"], "down", 10)
+    c = vpart(pg, cf, x + 60, y + 20)
+    pg.wire([j, c["1"]], f"FI{s}")
+    pg.stub_gnd(c["2"], "down", 10)
     return j
 
 
 def channel_input(pg, P, s, x0, y):
-    """Mute input and follower of one channel side; returns the follower's output junction."""
-    j = mute_input(pg, P, s, x0 + 40, y)
+    """Input resistor and follower of one channel side; returns the follower's output junction."""
+    j = series_input(pg, P, s, x0 + 40, y)
     u, sec = circuit.opamp_of("FOL", s)
     pg.wire([j, (x0 + 140, y)], f"FI{s}")
     amp, node = follower(pg, u, sec, x0 + 140, y, f"CH{s}")
@@ -733,7 +716,7 @@ def channel_input(pg, P, s, x0, y):
 
 # ------------------------------------------------------------------ main board pages
 def mono_block(pg, P, k, x0, t0):
-    """One mono channel: mute, follower, CH to the header, pan feeds, bus resistors."""
+    """One mono channel: input resistor, follower, CH to the header, pan feeds, bus resistors."""
     r = 100 * k
     pg.text(x0, Y(t0), f"Channel {k} (mono)", 12)
     nx, ny = channel_input(pg, P, str(k), x0, Y(t0 + 70))
@@ -746,8 +729,8 @@ def mono_block(pg, P, k, x0, t0):
     a_pr = vpart(pg, P[f"R{r + 3}"], xc + 110, ny + 60)
     pg.wire([(xc, ny + 30), a_pl["1"]], f"CH{k}")
     pg.wire([(xc, ny + 30), (xc + 110, ny + 30), a_pr["1"]], f"CH{k}")
-    for a, net, bus, rb, x, side in ((a_pl, f"PL{k}", "SUM_L", r + 4, xc, "left"),
-                                     (a_pr, f"PR{k}", "SUM_R", r + 5, xc + 110, "right")):
+    for a, net, bus, rb, x, side in ((a_pl, f"PL{k}", f"BL{k}", r + 4, xc, "left"),
+                                     (a_pr, f"PR{k}", f"BR{k}", r + 5, xc + 110, "right")):
         jn = (x, ny + 130)
         pg.wire([a["2"], jn], net)
         ab = vpart(pg, P[f"R{rb}"], x, ny + 160)
@@ -759,26 +742,27 @@ def mono_block(pg, P, k, x0, t0):
     a_sd = hpart(pg, P[f"R{r + 6}"], x0 + 40, ny + 210)
     pg.wire([(x0 + 20, ny + 210), a_sd["1"]], f"SD{k}")
     pg.port(x0 + 20, ny + 210, f"SD{k}", "IN", "left")
-    pg.stub_port(a_sd["2"], "SUM_S", "OUT", "right")
+    pg.stub_port(a_sd["2"], f"BS{k}", "OUT", "right")
 
 
 def mono_page(pr, P):
     pg = MPage(pr, "Main board: mono channels", 1)
-    pg.page_count = "4"
-    pg.text(40, Y(30), "Mono channels: LEVEL wiper (LV, from the faceplate) -> 10k -> follower; the PhotoMOS from the "
-                       "follower input to GND is the mute. CH goes to the SEND pot and into the pan network.", 12)
+    pg.page_count = "5"
+    pg.text(40, Y(30), "Mono channels: LEVEL wiper (LV, from the faceplate) -> 10k -> follower, 10 p on its input. CH "
+                       "goes to the SEND pot and into the pan network; BL, BR, BS go to the channel's mute switch "
+                       "(page 3).", 12)
     for i, k in enumerate(circuit.MONO):
         col, row = i % 2, i // 2
         mono_block(pg, P, k, 60 + col * 820, 70 + row * 330)
     pg.text(40, Y(1080), "Pan: 10k from CH to each end of the B10k PAN pot (PL, PR, on the faceplate), wiper to GND, "
                          "each end through 100k into its bus. SEND taps CH after the mute (post-fader).", 10)
-    pg.text(40, Y(1100), "LV, CH, PL, PR, SD are header pins to the faceplate; SUM_L, SUM_R, SUM_S are the bus summing "
-                         "nodes on the next page.", 10)
+    pg.text(40, Y(1100), "LV, CH, PL, PR, SD are header pins to the faceplate; BL, BR, BS are the bus resistors' "
+                         "summing ends, switched to SUM_L / SUM_R / SUM_S or to GND on page 3.", 10)
     return pg
 
 
 def stereo_block(pg, P, c, x0, t0):
-    """Stereo channel c: two mute inputs and followers, 200k into each bus, (L + R) / 2 to the SEND pot."""
+    """Stereo channel c: two inputs and followers, 200k into each bus, (L + R) / 2 to the SEND pot."""
     r = 100 * c
     pg.text(x0, Y(t0), f"Channel {c} (stereo)", 12)
     yl = Y(t0 + 70)
@@ -786,7 +770,7 @@ def stereo_block(pg, P, c, x0, t0):
     for side, y in (("L", yl), ("R", yl + 130)):
         nodes[side] = channel_input(pg, P, f"{c}{side}", x0, y)
     xc = nodes["L"][0] + 40
-    for side, rb, bus in (("L", r + 3, "SUM_L"), ("R", r + 4, "SUM_R")):
+    for side, rb, bus in (("L", r + 3, f"BL{c}"), ("R", r + 4, f"BR{c}")):
         nx, ny = nodes[side]
         pg.wire([(nx, ny), (xc, ny)], f"CH{c}{side}")
         a = hpart(pg, P[f"R{rb}"], xc, ny)
@@ -804,7 +788,7 @@ def stereo_block(pg, P, c, x0, t0):
     a_sd = hpart(pg, P[f"R{r + 7}"], x0 + 40, nyr + 130)
     pg.wire([(x0 + 20, nyr + 130), a_sd["1"]], f"SD{c}")
     pg.port(x0 + 20, nyr + 130, f"SD{c}", "IN", "left")
-    pg.stub_port(a_sd["2"], "SUM_S", "OUT", "right")
+    pg.stub_port(a_sd["2"], f"BS{c}", "OUT", "right")
 
 
 def bus_rows(pg, P):
@@ -850,20 +834,20 @@ def inputs_block(pg, P, x0, t0):
 
 def stereo_page(pr, P):
     pg = MPage(pr, "Main board: stereo channels, buses, outputs", 2)
-    pg.page_count = "4"
+    pg.page_count = "5"
     stereo_block(pg, P, 7, 40, 60)
     stereo_block(pg, P, 8, 40, 440)
     inputs_block(pg, P, 40, 840)
     bus_rows(pg, P)
     pg.text(40, Y(1080), "Stereo channels: IN R takes IN L when unpatched (faceplate). One button mutes both sides "
-                         "(two PhotoMOS, LEDs in series). SEND gets (L + R) / 2 through the two 10k.", 10)
+                         "(one CD4053B switches BL, BR, BS). SEND gets (L + R) / 2 through the two 10k.", 10)
     pg.text(40, Y(1100), "Every path inverts twice: all outputs are in phase with all inputs, so Clouds' wet signal "
                          "returns in phase with the dry channel.", 10)
     return pg
 
 
 def latch_block(pg, P, k, x0, t0):
-    """Pull-up, debounce, LED / PhotoMOS current path of channel k."""
+    """Pull-up, debounce, button LED resistor of channel k."""
     pg.text(x0, Y(t0), f"MUTE {k}", 11)
     y = Y(t0 + 40)
     rp = find(P, "R", "2", f"BTN{k}")
@@ -888,16 +872,7 @@ def latch_block(pg, P, k, x0, t0):
     yl = y + 100
     d = hpart(pg, rl, x0 + 40, yl)
     pg.stub_port(d["1"], f"QK{k}", "IN", "left")
-    ks = circuit.PHOTOMOS[k]
-    led = pg.place(ks[0], "PHOTOMOS", x0 + 100, yl + 20, unit=1, des=(8, 4, "LEFT_BOTTOM"), name=False)
-    pg.wire([d["2"], (x0 + 100, yl)], f"LA{k}")
-    last = led["2"]
-    if len(ks) == 2:
-        led2 = pg.place(ks[1], "PHOTOMOS", x0 + 100, yl + 80, unit=1, des=(8, 4, "LEFT_BOTTOM"), name=False)
-        pg.wire([last, led2["1"]], f"LM{k}")
-        last = led2["2"]
-    pg.wire([last, (last[0], last[1] + 20), (last[0] + 40, last[1] + 20)], f"LED{k}")
-    pg.port(last[0] + 40, last[1] + 20, f"LED{k}", "OUT", "right")
+    pg.stub_port(d["2"], f"LED{k}", "OUT", "right")
 
 
 def chip(pg, P, ref, x, y):
@@ -914,12 +889,39 @@ def chip(pg, P, ref, x, y):
         pg.stub_port(s[num], net, "OUT" if num in outputs else "IN", side)
 
 
+def switch_chip(pg, P, ref, x, y):
+    """A mute switch with every pin on a net port; GND pins as ports too (ports connect by name)."""
+    s = pg.place(ref, "CD4053", x, y, des=(-50, -62, "LEFT_BOTTOM"), value_at=(-50, 68, "LEFT_BOTTOM"))
+    geo = pg.pr.symgeo[pg.pr.sym_of("CD4053")]
+    for p in geo["pins"]:
+        num = p["num"]
+        side = "left" if p["x"] < 0 else "right"
+        pg.stub_port(s[num], P[ref].nets[num], "IN" if side == "left" else "OUT", side)
+
+
+def switch_page(pr, P):
+    pg = MPage(pr, "Main board: mute switches", 3)
+    pg.page_count = "5"
+    pg.text(40, Y(30), "Mute switches, one CD4053B per channel: each bus resistor's summing end (BL, BR, BS) goes to "
+                       "its bus (x: SUM_L, SUM_R, SUM_S) while the channel plays (QK low) and to GND (y) when it is "
+                       "muted (QK high).", 11)
+    pg.text(40, Y(55), "Both throws sit at 0 V (a virtual earth or GND), so the switch never carries the signal's "
+                       "voltage: VEE = VSS = GND, no distortion, the 180-400 ohm on-resistance in series with 100k / "
+                       "200k.", 11)
+    for i, k in enumerate(circuit.MONO + circuit.STEREO):
+        col, row = i % 4, i // 4
+        x, y = 230 + col * 400, Y(330 + row * 450)
+        pg.text(x - 60, y - 95, f"MUTE {k}" + (" (stereo)" if k in circuit.STEREO else ""), 11)
+        switch_chip(pg, P, circuit.SWITCH[k], x, y)
+    return pg
+
+
 def latch_page(pr, P):
-    pg = MPage(pr, "Main board: mute latch", 3)
-    pg.page_count = "4"
+    pg = MPage(pr, "Main board: mute latch", 4)
+    pg.page_count = "5"
     pg.text(40, Y(30), "Mute latch, per channel: button (to GND_F on the faceplate) with a 100k pull-up, 10k / 100n "
-                       "debounce, CD4093 Schmitt NAND, CD4013 toggle (D = /Q). Q high = muted: Q -> 1k (820R "
-                       "stereo) -> PhotoMOS LED(s) -> button LED -> GND_F, about 6.8 mA.", 11)
+                       "debounce, CD4093 Schmitt NAND, CD4013 toggle (D = /Q). Q high = muted: Q selects the "
+                       "channel's CD4053B (page 3) and drives 1k5 -> button LED -> GND_F, about 5.7 mA.", 11)
     for i, k in enumerate(circuit.MONO + circuit.STEREO):
         col, row = i % 2, i // 2
         latch_block(pg, P, k, 50 + col * 380, 80 + row * 250)
@@ -948,8 +950,8 @@ def latch_page(pr, P):
 
 
 def power_page(pr, P):
-    pg = MPage(pr, "Main board: power, decoupling, headers", 4)
-    pg.page_count = "4"
+    pg = MPage(pr, "Main board: power, decoupling, headers", 5)
+    pg.page_count = "5"
     x0, t0 = 80, 120
     pg.text(x0 - 40, Y(t0 - 70), "Power: 16-pin Eurorack header (red stripe = pin 1 = -12 V, 3-8 GND, 9-10 +12 V, "
                                  "11-16 open), series 1N5819 per rail, 10R, 10 uF; BAT85 D904 clamps +12V when the "
@@ -999,8 +1001,9 @@ def power_page(pr, P):
     pg.text(x0 - 40, Y(t0 + 300), "Decoupling: 100n per TL074 per rail, 100n per CMOS chip, each beside its chip", 12)
     caps = [(f"U{i + 1}", f"C{911 + 2 * i}", f"C{912 + 2 * i}") for i in range(4)]
     caps += [(f"U{5 + i}", f"C{921 + i}", None) for i in range(6)]
+    caps += [(u, f"C{926 + k}", None) for k, u in circuit.SWITCH.items()]
     for i, (u, cp, cn) in enumerate(caps):
-        x, top = x0 + 20 + i * 90, Y(t0 + 350)
+        x, top = x0 + 20 + i * 85, Y(t0 + 350)
         a = vpart(pg, P[cp], x, top + 20)
         pg.wire([a["1"], (x, top + 5), (x - 20, top + 5)], "+12V")
         pg.port(x - 20, top + 5, "+12V", "IN", "left")
@@ -1028,6 +1031,9 @@ def power_page(pr, P):
             else:
                 pg.stub_port(hh[num], net, "IN", "left")
     return pg
+
+
+MAIN_PAGES = (mono_page, stereo_page, switch_page, latch_page, power_page)      # copper_audit builds the same
 
 
 # ------------------------------------------------------------------ faceplate pages
@@ -1183,7 +1189,7 @@ def main():
     pr = MProject()
     mb, fb = circuit.main_board_parts(), circuit.faceplate_parts()
     PM, PF = {p.ref: p for p in mb}, {p.ref: p for p in fb}
-    main_pages = [mono_page(pr, PM), stereo_page(pr, PM), latch_page(pr, PM), power_page(pr, PM)]
+    main_pages = [page(pr, PM) for page in MAIN_PAGES]
     fp_pages = [faceplate_jacks_page(pr, PF), faceplate_controls_page(pr, PF)]
     bad = coverage(main_pages, mb) + coverage(fp_pages, fb)
     for pg, parts in [(p, mb) for p in main_pages] + [(p, fb) for p in fp_pages]:

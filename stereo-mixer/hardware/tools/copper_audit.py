@@ -756,7 +756,7 @@ def generated_boards():
     pr = ex.MProject()
     mb, fb = ex.circuit.main_board_parts(), ex.circuit.faceplate_parts()
     PM, PF = {p.ref: p for p in mb}, {p.ref: p for p in fb}
-    main_pages = [ex.mono_page(pr, PM), ex.stereo_page(pr, PM), ex.latch_page(pr, PM), ex.power_page(pr, PM)]
+    main_pages = [page(pr, PM) for page in ex.MAIN_PAGES]
     fp_pages = [ex.faceplate_jacks_page(pr, PF), ex.faceplate_controls_page(pr, PF)]
     return (ex.pcb.faceplate_board(pr, fb, ex.part_info(fp_pages), ex.circuit),
             ex.pcb.main_board(pr, mb, ex.part_info(main_pages), ex.circuit), ex)

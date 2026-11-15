@@ -5,9 +5,12 @@ both boards joined through the headers (each faceplate net X_F becomes the
 main-board net X it mates with, GND_F -> GND), pots as two resistors with a
 taper, jacks with their normalling switch closed when nothing is plugged in,
 TL074 sections as high-gain VCVSs with an input offset source and an
-optional saturation at a supply- and load-dependent swing, AQY212EH switch
-side as Ron when muted and open (off-state leakage) when not. Logic, power
-and capacitors are left out (DC).
+optional saturation at a supply- and load-dependent swing, and each
+channel's CD4053B mute switch as three SPDT sections: common <-> x (the
+bus's summing node) Ron while the channel plays and R_OFF while it is
+muted, common <-> y (GND) the reverse. The latch (buttons, debounce,
+flip-flops, LED resistors) is left out: it only drives the selects, which
+are QK nets. Power and capacitors are left out too (DC).
 
 Only reads circuit.py; writes nothing.
 """
@@ -23,11 +26,27 @@ CIRCUIT = harness.load("circuit")
 PARTS = CIRCUIT.all_parts()
 
 # nets that belong to the latch / power, not the audio path
-NON_AUDIO = ("BTN", "DB", "QK", "LA", "LM", "LED", "POR", "CK", "QN", "+12V", "-12V", "P12", "N12")
+NON_AUDIO = ("BTN", "DB", "QK", "LED", "POR", "CK", "QN", "+12V", "-12V", "P12", "N12")
 
 R_CONTACT = 0.02        # closed jack switch contact / pot end resistance, ohm
-R_OFF = 60e6            # AQY212EH off: 1 uA max leakage at 60 V -> >= 60 Mohm (Panasonic AQY21*EH datasheet)
 G_LEAK = 1e-13          # tiny conductance to ground on every node, keeps floating nodes solvable
+
+# CD4053B, TI SCHS047O (rev. O, May 2026), 5.5 Electrical Characteristics, VEE = VSS = 0, 0 <= VIS <= VDD.
+# The chips get about 11-11.6 V; rON falls as VDD rises, so the VDD = 10 V column is the conservative one.
+RON_TYP = 180.0         # ohm, typ, VDD 10 V, 25 C   (VDD 15 V: 125 typ)
+RON_MAX_25C = 400.0     # ohm, max, VDD 10 V, 25 C   (VDD 15 V: 240)
+RON_MAX_85C = 520.0     # ohm, max, VDD 10 V, 85 C   (VDD 15 V: 300)
+DRON_TYP = 10.0         # ohm, typ, change in rON between any two channels, VDD 10 V (15 at 5 V, 5 at 15 V)
+# The open throw. The datasheet gives OFF-channel leakage, not a resistance: +-100 nA max at 25 C and +-1000 nA
+# at 85 C (VDD 18 V, "determined by minimum feasible leakage measurement for automatic testing", i.e. a tester
+# limit), +-10 pA typical at VDD 15 V (features list). Read as a resistance at the test voltage those are
+# 180 Mohm / 18 Mohm / 1.5 Tohm. Here both ends of an open throw sit at about 0 V (one on a virtual earth, the
+# other on GND or on a closed throw to GND), so the leakage, which flows from the terminals to the wells (VDD /
+# VEE), is not a conduction across the throw at all. R_OFF = 1 Gohm: three decades under the typical figure, still
+# a conduction path the solver can see; at audio frequencies the 0.2 pF feedthrough (40 Mohm at 20 kHz) dominates
+# it anyway. The tester limits as resistances are R_OFF_25C / R_OFF_85C, for sensitivity runs.
+R_OFF = 1e9
+R_OFF_25C, R_OFF_85C = 18.0 / 100e-9, 18.0 / 1000e-9
 
 
 def taper(kind, rot, a_mid=0.15):
@@ -63,16 +82,21 @@ def audio(net):
 class Config:
     """What the panel and the patch look like.
     rot: {pot ref: rotation 0..1} (default 1.0 = full CW for LEVEL/SEND/RETURN/DRUMS/MASTER, 0.5 for PAN)
-    muted: set of channels 1..8; ron: PhotoMOS on-resistance
+    muted: set of channels 1..8
+    ron: the CD4053B's on-resistance, every closed throw; ron_sec: {(channel, bus 'L' / 'R' / 'S'): ohms}
+         for single sections (switch-to-switch mismatch); r_off: an open throw
     sources: {jack ref: (volts, source ohms) or (volts, ohms, 'name')}: jacks with the same name share one
              source (a mult): one EMF, one output resistance, the jacks in parallel behind it
     loads: {jack ref: ohms} on unswitched (output) jacks
     a_mid: A taper at half rotation"""
 
-    def __init__(self, rot=None, muted=(), ron=0.83, sources=None, loads=None, a_mid=0.15, aol=2e5):
+    def __init__(self, rot=None, muted=(), ron=RON_TYP, sources=None, loads=None, a_mid=0.15, aol=2e5, ron_sec=None,
+                 r_off=R_OFF):
         self.rot = dict(rot or {})
         self.muted = set(muted)
         self.ron = ron
+        self.ron_sec = dict(ron_sec or {})
+        self.r_off = r_off
         self.sources = dict(sources or {})
         self.loads = dict(loads or {})
         self.a_mid = a_mid
@@ -100,10 +124,8 @@ class Model:
                 self._pot(p.ref + "B", p.value, n["4"], n["5"], n["6"], rotref=p.ref)
             elif p.kind == "JACK":
                 self._jack(p.ref, n)
-            elif p.kind == "PHOTOMOS":
-                ch = int("".join(c for c in p.nets["3"][2:] if c.isdigit()))
-                r = cfg.ron if ch in cfg.muted else R_OFF
-                self.res.append((n["3"], n["4"], r, p.ref))
+            elif p.kind == "CD4053":
+                self._switch(p, n)
             elif p.kind == "TL074":
                 for s, (o, im, ip) in CIRCUIT.SECTION.items():
                     self.opamps.append(dict(name=(p.ref, s), out=n[o], m=n[im], p=n[ip], vos=vos.get((p.ref, s), 0.0)))
@@ -118,6 +140,18 @@ class Model:
         nodes.discard("GND")
         self.nodes = sorted(nodes)
         self.idx = {nd: i for i, nd in enumerate(self.nodes)}
+
+    def _switch(self, p, n):
+        """A channel's CD4053B: per section common <-> x (the bus) and common <-> y (GND). The channel comes from
+        the selects' net (QKk): the latch is not in the model, the select's state is cfg.muted."""
+        for bus, (com, x, y, sel) in CIRCUIT.MUX.items():
+            k = int(p.nets[sel][2:]) if p.nets[sel].startswith("QK") else None
+            if k is None:
+                raise ValueError(f"{p.ref}.{sel}: select on {p.nets[sel]}, not a QK net")
+            ron = self.cfg.ron_sec.get((k, bus), self.cfg.ron)
+            on, off = (y, x) if k in self.cfg.muted else (x, y)
+            self.res.append((n[com], n[on], ron, f"{p.ref}.{bus}.on"))
+            self.res.append((n[com], n[off], self.cfg.r_off, f"{p.ref}.{bus}.off"))
 
     def _pot(self, name, value, ccw, wiper, cw, rotref=None):
         kind = value[0]

@@ -7,7 +7,9 @@ all open at power-up). OUT L / R go to the output module, so the rig ends
 in stereo with the drums and the low end in the centre.
 
 Analog audio path (4× TL074, DC-coupled, ±12 V), a CMOS latch for the
-mutes, PhotoMOS switches. Built like Marblesy and Plaitsy: two stacked
+mutes, one CD4053B per channel switching its bus resistors' summing ends
+(the mute carries no signal voltage, so it adds no distortion). Built like
+Marblesy and Plaitsy: two stacked
 PCBs behind a PCB panel, Thonk panel parts.
 
 On the panel it is **Mycelium**, one of the voice case's Garden names
@@ -51,11 +53,11 @@ table, is [docs/bom.md](docs/bom.md).
 
 | Part | Status | Files |
 |---|---|---|
-| Netlist | Done: main board 159 parts, faceplate 59, no single-pin nets, every header net used on both boards | `hardware/tools/circuit.py` |
-| EasyEDA Pro project | Done: 6 schematic pages, 0 problems; both PCBs placed and net-assigned, 0 placement problems; the panel PCB. Not yet opened in EasyEDA | `hardware/easyeda/StereoMixer.epro2` |
+| Netlist | Done: main board 175 parts, faceplate 59, no single-pin nets, every header net used on both boards. 2026-11-15: CD4053B mutes at the buses' summing ends replace the AQY212EH PhotoMOS at the follower inputs; 10 pF on each follower input for phase margin; D904 a 1N5819 | `hardware/tools/circuit.py` |
+| EasyEDA Pro project | Done: 7 schematic pages, 0 problems; both PCBs placed and net-assigned, 0 placement problems; the panel PCB | `hardware/easyeda/StereoMixer.epro2` |
 | Panel | Done: hole list, 1:1 drill template, artwork | `hardware/panel/`, `hardware/tools/panel.py` |
-| Routing | Both boards routed and audited clean (third export 2026-11-02). Value labels re-placed, LED resistor values and a -12V mark patched in 2026-11-04; J18 re-routed, D903 / D904 / C907–C909 added and J18's pads grown by script 2026-11-14. Re-import it, rebuild the copper areas (minimum island about 2 mm²), then Gerbers | `hardware/easyeda/StereoMixer-routed.epro2`, `docs/routing-audit-2026-11-02.md`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py` |
-| Tests | 1960 checks in 8 groups (2026-11-04, extended 2026-11-14). The first run found 37 findings; the same day the LED resistors (1k / 820 Ω), value labels, standoff length (11 mm), BOM and docs were fixed without touching copper. On 2026-11-13 J18 turned out to be on the wrong bus pins (GND on 3–10, +12 V on 11–12; Doepfer has +12 V on 9–10): fixed in circuit.py and re-routed at J18 in the routed master on 2026-11-14. The same day, in copper: D903 became a BAT85 from GND to POR, C907–C909 (4.7 / 4.7 / 10 pF C0G) give the output stages 66–72° of phase margin, D904 (BAT85) clamps a missing +12 V, J18's pads are 1.7 mm. 69 checks still fail: the open findings, the main one the PhotoMOS off capacitance (no DIP-4 part does better; a respin would cure it). A bench kit measures that one on a breadboard channel or a socketed channel (2026-11-15) | `hardware/tests/`, `hardware/bench/`, `docs/test-report-2026-11-04.md` |
+| Routing | Faceplate routed and audited (third export 2026-11-02, patched since; rebuild its copper areas). Main board: re-placed 2026-11-15 for the CD4053B mutes and put into the master unrouted by `swap_main_board.py`, so the master holds the routed faceplate and panel beside the placed main board. Next: import it, route the main board (design.md's routing notes: the summing lane first), rebuild the copper areas (minimum island about 2 mm²), export for the audit and the value labels, then Gerbers | `hardware/easyeda/StereoMixer-routed.epro2`, `hardware/tools/swap_main_board.py`, `hardware/tools/copper_audit.py`, `hardware/tools/value_labels.py` |
+| Tests | 2046 checks in 8 groups (2026-11-04, extended 2026-11-14, rewritten for the CD4053B mutes 2026-11-15). The 2026-11-04 run found 37 findings, most fixed since: LED resistors, value labels, standoff length, BOM, J18's bus pins (in copper), D903, the output stages' phase-lead caps, D904. The 2026-11-15 redesign removed M1 (PhotoMOS distortion), M2 and the muted input's loading, and the rewrite found and fixed the followers' phase margin (10 pF on each input), U7 under a standoff and D904 (now a 1N5819). 19 checks still fail: 6 wait for the main board's routing, 13 are findings accepted earlier (DC offset, common-mode range, latch bounce and brown-out). The bench kit was made for the PhotoMOS and stays as a THD / IMD / null bench | `hardware/tests/`, `hardware/bench/`, `docs/test-report-2026-11-04.md` |
 
 ## Files
 
@@ -69,7 +71,7 @@ hardware/
   tests/
     run_tests.py                        runs the eight test groups (test_*.py); README.md says what each checks
   bench/
-    mute_test.py                        bench kit for the mute PhotoMOS (M1): test signals, THD, IMD, null test
+    mute_test.py                        bench kit made for the old mute PhotoMOS (M1): test signals, THD, IMD, null test
     README.md                           the breadboard stand-in, the takes, the predicted figures
   tools/
     circuit.py                          the whole circuit and the panel positions: the single source of truth
@@ -79,11 +81,12 @@ hardware/
     panel_pcb.py                        the panel as the project's third PCB
     copper_audit.py                     audits a routed export: nets, copper, clearances, standoffs, audio, headers
     value_labels.py                     adds silkscreen value labels to a routed export
+    swap_main_board.py                  puts the generated main board into the routed master, faceplate kept
   easyeda/
     StereoMixer.epro2                   EasyEDA Pro 3.x project: Mixer Main, Mixer Faceplate, Mixer Panel
-    StereoMixer-routed.epro2            your routed export with value labels: the layout master, order from this
+    StereoMixer-routed.epro2            the layout master: routed faceplate and panel, main board placed (to route)
     stereo-mixer-labels-*.png           where the value labels landed
-    stereo-mixer-easyeda-*.png          previews of the six pages and the three PCBs
+    stereo-mixer-easyeda-*.png          previews of the seven pages and the three PCBs
     stereo-mixer-parts.epru             library parts from your MorrisSynth export (10R, 10 uF, box header)
   panel/
     stereo-mixer-panel.svg              artwork, 1:1 in mm
@@ -92,11 +95,13 @@ hardware/
     stereo-mixer-panel-holes.csv        every hole: board origin, panel x/y from the top-left, diameter
 ```
 
-In EasyEDA Pro, import `hardware/easyeda/StereoMixer.epro2` as a project.
-To regenerate after editing `circuit.py`, run from `hardware/tools`:
+To route the main board, import `hardware/easyeda/StereoMixer-routed.epro2` as a new project: the
+faceplate and panel come routed, the main board placed. `StereoMixer.epro2` is the generator's own,
+with both boards placed and unrouted. To regenerate after editing `circuit.py` or `pcb.py`, run from
+`hardware/tools` (the third step only while the main board is still unrouted in the master):
 
 ```bash
-python easyeda_export.py && python panel.py
+python easyeda_export.py && python panel.py && python swap_main_board.py
 ```
 
 It needs Python with Pillow, and reads the library caches in the repo

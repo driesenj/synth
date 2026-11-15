@@ -42,7 +42,7 @@ MODULE = {"project": "Stereo mixer", "file": "stereo-mixer", "routed": "StereoMi
           "holes": len(circuit.HOLES_FRONT)}
 BUTTONS = {"SWLED": "red"}
 RATING = {ref: ("Mouser", "0.6 W in the 1/4 W (0207) body: TE LR1F10R or Vishay MBB0207")
-          for ref in ("R918", "R919")}      # the 10 R rail filters: about 150 mW at the worst-case current
+          for ref in ("R918", "R919")}      # the 10 R rail filters: about 120 mW at the worst-case 110 mA
 SOLDERED = set()  # (board, ref) of chips without a socket
 REF_PART = {}     # ref -> (source, group, part) for a part that needs its own line
 
@@ -64,10 +64,9 @@ NOTES = [
     "Dual-gang Alpha pots (LEVEL 7, LEVEL 8, RETURN, MASTER): Thonk listed the A100K dual-gang (T18) as in stock "
     "on 2026-11-04. If it runs out, B100K duals work with a 22k from each wiper to GND; ask and the netlist gets "
     "those resistors.",
-    "The AQY212EH PhotoMOS relays also come from Farnell or LCSC.",
     "The mute buttons are red because a lit button means muted.",
-    "D904 clamps the +12 V net when the bus has no +12 V, with the op-amps' 20-40 mA through it: fit a BAT85 or "
-    "an SD103A there, not a 1N5711 (about 1 V at 15 mA).",
+    "D904 clamps the +12 V net when the bus has no +12 V, with the op-amps' 20-40 mA through it: a 1N5819 like "
+    "D901 / D902 (about 0.3 V there); a BAT85 or a 1N5711 drops too much.",
 ]
 
 # ---------------------------------------------------------------- catalogue (the same in every copy)
@@ -88,9 +87,10 @@ CHIPS = {"TL074": ("Thonk", "TL074 quad op-amp (DIP-14)"),
          "H11L1": ("Tayda", "H11L1 opto-isolator (DIP-6)"),
          "CD4013": ("Tayda", "CD4013BE dual D flip-flop (DIP-14)"),
          "CD4093": ("Tayda", "CD4093BE quad Schmitt NAND (DIP-14)"),
+         "CD4053": ("Tayda", "CD4053BE triple SPDT analog switch (DIP-16)"),
          "PHOTOMOS": ("Mouser", "Panasonic AQY212EH PhotoMOS relay (DIP-4)")}
 SOCKETS = {"TL074": 14, "MCP4922": 14, "MUX": 16, "HC595": 16, "HC165": 16, "H11L1": 6, "CD4013": 14,
-           "CD4093": 14}           # pins of the socket each chip sits in; the PhotoMOS are soldered
+           "CD4093": 14, "CD4053": 16}           # pins of the socket each chip sits in; a PhotoMOS is soldered
 SEMIS = {"NPN": ("Tayda", "Semiconductors", "2N3904 NPN transistor (TO-92)"),
          "BAT85": ("Tayda", "Semiconductors", "BAT85 Schottky diode (DO-35); BAT86, BAT43, BAT42, BAT46, SD103A, 1N5711 or SD101 fit too, DO-35 only: the holes are 0.8 mm"),
          "1N4148": ("Tayda", "Semiconductors", "1N4148 diode (DO-35)"),

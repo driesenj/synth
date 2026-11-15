@@ -10,9 +10,17 @@ Checks
   - the Thonk table against the faceplate parts (pots by taper / value /
     single / dual, jacks, LED buttons, knobs) and against bom/thonk-order.md's
     Mycelium column;
-  - part choices, ratings and types against the datasheets (constants below);
+  - part choices, ratings and types against the datasheets (constants below):
+    footprints and pitches (DIP-14 chips, the CD4053B mute switches on the
+    DIP-16 since 2026-11-15, diodes, caps, standing resistors, headers), the
+    CD4053BE line and its 8 DIP-16 sockets, the 10 R rail filters against
+    design.md's maximum +12 V current;
   - the mechanics: standoff length against the mated header + socket height,
     the power cable, the knob count, PCB quantities.
+
+Footprints and refs are read from the routed master; since 2026-11-15 its
+main board is the generated placement (placed, unrouted), so they are the
+CD4053B design's.
 
 Run from stereo-mixer/hardware/tests:  python test_bom.py
 """
@@ -33,9 +41,11 @@ bom = harness.load("bom")
 REPO = os.path.normpath(os.path.join(harness.MODULE, ".."))
 
 # ------------------------------------------------------------------ datasheet constants
-# Panasonic AQY212EH (PhotoMOS GE, 1 Form A), datasheet "AQY21_E(H)" / industrial.panasonic.com:
-AQY_LOAD_V = 60.0          # V, load voltage rating (max)
-AQY_PACKAGE = "DIP-4"      # 4-pin DIP; AQY212EHA = SMD, AQY212EHAZ = tape. "EH" alone = through hole
+# TI CD4053B (SCHS047O rev. O, May 2026): 5.1 absolute maximum supply V+ to V- (VDD - VEE) -0.5 .. 20 V; features
+# "single supply range 3 V to 20 V"; DC input voltage -0.5 .. VDD + 0.5 V. Orderable CD4053BE = PDIP (N), 16 pins
+# (package option addendum); the M / NS / PW suffixes are SMD. (Replaces the AQY212EH PhotoMOS, 2026-11-15.)
+CD4053_SUPPLY_MAX = 20.0   # V, VDD - VEE, abs max
+CD4053_THT = "CD4053BE"    # the through-hole (PDIP-16) part number
 # TI TL074 (SLOS080): TL074CN / TL074ACN / TL074BCN are the PDIP-14 (N) parts. Supply max +-18 V.
 TL074_VCC_MAX = 18.0       # V per rail, abs max
 # TI CD4093B / CD4013B (SCHS115, SCHS023): CD40xxBE = PDIP-14, VDD 3..18 V recommended, 20 V abs max.
@@ -85,8 +95,9 @@ ck.check("every netlist part sits in exactly one line's refs",
              for b, ps in (("Main", mb), ("Faceplate", fb)) for p in ps),
          f"{len(mb)} main + {len(fb)} faceplate parts")
 socketed = sorted(r for k, line in lines.items() if k[2].endswith("IC socket") for _, r in line["refs"])
-ck.check("the socket lines carry exactly the DIP chips (U1-U10), each once",
-         socketed == sorted(p.ref for p in mb if p.kind in ("TL074", "CD4093", "CD4013")), f"{socketed}")
+ck.check("the socket lines carry exactly the DIP chips (U1-U18: TL074, CD4093B, CD4013B, CD4053B), each once",
+         socketed == sorted(p.ref for p in mb if p.kind in ("TL074", "CD4093", "CD4013", "CD4053"))
+         and len(socketed) == 18, f"{socketed}")
 
 # quantities per kind and value against circuit.py
 want = collections.Counter()
@@ -276,25 +287,40 @@ for ref in ("U1", "U5", "U7"):
              and abs(pitch_of(ref, "1", "2") - 2.54) < 0.02,
              f"{fp_of(ref)}, rows {pitch_of(ref, '1', '14'):.2f} mm, pitch {pitch_of(ref, '1', '2'):.2f} mm")
     hole_ok(f"{ref} hole takes a DIP socket pin", ref, LEAD["DIP"])
-ck.check("K1 footprint is DIP-4 7.62 x 2.54 (AQY212EH = through hole; EHA is the SMD one)",
-         fp_of("K1") == "DIP-4-W7.62-P2.54" and abs(pitch_of("K1", "1", "4") - 7.62) < 0.02
-         and abs(pitch_of("K1", "1", "2") - 2.54) < 0.02,
-         f"{fp_of('K1')}, 1-4 {pitch_of('K1', '1', '4'):.2f}, 1-2 {pitch_of('K1', '1', '2'):.2f}")
-aqy = [r for r in rows if "AQY212EH" in r["Part"]]
-ck.check("AQY212EH line: 10, DIP-4, Panasonic", len(aqy) == 1 and aqy[0]["Qty"] == 10 and "DIP-4" in aqy[0]["Part"]
-         and "Panasonic" in aqy[0]["Part"], f"{[(r['Qty'], r['Part']) for r in aqy]}")
-ck.check("AQY212EH load rating >= 2 x the 12 V rail (the widest swing its switch can see)", AQY_LOAD_V >= 2 * 12.0,
-         f"{AQY_LOAD_V} V")
+for ref in sorted(circuit.SWITCH.values(), key=lambda r: int(r[1:])):
+    ck.check(f"{ref} footprint is DIP-16 on the 7.62 mm rows (CD4053BE = PDIP-16; its socket fits)",
+             fp_of(ref) == "DIP-16-W7.62-P2.54" and abs(pitch_of(ref, "1", "16") - 7.62) < 0.02
+             and abs(pitch_of(ref, "1", "2") - 2.54) < 0.02 and abs(pitch_of(ref, "1", "8") - 7 * 2.54) < 0.02,
+             f"{fp_of(ref)}, rows {pitch_of(ref, '1', '16'):.2f} mm, pitch {pitch_of(ref, '1', '2'):.2f} mm, "
+             f"1-8 {pitch_of(ref, '1', '8'):.2f} mm")
+hole_ok("U11 hole takes a DIP socket pin", "U11", LEAD["DIP"])
+n4053 = sum(1 for p in mb if p.kind == "CD4053")
+mux = [r for r in rows if "4053" in r["Part"]]
+ck.check(f"CD4053B line: {n4053}, {CD4053_THT}, DIP-16, Tayda",
+         n4053 == 8 and len(mux) == 1 and mux[0]["Qty"] == n4053 and CD4053_THT in mux[0]["Part"]
+         and "DIP-16" in mux[0]["Part"] and mux[0]["Source"] == "Tayda"
+         and sorted(re.split(r",\s*", mux[0]["Refs"])) == sorted(circuit.SWITCH.values()),
+         f"circuit {n4053} CD4053B; BOM {[(r['Source'], r['Qty'], r['Part'], r['Refs']) for r in mux]}")
+ck.check("no PhotoMOS left in the BOM (2026-11-15)", not any("AQY" in r["Part"] or "PhotoMOS" in r["Part"] for r in rows),
+         f"{[r['Part'] for r in rows if 'AQY' in r['Part'] or 'PhotoMOS' in r['Part']]}")
+# the switch's supply: VDD = +12V, VEE = VSS = GND (circuit.py), so VDD - VEE is the +12 V rail, at most 12.6 V
+sw = part("U11").nets
+ck.check(f"CD4053B: VDD - VEE = the {RAIL_WORST} V rail at most, within its {CD4053_SUPPLY_MAX:.0f} V absolute maximum",
+         sw["16"] == circuit.VP and sw["7"] == circuit.GND and RAIL_WORST <= CD4053_SUPPLY_MAX,
+         f"VDD (16) {sw['16']}, VEE (7) {sw['7']}; {RAIL_WORST} / {CD4053_SUPPLY_MAX} V")
 ck.check("D901 / D902 DO-41 footprints and a DO-41 1N5819 line",
          fp_of("D901").startswith("DO-41") and fp_of("D902").startswith("DO-41")
          and "1N5819" in line_of("D901")["Part"] and "DO-41" in line_of("D901")["Part"],
          f"{fp_of('D901')}, {fp_of('D902')}, {line_of('D901')['Part']}")
 hole_ok("D901 hole takes a DO-41 lead", "D901", LEAD["D5819"])
 ck.check("1N5819 VRRM >= 2 x 12 V", D5819_VRRM >= 2 * RAIL, f"{D5819_VRRM} V")
-for ref in ("D903", "D904"):
-    ck.check(f"{ref} DO-35 footprint for the BAT85, a BAT85 line", fp_of(ref).startswith("DO-35")
-             and "BAT85" in line_of(ref)["Part"], f"{fp_of(ref)}, {line_of(ref)['Part']}")
-    hole_ok(f"{ref} hole takes a DO-35 lead", ref, LEAD["BAT85"])
+ck.check("D903 DO-35 footprint for the BAT85, a BAT85 line", fp_of("D903").startswith("DO-35")
+         and "BAT85" in line_of("D903")["Part"], f"{fp_of('D903')}, {line_of('D903')['Part']}")
+hole_ok("D903 hole takes a DO-35 lead", "D903", LEAD["BAT85"])
+ck.check("D904 (the +12 V clamp, a 1N5819 since 2026-11-15) on the DO-41 footprint and the 1N5819 line",
+         fp_of("D904").startswith("DO-41") and "1N5819" in line_of("D904")["Part"],
+         f"{fp_of('D904')}, {line_of('D904')['Part']}")
+hole_ok("D904 hole takes a DO-41 lead", "D904", LEAD["D5819"])
 for ref, val in (("C907", "4p7"), ("C908", "4p7"), ("C909", "10p")):
     ck.check(f"{ref} {val}: 2.54 mm C0G footprint and a 2.54 mm C0G line", fp_of(ref) == "CAP-TH_P2.54-L4.0-W2.5"
              and abs(pitch_of(ref, "1", "2") - 2.54) < 0.02 and "C0G" in line_of(ref)["Part"]
@@ -330,7 +356,7 @@ ck.check("D902 (-12 V series): cathode (pad 1) on the header", part("D902").nets
 ck.check("D903: cathode (pad 1) on POR, anode on GND, so it clamps POR and empties C906 at power-off",
          part("D903").nets == {"1": "POR", "2": circuit.GND}, f"{part('D903').nets}")
 BAT85_VR = 30.0
-ck.check("BAT85 VR >= 2 x the 12 V it blocks (D903 at power-up, D904 in use)", BAT85_VR >= 2 * RAIL, f"{BAT85_VR} V")
+ck.check("BAT85 VR >= 2 x the 12 V it blocks (D903 at power-up)", BAT85_VR >= 2 * RAIL, f"{BAT85_VR} V")
 ck.check("D904: cathode (pad 1) on +12V, anode on GND: it clamps the +12V net when the bus has no +12 V",
          part("D904").nets == {"1": circuit.VP, "2": circuit.GND}, f"{part('D904').nets}")
 plus = [p for h, p in fp_docs[fp_of("C904")]["recs"] if h["type"] == "FILL" and p["layerId"] == 3]
@@ -372,28 +398,47 @@ r_lines = [r for r in rows if r["Group"] == "Resistors"]
 ck.check("resistor lines: metal film 1 %, 1/4 W (2.5 mm body: stands on 2.54 mm)",
          all("metal film 1 %" in r["Part"] and "1/4 W" in r["Part"] for r in r_lines), f"{len(r_lines)} lines")
 # Worst-case +12 V current: design.md's maximum (TL074s at TI SLOS080's ICC max, every channel muted,
-# full-swing loads; test_power computes it), against the rating bom.md orders the 10 R filters at.
+# full-swing loads; test_power computes it), against the rating bom.md orders the 10 R filters at. Since 2026-11-15
+# the doc's figure is an estimate ("about 115 mA"); the fallback below, used only when the sentence is gone, is
+# this group's own rough sum for the CD4053B design: 16 amplifiers at 2.5 mA, every button LED lit through its
+# LED resistor from a 12.6 V Q with a 1.6 V LED (the lowest VF the suite assumes), 18 mA of full-swing loads (the
+# figure this check used before), the CD4053Bs' microamps left out.
 TL074_ICC_MAX = 0.0025   # A per amplifier, max (TI SLOS080)
+VF_LED_MIN = 1.6         # V, red button LED, low end (Thonk sheet unavailable; as test_netlist / test_latch)
 _mx = re.search(r"about (\d+) mA on \+12 V\s+\(all muted\)", design_text := open(
     os.path.join(harness.MODULE, "docs", "design.md"), encoding="utf-8").read())
-I_MAX = float(_mx.group(1)) / 1000 if _mx else 16 * TL074_ICC_MAX + 8 * 0.008 + 0.018
+_led_r = [p for p in mb if p.kind == "R" and len({n for n in p.nets.values() if re.fullmatch(r"(QK|LED)\d", n)}) == 2]
+I_EST = 16 * TL074_ICC_MAX + sum((RAIL_WORST - VF_LED_MIN) / harness.ohms(p.value) for p in _led_r) + 0.018
+I_MAX = float(_mx.group(1)) / 1000 if _mx else I_EST
 r10 = line_of("R918")["Part"]
 _w = re.search(r"(\d+(?:\.\d+)?|1/4|1/2) W", r10)
 P10 = {"1/4": 0.25, "1/2": 0.5}.get(_w.group(1)) or float(_w.group(1)) if _w else 0.25
 ck.check(f"10 R filter resistors stay under half their {P10} W rating at design.md's maximum +12 V current",
          _mx is not None and I_MAX ** 2 * 10 < P10 / 2,
-         f"{I_MAX * 1000:.0f} mA: {I_MAX ** 2 * 10 * 1000:.1f} mW (limit {P10 * 500:.0f} mW), drop {I_MAX * 10:.2f} V; "
-         f"BOM: {r10}")
+         f"design.md 'about {_mx and _mx.group(1)} mA on +12 V (all muted)' (this group's rough sum {I_EST * 1e3:.0f} mA, "
+         f"{len(_led_r)} LED resistors): {I_MAX * 1000:.0f} mA: {I_MAX ** 2 * 10 * 1000:.1f} mW (limit "
+         f"{P10 * 500:.0f} mW), drop {I_MAX * 10:.2f} V; BOM: {r10}")
+# design.md's BOM build notes give R918's current too; it must be the Power section's maximum
+_r918 = re.search(r"R918 carries up to about (\d+) mA", design_text)
+ck.check("design.md's build note on R918's current agrees with its Power section's +12 V maximum",
+         _mx is not None and _r918 is not None and abs(int(_r918.group(1)) - int(_mx.group(1))) <= 5,
+         f"build note 'R918 carries up to about {_r918 and _r918.group(1)} mA', Power 'about "
+         f"{_mx and _mx.group(1)} mA on +12 V (all muted)'")
 for ref, board in (("H1", "Main"), ("HF1", "Faceplate"), ("H9", "Main")):
     hole_ok(f"{ref} hole takes a 0.64 mm square pin", ref, HDR_DIAG, board, extra=0.05)
 ck.check("J18 2x8 box header footprint", fp_of("J18").startswith("IDC-TH_16P"), fp_of("J18"))
 dip14 = sum(1 for p in mb if p.kind in ("TL074", "CD4093", "CD4013"))
 sock = sum(r["Qty"] for r in rows if re.search(r"DIP-14 (IC )?socket", r["Part"]))
 ck.check("DIP-14 sockets in the BOM = DIP-14 chips (10)", sock == dip14 == 10, f"chips {dip14}, socket mentions {sock}")
-sock_lines = [r for r in rows if "socket" in r["Part"].lower() and r["Group"] == "Connectors"]
-where = ", ".join(f"{r['Source']} {r['Qty']}" for r in rows if "DIP-14 socket" in r["Part"])
-ck.check("DIP-14 sockets as a line of their own (one count to buy)", bool(sock_lines),
-         f"expected a 'DIP-14 socket x 10' line; they ride on 3 chip lines from 2 shops ({where})")
+dip16 = sum(1 for p in mb if p.kind == "CD4053")
+sock16 = sum(r["Qty"] for r in rows if re.search(r"DIP-16 (IC )?socket", r["Part"]))
+ck.check("DIP-16 sockets in the BOM = CD4053B chips (8)", sock16 == dip16 == 8, f"chips {dip16}, socket mentions {sock16}")
+for pins, n in ((14, dip14), (16, dip16)):
+    sock_lines = [r for r in rows if re.fullmatch(rf"DIP-{pins} IC socket", r["Part"]) and r["Group"] == "Connectors"]
+    where = ", ".join(f"{r['Source']} {r['Qty']} ({r['Part']})" for r in rows if f"DIP-{pins}" in r["Part"]
+                      and "socket" in r["Part"].lower())
+    ck.check(f"DIP-{pins} sockets as a line of their own (one count to buy)", len(sock_lines) == 1
+             and sock_lines[0]["Qty"] == n, f"expected one 'DIP-{pins} IC socket' x {n} line; got {where}")
 
 # ------------------------------------------------------------------ 5. ratings and types
 for r in (r for r in rows if r["Group"] == "Capacitors"):
@@ -412,9 +457,11 @@ for v, rated in LIB_V.items():
     ck.check(f"{v} rated >= {CAP_MARGIN} x 12.6 V", rated >= CAP_MARGIN * RAIL_WORST, f"{rated} V")
 ck.check("CMOS VDD 12.6 V within CD40xxB's 18 V", RAIL_WORST <= CMOS_VDD_MAX, f"{RAIL_WORST} / {CMOS_VDD_MAX} V")
 ck.check("TL074 on +-12.6 V within +-18 V", RAIL_WORST <= TL074_VCC_MAX, f"{RAIL_WORST} / {TL074_VCC_MAX} V")
-ck.check("chip names: CD4093BE / CD4013BE (PDIP 'E'), TL074 DIP-14",
+ck.check("chip names: CD4093BE / CD4013BE / CD4053BE (PDIP 'E'), TL074 DIP-14",
          "CD4093BE" in line_of("U5")["Part"] and "CD4013BE" in line_of("U7")["Part"]
-         and "TL074" in line_of("U1")["Part"] and "DIP-14" in line_of("U1")["Part"], "")
+         and CD4053_THT in line_of("U11")["Part"]
+         and "TL074" in line_of("U1")["Part"] and "DIP-14" in line_of("U1")["Part"],
+         f"{line_of('U5')['Part']} / {line_of('U7')['Part']} / {line_of('U11')['Part']} / {line_of('U1')['Part']}")
 
 # ------------------------------------------------------------------ 6. mechanics
 so = next((r for r in rows if "standoff" in r["Part"].lower()), None)

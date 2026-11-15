@@ -5,19 +5,23 @@ one netlist, split over the two boards.
 Faceplate board (FB): 17 Thonkiconn jacks, 21 Alpha 9 mm pots, 4 Alpha
 9 mm dual-gang pots, 8 Thonk LED buttons (the mutes), male headers.
 Main board (MB): 4 TL074 (followers, bus summers, output stages), the mute
-latch (2 CD4093 Schmitt NANDs, 4 CD4013 flip-flops), 10 AQY212EH PhotoMOS
-mute switches, every resistor standing up, the Eurorack power entry,
-female sockets.
+latch (2 CD4093 Schmitt NANDs, 4 CD4013 flip-flops), 8 CD4053B mute
+switches (one per channel), every resistor standing up, the Eurorack power
+entry, female sockets.
 
 Signal flow (unchanged from the 2026-10-07 design, mutes now electronic)
   mono k (1-6)   IN k -> LEVEL k (A100k) -> 10k -> follower -> CHk
-                 PhotoMOS from the follower input to GND = mute (lit button)
-                 CHk -> 10k -> PLk -> 100k -> SUM_L     PAN k (B10k) PLk..PRk,
-                 CHk -> 10k -> PRk -> 100k -> SUM_R     wiper to GND
-                 CHk -> SEND k (A100k) -> 100k -> SUM_S
+                 CHk -> 10k -> PLk -> 100k -> BLk     PAN k (B10k) PLk..PRk,
+                 CHk -> 10k -> PRk -> 100k -> BRk     wiper to GND
+                 CHk -> SEND k (A100k) -> 100k -> BSk
   stereo c (7,8) IN c L/R (R takes L unpatched) -> LEVEL c (dual A100k) ->
-                 10k -> followers -> 200k into each bus; 10k + 10k average
-                 -> SEND c -> 100k -> SUM_S; one button mutes both sides
+                 10k -> followers -> 200k to BLc / BRc; 10k + 10k average
+                 -> SEND c -> 100k -> BSc; one button mutes both sides
+  mute           channel k's CD4053B (U1k) switches the summing ends BLk,
+                 BRk, BSk of its three bus resistors: to SUM_L / SUM_R /
+                 SUM_S (select low, playing) or to GND (select high, muted).
+                 Both throws sit at 0 V, so the switch never carries the
+                 signal's voltage and adds no distortion.
   RETURN L/R (R takes L) -> dual A100k -> 200k into each bus
   DRUMS -> A100k -> 300k into each bus (centred); FX IN -> 100k -> SUM_S
   SUM_L/R/S: inverting summers, 100k || 22p
@@ -27,9 +31,9 @@ Signal flow (unchanged from the 2026-10-07 design, mutes now electronic)
 Mute latch, per channel
   button contacts to GND_F, 100k pull-up to +12 V -> 10k / 100n debounce ->
   CD4093 NAND (inputs tied: a Schmitt inverter) -> CD4013 clock, D = /Q
-  (toggle). Q high = muted: Q -> 1k (820R on a stereo channel) -> PhotoMOS
-  LED(s) -> button LED -> GND_F, about 6.8 mA. RESET of every flip-flop from
-  one power-on RC, so the mixer starts unmuted.
+  (toggle). Q high = muted: Q drives the three selects of the channel's
+  CD4053B and, through 1k5, the button LED -> GND_F, about 5.4 mA. RESET of
+  every flip-flop from one power-on RC, so the mixer starts unmuted.
 
 Net naming: nets that cross the board-to-board headers carry the same name
 on both boards, with _F on the faceplate side (GND -> GND_F). The faceplate
@@ -84,8 +88,10 @@ NAND_OF = {1: ("U5", 1), 2: ("U5", 2), 3: ("U5", 3), 4: ("U5", 4),
            5: ("U6", 1), 6: ("U6", 2), 7: ("U6", 3), 8: ("U6", 4)}
 FLOP_OF = {1: ("U7", 1), 2: ("U7", 2), 3: ("U8", 1), 4: ("U8", 2),
            5: ("U9", 1), 6: ("U9", 2), 7: ("U10", 1), 8: ("U10", 2)}
-# PhotoMOS per channel side: AQY212EH, 1 = LED anode, 2 = cathode, 3 / 4 = the switch
-PHOTOMOS = {1: ["K1"], 2: ["K2"], 3: ["K3"], 4: ["K4"], 5: ["K5"], 6: ["K6"], 7: ["K7", "K8"], 8: ["K9", "K10"]}
+# Mute switch per channel: a CD4053B (TI SCHS047O), triple SPDT. Per section: (common, x, y, select); select
+# low = x on, high = y on (INH low). Section a switches the L bus, b the R bus, c the send bus.
+SWITCH = {k: f"U{10 + k}" for k in range(1, 9)}
+MUX = {"L": ("14", "12", "13", "11"), "R": ("15", "2", "1", "10"), "S": ("4", "5", "3", "9")}
 
 
 # ------------------------------------------------------------- main board
@@ -95,16 +101,21 @@ def _channel_side(k, side=""):
     return {"lv": f"LV{s}", "fi": f"FI{s}", "ch": f"CH{s}"}
 
 
+# Each follower's + input (FI) gets 10 pF C0G to GND: behind the 10k and the LEVEL wiper (up to ~35k) the
+# TL074's 2 pF differential input capacitance feeds the output back onto IN+ and costs the follower ~12 deg of
+# phase margin (44 deg, test_audio_ac); 10 pF restores ~56. Its pole is at 455 kHz or above. (The AQY212EH's
+# 35-79 pF off capacitance used to do this, by accident.)
 def mono_main(k):
     n = _channel_side(k)
     r = 100 * k
     return [
-        R(f"R{r + 1}", "10k", n["lv"], n["fi"], "mute series"),
+        R(f"R{r + 1}", "10k", n["lv"], n["fi"], "input series"),
+        C(f"C{r + 2}", "10p", n["fi"], GND, "follower input"),
         R(f"R{r + 2}", "10k", n["ch"], f"PL{k}", "pan feed L"),
         R(f"R{r + 3}", "10k", n["ch"], f"PR{k}", "pan feed R"),
-        R(f"R{r + 4}", "100k", f"PL{k}", "SUM_L", "into L bus"),
-        R(f"R{r + 5}", "100k", f"PR{k}", "SUM_R", "into R bus"),
-        R(f"R{r + 6}", "100k", f"SD{k}", "SUM_S", "into send bus"),
+        R(f"R{r + 4}", "100k", f"PL{k}", f"BL{k}", "into L bus"),
+        R(f"R{r + 5}", "100k", f"PR{k}", f"BR{k}", "into R bus"),
+        R(f"R{r + 6}", "100k", f"SD{k}", f"BS{k}", "into send bus"),
     ] + latch_main(k, r + 7)
 
 
@@ -112,33 +123,33 @@ def stereo_main(c):
     L, Rt = _channel_side(c, "L"), _channel_side(c, "R")
     r = 100 * c
     return [
-        R(f"R{r + 1}", "10k", L["lv"], L["fi"], "mute series L"),
-        R(f"R{r + 2}", "10k", Rt["lv"], Rt["fi"], "mute series R"),
-        R(f"R{r + 3}", "200k", L["ch"], "SUM_L", "into L bus"),
-        R(f"R{r + 4}", "200k", Rt["ch"], "SUM_R", "into R bus"),
+        R(f"R{r + 1}", "10k", L["lv"], L["fi"], "input series L"),
+        R(f"R{r + 2}", "10k", Rt["lv"], Rt["fi"], "input series R"),
+        C(f"C{r + 2}", "10p", L["fi"], GND, "follower input L"),
+        C(f"C{r + 3}", "10p", Rt["fi"], GND, "follower input R"),
+        R(f"R{r + 3}", "200k", L["ch"], f"BL{c}", "into L bus"),
+        R(f"R{r + 4}", "200k", Rt["ch"], f"BR{c}", "into R bus"),
         R(f"R{r + 5}", "10k", L["ch"], f"AV{c}", "send average"),
         R(f"R{r + 6}", "10k", Rt["ch"], f"AV{c}", "send average"),
-        R(f"R{r + 7}", "100k", f"SD{c}", "SUM_S", "into send bus"),
+        R(f"R{r + 7}", "100k", f"SD{c}", f"BS{c}", "into send bus"),
     ] + latch_main(c, r + 8)
 
 
 def latch_main(k, r):
-    """Button pull-up and debounce, LED series resistor, the PhotoMOS switch(es)."""
-    ks = PHOTOMOS[k]
-    # about 6.8 mA typical through one or two AQY212EH LEDs and the button LED (Panasonic recommends 5-10 mA),
-    # 4 mA at worst (weak CD4013B output, low rail, high VFs), above the 3 mA the AQY212EH needs at most
-    led_r = "1k" if len(ks) == 1 else "820R"
+    """Button pull-up and debounce, the button LED's series resistor, the channel's mute switch."""
+    # about 5.4 mA typical through the red button LED; Q stays at least 0.8 V above the CD4053B's VIH even at
+    # the worst corner (weak CD4013B output at 85 C, 12.6 V on the chips, a 1.8 V LED drawing the most current), so
+    # the LED never upsets the selects (test_latch; 1k2 would still do, 1k would not)
     parts = [
         R(f"R{r}", "100k", VP, f"BTN{k}", "button pull-up"),
         R(f"R{r + 1}", "10k", f"BTN{k}", f"DB{k}", "debounce"),
         C(f"C{100 * k + 1}", "100n", f"DB{k}", GND, "debounce"),
-        R(f"R{r + 2}", led_r, f"QK{k}", f"LA{k}", "LED / PhotoMOS current"),
+        R(f"R{r + 2}", "1k5", f"QK{k}", f"LED{k}", "button LED"),
     ]
-    sides = [""] if len(ks) == 1 else ["L", "R"]
-    chain = [f"LA{k}"] + ([f"LM{k}"] if len(ks) == 2 else []) + [f"LED{k}"]
-    for i, (ref, side) in enumerate(zip(ks, sides)):
-        parts.append(Part(ref, "PHOTOMOS", "AQY212EH", {"1": chain[i], "2": chain[i + 1], "3": f"FI{k}{side}",
-                                                         "4": GND}, f"mute {k}{side}"))
+    nets = {"6": GND, "7": GND, "8": GND, "16": VP}          # INH low, VEE = VSS = GND: the throws sit at 0 V
+    for bus, (com, x, y, sel) in MUX.items():
+        nets.update({com: f"B{bus}{k}", x: f"SUM_{bus}", y: GND, sel: f"QK{k}"})
+    parts.append(Part(SWITCH[k], "CD4053", "CD4053B", nets, f"mute {k}"))
     return parts
 
 
@@ -185,8 +196,10 @@ def power_main():
         Part("C904", "CP", "10u", {"2": VP, "1": GND}, "+12 V bulk"),
         Part("C905", "CP", "10u", {"2": GND, "1": VN}, "-12 V bulk"),
         # with the bus +12 V missing (-12 V present) the CMOS chips' substrate diodes would pull VDD to about
-        # -0.6 V (abs max -0.5 V): a Schottky from GND clamps +12V at about -0.3 V (test report POWER-2)
-        Part("D904", "BAT85", "BAT85", {"1": VP, "2": GND}, "+12 V clamp, cathode on +12V"),
+        # -0.6 V (abs max -0.5 V): a Schottky from GND clamps +12V (test report POWER-2). A 1N5819 since
+        # 2026-11-15: about -0.34 V at the op-amps' worst 40 mA, where a BAT85 gave -0.55 V, past both the CMOS
+        # VDD limit and the CD4053Bs' "signal pin <= VDD + 0.5 V" with their throws at 0 V
+        Part("D904", "D5819", "1N5819", {"1": VP, "2": GND}, "+12 V clamp, cathode on +12V"),
         # power-on reset for the flip-flops: high for ~70 ms after +12 V comes up (R920 x C906 x ln 2). At power-off
         # +12V falls and C906 drags POR below GND: D903 (cathode POR, anode GND) clamps it at about -0.3 V and
         # empties C906, so the CD4013B RESET inputs' own diodes never conduct. (Until 2026-11-14 D903 was a
@@ -201,6 +214,8 @@ def power_main():
         parts.append(C(f"C{912 + 2 * i}", "100n", GND, VN, f"{u} -12 V"))
     for i, u in enumerate(("U5", "U6", "U7", "U8", "U9", "U10")):
         parts.append(C(f"C{921 + i}", "100n", VP, GND, f"{u} VDD"))
+    for k, u in SWITCH.items():
+        parts.append(C(f"C{926 + k}", "100n", VP, GND, f"{u} VDD"))
     return parts
 
 
